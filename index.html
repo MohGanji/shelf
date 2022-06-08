@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title> My little shelf </title>
+
+    <link rel="stylesheet" href="./base.css">
+    <link rel="stylesheet" href="./shelf.css">
+  </head>
+  <body>
+    
+    <div id="shelf">
+      <div class="row">
+        <div class="cell" id="books">
+          <img class="img top-img clickable" 
+               src="./assets/books.png" height="80%" width="auto" 
+               onclick="window.location.href = './library/'">
+          <img class="img bottom-img" src="./assets/books-hover.png" height="80%" width="auto">
+          <div class="title">eLibrary</div>
+          <!-- 
+            TODO: change the title to tooltip
+            http://www.menucool.com/tooltip/css-tooltip 
+          -->
+        </div>
+        <div class="cell decor" id="moai">
+          <img class="img bottom-img" src="./assets/moai.png" height="85%" width="auto">
+        </div>
+        <div class="cell" id="blog">
+          <img class="img top-img clickable" 
+               src="./assets/inkwell.png" height="95%" width="auto"
+               onclick="window.location.href = './blog/'">
+          <img class="img bottom-img" src="./assets/inkwell-hover.png" height="95%" width="auto">
+          <div class="title">Blog</div>
+        </div>
+
+      </div>
+      <div class="row">
+        <div class="cell" id="stories">
+          <img class="img top-img clickable" 
+               src="./assets/owl.png" height="80%" width="auto"
+               onclick="window.location.href = './stories/'">
+          <img class="img bottom-img" src="./assets/owl-hover.png" height="80%" width="auto">
+          <div class="title">True Stories</div>
+        </div>
+        <div class="cell decor" id="bigben">
+          <img class="img bottom-img" src="./assets/bigben.png" height="95%" width="auto">
+        </div>
+        <div class="cell" id="superheros">
+          <img class="img top-img clickable" 
+               src="./assets/superhero.png" height="95%" width="auto"
+               onclick="window.location.href = './heros/'">
+          <img class="img bottom-img" src="./assets/superhero-hover.png" height="95%" width="auto">
+          <div class="title">Inspiring People</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="cell" id="photography">
+          <img class="img top-img clickable" 
+               src="./assets/camera.png" height="60%" width="auto"
+               onclick="window.location.href = './photos/'">
+          <img class="img bottom-img" src="./assets/camera-hover.png" height="60%" width="auto">
+          <div class="title">Amateur Photography</div>
+        </div>
+        
+        <div class="cell decor" id="eiffel">
+          <img class="img bottom-img" src="./assets/eiffel.png" height="95%" width="auto">
+        </div>
+        <div class="cell" id="projects">
+          <img class="img top-img clickable" 
+               src="./assets/laptop.png" height="95%" width="auto"
+               onclick="window.location.href = './projects/'">
+          <img class="img bottom-img" src="./assets/laptop-hover.png" height="95%" width="auto">
+          <div class="title">Projects</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="cell" id="contact">
+          <img class="img top-img clickable" 
+               src="./assets/telephone.png" height="65%" width="auto"
+               onclick="window.location.href = './contact/'">
+          <img class="img bottom-img" src="./assets/telephone-hover.png" height="65%" width="auto">
+          <div class="title">Contact</div>
+        </div>
+        <div class="cell decor" id="pyramids">
+          <img class="img bottom-img" src="./assets/pyramids.png" height="65%" width="auto">
+        </div>
+        <div class="cell" id="now">
+          <img class="img top-img clickable" 
+               src="./assets/sandtime.png" height="90%" width="auto"
+               onclick="window.location.href = './now/'">
+          <img class="img bottom-img" src="./assets/sandtime-hover.png" height="90%" width="auto">
+          <div class="title">Now</div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="./scripts.js"></script>
+  </body>
+</html>
