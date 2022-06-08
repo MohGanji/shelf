@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title> Heros </title>
+
+    <link rel="stylesheet" href="../base.css">
+  </head>
+  <body>
+    <div class="container">
+        <div id="description-container" class="subcontainer">
+            <div class="item-title">Heros</div>
+            <div class="item-description item-subtitle">
+                <p>
+                    We all have heros - people we look up to, get inspired by, and learn from.
+                </p>
+                <p>
+                    Here I have listed people who have impacted my mindset, lifestyle, or thoughts very deeply.
+                    These are the people that I would ask to get a selfie with if I ever run into them.
+                </p>
+                <p>
+                    Click on each of them to see how I would describe them, and what I like about them.
+                </p>
+            </div>
+        </div>
+        <div id="items-container" class="subcontainer"></div>
+        <a class="item-subtitle" href="/">Back to Homepage</div>
+    </div>
+    
+  </body>
+
+  <script src="../scripts.js"></script>
+  <script>
+      const heros = [
+        {
+            title: 'Derek Sivers',
+            subtitle: 'A curious minimalist adventurer with exceptional prose writing ability, and radical mindset and counter-intuitive useful ideas.',
+            date: '2022-06-05',
+            website: 'sive.rs'
+        },
+        {
+            title: 'Tim Urban',
+            subtitle: 'A curious blogger. His blog posts contain stick figure comics for better illustration.',
+            date: '2022-06-05',
+            website: 'waitbutwhy.com'
+        },
+        {
+            title: 'Jia Jiang',
+            subtitle: 'An ordinary immigrant who overcame fear of rejection with a 100 day rejection therapy challenge. His talks are inspiring because he shares his vulnerability easily.',
+            date: '2022-06-07',
+            website: 'rejectiontherapy.com'
+        }
+      ]
+      let items = heros.map((hero) => Templates.hero(hero.title, hero.subtitle, hero.date, hero.website))
+      let containerElement = document.getElementById('items-container')
+      items.forEach(item => containerElement.appendChild(item))
+  </script>
+</html>
