@@ -31,6 +31,9 @@ a {
     color: var(--url-color);
     text-decoration: underline;
 }
+a:hover {
+    background-color: var(--quote-bg-color);
+}
 
 p.quote {
     background-color: var(--quote-bg-color);
@@ -109,7 +112,7 @@ p.quote-fa {
     flex: 8;
 }
 .col > *:not(:last-child) {
-    margin-bottom: 0.5vh;
+    margin-bottom: 1vh;
 }
 
 .item-part {
