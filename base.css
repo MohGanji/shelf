@@ -108,7 +108,7 @@ p.quote-fa {
 .other-container {
     flex: 8;
 }
-.other-container > *:not(:last-child) {
+.col > *:not(:last-child) {
     margin-bottom: 0.5vh;
 }
 
