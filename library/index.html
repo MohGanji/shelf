@@ -28,6 +28,8 @@
                 </p>
                 <p>
                     I'm trying to create my own library, to first spread the words of those books, and also share my learning experience from them.
+                    I only keep the books that I loved, or learned something new from.
+                    If there is a book here, it means I think it is worth reading.
                 </p>
             </div>
         </div>
@@ -37,40 +39,7 @@
         <a class="item-subtitle" href="/">Back to Shelf</div>
     </div>
     <script src="../scripts.js"></script>
-  <script>
-      const books = [
-        {
-            title: 'Essentialism',
-            subtitle: 'A curious minimalist adventurer with exceptional prose writing ability, and radical mindset and counter-intuitive useful ideas.',
-            author: 'Greg McKeown',
-            link: '',
-            recommendTo: 'everyone',
-            rating: 10,
-            date: '2020-06',
-        },
-        {
-            title: 'How to live',
-            subtitle: 'subtitle',
-            author: 'Derek Sivers',
-            link: 'sive.rs',
-            recommendTo: 'everyone',
-            rating: 10,
-            date: '2022-03',
-        },
-        {
-            title: 'The Courage to Be Disliked',
-            subtitle: 'subtitle',
-            author: 'Ichiro Kishimi',
-            link: '...',
-            recommendTo: 'everyone',
-            rating: 10,
-            date: '2021-12',
-        },
-      ]
-      let items = books.map((b) => Templates.book(b.title, b.subtitle, b.author, b.recommendTo, b.date, b.link, b.rating))
-      let containerElement = document.getElementById('items-container')
-      items.forEach(item => containerElement.appendChild(item))
-  </script>
+    <script src="./items.js"></script>
     
   </body>
 </html>
