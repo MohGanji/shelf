@@ -38,12 +38,12 @@ const Templates  = {
 <div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}.html'">
     <div class="col img-container">
         <img class="item-image" src="/assets/books/${Util.fmt(title)}.jpg" width="100%" height="auto" />
-        <div class=""><b>${rating}</b>/10</div>
+        <!-- <div class=""><b>${rating}</b>/10</div> -->
     </div>
     <div class="col other-container">
         <div class="item-part item-title">${title} - by ${author}</div>
         <div class="item-part item-subtitle">${subtitle}</div>
-        <div class="item-part item-date"><b>Who I would recommend to:</b> ${recommendTo}</div>
+        <!-- <div class="item-part item-date"><b>Who I would recommend to:</b> ${recommendTo}</div> -->
         <div class="item-part item-date">Date read: ${date}</div>
         <a   class="item-part item-link" href="http://${link}">Amazon page</a>
     </div>
