@@ -17,6 +17,7 @@ class Util {
 }
 
 const Templates  = {
+
     hero: (title, subtitle, date, website) => {
         let templateString = `
 <div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}.html'">
@@ -33,6 +34,7 @@ const Templates  = {
 `;
         return Util.strToHtml(templateString);
     },
+
     book: (title, subtitle, author, recommendTo, date, link, rating) => {
         let templateString = `
 <div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}.html'">
@@ -46,6 +48,23 @@ const Templates  = {
         <!-- <div class="item-part item-date"><b>Who I would recommend to:</b> ${recommendTo}</div> -->
         <div class="item-part item-date">Date read: ${date}</div>
         <a   class="item-part item-link" href="http://${link}">Amazon page</a>
+    </div>
+</div>
+`;
+        return Util.strToHtml(templateString);
+    },
+
+    project: (title, subtitle, date, link) => {
+        let templateString = `
+<div class="item">
+    <div class="col img-container">
+        <img class="item-image" src="/assets/projects/${Util.fmt(title)}.jpg" width="100%" height="auto" />
+    </div>
+    <div class="col other-container">
+        <div class="item-part item-title">${title}</div>
+        <div class="item-part item-subtitle">${subtitle}</div>
+        <div class="item-part item-date">Date Created: ${date}</div>
+        <a   class="item-part item-link" href="http://${link}">Link to Project</a>
     </div>
 </div>
 `;
