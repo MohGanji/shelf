@@ -69,5 +69,24 @@ const Templates  = {
 </div>
 `;
         return Util.strToHtml(templateString);
-    }
+    },
+
+    blogpost: (title, subtitle, date) => {
+        let templateString = `
+<div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}.html'">
+    <!--
+    <div class="col img-container">
+        <img class="item-image" src="/assets/books/${Util.fmt(title)}.jpg" width="100%" height="auto" />
+    </div>
+    -->
+    <div class="col other-container">
+        <div class="item-part item-title">${title}</div>
+        <div class="item-part item-subtitle">${subtitle}</div>
+        <a   class="item-part item-link" href="./${Util.fmt(title)}.html">Read more</a>
+        <div class="item-part item-date">Written on: ${date}</div>
+    </div>
+</div>
+`;
+        return Util.strToHtml(templateString);
+    },
 }
