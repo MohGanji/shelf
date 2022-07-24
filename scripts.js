@@ -62,9 +62,9 @@ const Templates  = {
     </div>
     <div class="col other-container">
         <div class="item-part item-title">${title}</div>
+        <a   class="item-part item-link" href="http://${link}">Link to Project</a>
         <div class="item-part item-subtitle">${subtitle}</div>
         <div class="item-part item-date">Date Created: ${date}</div>
-        <a   class="item-part item-link" href="http://${link}">Link to Project</a>
     </div>
 </div>
 `;
