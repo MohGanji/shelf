@@ -1,6 +1,6 @@
 const projects = [
     {
-        title: 'Ecotine',
+        title: 'BlogFrog',
         subtitle: `
             I was working, after a half hour or so, I unconciously opened a new tab, typed in: "twitter.com".
             Next thing I know is I'm scrolling down my twitter feed for an hour.
@@ -11,13 +11,13 @@ const projects = [
             I learn a lot reading those and getting to know those people.
             But I never seem to find the time to read these blogs constantly, and deciding which blog to open? Don't even open that door.
             <br>
-            So I built Ecotine.
+            So I built <i>BlogFrog</i>.
             It's a simple website with one button, that's all.
-            So now every time I get tired of work, or I want to lose focus, I open ecotine.
+            So now every time I get tired of work, or I want to lose focus, I open <i>BlogFrog</i>.
             I let the button take me somewhere random on the internet. I read one blog post, learn something, and I get back to work. 
-            Because there is no infinite scrolling feed after that.            
+            Because there is no infinite scrolling feed after that.
         `,
-        link: 'ecotine.ganji.blog',
+        link: 'blogfrog.ganji.blog',
         date: '2022-07',
     },
 ]
