@@ -3,7 +3,7 @@ const projects = [
         title: 'BlogFrog',
         subtitle: `
             I was working, after a half hour or so, I unconciously opened a new tab, typed in: "twitter.com".
-            Next thing I know is I'm scrolling down my twitter feed for an hour.
+            Next thing I know is I'm doomscrolling down my twitter feed for an hour.
             This is me every day. 
             <br>
             There's also another side of me, that likes to read blogs.
@@ -17,7 +17,7 @@ const projects = [
             I let the button take me somewhere random on the internet. I read one blog post, learn something, and I get back to work. 
             Because there is no infinite scrolling feed after that.
         `,
-        link: 'blogfrog.ganji.blog',
+        link: 'blogfrog.xyz',
         date: '2022-07',
     },
 ]

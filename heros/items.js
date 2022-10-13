@@ -22,7 +22,7 @@ const heros = [
     {
         title: 'Tim Urban',
         subtitle: `
-            A hyper-curious blogger. 
+            A hyper-curious blogger.
             His blog posts contain stick figure comics for better illustration. 
             He is a genius in simplifying stuff and organizing complicated matters into a digestable blog posts.
         `,
@@ -32,8 +32,8 @@ const heros = [
     {
         title: 'Seth Godin',
         subtitle: `
-            Wise, intuitive, disciplined. 
-            His blog is one of the blogs I almost daily follow.
+            Wise, intuitive, disciplined.
+            His blog is one of the blogs I follow almost daily.
         `,
         date: '2022-07',
         website: 'seth.blog'
@@ -51,26 +51,26 @@ const heros = [
         title: 'Austin Kleon',
         subtitle: `
             A writer who draws.
-            I love his writings, and the way he thinks.
+            I love his books, writings, and the way he thinks.
             His blog is one of my favorites as I always stumble upon new fascinating books and blogs there.
         `,
         date: '2022-07',
         website: 'austinkleon.com'
     },
-    {
-        title: 'Naval Ravikant',
-        subtitle: `
-            I can sit down and thing, analyze, and zone out for hours on every one of his blog posts.
-            His writings are heavy, deep, and educational.
-        `,
-        date: '2022-07',
-        website: 'nav.al'
-    },
+    // {
+    //     title: 'Naval Ravikant',
+    //     subtitle: `
+    //         His writings are heavy, deep, and thought-provoking.
+    //     `,
+    //     date: '2022-07',
+    //     website: 'nav.al'
+    // },
     {
         title: 'Chip Wilson',
         subtitle: `
-            The founder of Lululemon. 
-            His life principles are heavily influencial.
+            The founder of Lululemon.
+            I'm much influenced by his life principles, 
+            like the one on his website: count the remaining days of your life.
         `,
         date: '2022-07',
         website: 'chipwilson.com'
