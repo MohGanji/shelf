@@ -107,7 +107,7 @@ p.quote-fa {
 }
 
 .item:not(:last-child) {
-    margin-bottom: 4vh;
+    margin-bottom: 0vh;
 }
 
 .img-container {
@@ -128,6 +128,15 @@ p.quote-fa {
     font-size: xx-large;
     font-weight: bold;
 }
+.item-title-small {
+    font-size: large;
+    font-weight: normal;
+}
+.horizontal {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
 .item-subtitle {
     font-size: large;
 }

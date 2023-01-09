@@ -14,7 +14,7 @@
     </script>
     <!-- End gtag.js -->
 
-    <title> My little shelf </title>
+    <title> Ganji.blog </title>
 
     <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
@@ -30,114 +30,21 @@
   <body>
     <div class="container">
       <div class="item-title">The eShelf</div>
-        <div class="item-description item-subtitle">
-          <!-- <p>
-            When I go to someone's room, the first thing that grabs my attention is their shelf.
-            It tells a lot about that person -
-            the books, decorations, sentimental items, whether it's tidy or not, whether its dusty, ... .
-          </p>
+        <div class="item-description item-subtitle subcontainer">
           <p>
-              Shelves are in front of us. We see them every single day.
-              We use items on our shelves to express ourselves, to remember things, and to keep the things we love and are proud of.
-          </p> -->
-          <p>
-              This here is my little shelf, on the corner of the internet. <br>
               This is where I put my favorite stuff.
           </p>
           <p>
-            Find out more <a href="/me">about me</a>.
+            Find out more <a href="./me.html">about me</a>.
           </p>
+          <!-- <p>
+            Let's keep in touch: <form action="subscribe here"></form>
+          </p> -->
         </div>
-    </div>
-
-    <div id="shelf">
-      <div class="row">
-        <div class="cell" id="books">
-          <img class="img top-img clickable" 
-               src="./assets/books.png" height="80%" width="auto" 
-               onclick="window.location.href = './library/'">
-          <img class="img bottom-img" src="./assets/books-hover.png" height="80%" width="auto">
-          <div class="title">eLibrary</div>
-        </div>
-        <div class="cell decor" id="moai">
-          <!-- <img class="img bottom-img" src="./assets/moai.png" height="85%" width="auto"> -->
-        </div>
-        <div class="cell" id="personal-blog">
-          <img class="img top-img clickable" 
-               src="./assets/inkwell.png" height="95%" width="auto"
-               onclick="window.location.href = './blog/'">
-          <img class="img bottom-img" src="./assets/inkwell-hover.png" height="95%" width="auto">
-          <div class="title">Personal Blog</div>
-        </div>
-
-      </div>
-      <div class="row">
-        <div class="cell" id="stories">
-          <!-- <img class="img top-img clickable" 
-               src="./assets/owl.png" height="80%" width="auto"
-               onclick="window.location.href = './stories/'">
-          <img class="img bottom-img" src="./assets/owl-hover.png" height="80%" width="auto">
-          <div class="title">True Stories</div> -->
-        </div>
-        <div class="cell decor" id="bigben">
-          <!-- <img class="img bottom-img" src="./assets/bigben.png" height="95%" width="auto"> -->
-        </div>
-        <div class="cell" id="superheros">
-          <img class="img top-img clickable" 
-               src="./assets/superhero.png" height="95%" width="auto"
-               onclick="window.location.href = './heros/'">
-          <img class="img bottom-img" src="./assets/superhero-hover.png" height="95%" width="auto">
-          <div class="title">Heros</div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="cell" id="projects">
-          <img class="img top-img clickable" 
-               src="./assets/laptop.png" height="90%" width="auto"
-               onclick="window.location.href = './projects/'">
-          <img class="img bottom-img" src="./assets/laptop-hover.png" height="90%" width="auto">
-          <div class="title">Projects</div>
-        </div>
-
-        <div class="cell decor" id="eiffel">
-          <!-- <img class="img bottom-img" src="./assets/eiffel.png" height="95%" width="auto"> -->
-        </div>
-        <div class="cell" id="tech-blog">
-          <!-- <img class="img top-img clickable" 
-               src="./assets/typewriter.png" height="85%" width="auto"
-               onclick="window.location.href = './tech-blog/'">
-          <img class="img bottom-img" src="./assets/typewriter-hover.png" height="85%" width="auto">
-          <div class="title">Tech Blog</div> -->
-        </div>
-      </div>
-      <div class="row">
-        <div class="cell" id="photography">
-          <img class="img top-img clickable" 
-               src="./assets/camera.png" height="50%" width="auto"
-               onclick="window.location.href = './photos/'">
-          <img class="img bottom-img" src="./assets/camera-hover.png" height="50%" width="auto">
-          <div class="title">Photos</div>
-        </div>
-        <!-- <div class="cell" id="contact"> -->
-          <!-- <img class="img top-img clickable" 
-               src="./assets/telephone.png" height="65%" width="auto"
-               onclick="window.location.href = './contact/'">
-          <img class="img bottom-img" src="./assets/telephone-hover.png" height="65%" width="auto">
-          <div class="title">Contact</div> -->
-        <!-- </div> -->
-        <div class="cell decor" id="pyramids">
-          <!-- <img class="img bottom-img" src="./assets/pyramids.png" height="65%" width="auto"> -->
-        </div>
-        <div class="cell" id="now">
-          <!-- <img class="img top-img clickable" 
-               src="./assets/sandtime.png" height="90%" width="auto"
-               onclick="window.location.href = './now/'">
-          <img class="img bottom-img" src="./assets/sandtime-hover.png" height="90%" width="auto">
-          <div class="title">Now</div> -->
-        </div>
-      </div>
+        <div id="items-container" class=""></div>
     </div>
 
     <script type="text/javascript" src="./scripts.js"></script>
+    <script src="./items.js"></script>
   </body>
 </html>
