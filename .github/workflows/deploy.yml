@@ -8,13 +8,10 @@ jobs:
   pull-updates:
     runs-on: self-hosted
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - run: echo "🎉 Deploying on server..."
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Runs a single command using the runners shell
       - name: Run a git pull
         run: cd /var/www/ganji.blog && git pull origin master
+      - run: echo "🍏 Job done ${{ job.status }}."
