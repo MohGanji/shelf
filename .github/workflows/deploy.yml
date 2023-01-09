@@ -5,7 +5,7 @@ on:
     branches: [master]
   workflow_dispatch:
 jobs:
-  Pull updates:
+  pull-updates:
     runs-on: self-hosted
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
