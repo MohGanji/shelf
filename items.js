@@ -6,7 +6,7 @@ const posts = [
         date: '2023-01',
     },
     {
-        title: 'Bored of reading this blog? Discover new ones with `BlogFrog`',
+        title: 'Tired of reading this blog? Discover new ones with `BlogFrog`',
         url: 'blogfrog',
         subtitle: `
             I was working, after a half hour or so, I unconciously opened a new tab, typed in: "twitter.com".
