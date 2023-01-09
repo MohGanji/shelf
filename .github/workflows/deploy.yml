@@ -1,8 +1,11 @@
 name: Deploy
 run-name: ${{ github.actor }} is Deploying website 🚀
-on: [push]
+on: 
+  push:
+    branches: [master]
+  workflow_dispatch:
 jobs:
-  Explore-GitHub-Actions:
+  Pull updates:
     runs-on: self-hosted
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -10,3 +13,8 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - run: echo "🍏 This job's status is ${{ job.status }}."
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      # Runs a single command using the runners shell
+      - name: Run a git pull
+        run: git pull origin master
