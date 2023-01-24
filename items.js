@@ -1,5 +1,11 @@
 const posts = [
     {
+        title: "Do it 100 times first, then we'll talk",
+        url: '100',
+        subtitle: '',
+        date: '2023-01',
+    },
+    {
         title: "Need a hug? Read `The boy, the mole, the fox and the horse`",
         url: 'boy mole fox horse',
         subtitle: '',
