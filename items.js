@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: 'There is no right way, only your way',
+    url: 'right-way',
+    subtitle: '',
+    date: '2023-02',
+  },
+  {
     title: 'Math can be fun, they said',
     url: 'grahams-number',
     subtitle: '',
