@@ -46,7 +46,7 @@ const posts = [
     date: '2022-07',
   },
   {
-    title: 'Afraid of what people might think? Read `The Courage to Be Disliked`',
+    title: 'Afraid of what people might think?',
     url: 'The Courage to Be Disliked',
     subtitle: `
             This book combines philosophy with psychology in a story format.
