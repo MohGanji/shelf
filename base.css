@@ -146,6 +146,7 @@ p.quote-fa {
 }
 .item-date {
     font-size: medium;
+    word-break: keep-all;
 }
 .item-image {
     border-radius: 8px;
