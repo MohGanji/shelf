@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: 'Standup Reading',
+    url: 'standup-reading',
+    subtitle: '',
+    date: '2023-02',
+  },
+  {
     title: 'There is no right way, only your way',
     url: 'right-way',
     subtitle: '',
