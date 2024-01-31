@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;400&display=swap');
 /* Image Dimentions: 907 × 1227 */
 :root {
     --background-color: #010e11c1; /* #150734 */
@@ -8,7 +9,7 @@
 
     --container-color: #071E22;
     --container-height: 80vh;
-    --container-width: 70vw;
+    --container-width: 72vw;
     --container-height-mobile: 80vh;
     --container-width-mobile: 90vw;
 }
@@ -22,11 +23,15 @@ body {
     margin: 0 !important;
 
     background-color: var(--background-color) ;
-    font-family: 'Montserrat','Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    /* font-family: 'Montserrat', 'Georgia','Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; */
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 100;
+    font-size: medium;
+
 }
 
 a {
-    font-weight: 600;
+    font-weight: 200;
     color: var(--url-color);
     text-decoration: underline;
 }
@@ -35,8 +40,9 @@ a:hover {
 }
 
 p {
-    margin-top: 1.5em;
-    margin-bottom: 1.5em;
+    margin-top: 1.2em;
+    margin-bottom: 1.2em;
+    line-height: 150%;
 }
 
 p.quote {
@@ -63,7 +69,7 @@ p.quote-fa {
 .container {
     margin: 4vh auto;
     padding: 4vh 4vw;
-    border-radius: 1px;
+    border-radius: 4px;
     /* height: var(--container-height); */
     width: var(--container-width);
     max-width: 700px;
@@ -125,8 +131,8 @@ p.quote-fa {
     font-weight: bold;
 }
 .item-title-small {
-    font-size: large;
-    font-weight: normal;
+    font-size: medium;
+    font-weight: 200;
 }
 .horizontal {
     flex-direction: row;
@@ -134,7 +140,7 @@ p.quote-fa {
 }
 
 .item-subtitle {
-    font-size: large;
+    font-size: medium;
 }
 .item-link {
     font-size: medium;
@@ -142,6 +148,8 @@ p.quote-fa {
 .item-date {
     font-size: medium;
     word-break: keep-all;
+    min-width: 65px;
+    text-align: end;
 }
 .item-image {
     border-radius: 8px;
