@@ -25,13 +25,13 @@ body {
     background-color: var(--background-color) ;
     /* font-family: 'Montserrat', 'Georgia','Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif; */
     font-family: 'Montserrat', sans-serif;
-    font-weight: 100;
+    font-weight: 200;
     font-size: medium;
 
 }
 
 a {
-    font-weight: 200;
+    font-weight: 400;
     color: var(--url-color);
     text-decoration: underline;
 }
@@ -132,7 +132,7 @@ p.quote-fa {
 }
 .item-title-small {
     font-size: medium;
-    font-weight: 200;
+    font-weight: 400;
 }
 .horizontal {
     flex-direction: row;
