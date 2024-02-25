@@ -130,6 +130,14 @@ p.quote-fa {
     font-size: xx-large;
     font-weight: bold;
 }
+.mini-text-title {
+    font-size: small;
+    font-weight: 200;
+}
+.mini-text-p {
+    font-size: x-small;
+    font-weight: 200;
+}
 .item-title-small {
     font-size: medium;
     font-weight: 400;
@@ -159,6 +167,18 @@ p.quote-fa {
 
 .italic {
     font-style: italic;
+}
+
+hr {
+    margin: 0 auto;
+    margin-top: 2.4em;
+    margin-bottom: 2.4em;
+    /* margin-top: 40px;
+    margin-bottom: 40px; */
+    width: 50%;
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0));
 }
 
 @media screen and (max-width: 600px) {
