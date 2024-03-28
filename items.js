@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: 'The Shelf',
+    url: 'the-shelf',
+    subtitle: '',
+    date: '2024-03',
+  },
+  {
     title: 'Life is like an apple',
     url: 'apple',
     subtitle: '',

@@ -30,6 +30,10 @@ body {
 
 }
 
+img {
+    width: 100%;
+}
+
 a {
     font-weight: 400;
     color: var(--url-color);
