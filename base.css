@@ -27,7 +27,7 @@ body {
     font-family: 'Montserrat', sans-serif;
     font-weight: 200;
     font-size: medium;
-
+    text-underline-offset: 3px;
 }
 
 img {
@@ -139,7 +139,7 @@ p.quote-fa {
     font-weight: 200;
 }
 .mini-text-p {
-    font-size: x-small;
+    font-size: small;
     font-weight: 200;
 }
 .item-title-small {
