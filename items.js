@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: 'My Favorite Blog Posts, A Growing List',
+    url: 'fav-blogs',
+    subtitle: '',
+    date: '2024-04',
+  },
+  {
     title: 'The Shelf',
     url: 'the-shelf',
     subtitle: '',
