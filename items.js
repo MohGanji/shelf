@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: 'This is what my perfectionism helped me achieve last year',
+    url: 'perfectionism',
+    subtitle: '',
+    date: '2024-05',
+  },
+  {
     title: 'My Favorite Blog Posts, A Growing List',
     url: 'fav-blogs',
     subtitle: '',
