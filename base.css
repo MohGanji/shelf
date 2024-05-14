@@ -173,6 +173,10 @@ p.quote-fa {
     font-style: italic;
 }
 
+.footer {
+    display: inline-block;
+}
+
 hr {
     margin: 0 auto;
     margin-top: 2.4em;
