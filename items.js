@@ -48,13 +48,13 @@ const posts = [
     date: '2023-01',
   },
   {
-    title: 'Need a hug? Read `The boy, the mole, the fox and the horse`',
+    title: 'The boy, the mole, the fox and the horse',
     url: 'boy mole fox horse',
     subtitle: '',
     date: '2023-01',
   },
   {
-    title: 'Tired of reading this blog? Discover new ones with `BlogFrog`',
+    title: 'I built a blog post dispenser',
     url: 'blogfrog',
     subtitle: `
             I was working, after a half hour or so, I unconciously opened a new tab, typed in: "twitter.com".
