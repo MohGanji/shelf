@@ -1,6 +1,6 @@
 const posts = [
   {
-    title: 'This is what my perfectionism helped me achieve last year',
+    title: "Here's a list of everything you can achieve if you’re a perfectionist",
     url: 'perfectionism',
     subtitle: '',
     date: '2024-05',
