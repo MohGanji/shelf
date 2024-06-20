@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: "1 + 1 > 2",
+    url: 'one-plus-one',
+    subtitle: '',
+    date: '2024-06',
+  },
+  {
     title: "Here's a list of everything you can achieve if you’re a perfectionist",
     url: 'perfectionism',
     subtitle: '',
