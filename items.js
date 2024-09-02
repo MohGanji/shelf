@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: "Things you cannot learn from reading books",
+    url: 'not-in-books',
+    subtitle: '',
+    date: '2024-08',
+  },
+  {
     title: "Steve",
     url: 'steve',
     subtitle: '',
