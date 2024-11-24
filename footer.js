@@ -19,3 +19,14 @@ function footer() {
 }
 
 document.addEventListener('DOMContentLoaded', footer);
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('#gumroad-follow-form-embed-button').addEventListener('click', function() {
+        gtag('event', 'subscribe_button_clicked', {
+            'event_category': 'subscribe_newsletter',
+            'event_label': window.location.pathname,
+            'page_url': window.location.href,
+            'is_empty': document.querySelector('#gumroad-follow-form-embed-input').value === '' ? 'yes' : 'no'
+        });
+    });
+});
