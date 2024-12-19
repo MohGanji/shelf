@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: "How computers evolved",
+    url: 'computer',
+    subtitle: '',
+    date: '2024-12',
+  },
+  {
     title: "Space on a pedestal",
     url: 'space',
     subtitle: '',
