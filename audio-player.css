@@ -1,9 +1,8 @@
 .audio-player {
-    font-family: Arial, sans-serif;
     margin: 20px auto;
     padding: 20px;
-    border: 1px solid var(--quote-color);
-    border-radius: 8px;
+    border: solid .0625rem rgb(221 221 221/0.35);
+    border-radius: 0.25rem;
     background-color: var(--quote-bg-color);
 }
 
