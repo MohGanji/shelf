@@ -38,11 +38,37 @@
     <title>Space on a pedestal </title>
 
     <link rel="stylesheet" href="../base.css" />
+    <link rel="stylesheet" href="../audio-player.css" />
   </head>
   <body>
     <div class="container">
       <div id="description-container" class="subcontainer">
         <div class="item-title">Space on a pedestal </div>
+        
+        <div class="audio-player" data-src="assets/audio/space.mp3">
+          <audio></audio>
+          <div class="controls">
+              <button id="playPauseBtn" class="play-pause" aria-label="Play">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="play-icon">
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pause-icon">
+                      <rect x="6" y="4" width="4" height="16"></rect>
+                      <rect x="14" y="4" width="4" height="16"></rect>
+                  </svg>
+              </button>
+              <div class="time-container">
+                  <span id="currentTime">0:00</span>
+                  <div id="progressBar" class="progress-bar">
+                      <div id="progress" class="progress"></div>
+                  </div>
+                  <span id="duration">0:00</span>
+              </div>
+              <button id="speedBtn" class="speed-btn">1x</button>
+          </div>
+      </div>
+      <script src="audio-player.js"></script>
+        
         <div class="item-description item-subtitle">
             <p class="quote">
                 One needs only the desire and willpower to unplug from the grid, 
