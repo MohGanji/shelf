@@ -26,12 +26,31 @@
             <div class="item-title">Mo Ganji</div>
             <div class="portfolio-items">
                 <div class="portfolio-item">
+                    <iframe class="content-media" src="./assets/resume.pdf"
+                                width="100%"
+                                style="background: var(--background-color-2); border-radius: 0.25rem;"
+                                frameborder="0"></iframe>
+                <a class="content-link" href="./assets/resume.pdf">
+                    <span class="link-text">My Resume</span>
+                    <svg 
+                        role="img"
+                        viewBox="0 0 24 24"
+                        width="1.2rem" height="auto" 
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <title>My resume</title>
+                        <path fill="var(--url-color)" d="M14.568.075c.48.038.957.18 1.355.578l4.923 4.923a2.534 2.534 0 0 1 .578 1.355v12.614c0 1.702-1.345 3.08-3 3.08H5.577c-1.655 0-3-1.378-3-3.08V3.155c0-1.702 1.345-3.08 3-3.08h8.99zM14.25 1.75H5.577c-.763 0-1.327.601-1.327 1.405v16.39c0 .804.564 1.405 1.327 1.405h12.846c.763 0 1.327-.601 1.327-1.405V7.535L14.25 1.75z M7 8h10v1H7V8zm0 4h10v1H7v-1zm0 4h7v1H7v-1z"/>
+                    </svg>
+                    
+                </a>
+            </div>
+                <div class="portfolio-item">
                         <iframe class="content-media" src="https://neonomad.substack.com/embed" 
                                     width="100%" 
                                     style="background: var(--background-color-2); border-radius: 0.25rem;" 
                                     frameborder="0" 
                                     scrolling="no"></iframe>
-                    <a class="content-link">
+                    <a class="content-link" href="https://neonomad.substack.com">
                         <span class="link-text">Substack Newsletter</span>
                         <svg 
                             role="img" 
@@ -46,14 +65,10 @@
                     </a>
                 </div>
                 <div class="portfolio-item">
-                        <picture class="content-media">
-                            <source
-                              srcset="https://github-readme-stats.vercel.app/api?username=mohganji&show_icons=true&theme=noctis_minimus&bg_color=00000000&hide_border=true"
-                              media="(prefers-color-scheme: dark)"
-                            />
-                            <img src="https://github-readme-stats.vercel.app/api?username=MohGanji&show_icons=true" />
-                          </picture>
-                    <a class="content-link">
+                    <div class="content-media">
+                        <img src="./assets/github.png" alt="">
+                    </div>
+                    <a class="content-link" href="https://github.com/MohGanji">
                         <span class="link-text">GitHub Profile</span>
                         <svg 
                             role="img" 
@@ -66,9 +81,11 @@
                         </svg>
                 </a>
             </div>
+            <!-- other projects will be added here dynamically -->
         </div>
     </div>
     <a class="item-subtitle" href="/">Homepage</a>
+    <script src="/portfolio.js"></script>
 </div>
 
 </body>
