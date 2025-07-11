@@ -32,6 +32,13 @@ const projects = [
         image: "./assets/jscope.png",
     },
     {
+        title: "Daily Timeblock notion template",
+        description: "After reading 'Deep Work' by Cal Newport (great read btw), I was inspired to use his time blocking technique for my daily planning. So I built this notion template to help me timeblock and keep logs of my days for retrospection. The template available for free from the link below.",
+        // techStack: "Html, CSS, JavaScript",
+        link: "https://ganjim.gumroad.com/l/daily-timeblock",
+        image: "./assets/notion-timeblock.png",
+    },
+    {
         title: "BlogFrog.xyz",
         description: "Blogfrog is a blog post dispencer that takes user to a random blog post from my favorite writers. I created it to replace my doomscrolling on twitter and instagram with reading blogs.",
         // techStack: "Html, CSS, JavaScript",
