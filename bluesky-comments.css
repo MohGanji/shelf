@@ -1,0 +1,525 @@
+/* Bluesky Comments Styles */
+/* Matches the existing blog design with dark theme and proper spacing */
+
+.bsky-comments {
+    margin-top: 2.4em;
+    border-top: 1px solid var(--text-color);
+    padding-top: 2.4em;
+}
+
+/* Loading, Error, and Empty States */
+.bsky-loading,
+.bsky-error,
+.bsky-empty {
+    text-align: center;
+    padding: 2em 1em;
+    color: var(--quote-color);
+    font-style: italic;
+}
+
+.bsky-error {
+    color: #ff6b6b;
+}
+
+.bsky-empty p {
+    margin-bottom: 1em;
+}
+
+/* Main Post Header */
+.bsky-main-post {
+    margin-bottom: 2em;
+}
+
+.bsky-main-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1em;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.bsky-main-post-header h3 {
+    margin: 0;
+    font-size: large;
+    font-weight: 400;
+    color: var(--text-color);
+}
+
+.bsky-main-post-meta {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    font-size: small;
+    color: var(--quote-color);
+}
+
+.bsky-main-post-original {
+    font-size: small;
+    color: var(--quote-color);
+    padding: 0.5em 0;
+}
+
+.bsky-main-post-original a {
+    color: var(--url-color);
+}
+
+/* Join Conversation Link */
+.bsky-join-conversation {
+    color: var(--url-color) !important;
+    text-decoration: underline;
+    font-size: small;
+    font-weight: 400;
+}
+
+.bsky-join-conversation:hover {
+    background-color: var(--quote-bg-color);
+}
+
+/* Replies Container */
+.bsky-replies {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+}
+
+/* Individual Reply */
+.bsky-reply {
+    border: none;
+    border-radius: 0;
+    padding: 1em 0;
+    transition: opacity 0.2s ease;
+}
+
+.bsky-reply:hover {
+    opacity: 0.8;
+}
+
+/* Reply Header */
+.bsky-reply-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.8em;
+    gap: 0.8em;
+    flex-wrap: wrap;
+}
+
+.bsky-reply-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--quote-color);
+}
+
+.bsky-reply-author {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    flex-grow: 1;
+}
+
+.bsky-reply-name {
+    font-weight: 400;
+    color: var(--text-color);
+    font-size: medium;
+}
+
+.bsky-reply-handle {
+    font-size: small;
+    color: var(--quote-color);
+}
+
+.bsky-reply-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3em;
+    font-size: small;
+}
+
+.bsky-reply-date {
+    color: var(--quote-color);
+}
+
+.bsky-reply-link {
+    color: var(--url-color) !important;
+    text-decoration: none;
+    font-size: x-small;
+}
+
+.bsky-reply-link:hover {
+    text-decoration: underline;
+}
+
+/* Reply Content */
+.bsky-reply-content {
+    line-height: 150%;
+    margin-bottom: 1em;
+    word-wrap: break-word;
+}
+
+.bsky-reply-content a {
+    color: var(--url-color);
+    text-decoration: underline;
+}
+
+.bsky-reply-content a:hover {
+    background-color: var(--quote-bg-color);
+}
+
+/* Reply Statistics */
+.bsky-reply-stats {
+    display: flex;
+    gap: 1em;
+    font-size: small;
+    color: var(--quote-color);
+    margin-top: 0.8em;
+    padding-top: 0.8em;
+    border-top: 1px solid rgba(236, 236, 236, 0.1);
+}
+
+.bsky-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
+
+/* Embeds */
+.bsky-reply-embed {
+    margin: 1em 0;
+}
+
+/* Image Embeds */
+.bsky-images {
+    margin: 1em 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.bsky-images-single {
+    display: block;
+}
+
+.bsky-images-two,
+.bsky-images-three,
+.bsky-images-four {
+    display: grid;
+    gap: 2px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 1fr;
+}
+
+.bsky-image-container {
+    position: relative;
+    overflow: hidden;
+    padding-top: 100%; /* Aspect ratio 1:1 */
+}
+
+.bsky-embed-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.bsky-embed-image:hover {
+    opacity: 0.9;
+}
+
+.bsky-more-images {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--quote-bg-color);
+    color: var(--text-color);
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.bsky-more-images:hover {
+    background-color: var(--background-color-2);
+}
+
+/* External Link Embeds */
+.bsky-external-link {
+    display: block;
+    border-left: 3px solid var(--url-color);
+    border-radius: 0;
+    padding: 0.8em;
+    padding-left: 1.2em;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s ease;
+    margin: 1em 0;
+}
+
+.bsky-external-link:hover {
+    opacity: 0.8;
+    text-decoration: none;
+}
+
+.bsky-external-content {
+    display: flex;
+    gap: 0.8em;
+    align-items: flex-start;
+}
+
+.bsky-external-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.bsky-external-text {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.bsky-external-title {
+    font-weight: 400;
+    color: var(--text-color);
+    margin-bottom: 0.3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bsky-external-description {
+    font-size: small;
+    color: var(--quote-color);
+    margin-bottom: 0.3em;
+    line-height: 140%;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.bsky-external-uri {
+    font-size: x-small;
+    color: var(--url-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Quote Embeds */
+.bsky-quote {
+    border-left: 3px solid var(--quote-color);
+    border-radius: 0;
+    padding: 0.8em;
+    padding-left: 1.2em;
+    margin: 1em 0;
+    background-color: transparent;
+}
+
+.bsky-quote-author {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.8em;
+    flex-wrap: wrap;
+}
+
+.bsky-quote-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.bsky-quote-name {
+    font-weight: 400;
+    color: var(--text-color);
+    font-size: small;
+}
+
+.bsky-quote-handle {
+    color: var(--quote-color);
+    font-size: x-small;
+}
+
+.bsky-quote-date {
+    color: var(--quote-color);
+    font-size: x-small;
+    margin-left: auto;
+}
+
+.bsky-quote-content {
+    font-size: small;
+    line-height: 140%;
+    color: var(--quote-color);
+}
+
+/* Unsupported Embeds */
+.bsky-embed-unsupported {
+    padding: 0.8em;
+    border: 1px dashed var(--quote-color);
+    border-radius: 4px;
+    text-align: center;
+    font-size: small;
+    color: var(--quote-color);
+    font-style: italic;
+    margin: 1em 0;
+}
+
+/* Collapsible Comment Threads */
+.bsky-expand-btn {
+    background: none;
+    border: none;
+    color: var(--url-color);
+    cursor: pointer;
+    font-size: small;
+    padding: 0.2em 0;
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    transition: color 0.2s ease;
+}
+
+.bsky-expand-btn:hover {
+    color: var(--text-color);
+    text-decoration: underline;
+}
+
+.bsky-expand-icon {
+    font-size: x-small;
+    transition: transform 0.2s ease;
+}
+
+.bsky-reply-expandable {
+    position: relative;
+}
+
+.bsky-replies-nested {
+    margin-top: 0.5em;
+}
+
+/* Threading Indentation */
+.bsky-reply[data-depth="0"] {
+    margin-left: 0;
+}
+
+.bsky-reply[data-depth="1"] {
+    margin-left: 20px;
+    border-left: 2px solid var(--quote-color);
+    padding-left: 1em;
+}
+
+.bsky-reply[data-depth="2"] {
+    margin-left: 40px;
+    border-left: 2px solid var(--quote-color);
+    padding-left: 1em;
+}
+
+.bsky-reply[data-depth="3"] {
+    margin-left: 60px;
+    border-left: 2px solid var(--quote-color);
+    padding-left: 1em;
+}
+
+.bsky-reply[data-depth="4"] {
+    margin-left: 80px;
+    border-left: 2px solid var(--quote-color);
+    padding-left: 1em;
+}
+
+.bsky-reply[data-depth="5"] {
+    margin-left: 100px;
+    border-left: 2px solid var(--quote-color);
+    padding-left: 1em;
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 600px) {
+    .bsky-reply-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5em;
+    }
+    
+    .bsky-reply-meta {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 1em;
+    }
+    
+    .bsky-main-post-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .bsky-external-content {
+        flex-direction: column;
+    }
+    
+    .bsky-external-thumb {
+        width: 100%;
+        height: 120px;
+    }
+    
+    .bsky-images-two {
+        grid-template-columns: 1fr;
+    }
+    
+    .bsky-images-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Reduce indentation on mobile */
+    .bsky-reply[data-depth="1"] {
+        margin-left: 10px;
+    }
+    
+    .bsky-reply[data-depth="2"] {
+        margin-left: 20px;
+    }
+    
+    .bsky-reply[data-depth="3"] {
+        margin-left: 30px;
+    }
+    
+    .bsky-reply[data-depth="4"] {
+        margin-left: 40px;
+    }
+    
+    .bsky-reply[data-depth="5"] {
+        margin-left: 50px;
+    }
+    
+    .bsky-quote-author {
+        gap: 0.3em;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .bsky-reply,
+    .bsky-external-link,
+    .bsky-embed-image {
+        transition: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .bsky-reply {
+        border-color: var(--text-color);
+    }
+    
+    .bsky-external-link {
+        border-color: var(--text-color);
+    }
+    
+    .bsky-quote {
+        border-color: var(--text-color);
+    }
+}

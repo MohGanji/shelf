@@ -4,6 +4,7 @@ const posts = [
     url: 'computer',
     subtitle: '',
     date: '2024-12',
+    bsky_url: "https://bsky.app/profile/ganji.me/post/3ldoyb3bju22t",
   },
   {
     title: "Space on a pedestal",
@@ -130,7 +131,15 @@ const posts = [
   // url: the last portion of the url, should be short, one or two word thingy, memorable.
   // subtitle, will not appear here, but will be used for other socials for engagement.
   // date: just to have a list of how frequently I'm writing.
+  // bsky_url: Bluesky post URL to enable comments.
 ]
-let items = posts.map((post) => Templates.blogpost(post.title, post.url, post.subtitle, post.date))
+
+// Make posts globally available for Bluesky comments component
+window.blogPosts = posts;
+
+// Only render items list if we're on the homepage (has items-container)
 let containerElement = document.getElementById('items-container')
-items.forEach((item) => containerElement.appendChild(item))
+if (containerElement) {
+    let items = posts.map((post) => Templates.blogpost(post.title, post.url, post.subtitle, post.date))
+    items.forEach((item) => containerElement.appendChild(item))
+}
