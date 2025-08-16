@@ -136,6 +136,18 @@ p.quote-fa {
     font-size: xx-large;
     font-weight: bold;
 }
+
+/* Navigation Row Styles */
+.nav-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: left;
+    gap: 2rem;
+    margin-top: 1.2em;
+    margin-bottom: 1.2em;
+}
+
 .mini-text-title {
     font-size: small;
     font-weight: 200;
@@ -204,5 +216,14 @@ hr {
         /* height: var(--container-height-mobile); */
         width: var(--container-width-mobile);
         margin: 4vh auto;
+    }
+    
+    /* Mobile Navigation Styles */
+    .nav-row {
+        gap: 0.6rem;
+        margin-top: 0.6em;
+        margin-bottom: 0.6em;
+        flex-wrap: wrap;
+        justify-content: space-between;
     }
 }
