@@ -696,8 +696,35 @@
             render();
         }
 
+        function measureNodeWidth(nodeId) {
+            const node = state.nodes[nodeId];
+            const tempEl = document.createElement('div');
+            tempEl.className = 'node';
+            tempEl.style.position = 'absolute';
+            tempEl.style.visibility = 'hidden';
+            tempEl.style.whiteSpace = 'pre-wrap';
+            tempEl.innerText = node.text;
+            document.body.appendChild(tempEl);
+            const width = Math.max(tempEl.offsetWidth, 100);
+            document.body.removeChild(tempEl);
+            return Math.min(width, 280);
+        }
+
         function calculateLayout() {
             const layoutData = {};
+            const nodeWidths = {};
+            const HORIZONTAL_PADDING = 80;
+            const BORDER_WIDTH = 2;
+            const SHADOW_OFFSET = 4;
+            
+            Object.keys(state.nodes).forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.offsetWidth > 0) {
+                    nodeWidths[id] = Math.min(Math.max(el.offsetWidth, 100), 280);
+                } else {
+                    nodeWidths[id] = measureNodeWidth(id);
+                }
+            });
             
             function measure(nodeId, depth) {
                 const node = state.nodes[nodeId];
@@ -712,9 +739,9 @@
                 }
                 
                 layoutData[nodeId] = { 
-                    width: NODE_WIDTH, 
+                    width: nodeWidths[nodeId] || NODE_WIDTH, 
                     height: height, 
-                    x: depth * 250, 
+                    x: 0,
                     y: 0,
                     depth: depth 
                 };
@@ -722,6 +749,22 @@
             }
             
             measure(state.rootId, 0);
+
+            function assignX(nodeId, xOffset) {
+                const node = state.nodes[nodeId];
+                const data = layoutData[nodeId];
+                const nodeWidth = nodeWidths[nodeId] || NODE_WIDTH;
+                const totalNodeWidth = nodeWidth + (BORDER_WIDTH * 2) + SHADOW_OFFSET;
+                
+                data.x = xOffset;
+                
+                if (node.children.length > 0) {
+                    const childXOffset = xOffset + totalNodeWidth + HORIZONTAL_PADDING;
+                    node.children.forEach(childId => {
+                        assignX(childId, childXOffset);
+                    });
+                }
+            }
 
             function assignY(nodeId, yOffset) {
                 const node = state.nodes[nodeId];
@@ -737,6 +780,7 @@
                 });
             }
 
+            assignX(state.rootId, state.pan.x || 50);
             assignY(state.rootId, -layoutData[state.rootId].height/2);
             return layoutData;
         }
