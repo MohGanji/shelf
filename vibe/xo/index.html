@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Tic-Tac-Toe</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --board-bg: #000000;
+            --line-color: #ffffff;
+            --x-color: #ff3b3b;
+            --o-color: #00e5ff;
+            --text-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+        }
+
+        .status {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            min-height: 1.5em;
+        }
+
+        .game-device {
+            background-color: #f4c542;
+            padding: 20px;
+            border-radius: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            background-color: var(--board-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            gap: 5px; 
+            border: 5px solid var(--board-bg);
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        .board {
+            background-color: var(--line-color); 
+        }
+
+        .cell.x .piece {
+            color: var(--x-color);
+            text-shadow: 0 0 10px var(--x-color);
+        }
+
+        .cell.o .piece {
+            color: var(--o-color);
+            text-shadow: 0 0 10px var(--o-color);
+        }
+
+        .cell .piece {
+            transition: opacity 0.4s ease-out;
+        }
+
+        .cell .piece.dimmed {
+            opacity: 0.3;
+        }
+
+        .winner-line-container {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            width: 310px;
+            height: 310px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .winner-line {
+            stroke-width: 8;
+            stroke-linecap: round;
+            fill: none;
+        }
+
+        .winner-line.x-line {
+            stroke: var(--x-color);
+            filter: drop-shadow(0 0 8px var(--x-color));
+        }
+
+        .winner-line.o-line {
+            stroke: var(--o-color);
+            filter: drop-shadow(0 0 8px var(--o-color));
+        }
+
+        .reset-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .reset-btn:hover {
+            background-color: #555;
+        }
+
+        @media (max-width: 400px) {
+            .board {
+                grid-template-columns: repeat(3, 80px);
+                grid-template-rows: repeat(3, 80px);
+            }
+            .winner-line-container {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Infinite Tic-Tac-Toe</h1>
+    <div class="status" id="status">X's Turn</div>
+
+    <div class="game-device">
+        <div class="board" id="board"></div>
+        <svg class="winner-line-container" id="winnerLine"></svg>
+    </div>
+
+    <button class="reset-btn" onclick="resetGame()">Reset Game</button>
+
+    <script>
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        const winnerLineElement = document.getElementById('winnerLine');
+        
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let moves = {
+            'X': [],
+            'O': []
+        };
+
+        const winConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        function initBoard() {
+            boardElement.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('click', handleCellClick);
+                boardElement.appendChild(cell);
+            }
+            updateStatus();
+        }
+
+        function handleCellClick(e) {
+            const cell = e.target.classList.contains('piece') ? e.target.parentElement : e.target;
+            const index = parseInt(cell.dataset.index);
+
+            if (!gameActive || isCellOccupied(index)) {
+                return;
+            }
+
+            const currentMoves = moves[currentPlayer];
+            
+            if (currentMoves.length === 3) {
+                const indexToRemove = currentMoves.shift();
+                clearCell(indexToRemove);
+            }
+
+            currentMoves.push(index);
+            placePiece(index, currentPlayer);
+
+            const winningCombo = checkWin();
+            if (winningCombo) {
+                statusElement.innerText = `${currentPlayer} Wins!`;
+                gameActive = false;
+                drawWinnerLine(winningCombo, currentPlayer);
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            updateBoardVisuals();
+            updateStatus();
+        }
+
+        function isCellOccupied(index) {
+            return moves['X'].includes(index) || moves['O'].includes(index);
+        }
+
+        function placePiece(index, player) {
+            const cells = document.querySelectorAll('.cell');
+            const cell = cells[index];
+            
+            const existingPiece = cell.querySelector('.piece');
+            if (existingPiece) {
+                existingPiece.remove();
+            }
+            
+            const piece = document.createElement('span');
+            piece.classList.add('piece');
+            piece.innerText = player;
+            cell.classList.add(player.toLowerCase());
+            cell.appendChild(piece);
+        }
+
+        function clearCell(index) {
+            const cells = document.querySelectorAll('.cell');
+            const cell = cells[index];
+            const piece = cell.querySelector('.piece');
+            if (piece) {
+                piece.remove();
+            }
+            cell.classList.remove('x', 'o');
+        }
+
+        function updateBoardVisuals() {
+            const cells = document.querySelectorAll('.cell');
+            
+            cells.forEach(cell => {
+                const piece = cell.querySelector('.piece');
+                if (piece) {
+                    piece.classList.remove('dimmed');
+                }
+            });
+
+            const currentMoves = moves[currentPlayer];
+            if (currentMoves.length === 3) {
+                const fadingIndex = currentMoves[0];
+                const fadingCell = cells[fadingIndex];
+                const fadingPiece = fadingCell.querySelector('.piece');
+                if (fadingPiece) {
+                    fadingPiece.classList.add('dimmed');
+                }
+            }
+        }
+
+        function checkWin() {
+            const currentMoves = moves[currentPlayer];
+            if (currentMoves.length < 3) return null;
+
+            for (const condition of winConditions) {
+                if (condition.every(index => currentMoves.includes(index))) {
+                    return condition;
+                }
+            }
+            return null;
+        }
+
+        function drawWinnerLine(winningCombo, player) {
+            winnerLineElement.innerHTML = '';
+            
+            const gridSize = 310;
+            winnerLineElement.setAttribute('viewBox', `0 0 ${gridSize} ${gridSize}`);
+            
+            function getCellCenter(index) {
+                const row = Math.floor(index / 3);
+                const col = index % 3;
+                const cellSize = 100;
+                const gapSize = 5;
+                const x = col * (cellSize + gapSize) + cellSize / 2;
+                const y = row * (cellSize + gapSize) + cellSize / 2;
+                return { x, y };
+            }
+            
+            const start = getCellCenter(winningCombo[0]);
+            const end = getCellCenter(winningCombo[2]);
+            
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const lineLength = Math.sqrt(dx * dx + dy * dy);
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', start.x);
+            line.setAttribute('y1', start.y);
+            line.setAttribute('x2', end.x);
+            line.setAttribute('y2', end.y);
+            line.classList.add('winner-line', player === 'X' ? 'x-line' : 'o-line');
+            
+            line.style.strokeDasharray = lineLength;
+            line.style.strokeDashoffset = lineLength;
+            line.style.transition = 'stroke-dashoffset 0.5s ease-out';
+            
+            winnerLineElement.appendChild(line);
+            
+            requestAnimationFrame(() => {
+                line.style.strokeDashoffset = '0';
+            });
+        }
+
+        function updateStatus() {
+            if (!gameActive) return;
+            statusElement.innerText = `${currentPlayer}'s Turn`;
+            statusElement.style.color = currentPlayer === 'X' ? 'var(--x-color)' : 'var(--o-color)';
+        }
+
+        function resetGame() {
+            moves = { 'X': [], 'O': [] };
+            currentPlayer = 'X';
+            gameActive = true;
+            winnerLineElement.innerHTML = '';
+            initBoard();
+        }
+
+        initBoard();
+
+    </script>
+</body>
+</html>
