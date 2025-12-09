@@ -140,6 +140,15 @@
             filter: none;
         }
 
+        .node.read {
+            background-color: #d4edda;
+            border-color: #28a745;
+        }
+
+        .node.selected.read {
+            border-color: var(--accent);
+        }
+
         .node:empty:before {
             content: "Node";
             color: var(--text-muted);
@@ -579,10 +588,12 @@
             rootId: 'root',
             selectedId: 'root',
             zoom: 1,
-            pan: { x: 50, y: window.innerHeight / 2 - 20 }
+            pan: { x: 50, y: window.innerHeight / 2 - 20 },
+            readNodes: {}
         };
 
         let state = JSON.parse(JSON.stringify(defaultState));
+        if (!state.readNodes) state.readNodes = {};
         let mode = 'VIEW';
         let historyStack = [];
         let redoStack = [];
@@ -599,6 +610,7 @@
                 try {
                     state = JSON.parse(saved);
                     if(!state.nodes['root']) state = JSON.parse(JSON.stringify(defaultState));
+                    if (!state.readNodes) state.readNodes = {};
                 } catch(e) { console.error("Save load failed", e); }
             }
             render();
@@ -621,7 +633,7 @@
         function addChild(parentId) {
             pushHistory();
             const newId = createId();
-            const newNode = { id: newId, text: 'New Node', parentId: parentId, children: [] };
+            const newNode = { id: newId, text: 'new node', parentId: parentId, children: [] };
             
             state.nodes[newId] = newNode;
             state.nodes[parentId].children.push(newId);
@@ -639,7 +651,7 @@
             const parentId = state.nodes[referenceId].parentId;
             const parent = state.nodes[parentId];
             const newId = createId();
-            const newNode = { id: newId, text: 'Sibling', parentId: parentId, children: [] };
+            const newNode = { id: newId, text: 'new node', parentId: parentId, children: [] };
             
             state.nodes[newId] = newNode;
             
@@ -819,6 +831,10 @@
                     });
                     nodesContainer.appendChild(el);
 
+                    if (state.readNodes && state.readNodes[id]) {
+                        el.classList.add('read');
+                    }
+
                     el.offsetHeight;
                     el.style.transition = '';
 
@@ -845,6 +861,12 @@
                     } else {
                         el.classList.remove('selected');
                         el.classList.remove('editing');
+                    }
+
+                    if (state.readNodes && state.readNodes[id]) {
+                        el.classList.add('read');
+                    } else {
+                        el.classList.remove('read');
                     }
 
                     el.style.transform = transform;
@@ -1001,6 +1023,19 @@
                 return;
             }
 
+            if (e.key === ' ' && !meta) {
+                e.preventDefault();
+                if (!state.readNodes) state.readNodes = {};
+                if (state.readNodes[state.selectedId]) {
+                    delete state.readNodes[state.selectedId];
+                } else {
+                    state.readNodes[state.selectedId] = true;
+                }
+                saveState();
+                render();
+                return;
+            }
+
             if (!meta && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 e.preventDefault();
                 const current = state.nodes[state.selectedId];
@@ -1140,6 +1175,7 @@
             if (typeof data.zoom !== 'number') return false;
             if (!data.pan || typeof data.pan.x !== 'number' || typeof data.pan.y !== 'number') return false;
             if (!data.nodes[data.rootId]) return false;
+            if (data.readNodes && typeof data.readNodes !== 'object') return false;
 
             for (const nodeId in data.nodes) {
                 const node = data.nodes[nodeId];
