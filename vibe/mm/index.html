@@ -4,18 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keyboard First Mindmap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #1e1e1e;
-            --node-bg: #2d2d2d;
-            --node-bg-edit: #353d45;
-            --node-border: #444;
-            --text-color: #e0e0e0;
-            --accent: #007acc;
-            --selection-glow: 0 0 0 2px #007acc;
-            --edit-glow: 0 0 0 4px rgba(0, 122, 204, 0.5), 0 0 12px rgba(0, 122, 204, 0.3);
-            --line-color: #555;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --bg-color: #f8f9fa;
+            --grid-color: #e9ecef;
+            --node-bg: #ffffff;
+            --node-bg-hover: #ffffff;
+            --node-bg-edit: #ffffff;
+            --node-border: #000000;
+            --node-border-active: #000000;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --accent: #2f80ed;
+            --accent-hover: #2d70d1;
+            --accent-glow: rgba(47, 128, 237, 0.3);
+            --selection-glow: 0 0 0 2px var(--accent);
+            --edit-glow: 0 0 0 3px var(--accent-glow);
+            --line-color: #000000;
+            --font-family: 'Shantell Sans', sans-serif;
+            --shadow-md: 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 8px 8px 0px 0px rgba(0, 0, 0, 0.1);
+            --backdrop: #ffffff;
+            --radius-md: 8px;
+            --radius-lg: 12px;
         }
 
         body, html {
@@ -25,9 +39,12 @@
             height: 100%;
             overflow: hidden;
             background-color: var(--bg-color);
+            background-image: radial-gradient(var(--text-muted) 1px, transparent 1px);
+            background-size: 20px 20px;
             font-family: var(--font-family);
             color: var(--text-color);
-            user-select: none; 
+            user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
 
         #app {
@@ -37,7 +54,7 @@
             width: 100%;
             height: 100%;
             transform-origin: 0 0;
-            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             z-index: 1;
         }
 
@@ -65,292 +82,259 @@
             fill: none;
             stroke: var(--line-color);
             stroke-width: 2px;
-            transition: d 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: d 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         .node {
             position: absolute;
             background: var(--node-bg);
-            border: 1px solid var(--node-border);
-            padding: 10px 15px;
-            border-radius: 6px;
-            min-width: 80px;
-            max-width: 200px; 
-            font-size: 14px;
-            line-height: 1.4;
+            border: 2px solid var(--node-border);
+            padding: 12px 18px;
+            border-radius: var(--radius-lg);
+            min-width: 100px;
+            max-width: 280px; 
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.5;
             cursor: pointer;
             z-index: 1;
             transition: 
-                transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
                 opacity 0.3s ease,
-                background-color 0.3s ease,
-                box-shadow 0.3s ease,
-                border-color 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                background-color 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
+            box-shadow: var(--shadow-md);
             white-space: pre-wrap;
             word-wrap: break-word;
             outline: none;
+            color: var(--text-color);
         }
         
+        .node:hover {
+            background: var(--node-bg-hover);
+            border-color: var(--node-border-active);
+            transform: translateY(-2px);
+            box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.1);
+        }
+
         body.edit-mode .node:not(.editing) {
-            opacity: 0.6;
+            opacity: 0.5;
+            filter: grayscale(0.5);
         }
 
         .node.selected {
             border-color: var(--accent);
-            box-shadow: var(--selection-glow);
+            box-shadow: var(--shadow-md);
             z-index: 10;
         }
 
         .node.editing {
             background-color: var(--node-bg-edit);
-            box-shadow: var(--edit-glow);
+            box-shadow: var(--edit-glow), var(--shadow-lg);
             z-index: 100;
             border-color: var(--accent);
-            border-width: 1.5px;
+            border-width: 2px;
             cursor: text;
             opacity: 1 !important;
+            filter: none;
         }
 
         .node:empty:before {
             content: "Node";
-            color: #666;
-            font-style: italic;
+            color: var(--text-muted);
+            font-style: normal;
+            font-weight: 400;
         }
 
         #ui-layer {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #888;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--backdrop);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--text-color);
             pointer-events: none;
             z-index: 100;
+            border: 2px solid var(--node-border);
+            box-shadow: var(--shadow-md);
         }
         
         .mode-indicator {
-            font-weight: bold;
+            font-weight: 700;
             color: var(--accent);
             text-transform: uppercase;
-            margin-right: 10px;
+            letter-spacing: 0.05em;
+            margin-right: 8px;
         }
 
         #help-btn {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--node-border);
+            bottom: 24px;
+            right: 24px;
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background: var(--backdrop);
+            border: 2px solid var(--node-border);
             color: var(--text-color);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             font-size: 18px;
+            font-weight: 700;
             z-index: 100;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
         }
 
         #help-btn:hover {
-            background: rgba(0,0,0,0.9);
-            border-color: var(--accent);
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.1);
         }
 
-        #help-modal {
+        #help-modal, #message-modal {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: var(--node-bg);
-            border: 1px solid var(--node-border);
-            border-radius: 8px;
+            background: var(--backdrop);
+            border: 2px solid var(--node-border);
+            border-radius: var(--radius-lg);
             padding: 24px;
-            max-width: 600px;
+            max-width: 500px;
+            width: 90%;
             max-height: 80vh;
             overflow-y: auto;
             z-index: 1000;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            box-shadow: 12px 12px 0px 0px rgba(0, 0, 0, 0.1);
             display: none;
         }
 
-        #help-modal.active {
+        #help-modal.active, #message-modal.active {
             display: block;
+            animation: modalFadeIn 0.2s ease-out;
         }
 
-        #help-modal-overlay {
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translate(-50%, -48%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        #help-modal-overlay, #message-modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(2px);
             z-index: 999;
             display: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
-        #help-modal-overlay.active {
+        #help-modal-overlay.active, #message-modal-overlay.active {
             display: block;
+            opacity: 1;
         }
 
-        .help-header {
+        .help-header, .message-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--node-border);
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--grid-color);
         }
 
-        .help-title {
+        .help-title, .message-title {
             font-size: 20px;
-            font-weight: bold;
+            font-weight: 700;
             color: var(--text-color);
         }
 
-        .help-close {
+        .help-close, .message-close {
             background: none;
             border: none;
             color: var(--text-color);
             font-size: 24px;
             cursor: pointer;
-            padding: 0;
-            width: 28px;
-            height: 28px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
         }
 
-        .help-close:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        #message-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: var(--node-bg);
-            border: 1px solid var(--node-border);
-            border-radius: 8px;
-            padding: 24px;
-            max-width: 500px;
-            z-index: 1000;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            display: none;
-        }
-
-        #message-modal.active {
-            display: block;
-        }
-
-        #message-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
-
-        #message-modal-overlay.active {
-            display: block;
-        }
-
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--node-border);
-        }
-
-        .message-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--text-color);
-        }
-
-        .message-close {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-
-        .message-close:hover {
-            background: rgba(255,255,255,0.1);
+        .help-close:hover, .message-close:hover {
+            background: var(--grid-color);
         }
 
         .message-content {
             color: var(--text-color);
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
         }
 
         .message-actions {
             display: flex;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 12px;
         }
 
         .message-btn {
-            background: var(--node-bg-edit);
-            border: 1px solid var(--node-border);
+            background: transparent;
+            border: 2px solid var(--node-border);
             color: var(--text-color);
             padding: 8px 16px;
-            border-radius: 4px;
+            border-radius: var(--radius-md);
             font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             font-family: var(--font-family);
-            transition: background-color 0.2s ease, border-color 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
         }
 
         .message-btn:hover {
-            background: var(--accent);
-            border-color: var(--accent);
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.1);
         }
 
         .message-btn.primary {
             background: var(--accent);
             border-color: var(--accent);
+            color: white;
         }
 
         .message-btn.primary:hover {
-            background: rgba(0, 122, 204, 0.8);
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
         }
 
         .help-section {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+        }
+
+        .help-section:last-child {
+            margin-bottom: 0;
         }
 
         .help-section-title {
             font-size: 14px;
-            font-weight: bold;
-            color: var(--accent);
+            font-weight: 700;
+            color: var(--text-muted);
             margin-bottom: 12px;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .help-shortcut {
@@ -358,7 +342,7 @@
             justify-content: space-between;
             align-items: center;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--grid-color);
         }
 
         .help-shortcut:last-child {
@@ -367,51 +351,56 @@
 
         .help-action {
             color: var(--text-color);
-            font-size: 14px;
+            font-size: 15px;
+            font-weight: 500;
         }
 
         .help-keys {
             display: flex;
-            gap: 4px;
+            gap: 6px;
             align-items: center;
         }
 
         .help-key {
-            background: var(--bg-color);
-            border: 1px solid var(--node-border);
-            border-radius: 4px;
+            background: #ffffff;
+            border: 2px solid var(--grid-color);
+            border-radius: 6px;
             padding: 4px 8px;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 600;
             color: var(--text-color);
-            font-family: monospace;
-            min-width: 24px;
+            font-family: inherit;
+            min-width: 20px;
             text-align: center;
+            box-shadow: 0 2px 0 var(--grid-color);
         }
 
         #controls-layer {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 24px;
+            left: 24px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             z-index: 100;
         }
 
         .control-btn {
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--node-border);
+            background: var(--backdrop);
+            border: 2px solid var(--node-border);
             color: var(--text-color);
             padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             font-family: var(--font-family);
-            transition: background-color 0.2s ease, border-color 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
         }
 
         .control-btn:hover {
-            background: rgba(0,0,0,0.9);
-            border-color: var(--accent);
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.1);
         }
 
         #file-input {
