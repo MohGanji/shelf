@@ -18,6 +18,13 @@ const projects = [
         image: "./assets/shelf-screenshot.png",
     },
     {
+        title: "mindmap.io",
+        description: "A keyboard-first, super fast mindmapping tool with agentic capabilities. This is my first project using LLM agents with a UX that is intuitive and makes sense. I built this initially for the Google DeepMind hackathon (Gemini 3 competition on Kaggle) and later turned it into a product.",
+        // techStack: "LLM, AI Agents, UX",
+        link: "https://mindmap.io",
+        image: "./assets/mindmap-io.png",
+    },
+    {
         title: "SchemaIran Bot",
         description: "I developed a Telegram bot for Schemairan clinic to conduct YSQ tests (Yonge Schema Questionnaire) online. We analyzed 10k+ test results over 4 years and conducted a quantitative analysis, published as a research paper.",
         // techStack: "Python, Node.js, MongoDB, Telegram API",
