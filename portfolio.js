@@ -25,6 +25,13 @@ const projects = [
         image: "./assets/mindmap-io.png",
     },
     {
+        title: "Braindump",
+        description: "An agent-friendly local memory CLI tool built in Go. It gives AI agents persistent, searchable memory across conversations using SQLite with FTS5 full-text search. Notes are stored as Markdown with YAML frontmatter, organized by category, and optimized for speed.",
+        // techStack: "Go, SQLite, CLI",
+        link: "https://github.com/MohGanji/braindump",
+        image: "./assets/braindump.png",
+    },
+    {
         title: "SchemaIran Bot",
         description: "I developed a Telegram bot for Schemairan clinic to conduct YSQ tests (Yonge Schema Questionnaire) online. We analyzed 10k+ test results over 4 years and conducted a quantitative analysis, published as a research paper.",
         // techStack: "Python, Node.js, MongoDB, Telegram API",
