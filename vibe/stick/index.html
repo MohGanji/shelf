@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick RPG</title>
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <meta name="theme-color" content="#000000">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; background: #87CEEB; font-family: 'Inter', sans-serif; }
+        canvas { display: block; }
+
+        .header {
+            position: fixed; top: 20px; left: 24px; z-index: 10;
+            display: flex; align-items: baseline; gap: 16px;
+        }
+        .header h1 {
+            color: #222; font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em;
+            text-shadow: 0 1px 3px rgba(255,255,255,0.5);
+        }
+        .header a {
+            color: #555; font-size: 0.8rem; text-decoration: none;
+        }
+        .header a:hover { color: #333; }
+
+        /* Loading screen */
+        .loading {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #87CEEB; z-index: 1000; transition: opacity 0.8s;
+        }
+        .loading.done { opacity: 0; pointer-events: none; }
+        .loading h2 { color: #333; font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+        .loading p { color: #555; font-size: 0.9rem; }
+
+        /* HUD */
+        .hud {
+            position: fixed; top: 60px; right: 16px; z-index: 10;
+            background: rgba(20,20,20,0.75); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px; padding: 16px 20px;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            min-width: 180px; color: #eee;
+        }
+        .hud-title { font-size: 0.7rem; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+        .hud-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem; }
+        .hud-row:last-child { margin-bottom: 0; }
+        .hud-label { color: #aaa; font-weight: 500; }
+        .hud-value { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .hud-bar { height: 4px; background: #333; border-radius: 2px; flex: 1; margin: 0 8px; min-width: 60px; }
+        .hud-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+        .hud-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 8px 0; }
+        .hud-money { color: #4ade80; }
+        .hud-day { color: #fbbf24; }
+
+        /* Controls hint */
+        .controls-hint {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+            background: rgba(20,20,20,0.7); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px; padding: 8px 18px;
+            color: #888; font-size: 0.75rem; font-weight: 500;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            white-space: nowrap;
+        }
+
+        /* Interaction prompt */
+        .interact-prompt {
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); z-index: 10;
+            background: rgba(20,20,20,0.85); border: 1px solid #4ade80;
+            border-radius: 10px; padding: 8px 18px;
+            color: #4ade80; font-size: 0.85rem; font-weight: 600;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            opacity: 0; transition: opacity 0.2s; pointer-events: none;
+        }
+        .interact-prompt.visible { opacity: 1; }
+
+        /* Dialogue box */
+        .dialogue-box {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 20;
+            background: rgba(15,15,15,0.92); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 14px; padding: 20px 28px;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            max-width: 450px; min-width: 300px; display: none;
+        }
+        .dialogue-name { color: #4ade80; font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .dialogue-text { color: #ddd; font-size: 0.9rem; line-height: 1.5; }
+        .dialogue-dismiss { color: #666; font-size: 0.7rem; margin-top: 10px; }
+
+        /* Interior overlay */
+        .interior-overlay {
+            position: fixed; inset: 0; z-index: 50; display: none;
+            align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7);
+        }
+        .interior-overlay.active { display: flex; }
+        .interior-panel {
+            background: rgba(20,20,20,0.95); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px; padding: 32px 40px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            min-width: 350px; max-width: 500px; text-align: center;
+        }
+        .interior-title { color: #fff; font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
+        .interior-desc { color: #888; font-size: 0.85rem; margin-bottom: 20px; }
+        .interior-actions { display: flex; flex-direction: column; gap: 10px; }
+        .interior-btn {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px; padding: 12px 20px; color: #ddd;
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500;
+            cursor: pointer; transition: all 0.15s; text-align: left;
+        }
+        .interior-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: #fff; }
+        .interior-btn .btn-effect { color: #4ade80; font-size: 0.75rem; display: block; margin-top: 2px; }
+        .interior-btn .btn-cost { color: #f87171; font-size: 0.75rem; }
+        .interior-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .interior-exit {
+            margin-top: 16px; background: none; border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 8px 24px; color: #888;
+            font-family: 'Inter', sans-serif; font-size: 0.8rem; cursor: pointer;
+        }
+        .interior-exit:hover { color: #bbb; border-color: rgba(255,255,255,0.2); }
+
+        /* Notification floaters */
+        .notif {
+            position: fixed; z-index: 30; left: 50%; transform: translateX(-50%);
+            background: rgba(20,20,20,0.85); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 6px 16px;
+            font-size: 0.8rem; font-weight: 600;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            pointer-events: none; transition: all 0.6s;
+            white-space: nowrap;
+        }
+        .notif.positive { color: #4ade80; border-color: rgba(74,222,128,0.3); }
+        .notif.negative { color: #f87171; border-color: rgba(248,113,113,0.3); }
+        .notif.neutral { color: #fbbf24; border-color: rgba(251,191,36,0.3); }
+
+        /* Building labels (CSS2D) */
+        .building-label {
+            color: #fff; font-size: 10px; font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.5);
+            pointer-events: none; white-space: nowrap;
+            letter-spacing: 0.03em;
+        }
+        .npc-label {
+            color: #4ade80; font-size: 9px; font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px;
+            pointer-events: none; white-space: nowrap;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .npc-label.visible { opacity: 1; }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>Stick RPG</h1>
+    <a href="/vibe/">← back</a>
+</div>
+
+<!-- Loading -->
+<div class="loading" id="loading">
+    <h2>Stick RPG</h2>
+    <p>Loading city...</p>
+</div>
+
+<!-- HUD -->
+<div class="hud" id="hud">
+    <div class="hud-title">Stats</div>
+    <div class="hud-row">
+        <span class="hud-label">HP</span>
+        <div class="hud-bar"><div class="hud-bar-fill" id="hud-hp" style="width:100%;background:#f87171;"></div></div>
+        <span class="hud-value" id="hud-hp-val">100</span>
+    </div>
+    <div class="hud-row">
+        <span class="hud-label">INT</span>
+        <div class="hud-bar"><div class="hud-bar-fill" id="hud-int" style="width:5%;background:#60a5fa;"></div></div>
+        <span class="hud-value" id="hud-int-val">5</span>
+    </div>
+    <div class="hud-row">
+        <span class="hud-label">STR</span>
+        <div class="hud-bar"><div class="hud-bar-fill" id="hud-str" style="width:5%;background:#fb923c;"></div></div>
+        <span class="hud-value" id="hud-str-val">5</span>
+    </div>
+    <div class="hud-row">
+        <span class="hud-label">CHA</span>
+        <div class="hud-bar"><div class="hud-bar-fill" id="hud-cha" style="width:5%;background:#c084fc;"></div></div>
+        <span class="hud-value" id="hud-cha-val">5</span>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-row">
+        <span class="hud-label">Money</span>
+        <span class="hud-value hud-money" id="hud-money">$200</span>
+    </div>
+    <div class="hud-row">
+        <span class="hud-label">Day</span>
+        <span class="hud-value hud-day" id="hud-day">Day 1</span>
+    </div>
+    <div class="hud-row">
+        <span class="hud-label">Time</span>
+        <span class="hud-value" id="hud-time">6:00 AM</span>
+    </div>
+</div>
+
+<!-- Controls hint -->
+<div class="controls-hint">WASD: Move &nbsp;|&nbsp; Shift: Run &nbsp;|&nbsp; E: Interact</div>
+
+<!-- Interaction prompt -->
+<div class="interact-prompt" id="interact-prompt"></div>
+
+<!-- Dialogue box -->
+<div class="dialogue-box" id="dialogue-box">
+    <div class="dialogue-name" id="dialogue-name"></div>
+    <div class="dialogue-text" id="dialogue-text"></div>
+    <div class="dialogue-dismiss">Press E or click to close</div>
+</div>
+
+<!-- Interior overlay -->
+<div class="interior-overlay" id="interior-overlay">
+    <div class="interior-panel">
+        <div class="interior-title" id="interior-title"></div>
+        <div class="interior-desc" id="interior-desc"></div>
+        <div class="interior-actions" id="interior-actions"></div>
+        <button class="interior-exit" id="interior-exit">Leave</button>
+    </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+// ─── Constants & Config ──────────────────────────────────────────────
+
+const TILE_SIZE = 2;
+const MAP_W = 40;
+const MAP_H = 40;
+const WORLD_W = MAP_W * TILE_SIZE;
+const WORLD_H = MAP_H * TILE_SIZE;
+const VIEW_SIZE = 22;
+const WALK_SPEED = 8;
+const RUN_SPEED = 14;
+const INTERACT_RANGE = 3.5;
+const DAY_DURATION = 240; // seconds for full day cycle
+
+// Tile types
+const T = { GRASS: 0, ROAD: 1, SIDEWALK: 2, CROSSWALK: 3, PARK: 4, BUILDING: 5 };
+
+// Colors
+const TILE_COLORS = {
+    [T.GRASS]: '#4a7c4f',
+    [T.ROAD]: '#3a3a3a',
+    [T.SIDEWALK]: '#888888',
+    [T.CROSSWALK]: '#cccccc',
+    [T.PARK]: '#3d6b42',
+    [T.BUILDING]: '#555555',
+};
+
+// ─── Game State ──────────────────────────────────────────────────────
+
+const state = {
+    hp: 100, maxHp: 100,
+    intelligence: 5,
+    strength: 5,
+    charisma: 5,
+    karma: 0,
+    money: 200,
+    day: 1,
+    gameTime: 0.25, // 0-1, start at 6 AM (0.25 of day)
+    inDialogue: false,
+    inInterior: false,
+    paused: false,
+};
+
+// ─── Input ──────────────────────────────────────────────────────────
+
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.code] = true; });
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ─── Scene Setup ────────────────────────────────────────────────────
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
+
+const aspect = window.innerWidth / window.innerHeight;
+const camera = new THREE.OrthographicCamera(
+    -VIEW_SIZE * aspect, VIEW_SIZE * aspect,
+    VIEW_SIZE, -VIEW_SIZE,
+    0.1, 200
+);
+camera.position.set(30, 25, 30);
+camera.lookAt(0, 0, 0);
+camera.updateProjectionMatrix();
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+document.body.appendChild(labelRenderer.domElement);
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+sunLight.position.set(30, 40, 20);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.left = -50;
+sunLight.shadow.camera.right = 50;
+sunLight.shadow.camera.top = 50;
+sunLight.shadow.camera.bottom = -50;
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 120;
+sunLight.shadow.bias = -0.001;
+scene.add(sunLight);
+
+const hemLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7c4f, 0.3);
+scene.add(hemLight);
+
+// Resize
+window.addEventListener('resize', () => {
+    const a = window.innerWidth / window.innerHeight;
+    camera.left = -VIEW_SIZE * a;
+    camera.right = VIEW_SIZE * a;
+    camera.top = VIEW_SIZE;
+    camera.bottom = -VIEW_SIZE;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ─── World Data ─────────────────────────────────────────────────────
+
+// Building definitions
+const buildings = [
+    { name: 'University', x: 8, z: 4, w: 8, d: 6, h: 7, color: 0x8B4513, roofColor: 0x6B3410, doorSide: 'south', interior: 'university' },
+    { name: 'Store', x: 22, z: 4, w: 5, d: 5, h: 5, color: 0x2196F3, roofColor: 0x1565C0, doorSide: 'south', interior: 'store' },
+    { name: 'Bar', x: 30, z: 4, w: 6, d: 5, h: 4.5, color: 0x7B1FA2, roofColor: 0x5C1580, doorSide: 'south', interior: 'bar' },
+    { name: 'Apartment', x: 4, z: 22, w: 6, d: 6, h: 9, color: 0x795548, roofColor: 0x5D4037, doorSide: 'south', interior: 'apartment' },
+    { name: 'Gym', x: 13, z: 22, w: 6, d: 5, h: 5, color: 0xF44336, roofColor: 0xC62828, doorSide: 'south', interior: 'gym' },
+    { name: 'Casino', x: 22, z: 22, w: 6, d: 6, h: 6, color: 0xFFD700, roofColor: 0xDAA520, doorSide: 'south', interior: 'casino' },
+    { name: 'Bank', x: 31, z: 22, w: 5, d: 5, h: 8, color: 0x607D8B, roofColor: 0x455A64, doorSide: 'south', interior: 'bank' },
+    { name: 'Burger Joint', x: 8, z: 34, w: 6, d: 5, h: 4, color: 0xFF9800, roofColor: 0xE65100, doorSide: 'north', interior: 'burger' },
+];
+
+// NPC definitions
+const npcDefs = [
+    { name: 'Old Man Jenkins', x: 16, z: 14, color: 0xcccccc, dialogue: [
+        "Back in my day, stickmen didn't even have arms!",
+        "You look like you could use some intelligence. Try the University.",
+        "The Casino? I lost my other dimension there...",
+    ]},
+    { name: 'Fitness Fiona', x: 14, z: 29, color: 0xff69b4, patrol: [{x: 14, z: 29}, {x: 20, z: 29}], dialogue: [
+        "Do you even lift? Hit the Gym!",
+        "Strength isn't just about muscles. It's about... no wait, it IS about muscles.",
+    ]},
+    { name: 'Shady Dave', x: 28, z: 14, color: 0x333333, dialogue: [
+        "Psst... the Casino's got rigged tables, but don't tell 'em I said that.",
+        "I used to work at the Bank. Key word: USED to.",
+        "You didn't see me here.",
+    ]},
+    { name: 'Professor Wright', x: 10, z: 12, color: 0x4466aa, patrol: [{x: 10, z: 12}, {x: 14, z: 12}], dialogue: [
+        "Knowledge is power! Visit the University to increase your Intelligence.",
+        "I've published 47 papers. All of them about stickman physics.",
+    ]},
+    { name: 'Chef Mario', x: 10, z: 32, color: 0xff4444, dialogue: [
+        "Mama mia! You look hungry. Visit my Burger Joint!",
+        "A good burger restores the soul... and your HP.",
+    ]},
+    { name: 'Bank Teller', x: 33, z: 28, color: 0x44aa66, dialogue: [
+        "The Bank is open for deposits... and withdrawals, if you've got the stats.",
+        "Pro tip: high Intelligence helps with interest rates.",
+    ]},
+];
+
+// Interior definitions
+const interiors = {
+    university: {
+        title: 'University',
+        desc: 'A place of higher learning. Expand your mind!',
+        actions: [
+            { label: 'Attend Lecture', effect: '+2 Intelligence', cost: '$50', stat: 'intelligence', delta: 2, moneyCost: 50, timeHours: 3 },
+            { label: 'Study at Library', effect: '+1 Intelligence', cost: 'Free', stat: 'intelligence', delta: 1, moneyCost: 0, timeHours: 2 },
+        ]
+    },
+    store: {
+        title: 'Convenience Store',
+        desc: 'Snacks, drinks, and questionable life choices.',
+        actions: [
+            { label: 'Buy Energy Drink', effect: '+10 HP', cost: '$10', stat: 'hp', delta: 10, moneyCost: 10, timeHours: 0.5 },
+            { label: 'Buy Protein Bar', effect: '+5 HP, +1 Strength', cost: '$25', stat: 'multi', deltas: {hp: 5, strength: 1}, moneyCost: 25, timeHours: 0.5 },
+        ]
+    },
+    bar: {
+        title: 'The Tipsy Stickman',
+        desc: 'Loosen up and make some friends... or enemies.',
+        actions: [
+            { label: 'Have a Drink', effect: '+2 Charisma, -5 HP', cost: '$20', stat: 'multi', deltas: {charisma: 2, hp: -5}, moneyCost: 20, timeHours: 2 },
+            { label: 'Karaoke Night', effect: '+3 Charisma', cost: '$30', stat: 'charisma', delta: 3, moneyCost: 30, timeHours: 3 },
+        ]
+    },
+    apartment: {
+        title: 'Your Apartment',
+        desc: 'Home sweet home. Rest up for a new day.',
+        actions: [
+            { label: 'Sleep', effect: 'Full HP, advance to next day', cost: 'Free', stat: 'sleep', delta: 0, moneyCost: 0, timeHours: 0 },
+            { label: 'Exercise at Home', effect: '+1 Strength', cost: 'Free', stat: 'strength', delta: 1, moneyCost: 0, timeHours: 1 },
+        ]
+    },
+    gym: {
+        title: 'Iron Stick Gym',
+        desc: 'Get swole. Pain is just weakness leaving your stick body.',
+        actions: [
+            { label: 'Lift Weights', effect: '+2 Strength', cost: '$30', stat: 'strength', delta: 2, moneyCost: 30, timeHours: 2 },
+            { label: 'Cardio Session', effect: '+1 Strength, +10 HP', cost: '$15', stat: 'multi', deltas: {strength: 1, hp: 10}, moneyCost: 15, timeHours: 1.5 },
+        ]
+    },
+    casino: {
+        title: 'Lucky Lines Casino',
+        desc: 'Feeling lucky? Risk it all or walk away a winner.',
+        actions: [
+            { label: 'Play Slots ($50)', effect: 'Win $100 or lose $50', cost: '$50', stat: 'gamble', wager: 50, timeHours: 1 },
+            { label: 'Blackjack ($100)', effect: 'Win $200 or lose $100', cost: '$100', stat: 'gamble', wager: 100, timeHours: 1.5 },
+            { label: 'High Roller ($500)', effect: 'Win $1200 or lose $500', cost: '$500', stat: 'gamble', wager: 500, timeHours: 2 },
+        ]
+    },
+    bank: {
+        title: 'Stick National Bank',
+        desc: 'Work a shift for honest pay. Pay depends on your stats.',
+        actions: [
+            { label: 'Work Part-Time', effect: '+$50-100 (INT bonus)', cost: '4 hours', stat: 'work', basePay: 50, timeHours: 4 },
+            { label: 'Work Full Shift', effect: '+$100-200 (INT bonus)', cost: '8 hours', stat: 'work', basePay: 100, timeHours: 8 },
+        ]
+    },
+    burger: {
+        title: 'Burger Joint',
+        desc: 'Greasy, delicious, and good for the soul.',
+        actions: [
+            { label: 'Eat a Burger', effect: '+20 HP', cost: '$15', stat: 'hp', delta: 20, moneyCost: 15, timeHours: 0.5 },
+            { label: 'Work Here', effect: '+$30', cost: '3 hours', stat: 'work', basePay: 30, timeHours: 3 },
+        ]
+    },
+};
+
+// ─── Build Ground Texture ───────────────────────────────────────────
+
+// Create the tile map
+const tileMap = [];
+for (let z = 0; z < MAP_H; z++) {
+    tileMap[z] = [];
+    for (let x = 0; x < MAP_W; x++) {
+        tileMap[z][x] = T.GRASS;
+    }
+}
+
+// Roads (E-W) at rows 10-11, 18-19, 28-29
+const roadRows = [10, 11, 18, 19, 28, 29];
+// Roads (N-S) at cols 6-7, 18-19, 28-29
+const roadCols = [6, 7, 18, 19, 28, 29];
+
+for (let z = 0; z < MAP_H; z++) {
+    for (let x = 0; x < MAP_W; x++) {
+        if (roadRows.includes(z) || roadCols.includes(x)) {
+            tileMap[z][x] = T.ROAD;
+        }
+    }
+}
+
+// Sidewalks adjacent to roads
+for (let z = 0; z < MAP_H; z++) {
+    for (let x = 0; x < MAP_W; x++) {
+        if (tileMap[z][x] === T.GRASS) {
+            const neighbors = [
+                z > 0 ? tileMap[z-1][x] : -1,
+                z < MAP_H-1 ? tileMap[z+1][x] : -1,
+                x > 0 ? tileMap[z][x-1] : -1,
+                x < MAP_W-1 ? tileMap[z][x+1] : -1,
+            ];
+            if (neighbors.includes(T.ROAD)) {
+                tileMap[z][x] = T.SIDEWALK;
+            }
+        }
+    }
+}
+
+// Crosswalks at road intersections
+for (const rz of roadRows) {
+    for (const cx of roadCols) {
+        // Mark a crosswalk area near intersections
+        if (tileMap[rz] && tileMap[rz][cx] === T.ROAD) {
+            // Only at cross-intersections of orthogonal roads
+            if (roadRows.includes(rz) && roadCols.includes(cx)) {
+                tileMap[rz][cx] = T.CROSSWALK;
+            }
+        }
+    }
+}
+
+// Park area: between roads, bottom-left
+for (let z = 12; z <= 17; z++) {
+    for (let x = 8; x <= 17; x++) {
+        if (tileMap[z][x] === T.GRASS || tileMap[z][x] === T.SIDEWALK) {
+            tileMap[z][x] = T.PARK;
+        }
+    }
+}
+
+function buildGroundTexture() {
+    const scale = 16; // pixels per tile
+    const canvas = document.createElement('canvas');
+    canvas.width = MAP_W * scale;
+    canvas.height = MAP_H * scale;
+    const ctx = canvas.getContext('2d');
+
+    for (let z = 0; z < MAP_H; z++) {
+        for (let x = 0; x < MAP_W; x++) {
+            const tile = tileMap[z][x];
+            ctx.fillStyle = TILE_COLORS[tile];
+            ctx.fillRect(x * scale, z * scale, scale, scale);
+
+            // Road details
+            if (tile === T.ROAD) {
+                // Center dashes for horizontal roads
+                if (roadRows.includes(z) && !roadCols.includes(x)) {
+                    if ((z === 10 || z === 18 || z === 28) && x % 3 === 0) {
+                        ctx.fillStyle = '#666';
+                        ctx.fillRect(x * scale + 2, z * scale + scale - 1, scale - 4, 2);
+                    }
+                }
+                // Center dashes for vertical roads
+                if (roadCols.includes(x) && !roadRows.includes(z)) {
+                    if ((x === 6 || x === 18 || x === 28) && z % 3 === 0) {
+                        ctx.fillStyle = '#666';
+                        ctx.fillRect(x * scale + scale - 1, z * scale + 2, 2, scale - 4);
+                    }
+                }
+            }
+
+            // Crosswalk stripes
+            if (tile === T.CROSSWALK) {
+                ctx.fillStyle = '#fff';
+                for (let i = 2; i < scale; i += 4) {
+                    ctx.fillRect(x * scale + i, z * scale + 1, 2, scale - 2);
+                }
+            }
+
+            // Park grass variation
+            if (tile === T.PARK) {
+                if ((x + z) % 3 === 0) {
+                    ctx.fillStyle = 'rgba(100,180,100,0.2)';
+                    ctx.fillRect(x * scale, z * scale, scale, scale);
+                }
+            }
+        }
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    return tex;
+}
+
+// ─── World Builder ──────────────────────────────────────────────────
+
+// Ground
+const groundGeo = new THREE.PlaneGeometry(WORLD_W, WORLD_H);
+const groundMat = new THREE.MeshLambertMaterial({ map: buildGroundTexture() });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(WORLD_W / 2, 0, WORLD_H / 2);
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Building meshes
+const buildingMeshes = [];
+
+function createBuilding(def) {
+    const group = new THREE.Group();
+    const worldX = def.x * TILE_SIZE + (def.w * TILE_SIZE) / 2;
+    const worldZ = def.z * TILE_SIZE + (def.d * TILE_SIZE) / 2;
+    const bW = def.w * TILE_SIZE;
+    const bD = def.d * TILE_SIZE;
+    const bH = def.h;
+
+    // Body
+    const bodyGeo = new THREE.BoxGeometry(bW, bH, bD);
+    const bodyMat = new THREE.MeshLambertMaterial({ color: def.color });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = bH / 2;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    group.add(body);
+
+    // Roof
+    const roofGeo = new THREE.BoxGeometry(bW + 0.4, 0.5, bD + 0.4);
+    const roofMat = new THREE.MeshLambertMaterial({ color: def.roofColor });
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = bH + 0.25;
+    roof.castShadow = true;
+    group.add(roof);
+
+    // Windows
+    const windowMat = new THREE.MeshLambertMaterial({ color: 0xFFE082, emissive: 0x443300, emissiveIntensity: 0.3 });
+    const windowGeo = new THREE.PlaneGeometry(1.0, 1.2);
+    const sides = [
+        { axis: 'x', dir: 1, rot: Math.PI / 2, span: bW, depth: bD },
+        { axis: 'x', dir: -1, rot: -Math.PI / 2, span: bW, depth: bD },
+        { axis: 'z', dir: 1, rot: 0, span: bD, depth: bW },
+        { axis: 'z', dir: -1, rot: Math.PI, span: bD, depth: bW },
+    ];
+    for (const side of sides) {
+        const numWindows = Math.floor(side.span / 3);
+        for (let i = 0; i < numWindows; i++) {
+            for (let row = 0; row < Math.floor(bH / 3); row++) {
+                const win = new THREE.Mesh(windowGeo, windowMat);
+                const offset = (i - (numWindows - 1) / 2) * 3;
+                if (side.axis === 'z') {
+                    win.position.set(offset, 2 + row * 2.8, side.dir * (bD / 2 + 0.01));
+                    win.rotation.y = side.rot;
+                } else {
+                    win.position.set(side.dir * (bW / 2 + 0.01), 2 + row * 2.8, offset);
+                    win.rotation.y = side.rot;
+                }
+                group.add(win);
+            }
+        }
+    }
+
+    // Door
+    const doorGeo = new THREE.PlaneGeometry(1.5, 2.4);
+    const doorMat = new THREE.MeshLambertMaterial({ color: 0x3E2723 });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.y = 1.2;
+    if (def.doorSide === 'south') {
+        door.position.z = bD / 2 + 0.02;
+    } else if (def.doorSide === 'north') {
+        door.position.z = -bD / 2 - 0.02;
+        door.rotation.y = Math.PI;
+    }
+    group.add(door);
+
+    group.position.set(worldX, 0, worldZ);
+
+    // CSS2D Label
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'building-label';
+    labelDiv.textContent = def.name;
+    const label = new CSS2DObject(labelDiv);
+    label.position.set(0, bH + 1.5, 0);
+    group.add(label);
+
+    scene.add(group);
+
+    // Collision box (in world coords)
+    const margin = 0.3;
+    buildingMeshes.push({
+        name: def.name,
+        interior: def.interior,
+        minX: worldX - bW / 2 - margin,
+        maxX: worldX + bW / 2 + margin,
+        minZ: worldZ - bD / 2 - margin,
+        maxZ: worldZ + bD / 2 + margin,
+        doorX: worldX,
+        doorZ: def.doorSide === 'south' ? worldZ + bD / 2 + 1.5 : worldZ - bD / 2 - 1.5,
+        def: def,
+    });
+}
+
+buildings.forEach(b => createBuilding(b));
+
+// Streetlights
+const streetLights = [];
+
+function createStreetLight(x, z) {
+    const group = new THREE.Group();
+
+    // Post
+    const postGeo = new THREE.CylinderGeometry(0.12, 0.12, 4, 6);
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
+    const post = new THREE.Mesh(postGeo, postMat);
+    post.position.y = 2;
+    post.castShadow = true;
+    group.add(post);
+
+    // Bulb
+    const bulbGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const bulbMat = new THREE.MeshStandardMaterial({ color: 0xFFE082, emissive: 0xFFE082, emissiveIntensity: 0 });
+    const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+    bulb.position.y = 4.2;
+    group.add(bulb);
+
+    // Light
+    const light = new THREE.PointLight(0xFFE082, 0, 12, 2);
+    light.position.y = 4.2;
+    group.add(light);
+
+    group.position.set(x * TILE_SIZE + TILE_SIZE, 0, z * TILE_SIZE + TILE_SIZE);
+    scene.add(group);
+    streetLights.push({ group, bulbMat, light });
+}
+
+// Place streetlights along roads
+const slPositions = [
+    [5, 10], [12, 10], [22, 10], [32, 10],
+    [5, 19], [12, 19], [22, 19], [32, 19],
+    [5, 29], [12, 29], [22, 29], [32, 29],
+    [6, 5], [6, 15], [6, 25], [6, 33],
+    [19, 5], [19, 15], [19, 25], [19, 33],
+    [29, 5], [29, 15], [29, 25], [29, 33],
+];
+slPositions.forEach(([x, z]) => createStreetLight(x, z));
+
+// Trees
+function createTree(x, z) {
+    const group = new THREE.Group();
+
+    const trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, 1.5, 6);
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5D4037 });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 0.75;
+    trunk.castShadow = true;
+    group.add(trunk);
+
+    const foliageGeo = new THREE.ConeGeometry(1.2, 2.5, 8);
+    const shade = 0.6 + Math.random() * 0.4;
+    const foliageMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(0.15 * shade, 0.55 * shade, 0.18 * shade) });
+    const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+    foliage.position.y = 2.75;
+    foliage.castShadow = true;
+    group.add(foliage);
+
+    group.position.set(x * TILE_SIZE + TILE_SIZE, 0, z * TILE_SIZE + TILE_SIZE);
+    scene.add(group);
+}
+
+// Scatter trees in park and grass
+const treePositions = [
+    // Park trees
+    [9, 13], [11, 15], [13, 13], [15, 16], [10, 16], [14, 14], [12, 17], [16, 13],
+    // Grass area trees
+    [2, 3], [3, 6], [35, 3], [37, 7], [2, 32], [3, 35], [35, 33], [37, 36],
+    [1, 15], [3, 25], [36, 15], [38, 25],
+    [15, 32], [25, 33], [33, 35], [20, 35],
+];
+treePositions.forEach(([x, z]) => createTree(x, z));
+
+// Park benches
+function createBench(x, z, rot) {
+    const group = new THREE.Group();
+    const seatGeo = new THREE.BoxGeometry(2, 0.15, 0.7);
+    const seatMat = new THREE.MeshLambertMaterial({ color: 0x795548 });
+    const seat = new THREE.Mesh(seatGeo, seatMat);
+    seat.position.y = 0.55;
+    group.add(seat);
+
+    const backGeo = new THREE.BoxGeometry(2, 0.8, 0.1);
+    const back = new THREE.Mesh(backGeo, seatMat);
+    back.position.set(0, 0.9, -0.3);
+    group.add(back);
+
+    // Legs
+    const legGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.55, 4);
+    const legMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+    for (const lx of [-0.8, 0.8]) {
+        for (const lz of [-0.25, 0.25]) {
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(lx, 0.275, lz);
+            group.add(leg);
+        }
+    }
+
+    group.position.set(x * TILE_SIZE + TILE_SIZE, 0, z * TILE_SIZE + TILE_SIZE);
+    group.rotation.y = rot;
+    scene.add(group);
+}
+
+createBench(10, 14, 0);
+createBench(14, 15, Math.PI / 2);
+createBench(12, 13, Math.PI);
+
+// ─── Stickman Factory ───────────────────────────────────────────────
+
+function createStickman(options = {}) {
+    const {
+        color = 0x222222,
+        headColor = 0xFFDBB4,
+        height = 2.2,
+        scale = 1,
+    } = options;
+
+    const group = new THREE.Group();
+    const mat = new THREE.MeshLambertMaterial({ color });
+    const skinMat = new THREE.MeshLambertMaterial({ color: headColor });
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.35 * scale, 12, 12);
+    const head = new THREE.Mesh(headGeo, skinMat);
+    head.position.y = height * scale;
+    head.castShadow = true;
+    group.add(head);
+
+    // Body
+    const bodyGeo = new THREE.CylinderGeometry(0.12 * scale, 0.1 * scale, 0.9 * scale, 6);
+    const body = new THREE.Mesh(bodyGeo, mat);
+    body.position.y = (height - 0.8) * scale;
+    body.castShadow = true;
+    group.add(body);
+
+    // Arms
+    const armGeo = new THREE.CylinderGeometry(0.06 * scale, 0.06 * scale, 0.7 * scale, 5);
+
+    const leftArmPivot = new THREE.Group();
+    leftArmPivot.position.set(-0.22 * scale, (height - 0.5) * scale, 0);
+    const leftArm = new THREE.Mesh(armGeo, mat);
+    leftArm.position.y = -0.35 * scale;
+    leftArm.castShadow = true;
+    leftArmPivot.add(leftArm);
+    group.add(leftArmPivot);
+
+    const rightArmPivot = new THREE.Group();
+    rightArmPivot.position.set(0.22 * scale, (height - 0.5) * scale, 0);
+    const rightArm = new THREE.Mesh(armGeo, mat);
+    rightArm.position.y = -0.35 * scale;
+    rightArm.castShadow = true;
+    rightArmPivot.add(rightArm);
+    group.add(rightArmPivot);
+
+    // Legs
+    const legGeo = new THREE.CylinderGeometry(0.07 * scale, 0.07 * scale, 0.8 * scale, 5);
+
+    const leftLegPivot = new THREE.Group();
+    leftLegPivot.position.set(-0.12 * scale, (height - 1.35) * scale, 0);
+    const leftLeg = new THREE.Mesh(legGeo, mat);
+    leftLeg.position.y = -0.4 * scale;
+    leftLeg.castShadow = true;
+    leftLegPivot.add(leftLeg);
+    group.add(leftLegPivot);
+
+    const rightLegPivot = new THREE.Group();
+    rightLegPivot.position.set(0.12 * scale, (height - 1.35) * scale, 0);
+    const rightLeg = new THREE.Mesh(legGeo, mat);
+    rightLeg.position.y = -0.4 * scale;
+    rightLeg.castShadow = true;
+    rightLegPivot.add(rightLeg);
+    group.add(rightLegPivot);
+
+    return {
+        group,
+        head, body,
+        leftArmPivot, rightArmPivot,
+        leftLegPivot, rightLegPivot,
+        animTime: 0,
+    };
+}
+
+// ─── Player ─────────────────────────────────────────────────────────
+
+const player = createStickman({ color: 0x1a1a1a, headColor: 0xFFDBB4 });
+// Spawn near Apartment door
+player.group.position.set(
+    buildings[3].x * TILE_SIZE + (buildings[3].w * TILE_SIZE) / 2,
+    0,
+    buildings[3].z * TILE_SIZE + buildings[3].d * TILE_SIZE + 3
+);
+scene.add(player.group);
+
+// Isometric direction mapping (screen directions → world XZ)
+// Camera is at (30, 25, 30) looking at origin — isometric 45° angle
+// "Up" on screen = (-1, 0, -1) normalized in world XZ
+const ISO_ANGLE = Math.PI / 4; // 45 degrees
+const dirVectors = {
+    up:    new THREE.Vector2(-Math.cos(ISO_ANGLE), -Math.sin(ISO_ANGLE)).normalize(),
+    down:  new THREE.Vector2(Math.cos(ISO_ANGLE), Math.sin(ISO_ANGLE)).normalize(),
+    left:  new THREE.Vector2(-Math.cos(ISO_ANGLE), Math.sin(ISO_ANGLE)).normalize(),
+    right: new THREE.Vector2(Math.cos(ISO_ANGLE), -Math.sin(ISO_ANGLE)).normalize(),
+};
+
+function checkCollision(px, pz, radius = 0.5) {
+    // Building collision
+    for (const b of buildingMeshes) {
+        const closestX = Math.max(b.minX, Math.min(px, b.maxX));
+        const closestZ = Math.max(b.minZ, Math.min(pz, b.maxZ));
+        const dx = px - closestX;
+        const dz = pz - closestZ;
+        if (dx * dx + dz * dz < radius * radius) return true;
+    }
+    // World bounds
+    if (px < 1 || px > WORLD_W - 1 || pz < 1 || pz > WORLD_H - 1) return true;
+    return false;
+}
+
+function updatePlayer(dt) {
+    if (state.inDialogue || state.inInterior) return;
+
+    const dir = new THREE.Vector2(0, 0);
+    if (keys['KeyW'] || keys['ArrowUp']) dir.add(dirVectors.up);
+    if (keys['KeyS'] || keys['ArrowDown']) dir.add(dirVectors.down);
+    if (keys['KeyA'] || keys['ArrowLeft']) dir.add(dirVectors.left);
+    if (keys['KeyD'] || keys['ArrowRight']) dir.add(dirVectors.right);
+
+    const isMoving = dir.length() > 0.01;
+    const running = keys['ShiftLeft'] || keys['ShiftRight'];
+    const speed = running ? RUN_SPEED : WALK_SPEED;
+
+    if (isMoving) {
+        dir.normalize();
+        const newX = player.group.position.x + dir.x * speed * dt;
+        const newZ = player.group.position.z + dir.y * speed * dt;
+
+        // Try full movement, then try axis-separated if blocked
+        if (!checkCollision(newX, newZ)) {
+            player.group.position.x = newX;
+            player.group.position.z = newZ;
+        } else if (!checkCollision(newX, player.group.position.z)) {
+            player.group.position.x = newX;
+        } else if (!checkCollision(player.group.position.x, newZ)) {
+            player.group.position.z = newZ;
+        }
+
+        // Face direction of movement
+        const angle = Math.atan2(dir.x, dir.y);
+        player.group.rotation.y = angle;
+    }
+
+    animateStickman(player, dt, isMoving, running ? 1.5 : 1.0);
+}
+
+function animateStickman(stickman, dt, isMoving, speedMult = 1.0) {
+    if (isMoving) {
+        stickman.animTime += dt * 8 * speedMult;
+        const swing = Math.sin(stickman.animTime) * 0.6 * speedMult;
+        stickman.leftLegPivot.rotation.x = swing;
+        stickman.rightLegPivot.rotation.x = -swing;
+        stickman.leftArmPivot.rotation.x = -swing * 0.7;
+        stickman.rightArmPivot.rotation.x = swing * 0.7;
+        // Running lean
+        stickman.body.rotation.x = speedMult > 1 ? 0.15 : 0;
+    } else {
+        // Ease to idle
+        stickman.animTime = 0;
+        const ease = 0.1;
+        stickman.leftLegPivot.rotation.x *= (1 - ease);
+        stickman.rightLegPivot.rotation.x *= (1 - ease);
+        stickman.leftArmPivot.rotation.x *= (1 - ease);
+        stickman.rightArmPivot.rotation.x *= (1 - ease);
+        stickman.body.rotation.x *= (1 - ease);
+        // Idle sway
+        const sway = Math.sin(Date.now() * 0.002) * 0.02;
+        stickman.body.rotation.z = sway;
+    }
+}
+
+// ─── Camera System ──────────────────────────────────────────────────
+
+const cameraOffset = new THREE.Vector3(30, 25, 30);
+const cameraTarget = new THREE.Vector3();
+
+function updateCamera(dt) {
+    cameraTarget.copy(player.group.position).add(cameraOffset);
+    camera.position.lerp(cameraTarget, 4 * dt);
+    const lookTarget = player.group.position.clone();
+    camera.lookAt(lookTarget);
+}
+
+// ─── NPC System ─────────────────────────────────────────────────────
+
+const npcs = [];
+
+function createNPC(def) {
+    const stickman = createStickman({ color: def.color, headColor: 0xFFDBB4 });
+    stickman.group.position.set(def.x * TILE_SIZE + TILE_SIZE, 0, def.z * TILE_SIZE + TILE_SIZE);
+    scene.add(stickman.group);
+
+    // Label
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'npc-label';
+    labelDiv.textContent = `[E] ${def.name}`;
+    const label = new CSS2DObject(labelDiv);
+    label.position.set(0, 3, 0);
+    stickman.group.add(label);
+
+    const npc = {
+        stickman,
+        def,
+        label,
+        labelDiv,
+        dialogueIndex: 0,
+        // Patrol
+        patrol: def.patrol || null,
+        patrolIndex: 0,
+        patrolWait: 0,
+        patrolTarget: null,
+    };
+
+    if (npc.patrol) {
+        npc.patrolTarget = npc.patrol[0];
+    }
+
+    npcs.push(npc);
+}
+
+npcDefs.forEach(d => createNPC(d));
+
+function updateNPCs(dt) {
+    for (const npc of npcs) {
+        if (!npc.patrol) {
+            animateStickman(npc.stickman, dt, false);
+            continue;
+        }
+
+        if (npc.patrolWait > 0) {
+            npc.patrolWait -= dt;
+            animateStickman(npc.stickman, dt, false);
+            continue;
+        }
+
+        const target = npc.patrol[npc.patrolIndex];
+        const tx = target.x * TILE_SIZE + TILE_SIZE;
+        const tz = target.z * TILE_SIZE + TILE_SIZE;
+        const pos = npc.stickman.group.position;
+        const dx = tx - pos.x;
+        const dz = tz - pos.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist < 0.5) {
+            npc.patrolWait = 2 + Math.random() * 2;
+            npc.patrolIndex = (npc.patrolIndex + 1) % npc.patrol.length;
+            animateStickman(npc.stickman, dt, false);
+        } else {
+            const speed = 3;
+            const ndx = dx / dist;
+            const ndz = dz / dist;
+            pos.x += ndx * speed * dt;
+            pos.z += ndz * speed * dt;
+            npc.stickman.group.rotation.y = Math.atan2(ndx, ndz);
+            animateStickman(npc.stickman, dt, true, 0.6);
+        }
+    }
+}
+
+// ─── Interaction System ─────────────────────────────────────────────
+
+const interactPrompt = document.getElementById('interact-prompt');
+let nearestInteractable = null;
+
+function updateInteractions() {
+    if (state.inDialogue || state.inInterior) {
+        interactPrompt.classList.remove('visible');
+        nearestInteractable = null;
+        // Hide all NPC labels
+        npcs.forEach(n => n.labelDiv.classList.remove('visible'));
+        return;
+    }
+
+    const pp = player.group.position;
+    let closest = null;
+    let closestDist = INTERACT_RANGE;
+
+    // Check NPCs
+    for (const npc of npcs) {
+        const np = npc.stickman.group.position;
+        const dist = Math.sqrt((pp.x - np.x) ** 2 + (pp.z - np.z) ** 2);
+        npc.labelDiv.classList.toggle('visible', dist < INTERACT_RANGE);
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = { type: 'npc', data: npc, dist };
+        }
+    }
+
+    // Check building doors
+    for (const b of buildingMeshes) {
+        const dist = Math.sqrt((pp.x - b.doorX) ** 2 + (pp.z - b.doorZ) ** 2);
+        if (dist < closestDist) {
+            closestDist = dist;
+            closest = { type: 'building', data: b, dist };
+        }
+    }
+
+    nearestInteractable = closest;
+
+    if (closest) {
+        if (closest.type === 'npc') {
+            interactPrompt.textContent = `[E] Talk to ${closest.data.def.name}`;
+        } else {
+            interactPrompt.textContent = `[E] Enter ${closest.data.name}`;
+        }
+        interactPrompt.classList.add('visible');
+    } else {
+        interactPrompt.classList.remove('visible');
+    }
+}
+
+// Dialogue
+const dialogueBox = document.getElementById('dialogue-box');
+const dialogueName = document.getElementById('dialogue-name');
+const dialogueText = document.getElementById('dialogue-text');
+
+function showDialogue(npc) {
+    state.inDialogue = true;
+    dialogueName.textContent = npc.def.name;
+    dialogueText.textContent = npc.def.dialogue[npc.dialogueIndex % npc.def.dialogue.length];
+    npc.dialogueIndex++;
+    dialogueBox.style.display = 'block';
+}
+
+function hideDialogue() {
+    state.inDialogue = false;
+    dialogueBox.style.display = 'none';
+}
+
+dialogueBox.addEventListener('click', hideDialogue);
+
+// Interior
+const interiorOverlay = document.getElementById('interior-overlay');
+const interiorTitle = document.getElementById('interior-title');
+const interiorDesc = document.getElementById('interior-desc');
+const interiorActions = document.getElementById('interior-actions');
+const interiorExit = document.getElementById('interior-exit');
+
+function enterBuilding(building) {
+    const def = interiors[building.interior];
+    if (!def) return;
+    state.inInterior = true;
+    interiorTitle.textContent = def.title;
+    interiorDesc.textContent = def.desc;
+    interiorActions.innerHTML = '';
+
+    for (const action of def.actions) {
+        const btn = document.createElement('button');
+        btn.className = 'interior-btn';
+        btn.innerHTML = `${action.label}<span class="btn-effect">${action.effect}</span>` +
+            (action.cost ? ` <span class="btn-cost">${action.cost}</span>` : '');
+
+        // Disable if can't afford
+        if (action.moneyCost && action.moneyCost > state.money) {
+            btn.disabled = true;
+        }
+        if (action.wager && action.wager > state.money) {
+            btn.disabled = true;
+        }
+
+        btn.addEventListener('click', () => doAction(action));
+        interiorActions.appendChild(btn);
+    }
+
+    interiorOverlay.classList.add('active');
+}
+
+function leaveBuilding() {
+    state.inInterior = false;
+    interiorOverlay.classList.remove('active');
+}
+
+interiorExit.addEventListener('click', leaveBuilding);
+
+function doAction(action) {
+    // Time check - each action costs game time
+    if (action.timeHours) {
+        state.gameTime += action.timeHours / 24;
+        if (state.gameTime >= 1) {
+            state.gameTime -= 1;
+            state.day++;
+        }
+    }
+
+    if (action.stat === 'sleep') {
+        state.hp = state.maxHp;
+        state.day++;
+        state.gameTime = 0.25; // 6 AM
+        showNotification('Slept well! New day begins.', 'neutral');
+        leaveBuilding();
+        updateHUD();
+        return;
+    }
+
+    if (action.stat === 'gamble') {
+        if (state.money < action.wager) return;
+        state.money -= action.wager;
+        // Win chance based on charisma (30% base + 1% per charisma point, max 60%)
+        const winChance = Math.min(0.3 + state.charisma * 0.01, 0.6);
+        if (Math.random() < winChance) {
+            const winnings = action.wager * 2.5;
+            state.money += Math.floor(winnings);
+            showNotification(`Won $${Math.floor(winnings)}!`, 'positive');
+        } else {
+            showNotification(`Lost $${action.wager}...`, 'negative');
+        }
+        updateHUD();
+        refreshInteriorButtons();
+        return;
+    }
+
+    if (action.stat === 'work') {
+        const intBonus = Math.floor(state.intelligence * 2);
+        const earned = action.basePay + intBonus;
+        state.money += earned;
+        showNotification(`Earned $${earned}`, 'positive');
+        updateHUD();
+        refreshInteriorButtons();
+        return;
+    }
+
+    // Standard stat actions
+    if (action.moneyCost) {
+        if (state.money < action.moneyCost) return;
+        state.money -= action.moneyCost;
+    }
+
+    if (action.stat === 'multi') {
+        for (const [stat, delta] of Object.entries(action.deltas)) {
+            applyStat(stat, delta);
+        }
+    } else {
+        applyStat(action.stat, action.delta);
+    }
+
+    updateHUD();
+    refreshInteriorButtons();
+}
+
+function applyStat(stat, delta) {
+    if (stat === 'hp') {
+        state.hp = Math.min(state.maxHp, Math.max(0, state.hp + delta));
+        const sign = delta > 0 ? '+' : '';
+        showNotification(`${sign}${delta} HP`, delta > 0 ? 'positive' : 'negative');
+    } else if (stat === 'intelligence') {
+        state.intelligence += delta;
+        showNotification(`+${delta} Intelligence`, 'positive');
+    } else if (stat === 'strength') {
+        state.strength += delta;
+        showNotification(`+${delta} Strength`, 'positive');
+    } else if (stat === 'charisma') {
+        state.charisma += delta;
+        showNotification(`+${delta} Charisma`, 'positive');
+    }
+}
+
+function refreshInteriorButtons() {
+    const btns = interiorActions.querySelectorAll('.interior-btn');
+    // Re-enter to refresh disabled states
+    if (state.inInterior) {
+        const bld = nearestInteractable?.data;
+        if (bld) {
+            const def = interiors[bld.interior];
+            if (def) {
+                btns.forEach((btn, i) => {
+                    const action = def.actions[i];
+                    if (action) {
+                        btn.disabled = (action.moneyCost && action.moneyCost > state.money) ||
+                                       (action.wager && action.wager > state.money);
+                    }
+                });
+            }
+        }
+    }
+}
+
+// E key handler
+window.addEventListener('keydown', e => {
+    if (e.code !== 'KeyE') return;
+
+    if (state.inDialogue) {
+        hideDialogue();
+        return;
+    }
+
+    if (state.inInterior) {
+        leaveBuilding();
+        return;
+    }
+
+    if (nearestInteractable) {
+        if (nearestInteractable.type === 'npc') {
+            showDialogue(nearestInteractable.data);
+        } else if (nearestInteractable.type === 'building') {
+            enterBuilding(nearestInteractable.data);
+        }
+    }
+});
+
+// Escape to close overlays
+window.addEventListener('keydown', e => {
+    if (e.code === 'Escape') {
+        if (state.inDialogue) hideDialogue();
+        if (state.inInterior) leaveBuilding();
+    }
+});
+
+// ─── Notification System ────────────────────────────────────────────
+
+let notifY = 200;
+
+function showNotification(text, type = 'neutral') {
+    const el = document.createElement('div');
+    el.className = `notif ${type}`;
+    el.textContent = text;
+    el.style.top = `${notifY}px`;
+    document.body.appendChild(el);
+    notifY += 35;
+    if (notifY > 400) notifY = 200;
+
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.top = `${parseInt(el.style.top) - 30}px`;
+    }, 1500);
+    setTimeout(() => el.remove(), 2200);
+}
+
+// ─── HUD Update ─────────────────────────────────────────────────────
+
+function updateHUD() {
+    document.getElementById('hud-hp').style.width = `${(state.hp / state.maxHp) * 100}%`;
+    document.getElementById('hud-hp-val').textContent = state.hp;
+
+    const maxStat = 100;
+    document.getElementById('hud-int').style.width = `${Math.min(state.intelligence / maxStat * 100, 100)}%`;
+    document.getElementById('hud-int-val').textContent = state.intelligence;
+
+    document.getElementById('hud-str').style.width = `${Math.min(state.strength / maxStat * 100, 100)}%`;
+    document.getElementById('hud-str-val').textContent = state.strength;
+
+    document.getElementById('hud-cha').style.width = `${Math.min(state.charisma / maxStat * 100, 100)}%`;
+    document.getElementById('hud-cha-val').textContent = state.charisma;
+
+    document.getElementById('hud-money').textContent = `$${state.money}`;
+    document.getElementById('hud-day').textContent = `Day ${state.day}`;
+
+    // Time display
+    const totalHours = state.gameTime * 24;
+    const hours = Math.floor(totalHours);
+    const minutes = Math.floor((totalHours - hours) * 60);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const h12 = hours % 12 || 12;
+    document.getElementById('hud-time').textContent = `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+}
+
+// ─── Day/Night Cycle ────────────────────────────────────────────────
+
+const skyColors = {
+    dawn:    new THREE.Color(0xFFB347),
+    day:     new THREE.Color(0x87CEEB),
+    dusk:    new THREE.Color(0xFF6B35),
+    night:   new THREE.Color(0x0a0a2e),
+};
+
+function updateDayNight(dt) {
+    // Advance time
+    state.gameTime += dt / DAY_DURATION;
+    if (state.gameTime >= 1) {
+        state.gameTime -= 1;
+        state.day++;
+    }
+
+    const t = state.gameTime; // 0-1 over a full day
+    let skyColor, ambientIntensity, sunIntensity, lightsOn;
+
+    if (t < 0.2) {
+        // Night (midnight to ~4:48 AM)
+        skyColor = skyColors.night;
+        ambientIntensity = 0.15;
+        sunIntensity = 0;
+        lightsOn = true;
+    } else if (t < 0.3) {
+        // Dawn (4:48 AM to 7:12 AM)
+        const f = (t - 0.2) / 0.1;
+        skyColor = skyColors.night.clone().lerp(skyColors.dawn, f);
+        ambientIntensity = 0.15 + f * 0.35;
+        sunIntensity = f * 0.5;
+        lightsOn = f < 0.7;
+    } else if (t < 0.5) {
+        // Morning (7:12 AM to noon)
+        const f = (t - 0.3) / 0.2;
+        skyColor = skyColors.dawn.clone().lerp(skyColors.day, f);
+        ambientIntensity = 0.5 + f * 0.1;
+        sunIntensity = 0.5 + f * 0.3;
+        lightsOn = false;
+    } else if (t < 0.7) {
+        // Afternoon (noon to ~4:48 PM)
+        skyColor = skyColors.day;
+        ambientIntensity = 0.6;
+        sunIntensity = 0.8;
+        lightsOn = false;
+    } else if (t < 0.8) {
+        // Dusk (4:48 PM to 7:12 PM)
+        const f = (t - 0.7) / 0.1;
+        skyColor = skyColors.day.clone().lerp(skyColors.dusk, f);
+        ambientIntensity = 0.6 - f * 0.2;
+        sunIntensity = 0.8 - f * 0.5;
+        lightsOn = f > 0.5;
+    } else if (t < 0.9) {
+        // Evening (7:12 PM to 9:36 PM)
+        const f = (t - 0.8) / 0.1;
+        skyColor = skyColors.dusk.clone().lerp(skyColors.night, f);
+        ambientIntensity = 0.4 - f * 0.25;
+        sunIntensity = 0.3 - f * 0.3;
+        lightsOn = true;
+    } else {
+        // Late night (9:36 PM to midnight)
+        skyColor = skyColors.night;
+        ambientIntensity = 0.15;
+        sunIntensity = 0;
+        lightsOn = true;
+    }
+
+    scene.background.copy(skyColor);
+    document.body.style.background = `#${skyColor.getHexString()}`;
+    ambientLight.intensity = ambientIntensity;
+    sunLight.intensity = sunIntensity;
+
+    // Sun position follows time
+    const sunAngle = (t - 0.25) * Math.PI * 2;
+    sunLight.position.set(
+        Math.cos(sunAngle) * 40,
+        Math.max(Math.sin(sunAngle) * 40, 5),
+        20
+    );
+
+    // Streetlights
+    for (const sl of streetLights) {
+        sl.light.intensity = lightsOn ? 1.5 : 0;
+        sl.bulbMat.emissiveIntensity = lightsOn ? 1.0 : 0;
+    }
+
+    updateHUD();
+}
+
+// ─── Game Loop ──────────────────────────────────────────────────────
+
+const clock = new THREE.Clock();
+
+// Hide loading
+setTimeout(() => {
+    document.getElementById('loading').classList.add('done');
+}, 500);
+
+function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    updatePlayer(dt);
+    updateCamera(dt);
+    updateNPCs(dt);
+    updateInteractions();
+    updateDayNight(dt);
+
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera);
+}
+
+animate();
+
+</script>
+</body>
+</html>
