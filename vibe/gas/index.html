@@ -801,7 +801,7 @@
             // Dots (visible + larger invisible hit area)
             values.forEach((v, i) => {
                 svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="16" fill="transparent" class="chart-dot-hit" data-index="${i}" style="cursor:pointer"/>`;
-                svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="#4baea4" stroke="#151515" stroke-width="2" pointer-events="none"/>`;
+                svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="#4baea4" stroke="#151515" stroke-width="2" pointer-events="none" class="chart-dot-visible" data-index="${i}"/>`;
             });
 
             // X-axis date labels (show a few, not all)
@@ -826,6 +826,12 @@
                         <stop offset="0%" stop-color="#4baea4" stop-opacity="0.4"/>
                         <stop offset="100%" stop-color="#4baea4" stop-opacity="0"/>
                     </linearGradient>
+                    <filter id="dotGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="blur"/>
+                        <feFlood flood-color="#4baea4" flood-opacity="0.6" result="color"/>
+                        <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                        <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                    </filter>
                 </defs>
                 ${svg}
             `;
@@ -837,6 +843,17 @@
                     const idx = parseInt(dot.dataset.index);
                     const entry = chartEntries[idx];
                     if (!entry) return;
+
+                    // Highlight active dot
+                    chartSvg.querySelectorAll('.chart-dot-visible').forEach(d => {
+                        d.setAttribute('r', '3.5');
+                        d.removeAttribute('filter');
+                    });
+                    const visDot = chartSvg.querySelector(`.chart-dot-visible[data-index="${idx}"]`);
+                    if (visDot) {
+                        visDot.setAttribute('r', '6');
+                        visDot.setAttribute('filter', 'url(#dotGlow)');
+                    }
 
                     let html = `<div class="tt-consumption">${formatNum(entry.consumption, 1)} l/100km</div>`;
                     html += `<div class="tt-details">${formatNum(entry.liters)}L &middot; ${formatNum(entry.distance)}km</div>`;
@@ -872,15 +889,25 @@
                 dot.addEventListener('touchstart', showTip, { passive: true });
             });
 
-            chartSvg.addEventListener('mouseleave', () => {
+            function clearHighlight() {
                 chartTooltip.classList.remove('visible');
-            });
+                chartSvg.querySelectorAll('.chart-dot-visible').forEach(d => {
+                    d.setAttribute('r', '3.5');
+                    d.removeAttribute('filter');
+                });
+            }
+
+            chartSvg.addEventListener('mouseleave', clearHighlight);
         }
 
         // Dismiss tooltip on tap outside chart
         document.addEventListener('touchstart', (e) => {
             if (!chartContainer.contains(e.target)) {
                 chartTooltip.classList.remove('visible');
+                chartSvg.querySelectorAll('.chart-dot-visible').forEach(d => {
+                    d.setAttribute('r', '3.5');
+                    d.removeAttribute('filter');
+                });
             }
         }, { passive: true });
 
