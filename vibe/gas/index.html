@@ -268,6 +268,46 @@
             overflow: visible;
         }
 
+        .chart-tooltip {
+            position: absolute;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 10;
+            white-space: nowrap;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .chart-tooltip.visible {
+            opacity: 1;
+        }
+
+        .chart-tooltip .tt-consumption {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 0.95rem;
+        }
+
+        .chart-tooltip .tt-details {
+            color: var(--text-dim);
+        }
+
+        .chart-tooltip .tt-note {
+            color: #666;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .chart-tooltip .tt-date {
+            color: #555;
+            font-size: 0.7rem;
+        }
+
         /* History */
         .history-header {
             display: flex;
@@ -549,8 +589,9 @@
                     <span class="chart-title">Consumption</span>
                     <span class="chart-avg" id="chart-avg"></span>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container" id="chart-container">
                     <svg id="chart-svg" preserveAspectRatio="none"></svg>
+                    <div class="chart-tooltip" id="chart-tooltip"></div>
                 </div>
             </div>
 
@@ -601,6 +642,8 @@
         const historyCount = document.getElementById('history-count');
         const chartAvg = document.getElementById('chart-avg');
         const chartSvg = document.getElementById('chart-svg');
+        const chartContainer = document.getElementById('chart-container');
+        const chartTooltip = document.getElementById('chart-tooltip');
         const clearAllBtn = document.getElementById('clear-all-btn');
         const exportBtn = document.getElementById('export-btn');
         const importBtnFull = document.getElementById('import-btn-full');
@@ -652,6 +695,8 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
         }
 
+        let chartEntries = []; // reference for tooltip
+
         function calcConsumption(liters, km) {
             if (!km || km === 0) return null;
             return liters / (km / 100);
@@ -685,11 +730,13 @@
         }
 
         function renderChart(entries) {
+            chartTooltip.classList.remove('visible');
             if (entries.length < 2) {
                 document.getElementById('chart-card').style.display = 'none';
                 return;
             }
             document.getElementById('chart-card').style.display = 'block';
+            chartEntries = entries;
 
             const values = entries.map(e => e.consumption);
             const avg = values.reduce((a, b) => a + b, 0) / values.length;
@@ -751,9 +798,10 @@
             }
             svg += `<path d="${linePath}" fill="none" stroke="#4baea4" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
 
-            // Dots
+            // Dots (visible + larger invisible hit area)
             values.forEach((v, i) => {
-                svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="#4baea4" stroke="#151515" stroke-width="2"/>`;
+                svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="16" fill="transparent" class="chart-dot-hit" data-index="${i}" style="cursor:pointer"/>`;
+                svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="#4baea4" stroke="#151515" stroke-width="2" pointer-events="none"/>`;
             });
 
             // X-axis date labels (show a few, not all)
@@ -781,7 +829,60 @@
                 </defs>
                 ${svg}
             `;
+
+            // Tooltip events on dot hit areas
+            chartSvg.querySelectorAll('.chart-dot-hit').forEach(dot => {
+                function showTip(e) {
+                    e.stopPropagation();
+                    const idx = parseInt(dot.dataset.index);
+                    const entry = chartEntries[idx];
+                    if (!entry) return;
+
+                    let html = `<div class="tt-consumption">${formatNum(entry.consumption, 1)} l/100km</div>`;
+                    html += `<div class="tt-details">${formatNum(entry.liters)}L &middot; ${formatNum(entry.distance)}km</div>`;
+                    if (entry.note) html += `<div class="tt-note">${entry.note}</div>`;
+                    html += `<div class="tt-date">${formatDate(entry.date)}</div>`;
+                    chartTooltip.innerHTML = html;
+                    chartTooltip.classList.add('visible');
+
+                    // Position relative to chart container
+                    const containerRect = chartContainer.getBoundingClientRect();
+                    const svgRect = chartSvg.getBoundingClientRect();
+                    const scaleX = svgRect.width / W;
+                    const scaleY = svgRect.height / H;
+                    const cx = parseFloat(dot.getAttribute('cx')) * scaleX;
+                    const cy = parseFloat(dot.getAttribute('cy')) * scaleY;
+
+                    const tipW = chartTooltip.offsetWidth;
+                    const tipH = chartTooltip.offsetHeight;
+
+                    let left = cx - tipW / 2;
+                    // Clamp to container bounds
+                    if (left < 4) left = 4;
+                    if (left + tipW > containerRect.width - 4) left = containerRect.width - tipW - 4;
+
+                    let top = cy - tipH - 12;
+                    if (top < 0) top = cy + 16;
+
+                    chartTooltip.style.left = left + 'px';
+                    chartTooltip.style.top = top + 'px';
+                }
+
+                dot.addEventListener('mouseenter', showTip);
+                dot.addEventListener('touchstart', showTip, { passive: true });
+            });
+
+            chartSvg.addEventListener('mouseleave', () => {
+                chartTooltip.classList.remove('visible');
+            });
         }
+
+        // Dismiss tooltip on tap outside chart
+        document.addEventListener('touchstart', (e) => {
+            if (!chartContainer.contains(e.target)) {
+                chartTooltip.classList.remove('visible');
+            }
+        }, { passive: true });
 
         function renderHistory() {
             const entries = loadEntries();
