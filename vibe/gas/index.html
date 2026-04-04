@@ -165,6 +165,34 @@
             margin-left: 4px;
         }
 
+        /* Note input */
+        .note-group {
+            margin-bottom: 16px;
+        }
+
+        .note-group input {
+            width: 100%;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            font-weight: 400;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .note-group input:focus {
+            border-color: var(--accent);
+        }
+
+        .note-group input::placeholder {
+            color: #444;
+        }
+
         /* Submit */
         .submit-btn {
             width: 100%;
@@ -281,11 +309,15 @@
             position: relative;
         }
 
+        .entry-left {
+            flex: 1;
+            min-width: 0;
+        }
+
         .entry-main {
             display: flex;
             align-items: baseline;
             gap: 16px;
-            flex: 1;
             min-width: 0;
         }
 
@@ -313,6 +345,16 @@
 
         .entry-details span {
             font-variant-numeric: tabular-nums;
+        }
+
+        .entry-note {
+            font-size: 0.75rem;
+            color: #666;
+            font-style: italic;
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .entry-date {
@@ -480,6 +522,10 @@
                 <span class="result-value" id="consumption">&mdash;</span>
             </div>
 
+            <div class="note-group">
+                <input type="text" id="note" placeholder="Note (optional)" autocomplete="off" maxlength="100">
+            </div>
+
             <button class="submit-btn" id="submit-btn" disabled>Add Fill-up</button>
         </div>
 
@@ -524,6 +570,7 @@
 
         const litersInput = document.getElementById('liters');
         const distanceInput = document.getElementById('distance');
+        const noteInput = document.getElementById('note');
         const consumptionEl = document.getElementById('consumption');
         const submitBtn = document.getElementById('submit-btn');
         const historySection = document.getElementById('history-section');
@@ -734,13 +781,17 @@
             sorted.forEach((entry) => {
                 const el = document.createElement('div');
                 el.className = 'entry';
+                const noteHtml = entry.note ? `<div class="entry-note">${entry.note}</div>` : '';
                 el.innerHTML = `
-                    <div class="entry-main">
-                        <span class="entry-consumption">${formatNum(entry.consumption, 1)} <span class="unit">l/100km</span></span>
-                        <span class="entry-details">
-                            <span>${formatNum(entry.liters)}L</span>
-                            <span>${formatNum(entry.distance)}km</span>
-                        </span>
+                    <div class="entry-left">
+                        <div class="entry-main">
+                            <span class="entry-consumption">${formatNum(entry.consumption, 1)} <span class="unit">l/100km</span></span>
+                            <span class="entry-details">
+                                <span>${formatNum(entry.liters)}L</span>
+                                <span>${formatNum(entry.distance)}km</span>
+                            </span>
+                        </div>
+                        ${noteHtml}
                     </div>
                     <span class="entry-date">${formatDate(entry.date)}</span>
                     <button class="entry-delete" data-id="${entry.id}" title="Delete">&times;</button>
@@ -755,18 +806,22 @@
             if (!(l > 0 && d > 0)) return;
 
             const c = calcConsumption(l, d);
+            const note = noteInput.value.trim();
             const entries = loadEntries();
-            entries.push({
+            const entry = {
                 id: Date.now(),
                 liters: l,
                 distance: d,
                 consumption: c,
                 date: new Date().toISOString()
-            });
+            };
+            if (note) entry.note = note;
+            entries.push(entry);
             saveEntries(entries);
 
             litersInput.value = '';
             distanceInput.value = '';
+            noteInput.value = '';
             consumptionEl.innerHTML = '&mdash;';
             submitBtn.disabled = true;
             litersInput.focus();
@@ -802,7 +857,7 @@
 
         submitBtn.addEventListener('click', addEntry);
 
-        [litersInput, distanceInput].forEach(input => {
+        [litersInput, distanceInput, noteInput].forEach(input => {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !submitBtn.disabled) {
                     e.preventDefault();
