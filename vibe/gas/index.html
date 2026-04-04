@@ -927,12 +927,17 @@
                         }
                     }
                     // Normalize: ensure id, date, consumption exist
+                    function parseDate(d) {
+                        if (!d) return new Date().toISOString();
+                        const parsed = new Date(/^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T12:00:00' : d);
+                        return isNaN(parsed) ? new Date().toISOString() : parsed.toISOString();
+                    }
                     const normalized = data.map((entry, i) => ({
                         id: entry.id || Date.now() + i,
                         liters: entry.liters,
                         distance: entry.distance,
                         consumption: entry.consumption || calcConsumption(entry.liters, entry.distance),
-                        date: entry.date || new Date().toISOString(),
+                        date: parseDate(entry.date),
                         ...(entry.note ? { note: entry.note } : {})
                     }));
                     const existing = loadEntries();
