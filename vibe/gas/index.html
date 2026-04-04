@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gas Log</title>
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <meta name="theme-color" content="#0a0a0a">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0a;
+            --surface: #151515;
+            --surface-2: #1e1e1e;
+            --border: #2a2a2a;
+            --text: #e8e8e8;
+            --text-dim: #888;
+            --accent: #4baea4;
+            --accent-dim: rgba(75, 174, 164, 0.15);
+            --red: #ff5c5c;
+            --radius: 14px;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 20px;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        header a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        /* Form */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 6px;
+        }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrap input {
+            width: 100%;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 40px 14px 14px;
+            color: var(--text);
+            font-size: 1.1rem;
+            font-family: inherit;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .input-wrap input:focus {
+            border-color: var(--accent);
+        }
+
+        .input-wrap input::placeholder {
+            color: #444;
+        }
+
+        .input-unit {
+            position: absolute;
+            right: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        /* Result row */
+        .result-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--accent-dim);
+            border: 1px solid rgba(75, 174, 164, 0.25);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+            min-height: 50px;
+        }
+
+        .result-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .result-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-value .result-unit {
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.7;
+            margin-left: 4px;
+        }
+
+        /* Submit */
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* History */
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .history-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+
+        .history-count {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            background: var(--surface);
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+
+        .history-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 40px;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            padding: 40px 0;
+        }
+
+        .entry {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .entry-main {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .entry-consumption {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .entry-consumption .unit {
+            font-size: 0.7rem;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .entry-details {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .entry-details span {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .entry-date {
+            font-size: 0.7rem;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        .entry-delete {
+            background: none;
+            border: none;
+            color: #444;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 4px 0 4px 12px;
+            line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+            transition: color 0.2s;
+        }
+
+        .entry-delete:hover {
+            color: var(--red);
+        }
+
+        /* Average bar */
+        .avg-bar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .avg-bar .avg-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .avg-bar .avg-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .avg-bar .avg-value .unit {
+            font-size: 0.7rem;
+            font-weight: 500;
+            opacity: 0.5;
+        }
+
+        /* Clear all */
+        .clear-all {
+            text-align: center;
+            padding: 12px 0 24px;
+        }
+
+        .clear-all button {
+            background: none;
+            border: none;
+            color: #444;
+            font-size: 0.8rem;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 6px 12px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .clear-all button:hover {
+            color: var(--red);
+        }
+
+        /* Input type number - hide spinners */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>Gas Log</h1>
+            <a href="/vibe/">back</a>
+        </header>
+
+        <div class="form-card">
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="liters">Fuel</label>
+                    <div class="input-wrap">
+                        <input type="number" id="liters" inputmode="decimal" step="0.01" placeholder="0.00" autocomplete="off">
+                        <span class="input-unit">L</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="distance">Distance</label>
+                    <div class="input-wrap">
+                        <input type="number" id="distance" inputmode="decimal" step="0.01" placeholder="0.00" autocomplete="off">
+                        <span class="input-unit">km</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-row">
+                <span class="result-label">Consumption</span>
+                <span class="result-value" id="consumption">&mdash;</span>
+            </div>
+
+            <button class="submit-btn" id="submit-btn" disabled>Log Fill-up</button>
+        </div>
+
+        <div id="history-section" style="display:none;">
+            <div class="avg-bar" id="avg-bar">
+                <span class="avg-label">Average</span>
+                <span class="avg-value" id="avg-value"></span>
+            </div>
+
+            <div class="history-header">
+                <h2>History</h2>
+                <span class="history-count" id="history-count"></span>
+            </div>
+
+            <div class="history-list" id="history-list"></div>
+
+            <div class="clear-all">
+                <button id="clear-all-btn">Clear all data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'gas_log_entries';
+
+        const litersInput = document.getElementById('liters');
+        const distanceInput = document.getElementById('distance');
+        const consumptionEl = document.getElementById('consumption');
+        const submitBtn = document.getElementById('submit-btn');
+        const historySection = document.getElementById('history-section');
+        const historyList = document.getElementById('history-list');
+        const historyCount = document.getElementById('history-count');
+        const avgValue = document.getElementById('avg-value');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+
+        function loadEntries() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveEntries(entries) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        }
+
+        function calcConsumption(liters, km) {
+            if (!km || km === 0) return null;
+            return liters / (km / 100);
+        }
+
+        function formatNum(n, decimals = 2) {
+            return Number(n).toFixed(decimals);
+        }
+
+        function formatDate(iso) {
+            const d = new Date(iso);
+            const day = d.getDate();
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const month = months[d.getMonth()];
+            const year = String(d.getFullYear()).slice(2);
+            return `${day} ${month} '${year}`;
+        }
+
+        function updateCalc() {
+            const l = parseFloat(litersInput.value);
+            const d = parseFloat(distanceInput.value);
+
+            if (l > 0 && d > 0) {
+                const c = calcConsumption(l, d);
+                consumptionEl.innerHTML = `${formatNum(c, 1)}<span class="result-unit">l/100km</span>`;
+                submitBtn.disabled = false;
+            } else {
+                consumptionEl.innerHTML = '&mdash;';
+                submitBtn.disabled = true;
+            }
+        }
+
+        function renderHistory() {
+            const entries = loadEntries();
+
+            if (entries.length === 0) {
+                historySection.style.display = 'none';
+                return;
+            }
+
+            historySection.style.display = 'block';
+            historyCount.textContent = `${entries.length} fill-up${entries.length !== 1 ? 's' : ''}`;
+
+            // Average
+            const totalConsumption = entries.reduce((sum, e) => sum + e.consumption, 0);
+            const avg = totalConsumption / entries.length;
+            avgValue.innerHTML = `${formatNum(avg, 1)} <span class="unit">l/100km</span>`;
+
+            // Render entries (newest first)
+            historyList.innerHTML = '';
+            const sorted = [...entries].reverse();
+
+            sorted.forEach((entry) => {
+                const el = document.createElement('div');
+                el.className = 'entry';
+                el.innerHTML = `
+                    <div class="entry-main">
+                        <span class="entry-consumption">${formatNum(entry.consumption, 1)} <span class="unit">l/100km</span></span>
+                        <span class="entry-details">
+                            <span>${formatNum(entry.liters)}L</span>
+                            <span>${formatNum(entry.distance)}km</span>
+                        </span>
+                    </div>
+                    <span class="entry-date">${formatDate(entry.date)}</span>
+                    <button class="entry-delete" data-id="${entry.id}" title="Delete">&times;</button>
+                `;
+                historyList.appendChild(el);
+            });
+        }
+
+        function addEntry() {
+            const l = parseFloat(litersInput.value);
+            const d = parseFloat(distanceInput.value);
+            if (!(l > 0 && d > 0)) return;
+
+            const c = calcConsumption(l, d);
+            const entries = loadEntries();
+            entries.push({
+                id: Date.now(),
+                liters: l,
+                distance: d,
+                consumption: c,
+                date: new Date().toISOString()
+            });
+            saveEntries(entries);
+
+            litersInput.value = '';
+            distanceInput.value = '';
+            consumptionEl.innerHTML = '&mdash;';
+            submitBtn.disabled = true;
+            litersInput.focus();
+
+            renderHistory();
+        }
+
+        function deleteEntry(id) {
+            let entries = loadEntries();
+            entries = entries.filter(e => e.id !== id);
+            saveEntries(entries);
+            renderHistory();
+        }
+
+        function clearAll() {
+            if (confirm('Delete all fill-up records?')) {
+                saveEntries([]);
+                renderHistory();
+            }
+        }
+
+        // Events
+        litersInput.addEventListener('input', updateCalc);
+        distanceInput.addEventListener('input', updateCalc);
+
+        submitBtn.addEventListener('click', addEntry);
+
+        // Enter key submits from either input
+        [litersInput, distanceInput].forEach(input => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !submitBtn.disabled) {
+                    e.preventDefault();
+                    addEntry();
+                }
+            });
+        });
+
+        historyList.addEventListener('click', (e) => {
+            const btn = e.target.closest('.entry-delete');
+            if (btn) {
+                const id = parseInt(btn.dataset.id);
+                deleteEntry(id);
+            }
+        });
+
+        clearAllBtn.addEventListener('click', clearAll);
+
+        // Init
+        renderHistory();
+    </script>
+</body>
+</html>
