@@ -68,7 +68,6 @@
     <div class="country-name-tag" id="country-name-tag"></div>
     <div class="loading" id="loading">Loading globe data...</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 
     <script type="importmap">
@@ -85,7 +84,6 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-        const earcutFn = window.earcut;
         const topoFn = window.topojson;
 
         // Country names by ISO 3166-1 numeric code
@@ -138,13 +136,13 @@
 
         // Constants
         const RADIUS = 100;
-        const COUNTRY_ALT = 0.2;
-        const BORDER_ALT = 0.35;
-        const POP_ALT = 1.2;
         const LABEL_SHOW_DIST = 220;
-        const BASE_COLOR = 0x1c2c22;
-        const HOVER_COLOR = 0x4baea4;
-        const BORDER_COLOR = 0x2a4a35;
+        const TEX_W = 4096;
+        const TEX_H = 2048;
+        const LAND_FILL = '#2a5a3a';
+        const LAND_HOVER = '#4baea4';
+        const BORDER_STROKE = '#4a8a5a';
+        const BORDER_WIDTH = 1.5;
 
         // Scene
         const scene = new THREE.Scene();
@@ -181,8 +179,8 @@
         controls.zoomSpeed = 0.8;
 
         // Lighting
-        scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
         dirLight.position.set(5, 3, 4);
         scene.add(dirLight);
 
@@ -272,110 +270,183 @@
             );
         }
 
-        // === Country building ===
-        const countryGroups = [];
-        const countryLayer = new THREE.Group();
-        const borderLayer = new THREE.Group();
-        scene.add(countryLayer);
-        scene.add(borderLayer);
-        const labels = [];
+        // ============================================================
+        //  TEXTURE-BASED COUNTRY RENDERING
+        //  Draw countries on a 2D canvas, wrap as texture on sphere.
+        //  No triangulation — canvas 2D paths handle all polygon shapes.
+        // ============================================================
 
-        function buildCountry(feature) {
-            const id = feature.id;
-            const name = NAMES[id] || '';
+        const colorCanvas = document.createElement('canvas');
+        colorCanvas.width = TEX_W; colorCanvas.height = TEX_H;
+        const colorCtx = colorCanvas.getContext('2d');
 
-            let polygons = [];
-            if (feature.geometry.type === 'Polygon') {
-                polygons = [feature.geometry.coordinates];
-            } else if (feature.geometry.type === 'MultiPolygon') {
-                polygons = feature.geometry.coordinates;
-            }
-            if (polygons.length === 0) return;
+        const idCanvas = document.createElement('canvas');
+        idCanvas.width = TEX_W; idCanvas.height = TEX_H;
+        const idCtx = idCanvas.getContext('2d');
 
-            const material = new THREE.MeshStandardMaterial({
-                color: BASE_COLOR,
+        const landTexture = new THREE.CanvasTexture(colorCanvas);
+        landTexture.minFilter = THREE.LinearFilter;
+        landTexture.magFilter = THREE.LinearFilter;
+
+        // Land sphere sits just above the ocean
+        const landSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(RADIUS + 0.3, 256, 128),
+            new THREE.MeshStandardMaterial({
+                map: landTexture,
+                transparent: true,
                 roughness: 0.85,
                 metalness: 0.05,
-                emissive: 0x060e08,
-                emissiveIntensity: 0.4,
-                side: THREE.DoubleSide
-            });
+                emissive: 0x0a1a10,
+                emissiveIntensity: 0.3
+            })
+        );
+        scene.add(landSphere);
 
-            const group = new THREE.Group();
-            let cLon = 0, cLat = 0, cN = 0;
+        // Country data
+        let features = [];
+        let hoveredIdx = -1;
+        const labels = [];
 
+        // === Canvas drawing helpers ===
+
+        function lonLatToPixel(lon, lat) {
+            return [
+                (lon + 180) / 360 * TEX_W,
+                (90 - lat) / 180 * TEX_H
+            ];
+        }
+
+        // Trace a polygon (outer ring + holes) onto canvas context
+        function tracePolygon(ctx, polygon, crosses) {
+            ctx.beginPath();
+            for (let r = 0; r < polygon.length; r++) {
+                const ring = polygon[r];
+                for (let i = 0; i < ring.length; i++) {
+                    let lon = ring[i][0];
+                    if (crosses && lon < 0) lon += 360;
+                    const [x, y] = lonLatToPixel(lon, ring[i][1]);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+            }
+        }
+
+        function getPolygons(feature) {
+            const type = feature.geometry.type;
+            if (type === 'Polygon') return [feature.geometry.coordinates];
+            if (type === 'MultiPolygon') return feature.geometry.coordinates;
+            return [];
+        }
+
+        function doesCross(polygon) {
+            // Detect actual antimeridian jumps (e.g. Russia: +170 → -170)
+            // Skip the closure segment (last→first) — GeoJSON rings close
+            // explicitly, so Antarctica's [-180..+180, back to -180] has a
+            // 360° jump only at closure, not a real geographic crossing.
+            const ring = polygon[0];
+            for (let i = 1; i < ring.length - 1; i++) {
+                if (Math.abs(ring[i][0] - ring[i - 1][0]) > 180) return true;
+            }
+            return false;
+        }
+
+        function drawFeature(ctx, feature, fillStyle, strokeStyle, lineWidth) {
+            const polygons = getPolygons(feature);
             for (const polygon of polygons) {
-                const outerRing = polygon[0];
-                const holes = polygon.slice(1);
+                const crosses = doesCross(polygon);
 
-                // Flatten for earcut
-                const flat = [];
-                const holeIdx = [];
-
-                for (const [lon, lat] of outerRing) {
-                    flat.push(lon, lat);
-                    cLon += lon; cLat += lat; cN++;
+                if (fillStyle) {
+                    ctx.fillStyle = fillStyle;
+                    tracePolygon(ctx, polygon, crosses);
+                    ctx.fill('evenodd');
+                    if (crosses) {
+                        // Draw wrapped copy for the other side of the seam
+                        ctx.save();
+                        ctx.translate(-TEX_W, 0);
+                        tracePolygon(ctx, polygon, crosses);
+                        ctx.fill('evenodd');
+                        ctx.restore();
+                    }
                 }
-                for (const hole of holes) {
-                    holeIdx.push(flat.length / 2);
-                    for (const [lon, lat] of hole) flat.push(lon, lat);
+                if (strokeStyle) {
+                    ctx.strokeStyle = strokeStyle;
+                    ctx.lineWidth = lineWidth || 1;
+                    tracePolygon(ctx, polygon, crosses);
+                    ctx.stroke();
+                    if (crosses) {
+                        ctx.save();
+                        ctx.translate(-TEX_W, 0);
+                        tracePolygon(ctx, polygon, crosses);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
                 }
+            }
+        }
 
-                const indices = earcutFn(flat, holeIdx.length ? holeIdx : undefined);
-                if (indices.length === 0) continue;
+        function redrawColorCanvas(hoverIdx) {
+            colorCtx.clearRect(0, 0, TEX_W, TEX_H);
 
-                const numVerts = flat.length / 2;
-                const positions = new Float32Array(numVerts * 3);
-                const normals = new Float32Array(numVerts * 3);
-
-                for (let i = 0; i < numVerts; i++) {
-                    const v = latLonToVec3(flat[i*2+1], flat[i*2], RADIUS + COUNTRY_ALT);
-                    positions[i*3]   = v.x;
-                    positions[i*3+1] = v.y;
-                    positions[i*3+2] = v.z;
-                    // Normal = outward from sphere center
-                    const len = v.length();
-                    normals[i*3]   = v.x / len;
-                    normals[i*3+1] = v.y / len;
-                    normals[i*3+2] = v.z / len;
-                }
-
-                const geom = new THREE.BufferGeometry();
-                geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                geom.setIndex(Array.from(indices));
-                group.add(new THREE.Mesh(geom, material));
-
-                // Border line from outer ring
-                const bPts = outerRing.map(([lon, lat]) =>
-                    latLonToVec3(lat, lon, RADIUS + BORDER_ALT)
-                );
-                const bGeom = new THREE.BufferGeometry().setFromPoints(bPts);
-                borderLayer.add(new THREE.LineLoop(bGeom,
-                    new THREE.LineBasicMaterial({ color: BORDER_COLOR })
-                ));
+            // Fill all countries
+            for (let i = 0; i < features.length; i++) {
+                const fill = (i === hoverIdx) ? LAND_HOVER : LAND_FILL;
+                drawFeature(colorCtx, features[i], fill, null);
+            }
+            // Draw borders on top of all fills
+            for (let i = 0; i < features.length; i++) {
+                drawFeature(colorCtx, features[i], null, BORDER_STROKE, BORDER_WIDTH);
             }
 
-            if (group.children.length === 0) return;
+            // South pole ice cap — fill only transparent pixels in the polar region
+            // Use 'destination-over' so it draws behind existing content
+            // Gradient fade from transparent → white for a soft edge
+            colorCtx.save();
+            colorCtx.globalCompositeOperation = 'destination-over';
+            const fadeTop = Math.floor((90 - (-84.6)) / 180 * TEX_H);
+            const solidTop = Math.floor((90 - (-85)) / 180 * TEX_H);
+            const grad = colorCtx.createLinearGradient(0, fadeTop, 0, solidTop);
+            grad.addColorStop(0, 'rgba(200, 210, 220, 0)');
+            grad.addColorStop(0.2, 'rgba(200, 210, 220, 0.7)');
+            grad.addColorStop(1, 'rgba(200, 210, 220, 0.85)');
+            colorCtx.fillStyle = grad;
+            colorCtx.fillRect(0, fadeTop, TEX_W, solidTop - fadeTop);
+            colorCtx.fillStyle = 'rgba(200, 210, 220, 0.85)';
+            colorCtx.fillRect(0, solidTop, TEX_W, TEX_H - solidTop);
+            colorCtx.restore();
 
-            // Centroid direction for pop effect
-            const centroid = latLonToVec3(cLat / cN, cLon / cN, 1).normalize();
+            landTexture.needsUpdate = true;
+        }
 
-            group.userData = { name, id, material, centroid };
-            countryLayer.add(group);
-            countryGroups.push(group);
-
-            // Label
-            if (name) {
-                const labelPos = latLonToVec3(cLat / cN, cLon / cN, RADIUS + 2.5);
-                const div = document.createElement('div');
-                div.className = 'country-label';
-                div.textContent = name;
-                const obj = new CSS2DObject(div);
-                obj.position.copy(labelPos);
-                scene.add(obj);
-                labels.push(obj);
+        function drawIdCanvas() {
+            idCtx.clearRect(0, 0, TEX_W, TEX_H);
+            for (let i = 0; i < features.length; i++) {
+                const code = i + 1; // 0 = no country
+                const r = code & 0xFF;
+                const g = (code >> 8) & 0xFF;
+                const b = (code >> 16) & 0xFF;
+                drawFeature(idCtx, features[i], `rgb(${r},${g},${b})`, null);
             }
+        }
+
+        // === Compute centroid for labels ===
+        function featureCentroid(feature) {
+            const polygons = getPolygons(feature);
+            let sumLon = 0, sumLat = 0, count = 0;
+            for (const polygon of polygons) {
+                const crosses = doesCross(polygon);
+                for (const [lon, lat] of polygon[0]) {
+                    let adjustedLon = lon;
+                    if (crosses && lon < 0) adjustedLon += 360;
+                    sumLon += adjustedLon;
+                    sumLat += lat;
+                    count++;
+                }
+            }
+            if (count === 0) return null;
+            let avgLon = sumLon / count;
+            if (avgLon > 180) avgLon -= 360;
+            return { lon: avgLon, lat: sumLat / count };
         }
 
         // === Load data ===
@@ -383,34 +454,53 @@
             .then(r => r.json())
             .then(topo => {
                 const geo = topoFn.feature(topo, topo.objects.countries);
-                geo.features.forEach(buildCountry);
+                features = geo.features;
+
+                // Build labels
+                for (const feature of features) {
+                    const name = NAMES[feature.id] || '';
+                    if (!name) continue;
+                    const c = featureCentroid(feature);
+                    if (!c) continue;
+                    const pos = latLonToVec3(c.lat, c.lon, RADIUS + 2.5);
+                    const div = document.createElement('div');
+                    div.className = 'country-label';
+                    div.textContent = name;
+                    const obj = new CSS2DObject(div);
+                    obj.position.copy(pos);
+                    scene.add(obj);
+                    labels.push(obj);
+                }
+
+                drawIdCanvas();
+                redrawColorCanvas(-1);
                 document.getElementById('loading').classList.add('done');
             });
 
-        // === Hover / raycasting ===
+        // === Hover detection via ID texture lookup ===
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2(-9, -9);
-        let hoveredGroup = null;
         const nameTag = document.getElementById('country-name-tag');
 
-        function setHover(group) {
-            if (group === hoveredGroup) return;
+        function getCountryAtMouse() {
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObject(landSphere);
+            if (hits.length === 0) return -1;
+            const uv = hits[0].uv;
+            if (!uv) return -1;
+            const px = Math.floor(uv.x * TEX_W) % TEX_W;
+            const py = Math.floor((1 - uv.y) * TEX_H) % TEX_H;
+            const pixel = idCtx.getImageData(px, py, 1, 1).data;
+            const code = pixel[0] + (pixel[1] << 8) + (pixel[2] << 16);
+            return code - 1;
+        }
 
-            // Unhover previous
-            if (hoveredGroup) {
-                const { material, centroid } = hoveredGroup.userData;
-                material.color.setHex(BASE_COLOR);
-                material.emissive.setHex(0x060e08);
-                hoveredGroup.position.set(0, 0, 0);
-            }
+        function checkHover(fromTap) {
+            const idx = getCountryAtMouse();
+            if (idx === hoveredIdx) return;
 
-            // Hover new
-            if (group) {
-                const { material, centroid, name } = group.userData;
-                material.color.setHex(HOVER_COLOR);
-                material.emissive.setHex(0x0a2a25);
-                // Pop out
-                group.position.copy(centroid.clone().multiplyScalar(POP_ALT));
+            if (idx >= 0 && idx < features.length) {
+                const name = NAMES[features[idx].id] || '';
                 nameTag.textContent = name;
                 nameTag.classList.add('visible');
                 document.body.style.cursor = 'pointer';
@@ -419,7 +509,8 @@
                 document.body.style.cursor = 'default';
             }
 
-            hoveredGroup = group;
+            hoveredIdx = idx;
+            redrawColorCanvas(idx);
         }
 
         window.addEventListener('pointermove', (e) => {
@@ -437,7 +528,6 @@
             const dx = e.clientX - pointerDownPos.x;
             const dy = e.clientY - pointerDownPos.y;
             if (dx * dx + dy * dy < 36) {
-                // Tap — update mouse and force a hover check
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
                 checkHover(true);
@@ -445,33 +535,13 @@
             pointerDownPos = null;
         });
 
-        function checkHover(fromTap = false) {
-            raycaster.setFromCamera(mouse, camera);
-            const meshes = [];
-            countryGroups.forEach(g => g.children.forEach(m => meshes.push(m)));
-            const hits = raycaster.intersectObjects(meshes);
-
-            if (hits.length > 0) {
-                setHover(hits[0].object.parent);
-            } else if (fromTap) {
-                setHover(null);
-            } else {
-                setHover(null);
-            }
-        }
-
         // === Label visibility ===
         function updateLabels() {
             const dist = camera.position.length();
             const show = dist < LABEL_SHOW_DIST;
             const camDir = camera.position.clone().normalize();
-
             for (const label of labels) {
-                if (!show) {
-                    label.visible = false;
-                    continue;
-                }
-                // Only show if facing camera
+                if (!show) { label.visible = false; continue; }
                 const labelDir = label.position.clone().normalize();
                 label.visible = labelDir.dot(camDir) > 0.15;
             }
