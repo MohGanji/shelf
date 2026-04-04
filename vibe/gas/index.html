@@ -590,7 +590,7 @@
                     <span class="chart-avg" id="chart-avg"></span>
                 </div>
                 <div class="chart-container" id="chart-container">
-                    <svg id="chart-svg" preserveAspectRatio="none"></svg>
+                    <svg id="chart-svg"></svg>
                     <div class="chart-tooltip" id="chart-tooltip"></div>
                 </div>
             </div>
@@ -751,8 +751,9 @@
             const yMax = Math.ceil((dataMax + padding) * 2) / 2;
             const yRange = yMax - yMin || 1;
 
-            const W = 440;
-            const H = 160;
+            const rect = chartContainer.getBoundingClientRect();
+            const W = rect.width;
+            const H = rect.height;
             const padL = 36;
             const padR = 12;
             const padT = 8;
@@ -862,13 +863,10 @@
                     chartTooltip.innerHTML = html;
                     chartTooltip.classList.add('visible');
 
-                    // Position relative to chart container
+                    // Position relative to chart container (SVG coords = pixel coords)
                     const containerRect = chartContainer.getBoundingClientRect();
-                    const svgRect = chartSvg.getBoundingClientRect();
-                    const scaleX = svgRect.width / W;
-                    const scaleY = svgRect.height / H;
-                    const cx = parseFloat(dot.getAttribute('cx')) * scaleX;
-                    const cy = parseFloat(dot.getAttribute('cy')) * scaleY;
+                    const cx = parseFloat(dot.getAttribute('cx'));
+                    const cy = parseFloat(dot.getAttribute('cy'));
 
                     const tipW = chartTooltip.offsetWidth;
                     const tipH = chartTooltip.offsetHeight;
