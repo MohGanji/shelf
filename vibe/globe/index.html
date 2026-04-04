@@ -36,6 +36,15 @@
             text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1);
             white-space: nowrap;
             letter-spacing: 0.03em;
+            text-align: center;
+            line-height: 1.35;
+        }
+        .country-label .label-val {
+            display: block;
+            font-size: 8.5px;
+            font-weight: 400;
+            color: rgba(180,180,180,0.8);
+            letter-spacing: 0;
         }
 
         .country-name-tag {
@@ -727,6 +736,8 @@
                     div.textContent = name;
                     const obj = new CSS2DObject(div);
                     obj.position.copy(pos);
+                    obj.userData.isoNum = feature.id;
+                    obj.userData.name = name;
                     scene.add(obj);
                     labels.push(obj);
                 }
@@ -829,7 +840,35 @@
             pointerDownPos = null;
         });
 
-        // === Label visibility ===
+        // === Label visibility + content ===
+        let labelContentYear = -1;
+        let labelContentMode = '';
+
+        function updateLabelContent() {
+            const yearIdx = state.year - DENSITY_START_YEAR;
+            if (state.mode === labelContentMode && state.year === labelContentYear) return;
+            labelContentMode = state.mode;
+            labelContentYear = state.year;
+
+            for (const label of labels) {
+                const { isoNum, name } = label.userData;
+                const div = label.element;
+                if (state.mode === 'density') {
+                    const density = getDensity(isoNum, yearIdx);
+                    div.innerHTML = density != null
+                        ? `${name}<span class="label-val">${density.toFixed(1)}/km²</span>`
+                        : `${name}<span class="label-val">No data</span>`;
+                } else if (state.mode === 'income') {
+                    const income = getIncome(isoNum, yearIdx);
+                    div.innerHTML = income != null
+                        ? `${name}<span class="label-val">$${formatNum(income)}</span>`
+                        : `${name}<span class="label-val">No data</span>`;
+                } else {
+                    div.textContent = name;
+                }
+            }
+        }
+
         function updateLabels() {
             const dist = camera.position.length();
             const show = dist < LABEL_SHOW_DIST;
@@ -839,6 +878,7 @@
                 const labelDir = label.position.clone().normalize();
                 label.visible = labelDir.dot(camDir) > 0.15;
             }
+            if (show) updateLabelContent();
         }
 
         // === Mode switching ===
