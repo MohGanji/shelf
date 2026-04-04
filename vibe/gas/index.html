@@ -561,15 +561,19 @@
 
             <div class="history-list" id="history-list"></div>
 
-            <div class="data-actions">
+            <div class="data-actions" id="data-actions-full">
                 <button id="export-btn">Export</button>
                 <span class="data-sep">/</span>
-                <button id="import-btn">Import</button>
+                <button id="import-btn-full">Import</button>
                 <span class="data-sep">/</span>
                 <button id="clear-all-btn" class="btn-danger">Clear all</button>
             </div>
-            <input type="file" id="import-file" accept=".json" style="display:none">
         </div>
+
+        <div class="data-actions" id="data-actions-empty" style="display:none;">
+            <button id="import-btn-empty">Import</button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none">
     </div>
 
     <!-- Confirm modal -->
@@ -599,8 +603,11 @@
         const chartSvg = document.getElementById('chart-svg');
         const clearAllBtn = document.getElementById('clear-all-btn');
         const exportBtn = document.getElementById('export-btn');
-        const importBtn = document.getElementById('import-btn');
+        const importBtnFull = document.getElementById('import-btn-full');
+        const importBtnEmpty = document.getElementById('import-btn-empty');
         const importFile = document.getElementById('import-file');
+        const dataActionsFull = document.getElementById('data-actions-full');
+        const dataActionsEmpty = document.getElementById('data-actions-empty');
 
         // Modal
         const modalOverlay = document.getElementById('modal-overlay');
@@ -781,9 +788,11 @@
 
             if (entries.length === 0) {
                 historySection.style.display = 'none';
+                dataActionsEmpty.style.display = 'flex';
                 return;
             }
 
+            dataActionsEmpty.style.display = 'none';
             historySection.style.display = 'block';
             historyCount.textContent = `${entries.length} fill-up${entries.length !== 1 ? 's' : ''}`;
 
@@ -911,7 +920,8 @@
         });
 
         // Import
-        importBtn.addEventListener('click', () => importFile.click());
+        importBtnFull.addEventListener('click', () => importFile.click());
+        importBtnEmpty.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
