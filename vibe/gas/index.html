@@ -191,6 +191,55 @@
             transform: none;
         }
 
+        /* Chart */
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .chart-title {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .chart-avg {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .chart-avg .unit {
+            font-size: 0.7rem;
+            font-weight: 500;
+            opacity: 0.5;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 160px;
+        }
+
+        .chart-container svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
         /* History */
         .history-header {
             display: flex;
@@ -219,13 +268,6 @@
             flex-direction: column;
             gap: 8px;
             padding-bottom: 40px;
-        }
-
-        .history-empty {
-            text-align: center;
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            padding: 40px 0;
         }
 
         .entry {
@@ -295,39 +337,6 @@
             color: var(--red);
         }
 
-        /* Average bar */
-        .avg-bar {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .avg-bar .avg-label {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .avg-bar .avg-value {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--text);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .avg-bar .avg-value .unit {
-            font-size: 0.7rem;
-            font-weight: 500;
-            opacity: 0.5;
-        }
-
         /* Clear all */
         .clear-all {
             text-align: center;
@@ -347,6 +356,87 @@
 
         .clear-all button:hover {
             color: var(--red);
+        }
+
+        /* Confirm modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            max-width: 340px;
+            width: 100%;
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modal-message {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .modal-btn:active { opacity: 0.8; }
+
+        .modal-btn-cancel {
+            background: var(--surface-2);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .modal-btn-danger {
+            background: var(--red);
+            color: #fff;
         }
 
         /* Input type number - hide spinners */
@@ -390,13 +480,18 @@
                 <span class="result-value" id="consumption">&mdash;</span>
             </div>
 
-            <button class="submit-btn" id="submit-btn" disabled>Log Fill-up</button>
+            <button class="submit-btn" id="submit-btn" disabled>Add Fill-up</button>
         </div>
 
         <div id="history-section" style="display:none;">
-            <div class="avg-bar" id="avg-bar">
-                <span class="avg-label">Average</span>
-                <span class="avg-value" id="avg-value"></span>
+            <div class="chart-card" id="chart-card">
+                <div class="chart-header">
+                    <span class="chart-title">Consumption</span>
+                    <span class="chart-avg" id="chart-avg"></span>
+                </div>
+                <div class="chart-container">
+                    <svg id="chart-svg" preserveAspectRatio="none"></svg>
+                </div>
             </div>
 
             <div class="history-header">
@@ -412,6 +507,18 @@
         </div>
     </div>
 
+    <!-- Confirm modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" id="modal-title"></div>
+            <div class="modal-message" id="modal-message"></div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" id="modal-cancel">Cancel</button>
+                <button class="modal-btn modal-btn-danger" id="modal-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const STORAGE_KEY = 'gas_log_entries';
 
@@ -422,8 +529,40 @@
         const historySection = document.getElementById('history-section');
         const historyList = document.getElementById('history-list');
         const historyCount = document.getElementById('history-count');
-        const avgValue = document.getElementById('avg-value');
+        const chartAvg = document.getElementById('chart-avg');
+        const chartSvg = document.getElementById('chart-svg');
         const clearAllBtn = document.getElementById('clear-all-btn');
+
+        // Modal
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalConfirm = document.getElementById('modal-confirm');
+        let modalResolve = null;
+
+        function showModal(title, message) {
+            return new Promise((resolve) => {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modalResolve = resolve;
+                modalOverlay.classList.add('active');
+            });
+        }
+
+        function closeModal(result) {
+            modalOverlay.classList.remove('active');
+            if (modalResolve) {
+                modalResolve(result);
+                modalResolve = null;
+            }
+        }
+
+        modalCancel.addEventListener('click', () => closeModal(false));
+        modalConfirm.addEventListener('click', () => closeModal(true));
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal(false);
+        });
 
         function loadEntries() {
             try {
@@ -469,6 +608,105 @@
             }
         }
 
+        function renderChart(entries) {
+            if (entries.length < 2) {
+                document.getElementById('chart-card').style.display = 'none';
+                return;
+            }
+            document.getElementById('chart-card').style.display = 'block';
+
+            const values = entries.map(e => e.consumption);
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            chartAvg.innerHTML = `avg ${formatNum(avg, 1)} <span class="unit">l/100km</span>`;
+
+            const dataMin = Math.min(...values);
+            const dataMax = Math.max(...values);
+            const range = dataMax - dataMin;
+            // Add padding: at least 1 unit above/below, or 20% of range
+            const padding = Math.max(1, range * 0.25);
+            const yMin = Math.floor((dataMin - padding) * 2) / 2; // round to 0.5
+            const yMax = Math.ceil((dataMax + padding) * 2) / 2;
+            const yRange = yMax - yMin || 1;
+
+            const W = 440;
+            const H = 160;
+            const padL = 36;
+            const padR = 12;
+            const padT = 8;
+            const padB = 22;
+            const chartW = W - padL - padR;
+            const chartH = H - padT - padB;
+
+            function xPos(i) {
+                if (values.length === 1) return padL + chartW / 2;
+                return padL + (i / (values.length - 1)) * chartW;
+            }
+            function yPos(v) {
+                return padT + (1 - (v - yMin) / yRange) * chartH;
+            }
+
+            let svg = '';
+
+            // Y-axis grid lines and labels
+            const gridSteps = 4;
+            for (let i = 0; i <= gridSteps; i++) {
+                const v = yMin + (i / gridSteps) * yRange;
+                const y = yPos(v);
+                svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#222" stroke-width="1"/>`;
+                svg += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" fill="#555" font-size="10" font-family="Inter, sans-serif">${formatNum(v, 1)}</text>`;
+            }
+
+            // Average dashed line
+            const avgY = yPos(avg);
+            svg += `<line x1="${padL}" y1="${avgY}" x2="${W - padR}" y2="${avgY}" stroke="#4baea4" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>`;
+
+            // Area fill
+            let areaPath = `M ${xPos(0)} ${yPos(values[0])}`;
+            for (let i = 1; i < values.length; i++) {
+                areaPath += ` L ${xPos(i)} ${yPos(values[i])}`;
+            }
+            areaPath += ` L ${xPos(values.length - 1)} ${padT + chartH} L ${xPos(0)} ${padT + chartH} Z`;
+            svg += `<path d="${areaPath}" fill="url(#areaGrad)" opacity="0.3"/>`;
+
+            // Line
+            let linePath = `M ${xPos(0)} ${yPos(values[0])}`;
+            for (let i = 1; i < values.length; i++) {
+                linePath += ` L ${xPos(i)} ${yPos(values[i])}`;
+            }
+            svg += `<path d="${linePath}" fill="none" stroke="#4baea4" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+            // Dots
+            values.forEach((v, i) => {
+                svg += `<circle cx="${xPos(i)}" cy="${yPos(v)}" r="3.5" fill="#4baea4" stroke="#151515" stroke-width="2"/>`;
+            });
+
+            // X-axis date labels (show a few, not all)
+            const maxLabels = 5;
+            const step = Math.max(1, Math.floor(entries.length / maxLabels));
+            for (let i = 0; i < entries.length; i += step) {
+                const d = new Date(entries[i].date);
+                const label = `${d.getDate()}/${d.getMonth() + 1}`;
+                svg += `<text x="${xPos(i)}" y="${H - 2}" text-anchor="middle" fill="#444" font-size="9" font-family="Inter, sans-serif">${label}</text>`;
+            }
+            // Always show last label if not already shown
+            if ((entries.length - 1) % step !== 0) {
+                const d = new Date(entries[entries.length - 1].date);
+                const label = `${d.getDate()}/${d.getMonth() + 1}`;
+                svg += `<text x="${xPos(entries.length - 1)}" y="${H - 2}" text-anchor="middle" fill="#444" font-size="9" font-family="Inter, sans-serif">${label}</text>`;
+            }
+
+            chartSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+            chartSvg.innerHTML = `
+                <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#4baea4" stop-opacity="0.4"/>
+                        <stop offset="100%" stop-color="#4baea4" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                ${svg}
+            `;
+        }
+
         function renderHistory() {
             const entries = loadEntries();
 
@@ -480,10 +718,14 @@
             historySection.style.display = 'block';
             historyCount.textContent = `${entries.length} fill-up${entries.length !== 1 ? 's' : ''}`;
 
-            // Average
-            const totalConsumption = entries.reduce((sum, e) => sum + e.consumption, 0);
-            const avg = totalConsumption / entries.length;
-            avgValue.innerHTML = `${formatNum(avg, 1)} <span class="unit">l/100km</span>`;
+            // Chart
+            renderChart(entries);
+
+            // If only 1 entry and chart is hidden, show avg inline
+            if (entries.length === 1) {
+                const avg = entries[0].consumption;
+                chartAvg.innerHTML = `avg ${formatNum(avg, 1)} <span class="unit">l/100km</span>`;
+            }
 
             // Render entries (newest first)
             historyList.innerHTML = '';
@@ -532,18 +774,26 @@
             renderHistory();
         }
 
-        function deleteEntry(id) {
+        async function deleteEntry(id) {
+            const confirmed = await showModal(
+                'Delete fill-up',
+                'Are you sure you want to delete this fill-up record?'
+            );
+            if (!confirmed) return;
             let entries = loadEntries();
             entries = entries.filter(e => e.id !== id);
             saveEntries(entries);
             renderHistory();
         }
 
-        function clearAll() {
-            if (confirm('Delete all fill-up records?')) {
-                saveEntries([]);
-                renderHistory();
-            }
+        async function clearAll() {
+            const confirmed = await showModal(
+                'Clear all data',
+                'This will delete all your fill-up records. This cannot be undone.'
+            );
+            if (!confirmed) return;
+            saveEntries([]);
+            renderHistory();
         }
 
         // Events
@@ -552,7 +802,6 @@
 
         submitBtn.addEventListener('click', addEntry);
 
-        // Enter key submits from either input
         [litersInput, distanceInput].forEach(input => {
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !submitBtn.disabled) {
