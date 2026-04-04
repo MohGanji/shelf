@@ -379,13 +379,17 @@
             color: var(--red);
         }
 
-        /* Clear all */
-        .clear-all {
-            text-align: center;
+        /* Data actions (export/import/clear) */
+        .data-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
             padding: 12px 0 24px;
+            flex-wrap: wrap;
         }
 
-        .clear-all button {
+        .data-actions button {
             background: none;
             border: none;
             color: #444;
@@ -396,7 +400,17 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .clear-all button:hover {
+        .data-actions button:hover {
+            color: var(--text-dim);
+        }
+
+        .data-actions .data-sep {
+            color: #2a2a2a;
+            font-size: 0.8rem;
+            user-select: none;
+        }
+
+        .data-actions .btn-danger:hover {
             color: var(--red);
         }
 
@@ -547,9 +561,14 @@
 
             <div class="history-list" id="history-list"></div>
 
-            <div class="clear-all">
-                <button id="clear-all-btn">Clear all data</button>
+            <div class="data-actions">
+                <button id="export-btn">Export</button>
+                <span class="data-sep">/</span>
+                <button id="import-btn">Import</button>
+                <span class="data-sep">/</span>
+                <button id="clear-all-btn" class="btn-danger">Clear all</button>
             </div>
+            <input type="file" id="import-file" accept=".json" style="display:none">
         </div>
     </div>
 
@@ -579,6 +598,9 @@
         const chartAvg = document.getElementById('chart-avg');
         const chartSvg = document.getElementById('chart-svg');
         const clearAllBtn = document.getElementById('clear-all-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const importBtn = document.getElementById('import-btn');
+        const importFile = document.getElementById('import-file');
 
         // Modal
         const modalOverlay = document.getElementById('modal-overlay');
@@ -875,6 +897,71 @@
         });
 
         clearAllBtn.addEventListener('click', clearAll);
+
+        // Export
+        exportBtn.addEventListener('click', () => {
+            const entries = loadEntries();
+            const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'gas-log.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Import
+        importBtn.addEventListener('click', () => importFile.click());
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (!Array.isArray(data)) throw new Error('Not an array');
+                    // Validate entries
+                    for (const entry of data) {
+                        if (typeof entry.liters !== 'number' || typeof entry.distance !== 'number') {
+                            throw new Error('Invalid entry: missing liters or distance');
+                        }
+                    }
+                    // Normalize: ensure id, date, consumption exist
+                    const normalized = data.map((entry, i) => ({
+                        id: entry.id || Date.now() + i,
+                        liters: entry.liters,
+                        distance: entry.distance,
+                        consumption: entry.consumption || calcConsumption(entry.liters, entry.distance),
+                        date: entry.date || new Date().toISOString(),
+                        ...(entry.note ? { note: entry.note } : {})
+                    }));
+                    const existing = loadEntries();
+                    if (existing.length > 0) {
+                        const merge = await showModal(
+                            'Import data',
+                            `Found ${normalized.length} entries. You have ${existing.length} existing entries. Import will merge both. Continue?`
+                        );
+                        if (!merge) return;
+                    }
+                    // Merge and deduplicate by id
+                    const merged = [...existing, ...normalized];
+                    const seen = new Set();
+                    const deduped = merged.filter(e => {
+                        if (seen.has(e.id)) return false;
+                        seen.add(e.id);
+                        return true;
+                    });
+                    // Sort by date
+                    deduped.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    saveEntries(deduped);
+                    renderHistory();
+                } catch (err) {
+                    await showModal('Import failed', err.message);
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = '';
+        });
 
         // Init
         renderHistory();
