@@ -138,22 +138,27 @@
             text-transform: uppercase; letter-spacing: 0.08em;
             margin-bottom: 8px;
         }
-        .legend-bar-wrap {
-            display: flex; align-items: stretch; gap: 6px;
+        .legend-blocks {
+            display: flex; flex-direction: column; gap: 2px;
         }
-        .legend-bar {
-            width: 14px; height: 120px; border-radius: 3px;
-            cursor: pointer;
+        .legend-block {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 6px; border-radius: 4px;
+            cursor: pointer; transition: background 0.15s, opacity 0.15s;
         }
-        .legend-ticks {
-            display: flex; flex-direction: column; justify-content: space-between;
+        .legend-block:hover { background: rgba(255,255,255,0.06); }
+        .legend-block.active-filter {
+            background: rgba(75,174,164,0.15);
+            outline: 1px solid rgba(75,174,164,0.5);
         }
-        .legend-ticks span {
-            color: #999; font-size: 0.65rem; line-height: 1;
-            cursor: pointer; transition: color 0.15s;
+        .legend-blocks.has-filter .legend-block:not(.active-filter) { opacity: 0.35; }
+        .legend-block-swatch {
+            width: 22px; height: 14px; border-radius: 3px; flex-shrink: 0;
         }
-        .legend-ticks span:hover { color: #ddd; }
-        .legend-ticks span.active-filter { color: #4baea4; font-weight: 700; }
+        .legend-block-label {
+            color: #999; font-size: 0.65rem; white-space: nowrap; line-height: 1;
+        }
+        .legend-block.active-filter .legend-block-label { color: #4baea4; font-weight: 600; }
         .legend-nodata {
             display: flex; align-items: center; gap: 6px;
             margin-top: 8px; color: #666; font-size: 0.65rem;
@@ -227,16 +232,7 @@
     <!-- Legend (density mode) -->
     <div class="legend-panel" id="legend-panel">
         <div class="legend-title">People / km&sup2;</div>
-        <div class="legend-bar-wrap">
-            <canvas id="legend-bar" class="legend-bar" width="14" height="120"></canvas>
-            <div class="legend-ticks">
-                <span>10k</span>
-                <span>1k</span>
-                <span>100</span>
-                <span>10</span>
-                <span>1</span>
-            </div>
-        </div>
+        <div class="legend-blocks" id="density-blocks"></div>
         <div class="legend-nodata">
             <div class="legend-nodata-swatch"></div>
             <span>No data</span>
@@ -252,15 +248,7 @@
     <!-- Legend (income mode) -->
     <div class="legend-panel" id="income-legend-panel">
         <div class="legend-title" id="income-legend-title">GDP per capita (US$)</div>
-        <div class="legend-bar-wrap">
-            <canvas id="income-legend-bar" class="legend-bar" width="14" height="120"></canvas>
-            <div class="legend-ticks">
-                <span>$100k</span>
-                <span>$10k</span>
-                <span>$1k</span>
-                <span>$100</span>
-            </div>
-        </div>
+        <div class="legend-blocks" id="income-blocks"></div>
         <div class="legend-nodata">
             <div class="legend-nodata-swatch"></div>
             <span>No data</span>
@@ -1018,28 +1006,18 @@
         const DENSITY_TICKS = [10000, 1000, 100, 10, 1];  // top to bottom
         const INCOME_TICKS = [100000, 10000, 1000, 100];
 
-        function clearFilterUI() {
-            document.querySelectorAll('.legend-ticks span.active-filter, .legend-nodata.active-filter').forEach(
-                el => el.classList.remove('active-filter')
-            );
+        function fmtLegendVal(v, prefix) {
+            if (v >= 1000) return prefix + (v / 1000) + 'k';
+            return prefix + v;
         }
 
-        function applyLegendFilter(tickEl, value, ticks) {
-            const idx = ticks.indexOf(value);
-            const min = value;
-            const max = idx > 0 ? ticks[idx - 1] : Infinity;
-
-            // Toggle: clicking same filter clears it
-            if (state.legendFilter && state.legendFilter !== 'nodata' &&
-                state.legendFilter.min === min && state.legendFilter.max === max) {
-                state.legendFilter = null;
-                clearFilterUI();
-            } else {
-                state.legendFilter = { min, max };
-                clearFilterUI();
-                tickEl.classList.add('active-filter');
-            }
-            redrawColorCanvas(hoveredIdx);
+        function clearFilterUI() {
+            document.querySelectorAll('.legend-block.active-filter').forEach(
+                el => el.classList.remove('active-filter'));
+            document.querySelectorAll('.legend-blocks.has-filter').forEach(
+                el => el.classList.remove('has-filter'));
+            document.querySelectorAll('.legend-nodata.active-filter').forEach(
+                el => el.classList.remove('active-filter'));
         }
 
         function applyNoDataFilter(el) {
@@ -1050,53 +1028,78 @@
                 state.legendFilter = 'nodata';
                 clearFilterUI();
                 el.classList.add('active-filter');
+                const blocks = el.closest('.legend-panel').querySelector('.legend-blocks');
+                if (blocks) blocks.classList.add('has-filter');
             }
             redrawColorCanvas(hoveredIdx);
         }
 
-        function setupLegendClicks(panelId, ticks) {
-            const panel = document.getElementById(panelId);
-            const tickEls = panel.querySelectorAll('.legend-ticks span');
-            tickEls.forEach((el, i) => {
-                el.addEventListener('click', () => applyLegendFilter(el, ticks[i], ticks));
-            });
-            const nodata = panel.querySelector('.legend-nodata');
-            if (nodata) nodata.addEventListener('click', () => applyNoDataFilter(nodata));
+        function buildLegendBlocks(containerId, ticks, colorFn, prefix) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const n = ticks.length;
+            for (let i = 0; i < n; i++) {
+                const block = document.createElement('div');
+                block.className = 'legend-block';
 
-            // Click on bar itself - map y position to a tick range
-            const bar = panel.querySelector('.legend-bar');
-            bar.addEventListener('click', (e) => {
-                const rect = bar.getBoundingClientRect();
-                const t = 1 - (e.clientY - rect.top) / rect.height; // 0=bottom, 1=top
-                const segCount = ticks.length - 1;
-                const seg = Math.min(Math.floor(t * segCount), segCount - 1);
-                const tickIdx = segCount - seg; // bottom tick index
-                const tickEl = tickEls[tickIdx];
-                applyLegendFilter(tickEl, ticks[tickIdx], ticks);
-            });
+                const swatch = document.createElement('div');
+                swatch.className = 'legend-block-swatch';
+                // Use geometric mean for mid-range color, boundary for extremes
+                let swatchVal;
+                if (i === 0) swatchVal = ticks[0];
+                else if (i === n - 1) swatchVal = ticks[n - 1];
+                else swatchVal = Math.sqrt(ticks[i] * ticks[i - 1]);
+                swatch.style.background = colorFn(swatchVal);
+                block.appendChild(swatch);
 
-            // Prevent orbit controls
-            panel.addEventListener('pointerdown', (e) => e.stopPropagation());
-        }
+                const label = document.createElement('span');
+                label.className = 'legend-block-label';
+                if (i === 0)
+                    label.textContent = '\u2265 ' + fmtLegendVal(ticks[0], prefix);
+                else if (i === n - 1)
+                    label.textContent = '< ' + fmtLegendVal(ticks[n - 2], prefix);
+                else
+                    label.textContent = fmtLegendVal(ticks[i], prefix) + ' \u2013 ' + fmtLegendVal(ticks[i - 1], prefix);
+                block.appendChild(label);
 
-        // === Legend gradient bars ===
-        function paintLegendBar(canvasId, minVal, maxVal, colorFn) {
-            const canvas = document.getElementById(canvasId);
-            const ctx = canvas.getContext('2d');
-            const h = canvas.height;
-            for (let y = 0; y < h; y++) {
-                const t = 1 - y / h;
-                const logVal = Math.log10(minVal) + t * (Math.log10(maxVal) - Math.log10(minVal));
-                ctx.fillStyle = colorFn(Math.pow(10, logVal));
-                ctx.fillRect(0, y, canvas.width, 1);
+                // Store filter range
+                let rMin, rMax;
+                if (i === 0) { rMin = ticks[0]; rMax = Infinity; }
+                else if (i === n - 1) { rMin = 0; rMax = ticks[n - 2]; }
+                else { rMin = ticks[i]; rMax = ticks[i - 1]; }
+                block.dataset.min = rMin;
+                block.dataset.max = rMax === Infinity ? 'Infinity' : rMax;
+
+                block.addEventListener('click', () => {
+                    const min = parseFloat(block.dataset.min);
+                    const max = block.dataset.max === 'Infinity' ? Infinity : parseFloat(block.dataset.max);
+                    if (state.legendFilter && state.legendFilter !== 'nodata' &&
+                        state.legendFilter.min === min && state.legendFilter.max === max) {
+                        state.legendFilter = null;
+                        clearFilterUI();
+                    } else {
+                        state.legendFilter = { min, max };
+                        clearFilterUI();
+                        block.classList.add('active-filter');
+                        block.closest('.legend-blocks').classList.add('has-filter');
+                    }
+                    redrawColorCanvas(hoveredIdx);
+                });
+
+                container.appendChild(block);
             }
         }
 
         function initLegend() {
-            paintLegendBar('legend-bar', 1, 10000, densityToColor);
-            paintLegendBar('income-legend-bar', 100, 100000, incomeToColor);
-            setupLegendClicks('legend-panel', DENSITY_TICKS);
-            setupLegendClicks('income-legend-panel', INCOME_TICKS);
+            buildLegendBlocks('density-blocks', DENSITY_TICKS, densityToColor, '');
+            buildLegendBlocks('income-blocks', INCOME_TICKS, incomeToColor, '$');
+            // Wire up "No data" click + prevent orbit controls
+            ['legend-panel', 'income-legend-panel'].forEach(panelId => {
+                const panel = document.getElementById(panelId);
+                const nodata = panel.querySelector('.legend-nodata');
+                if (nodata) nodata.addEventListener('click', () => applyNoDataFilter(nodata));
+                panel.addEventListener('pointerdown', (e) => e.stopPropagation());
+            });
         }
 
         // === Resize ===
