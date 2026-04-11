@@ -4,6 +4,7 @@
  * @module levels/loader
  */
 
+import { BUNDLED_CAMPAIGN_LEVEL_FILENAMES } from "./defaults.js";
 import { LOBBY_LEVEL_ID, validateLevel } from "./schema.js";
 
 /** WIP blob version — bump if storage shape changes. */
@@ -14,6 +15,30 @@ export const WIP_STORAGE_KEY = "tron-light-cycles-wip-levels-v1";
 
 /** Fetch campaign files relative to `index.html` by default. */
 export const DEFAULT_CAMPAIGN_BASE = "./levels/";
+
+/**
+ * Warn when `manifest.json` order/names drift from `defaults.js` (bundled campaign contract).
+ * @param {unknown} rawManifest
+ */
+function warnIfBundledManifestDrift(rawManifest) {
+  if (!Array.isArray(rawManifest)) return;
+  const bundled = BUNDLED_CAMPAIGN_LEVEL_FILENAMES;
+  if (rawManifest.length !== bundled.length) {
+    console.warn(
+      `[loader] manifest.json lists ${rawManifest.length} file(s); bundled default expects ${bundled.length} (see levels/defaults.js)`,
+    );
+    return;
+  }
+  for (let i = 0; i < bundled.length; i++) {
+    const got = String(rawManifest[i] ?? "").trim();
+    if (got !== bundled[i]) {
+      console.warn(
+        `[loader] manifest.json drift at [${i}]: expected "${bundled[i]}", got "${got}" (see levels/defaults.js)`,
+      );
+      return;
+    }
+  }
+}
 
 /**
  * @typedef {object} CampaignLoadOptions
@@ -47,6 +72,7 @@ export async function loadCampaignManifest(opts = {}) {
       console.warn("[loader] manifest.json must be a JSON array of level filenames");
       return [];
     }
+    warnIfBundledManifestDrift(data);
     return data.map((x) => String(x).trim()).filter(Boolean);
   } catch (e) {
     console.warn("[loader] manifest load error:", e);
