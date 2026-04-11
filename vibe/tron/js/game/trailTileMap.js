@@ -193,12 +193,56 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
     return false;
   }
 
+  /**
+   * Shortest XZ distance from `(x,z)` to any **lethal** trail tile (same immunity rules as
+   * `evaluateCollision`). Used for P2.5 near-miss audio — skips immune own-trail tiles.
+   *
+   * @param {number} maxDist — search cap (typically `devHud.nearMissDistance`)
+   */
+  function nearestHazardDistance(x, z, selfId, numEdges, immunitySegments, maxDist) {
+    const cap = Math.max(0.05, maxDist);
+    const ri = Math.ceil(cap / ts) + 1;
+    const { ix: cix, iz: ciz } = worldToTile(x, z);
+    let best = Infinity;
+
+    /** @param {number} v @param {number} lo @param {number} hi */
+    function clampSeg(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    for (let di = -ri; di <= ri; di++) {
+      for (let dj = -ri; dj <= ri; dj++) {
+        const ix = cix + di;
+        const iz = ciz + dj;
+        if (ix < 0 || ix > cols - 1 || iz < 0 || iz > rows - 1) continue;
+
+        const minX = -halfW + ix * ts;
+        const maxX = minX + ts;
+        const minZ = -halfD + iz * ts;
+        const maxZ = minZ + ts;
+
+        const qx = clampSeg(x, minX, maxX);
+        const qz = clampSeg(z, minZ, maxZ);
+        const d = Math.hypot(x - qx, z - qz);
+        if (d > cap) continue;
+
+        const tcx = (minX + maxX) * 0.5;
+        const tcz = (minZ + maxZ) * 0.5;
+        const kind = evaluateCollision(tcx, tcz, selfId, numEdges, immunitySegments);
+        if (kind === "clear") continue;
+        if (d < best) best = d;
+      }
+    }
+    return best;
+  }
+
   return {
     worldToTile,
     stampEdge,
     clear,
     evaluateCollision,
     hasTrailAhead,
+    nearestHazardDistance,
     /** Read-only stats for debugging */
     getCellCount() {
       return cells.size;

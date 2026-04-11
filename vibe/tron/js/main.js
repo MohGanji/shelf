@@ -42,6 +42,7 @@ import {
   evaluateCyclePairContact,
   tryTrailHitOnBody,
 } from "./game/collisionResolve.js";
+import { computePlayerNearMissDistance } from "./game/nearMiss.js";
 import {
   extractArenaDimensionsFromLevel,
   findCampaignLevelById,
@@ -232,6 +233,8 @@ async function main() {
   let playerDerezPhase = "alive";
   /** Monotonic ms when player derez implosion began (wall clock). */
   let playerDerezT0Ms = 0;
+  /** P2.5 — throttle near-miss SFX (same `nearMissDistance` band). */
+  let lastNearMissMs = 0;
 
   function beginPlayerDerezSequence() {
     if (playerDerezPhase !== "alive") return;
@@ -466,6 +469,27 @@ async function main() {
             if (out.derezB) eliminateCampaignEnemy(world, b);
           }
         }
+      }
+    }
+
+    if (playerDerezPhase === "alive" && playerTrailHit !== "lethal") {
+      const nm =
+        typeof devHud.nearMissDistance === "number" && Number.isFinite(devHud.nearMissDistance)
+          ? devHud.nearMissDistance
+          : 1.5;
+      const dist = computePlayerNearMissDistance(
+        px,
+        pz,
+        trailSources,
+        devHud,
+        playCfg,
+        game.scene.userData.openGateFootprints,
+        game.scene.userData.barrierBodies,
+      );
+      const nowMs = performance.now();
+      if (dist < nm && nowMs - lastNearMissMs >= 380) {
+        audio.playNearMissWhoosh();
+        lastNearMissMs = nowMs;
       }
     }
 

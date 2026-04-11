@@ -446,6 +446,39 @@ export function createAudioEngine(options = {}) {
         /* ignore */
       }
     },
+
+    /** Near-miss tension zip — procedural (plan P2.5; audio-only feedback). */
+    playNearMissWhoosh() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const noiseDur = 0.13;
+      const n = 2048;
+      const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(2400, t0);
+      bp.frequency.exponentialRampToValueAtTime(380, t0 + noiseDur);
+      bp.Q.value = 2.4;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.075 * sfxVolume, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + noiseDur);
+      noise.connect(bp);
+      bp.connect(g);
+      g.connect(sfxGain);
+      try {
+        noise.start(t0);
+        noise.stop(t0 + noiseDur + 0.03);
+      } catch {
+        /* ignore */
+      }
+    },
   };
 }
 
@@ -472,5 +505,6 @@ function createNoopEngine() {
     loadBuffer: async () => null,
     playNitroEmptyBuzz: () => {},
     playDerezShatter: () => {},
+    playNearMissWhoosh: () => {},
   };
 }
