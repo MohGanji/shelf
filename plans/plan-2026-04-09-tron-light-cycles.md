@@ -1381,6 +1381,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.225** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `backstory` (plain-text Grid premise: neon trail walls, AI hunters, nitro/shields, exit gates, derez on collision) so structured data exposes CreativeWork narrative context alongside `abstract`, `description`, and `accessibilitySummary` | P10.224 | [x] |
 | **P10.226** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `conditionsOfAccess` (plain-text access terms: free instant browser play, no account for base campaign, keyboard required, desktop recommended) so structured data exposes CreativeWork access constraints alongside `accessibilitySummary`, free `Offer`, and `backstory` | P10.225 | [x] |
 | **P10.227** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `applicationSubCategory` (`Arcade racing`) so structured data exposes a finer-grained `SoftwareApplication` classification alongside `applicationCategory` (`Game`) and `genre` | P10.226 | [x] |
+| **P10.228** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `releaseNotes` (plain-text first-release summary aligned with `softwareVersion` and `datePublished`) so structured data exposes version-change narrative alongside `creativeWorkStatus` and requirement fields | P10.227 | [x] |
 
 ### HUD and progression
 
