@@ -618,11 +618,16 @@
         "@context": "https://schema.org",
         "@graph": [
           {
+            "@type": "Organization",
+            "@id": "./#organization",
+            "name": "Vibe Projects"
+          },
+          {
             "@type": "WebSite",
             "@id": "./#website",
             "url": "./",
             "name": "Tron: Light Cycles",
-            "publisher": { "@type": "Organization", "name": "Vibe Projects" }
+            "publisher": { "@id": "./#organization" }
           },
           {
             "@type": "WebPage",
@@ -666,12 +671,13 @@
             "gamePlatform": ["Web browser"],
             "applicationCategory": "Game",
             "operatingSystem": "Any",
-            "publisher": { "@type": "Organization", "name": "Vibe Projects" },
+            "publisher": { "@id": "./#organization" },
             "offers": {
               "@type": "Offer",
               "price": "0",
               "priceCurrency": "USD",
-              "availability": "https://schema.org/InStock"
+              "availability": "https://schema.org/InStock",
+              "seller": { "@id": "./#organization" }
             }
           }
         ]
