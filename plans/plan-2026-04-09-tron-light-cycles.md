@@ -1061,7 +1061,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
 | **P2.1** | Trail rendering: CatmullRom segments, 1 unit traveled spawn, FIFO, emissive walls, color = cycle | P1.3 | [x] |
-| **P2.2** | Trail limits / fade: max segments from attribute, fade/despawn oldest, no trail at speed 0 | P2.1, P5.8 | [ ] |
+| **P2.2** | Trail limits / fade: max segments from attribute, fade/despawn oldest, no trail at speed 0 | P2.1, P5.8 | [x] |
 | **P2.3** | Collision: tile map for trails; cycle↔cycle rules (low speed, shield); cannon groups | P1.2, P2.1, P3.4 | [ ] |
 | **P2.4** | Derez sequence: implosion, trail vanish, player slow-mo / overhead / shake / glitch toggles; SFX | P2.1–P2.3 | [ ] |
 | **P2.5** | Near-miss detection + audio; own-trail immunity alignment | P2.3, A3 | [ ] |

@@ -243,7 +243,7 @@ async function main() {
   function syncArenaHud() {
     if (hudHintEl) {
       hudHintEl.textContent =
-        "P2.1 trail — CatmullRom walls, 1u anchors, FIFO cap from Trail Length attr · P1.6 nitro (Space, 5–8 FX)";
+        "P2.2 trail — FIFO + oldest-segment fade (trailFadeSpeed) before drop · Trail Length cap · P1.6 nitro";
     }
     renderNitroHud();
   }
@@ -371,7 +371,7 @@ async function main() {
   const p = lobbyBanner.querySelector("p");
   if (p) {
     p.textContent =
-      "P2.1 — CatmullRom trail walls (1u anchors, attribute max length) + P1.6 nitro. Ride to lay a neon wall.";
+      "P2.2 — Trail fades out at the tail (devHud trailFadeSpeed) while respecting max segments. Ride to lay a neon wall.";
   }
 
   game.startLoop();
