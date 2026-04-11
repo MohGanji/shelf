@@ -37,6 +37,10 @@ export function buildTrailSources(playerTrail, enemies) {
  * @returns {'clear' | 'lethal' | 'absorbed'}
  */
 export function tryTrailHitOnBody(body, x, z, selfId, sources, devHud) {
+  const immuneUntil = body.userData?.portalTrailImmuneUntilMs;
+  if (typeof immuneUntil === "number" && performance.now() < immuneUntil) {
+    return "clear";
+  }
   let hitKind = "clear";
   for (const s of sources) {
     const n = selfId === s.ownerId ? s.getEdgeCount() : 0;

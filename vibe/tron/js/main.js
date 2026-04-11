@@ -28,7 +28,7 @@ import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
 import { createNitroState } from "./game/nitroSystem.js";
-import { createBoostPadField } from "./game/objects.js";
+import { createBoostPadField, createPortalField } from "./game/objects.js";
 import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
@@ -308,6 +308,15 @@ async function main() {
     devHud,
   });
 
+  const portalField = createPortalField({
+    scene: game.scene,
+    world,
+    wallMat,
+    gameObjects: activeCampaignLevel && Array.isArray(activeCampaignLevel.gameObjects) ? activeCampaignLevel.gameObjects : [],
+    playCfg,
+    devHud,
+  });
+
   const speedLineEl = document.getElementById("nitro-speed-lines");
   const hudSpeedEl = document.getElementById("hud-speed");
   const hudTrailEl = document.getElementById("hud-trail");
@@ -531,6 +540,23 @@ async function main() {
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
     applyEnemyWallAndBarrierSlide(enemyRoster.list, game.scene);
+
+    portalField.tick(dt, {
+      isLobby,
+      levelStarted,
+      playerBody,
+      enemies: enemyRoster.list,
+      devHud,
+      detachPlayerTrail: () => {
+        trailWall.detachChainAtPortal();
+      },
+      detachEnemyTrail: (e) => {
+        e.trail.detachChainAtPortal();
+      },
+      onPortalSound: () => {
+        audio.playPortalWarp();
+      },
+    });
 
     powerupField.tick(dt, {
       isLobby,

@@ -622,6 +622,28 @@ export function createAudioEngine(options = {}) {
       }
     },
 
+    /** Portal warp — bending whoosh (plan P3.6; procedural). */
+    playPortalWarp() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, t0);
+      osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.09);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.085 * sfxVolume, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.16);
+      } catch {
+        /* ignore */
+      }
+    },
+
     /** Near-miss tension zip — procedural (plan P2.5; audio-only feedback). */
     playNearMissWhoosh() {
       if (!ctx) return;
@@ -688,5 +710,6 @@ function createNoopEngine() {
     playShieldDeployRise: () => {},
     playShieldShatterClang: () => {},
     playShieldExpireFade: () => {},
+    playPortalWarp: () => {},
   };
 }

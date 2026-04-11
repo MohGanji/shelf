@@ -6,10 +6,19 @@ import { createTrailTileMap } from "./trailTileMap.js";
 /** @typedef {typeof WORLD} WorldConstants */
 
 /**
+ * @typedef {object} FrozenTrailChain
+ * @property {THREE.Vector3[]} anchors
+ * @property {number[]} segmentOpacities
+ */
+
+/**
  * Fading trail wall rendering (plan P2.1 + P2.2): piecewise ribbon of thin emissive boxes along anchor chords.
  * Distance-based anchor spawn (1 unit), FIFO cap from Trail Length attribute, oldest segment
  * fades (opacity → 0) before removal using `trailFadeSpeed`. No new anchors at near-zero speed.
  * Tile occupancy for trails is maintained in `trailTileMap` (plan A3); lethal hits handled in `collisionResolve.js` (P2.3).
+ *
+ * **Portal detach (P3.6):** `detachChainAtPortal()` moves the current live polyline into an internal frozen chain so the
+ * tile map + meshes stay lethal while new anchors begin at the exit — trail does not span the warp visually.
  *
  * @param {object} options
  * @param {import('three').ColorRepresentation} options.color
@@ -25,7 +34,6 @@ export function createTrailWallSystem(options) {
   const devHud = options.devHud;
   const w = options.world ?? WORLD;
   let maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
-  let maxAnchors = maxSeg + 1;
   const ownerId = typeof options.ownerId === "string" && options.ownerId.length ? options.ownerId : "player";
   const arenaWidth = typeof options.arenaWidth === "number" ? options.arenaWidth : w.defaultArenaWidth;
   const arenaDepth = typeof options.arenaDepth === "number" ? options.arenaDepth : w.defaultArenaDepth;
@@ -46,6 +54,10 @@ export function createTrailWallSystem(options) {
     depthWrite: false,
     side: THREE.DoubleSide,
   });
+
+  /** Older trail polylines frozen by portal entry — FIFO fade globally across frozen + live. */
+  /** @type {FrozenTrailChain[]} */
+  const frozenChains = [];
 
   /** World rear contact points along path: oldest → newest (closest to cycle). */
   const anchors = [];
@@ -79,6 +91,46 @@ export function createTrailWallSystem(options) {
     const hl = CYCLE_BOUNDS.length * 0.48;
     out.set(cx - Math.sin(heading) * hl, 0, cz - Math.cos(heading) * hl);
     return out;
+  }
+
+  function totalEdgeCount() {
+    let n = 0;
+    for (const fc of frozenChains) {
+      n += Math.max(0, fc.anchors.length - 1);
+    }
+    n += Math.max(0, anchors.length - 1);
+    return n;
+  }
+
+  /**
+   * Remove the oldest logical segment (one edge) without fade — for `setMaxSegments` trimming.
+   */
+  function trimOldestEdgeInstant() {
+    if (frozenChains.length > 0) {
+      const ch = frozenChains[0];
+      ch.anchors.shift();
+      if (ch.segmentOpacities.length > 0) ch.segmentOpacities.shift();
+      if (ch.anchors.length < 2) frozenChains.shift();
+      return;
+    }
+    if (anchors.length >= 1) anchors.shift();
+    if (segmentOpacities.length > 0) segmentOpacities.shift();
+  }
+
+  /**
+   * @returns {boolean} true if the removed segment belonged to the **live** chain (snake recycle adds a new rear contact).
+   */
+  function shiftOldestFadedSegment() {
+    if (frozenChains.length > 0) {
+      const ch = frozenChains[0];
+      ch.anchors.shift();
+      if (ch.segmentOpacities.length > 0) ch.segmentOpacities.shift();
+      if (ch.anchors.length < 2) frozenChains.shift();
+      return false;
+    }
+    anchors.shift();
+    if (segmentOpacities.length > 0) segmentOpacities.shift();
+    return true;
   }
 
   function disposeSegmentChildren() {
@@ -143,24 +195,36 @@ export function createTrailWallSystem(options) {
     disposeSegmentChildren();
     trailTileMap.clear();
 
-    if (anchors.length < 2) {
-      return;
+    let g = 0;
+    for (const fc of frozenChains) {
+      for (let i = 0; i < fc.anchors.length - 1; i++) {
+        const o = fc.segmentOpacities[i] ?? 1;
+        if (o <= 0.001) continue;
+        buildSegmentMeshes(fc.anchors[i], fc.anchors[i + 1], o);
+        trailTileMap.stampEdge(
+          fc.anchors[i].x,
+          fc.anchors[i].z,
+          fc.anchors[i + 1].x,
+          fc.anchors[i + 1].z,
+          g,
+          ownerId,
+        );
+        g += 1;
+      }
     }
-
     for (let i = 0; i < anchors.length - 1; i++) {
       const o = segmentOpacities[i] ?? 1;
       if (o <= 0.001) continue;
       buildSegmentMeshes(anchors[i], anchors[i + 1], o);
-      if (o > 0.001) {
-        trailTileMap.stampEdge(
-          anchors[i].x,
-          anchors[i].z,
-          anchors[i + 1].x,
-          anchors[i + 1].z,
-          i,
-          ownerId,
-        );
-      }
+      trailTileMap.stampEdge(
+        anchors[i].x,
+        anchors[i].z,
+        anchors[i + 1].x,
+        anchors[i + 1].z,
+        g,
+        ownerId,
+      );
+      g += 1;
     }
   }
 
@@ -189,8 +253,8 @@ export function createTrailWallSystem(options) {
     }
 
     while (distSinceAnchor >= segDist) {
-      if (anchors.length < maxAnchors) {
-        if (spd <= 0.12) break;
+      if (spd <= 0.12) break;
+      if (totalEdgeCount() < maxSeg) {
         anchors.push(tmpRear.clone());
         if (anchors.length >= 2) segmentOpacities.push(1);
         distSinceAnchor -= segDist;
@@ -198,16 +262,20 @@ export function createTrailWallSystem(options) {
         continue;
       }
 
-      const tail = segmentOpacities[0] ?? 1;
-      segmentOpacities[0] = Math.max(0, tail - fadeSpeed * dt);
+      const tail =
+        frozenChains.length > 0 ? frozenChains[0].segmentOpacities[0] ?? 1 : segmentOpacities[0] ?? 1;
+      const nextOp = Math.max(0, tail - fadeSpeed * dt);
+      if (frozenChains.length > 0) frozenChains[0].segmentOpacities[0] = nextOp;
+      else segmentOpacities[0] = nextOp;
       anchorsDirty = true;
-      if (segmentOpacities[0] > 0) break;
+      if (nextOp > 0) break;
 
-      anchors.shift();
-      segmentOpacities.shift();
-      anchors.push(tmpRear.clone());
-      segmentOpacities.push(1);
-      distSinceAnchor -= segDist;
+      const liveRecycle = shiftOldestFadedSegment();
+      if (liveRecycle) {
+        anchors.push(tmpRear.clone());
+        segmentOpacities.push(1);
+        distSinceAnchor -= segDist;
+      }
       anchorsDirty = true;
       break;
     }
@@ -227,9 +295,33 @@ export function createTrailWallSystem(options) {
 
   /** Clear all trail geometry (derez / tunnel); call on transitions. */
   function clear() {
+    frozenChains.length = 0;
     anchors.length = 0;
     segmentOpacities.length = 0;
     distSinceAnchor = 0;
+    anchorsDirty = true;
+    rebuildGeometry();
+    anchorsDirty = false;
+  }
+
+  /**
+   * P3.6 — snapshot the live polyline as a frozen chain so a portal exit can start a fresh chain.
+   * No-op if there is not yet a segment (0 or 1 anchor).
+   */
+  function detachChainAtPortal() {
+    if (anchors.length < 2) {
+      anchors.length = 0;
+      segmentOpacities.length = 0;
+      distSinceAnchor = 0;
+    } else {
+      frozenChains.push({
+        anchors: anchors.map((a) => a.clone()),
+        segmentOpacities: segmentOpacities.slice(),
+      });
+      anchors.length = 0;
+      segmentOpacities.length = 0;
+      distSinceAnchor = 0;
+    }
     anchorsDirty = true;
     rebuildGeometry();
     anchorsDirty = false;
@@ -244,6 +336,11 @@ export function createTrailWallSystem(options) {
 
   function getActiveSegmentCount() {
     let n = 0;
+    for (const fc of frozenChains) {
+      for (let i = 0; i < fc.segmentOpacities.length; i++) {
+        if ((fc.segmentOpacities[i] ?? 0) > 0.02) n++;
+      }
+    }
     for (let i = 0; i < segmentOpacities.length; i++) {
       if ((segmentOpacities[i] ?? 0) > 0.02) n++;
     }
@@ -251,8 +348,7 @@ export function createTrailWallSystem(options) {
   }
 
   function getLogicalEdgeCount() {
-    if (anchors.length < 2) return 0;
-    return anchors.length - 1;
+    return totalEdgeCount();
   }
 
   /**
@@ -262,10 +358,8 @@ export function createTrailWallSystem(options) {
   function setMaxSegments(nextMaxSegments) {
     const cap = Math.max(4, Math.floor(nextMaxSegments));
     maxSeg = cap;
-    maxAnchors = maxSeg + 1;
-    while (anchors.length > maxAnchors) {
-      anchors.shift();
-      if (segmentOpacities.length > 0) segmentOpacities.shift();
+    while (totalEdgeCount() > maxSeg) {
+      trimOldestEdgeInstant();
     }
     anchorsDirty = true;
   }
@@ -280,6 +374,7 @@ export function createTrailWallSystem(options) {
     root,
     update,
     clear,
+    detachChainAtPortal,
     setColor,
     setMaxSegments,
     getActiveSegmentCount,
