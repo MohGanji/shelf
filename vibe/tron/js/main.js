@@ -1,13 +1,9 @@
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
 import {
   AUDIO_AUTOPLAY,
   CONFIG,
   createRuntimeFromPlayerSave,
   getArenaPlaytestConfig,
   mergeDevHud,
-  TRON_COLORS,
 } from "./config.js";
 import { createChaseCamera } from "./engine/camera.js";
 import { loadOrCreateSave, persistSave } from "./data/savedata.js";
@@ -56,29 +52,20 @@ function setBootProgress(els, pct) {
   els.label.setAttribute("aria-valuenow", String(Math.round(clamped)));
 }
 
-/** Advance BOOT bar while `playTunnel` runs. */
-function runBootLoadingBar(durationMs, els) {
-  const t0 = performance.now();
-  const iv = setInterval(() => {
-    const t = performance.now() - t0;
-    const p = Math.min(100, (t / durationMs) * 100);
-    setBootProgress(els, p);
-    if (p >= 100) clearInterval(iv);
-  }, 40);
-  return () => clearInterval(iv);
-}
-
 async function main() {
   const canvas = /** @type {HTMLCanvasElement} */ ($("game-canvas"));
   const bootOverlay = $("boot-overlay");
   const lobbyBanner = $("lobby-placeholder");
-  const bootFill = $("boot-progress-fill");
-  const bootLabel = $("boot-progress-label");
+  const bootEls = { fill: $("boot-progress-fill"), label: $("boot-progress-label") };
+
+  setBootProgress(bootEls, 4);
 
   const save = loadOrCreateSave();
+  setBootProgress(bootEls, 18);
   const runtime = createRuntimeFromPlayerSave(save);
 
   const campaign = await loadCampaignLevels();
+  setBootProgress(bootEls, 44);
   const activeCampaignLevel = selectPlaytestCampaignLevel(campaign.validLevels, save);
   const arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
 
@@ -90,13 +77,12 @@ async function main() {
     musicCrossfadeSec: runtime.devHud.musicCrossfadeDuration,
     autoplay: AUDIO_AUTOPLAY,
   });
+  setBootProgress(bootEls, 58);
   await audio.unlock();
+  setBootProgress(bootEls, 74);
 
   const game = createGameRenderer(canvas, { devHud: runtime.devHud });
-
-  const grid = new THREE.GridHelper(12, 24, 0x1a3a55, 0x0c1828);
-  grid.position.y = -0.52;
-  game.scene.add(grid);
+  setBootProgress(bootEls, 86);
 
   const devHud = runtime.devHud; // single mutable runtime HUD — keep in sync with save via persistDevHudToSave
 
@@ -106,92 +92,31 @@ async function main() {
     persistSave(save);
   }
 
-  const cycle = createLightCycle({ devHud });
-  const enemy = createLightCycle({ variant: "enemy", devHud });
-  cycle.root.position.set(-0.65, 0, 0);
-  enemy.root.position.set(0.75, 0, 0);
-  game.scene.add(cycle.root, enemy.root);
+  const durationMs = CONFIG.tunnelBootSeconds * 1000;
+  const rampT0 = performance.now();
+  /** @type {ReturnType<typeof setInterval> | 0} */
+  let rampIv = setInterval(() => {
+    const u = Math.min(1, (performance.now() - rampT0) / durationMs);
+    setBootProgress(bootEls, 86 + 13 * u);
+    if (u >= 1) {
+      clearInterval(rampIv);
+      rampIv = 0;
+    }
+  }, 40);
 
-  const controls = new OrbitControls(game.camera, canvas);
-  controls.enableDamping = true;
-  controls.target.set(0, 0.05, 0);
-  controls.maxPolarAngle = Math.PI * 0.49;
-
-  const keys = /** @type {Record<string, boolean>} */ ({});
-
-  const cycleInputAbort = new AbortController();
-  const sig = { signal: cycleInputAbort.signal };
-
-  const hudHintBoot = document.getElementById("hud-hint");
-  function syncHud() {
-    if (!hudHintBoot) return;
-    hudHintBoot.innerHTML = [
-      "W/S accelerate · brake · A/D steer",
-      "T / P / L — toggle tilt · pitch-on-accel · lean-on-brake",
-      "1 / 2 — player cyan · enemy orange (player cycle)",
-      `tilt ${devHud.cycleTiltOnSteer ? "on" : "off"} · pitch ${devHud.cyclePitchOnAccel ? "on" : "off"} · lean ${devHud.cycleLeanOnBrake ? "on" : "off"}`,
-    ].join("<br/>");
+  try {
+    await playTunnel(
+      game.renderer,
+      () => {
+        setBootProgress(bootEls, 100);
+      },
+      { durationSeconds: CONFIG.tunnelBootSeconds },
+    );
+  } finally {
+    if (rampIv) clearInterval(rampIv);
   }
 
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      if (isTunnelBlockingInput()) return;
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      keys[k] = true;
-      if (k === "t") {
-        devHud.cycleTiltOnSteer = !devHud.cycleTiltOnSteer;
-        syncHud();
-        persistDevHudToSave();
-      }
-      if (k === "p") {
-        devHud.cyclePitchOnAccel = !devHud.cyclePitchOnAccel;
-        syncHud();
-        persistDevHudToSave();
-      }
-      if (k === "l") {
-        devHud.cycleLeanOnBrake = !devHud.cycleLeanOnBrake;
-        syncHud();
-        persistDevHudToSave();
-      }
-      if (k === "1") cycle.setPrimaryColor(TRON_COLORS.playerCycle);
-      if (k === "2") cycle.setPrimaryColor(TRON_COLORS.enemyCycle);
-    },
-    sig,
-  );
-
-  window.addEventListener(
-    "keyup",
-    (e) => {
-      if (isTunnelBlockingInput()) return;
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      keys[k] = false;
-    },
-    sig,
-  );
-
-  syncHud();
-
-  const bootEls = { fill: bootFill, label: bootLabel };
-  setBootProgress(bootEls, 0);
-  const durationMs = CONFIG.tunnelBootSeconds * 1000;
-  const stopBar = runBootLoadingBar(durationMs, bootEls);
-
-  await playTunnel(
-    game.renderer,
-    () => {
-      stopBar();
-      setBootProgress(bootEls, 100);
-    },
-    { durationSeconds: CONFIG.tunnelBootSeconds },
-  );
-
   bootOverlay.classList.add("boot-overlay--hidden");
-
-  cycleInputAbort.abort();
-  game.scene.remove(grid);
-  game.scene.remove(cycle.root, enemy.root);
-  controls.dispose();
 
   const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
 

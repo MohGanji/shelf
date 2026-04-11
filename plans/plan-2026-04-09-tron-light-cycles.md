@@ -1041,7 +1041,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
-| **P1.1** | Project scaffold: `index.html`, importmap, `main.js` boot, `style.css`, renderer + post stub, `config.js` + devHud defaults, BOOT tunnel with title + progress bar | A1, A2 | [~] |
+| **P1.1** | Project scaffold: `index.html`, importmap, `main.js` boot, `style.css`, renderer + post stub, `config.js` + devHud defaults, BOOT tunnel with title + progress bar | A1, A2 | [x] |
 | **P1.2** | Arena foundation: grid floor (1-unit), perimeter walls, emissive panels, lighting; wall collision = slide + angle-based speed reduction | P1.1 | [x] |
 | **P1.3** | Light cycle mesh: procedural low-poly, emissive, cyan/orange, wheel spin, tilt / pitch-on-accel / lean-on-brake | P1.1 | [x] |
 | **P1.4** | Third-person chase cam: smooth follow behind, stationary turning, devHud camera params; nitro FOV, pull-back, speed lines, motion blur | P1.3 | [x] |
