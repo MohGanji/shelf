@@ -1374,6 +1374,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.218** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `creator` (`{ "@id": "./#organization" }`) so the game node exposes explicit CreativeWork-style creation credit aligned with `WebSite.creator` from P10.194 alongside `author`, `publisher`, `maintainer`, and `provider` | P10.217 | [x] |
 | **P10.219** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `spatialCoverage` as `Place` with `name` `Worldwide` so structured data marks global geographic scope for the CreativeWork alongside `gameLocation`, free `Offer.eligibleRegion`, and `Organization.areaServed` | P10.218 | [x] |
 | **P10.220** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `temporalCoverage` (DCMI-style open interval `2026/` aligned with `datePublished`, free `Offer.validFrom`, and `copyrightYear`) so structured data marks CreativeWork time span alongside `spatialCoverage` | P10.219 | [x] |
+| **P10.221** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `abstract` (short CreativeWork summary) so structured data exposes a concise crawl snippet alongside the longer `description`, `keywords`, and `temporalCoverage` | P10.220 | [x] |
 
 ### HUD and progression
 
