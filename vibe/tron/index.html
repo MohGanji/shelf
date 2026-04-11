@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tron: Light Cycles</title>
+  <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="stylesheet" href="./css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+      "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app-root">
+    <canvas id="game-canvas" aria-label="Tron game viewport"></canvas>
+
+    <div id="boot-overlay" class="boot-overlay" aria-live="polite">
+      <div class="boot-overlay__title">TRON: LIGHT CYCLES</div>
+      <div class="boot-overlay__bar-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="boot-progress-label">
+        <div class="boot-overlay__bar" id="boot-progress-fill"></div>
+      </div>
+    </div>
+
+    <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
+      <p>BOOT complete — LOBBY scene wires in Phase 7.</p>
+    </div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
