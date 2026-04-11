@@ -748,6 +748,13 @@
             "value": 0
           },
           {
+            "@type": "QuantitativeValue",
+            "@id": "./#quantitative-value-zero-sec-range",
+            "minValue": 0,
+            "maxValue": 0,
+            "unitCode": "SEC"
+          },
+          {
             "@type": "MerchantReturnPolicy",
             "@id": "./#merchant-return-policy-tlc",
             "name": "Free digital access — returns not applicable",
@@ -763,18 +770,8 @@
             "shippingDestination": { "@id": "./#defined-region-worldwide" },
             "deliveryTime": {
               "@type": "ShippingDeliveryTime",
-              "handlingTime": {
-                "@type": "QuantitativeValue",
-                "minValue": 0,
-                "maxValue": 0,
-                "unitCode": "SEC"
-              },
-              "transitTime": {
-                "@type": "QuantitativeValue",
-                "minValue": 0,
-                "maxValue": 0,
-                "unitCode": "SEC"
-              }
+              "handlingTime": { "@id": "./#quantitative-value-zero-sec-range" },
+              "transitTime": { "@id": "./#quantitative-value-zero-sec-range" }
             }
           },
           {
