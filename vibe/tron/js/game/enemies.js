@@ -5,7 +5,7 @@
 
 import { getArenaPlaytestConfig } from "../config.js";
 import { createPlayerBody, applyContinuousArenaWallSlide, applyContinuousBarrierSlide } from "../engine/physics.js";
-import { computeEnemyCycleKeys } from "./ai.js";
+import { computeEnemyCycleKeys, intelligenceTier } from "./ai.js";
 import { createLightCycle } from "./cycle.js";
 import { createTrailWallSystem } from "./trail.js";
 import { createNitroState, isNitroBurstActive } from "./nitroSystem.js";
@@ -90,6 +90,12 @@ export function createCampaignEnemyEntities(opts) {
     body.userData.heading = heading;
     body.userData.speed = 0;
     body.allowSleep = false;
+    /** P4.5 — equippable shield (same phases as player; AI triggers deploy). */
+    body.userData.shieldPhase = "none";
+    body.userData.shieldDeployRemain = 0;
+    body.userData.shieldActiveRemain = 0;
+    body.userData.equipSlot = undefined;
+    body.userData.shieldActive = false;
     world.addBody(body);
 
     const colorStr = typeof raw.color === "string" ? raw.color : "#FF6600";
@@ -128,6 +134,91 @@ export function createCampaignEnemyEntities(opts) {
   }
 
   scene.userData.campaignEnemies = list;
+
+  /**
+   * P4.5 — shield deploy / active / expiry (mirrors player FSM without keyboard E).
+   * @param {import('cannon-es').Body} body
+   * @param {number} dt
+   * @param {import('../config.js').DEFAULT_DEV_HUD} hud
+   * @param {boolean} deployRequested
+   */
+  function tickEnemyShieldFsm(body, dt, hud, deployRequested) {
+    if (dt <= 0) return;
+    const u = body.userData;
+    const deployT = typeof hud.shieldDeployTime === "number" ? hud.shieldDeployTime : 0.15;
+    const durT = typeof hud.shieldDuration === "number" ? hud.shieldDuration : 5;
+
+    if (u.shieldPhase === "deploying") {
+      u.shieldDeployRemain -= dt;
+      if (u.shieldDeployRemain <= 0) {
+        u.shieldPhase = "active";
+        u.shieldActiveRemain = durT;
+      }
+    } else if (u.shieldPhase === "active") {
+      u.shieldActiveRemain -= dt;
+      if (u.shieldActiveRemain <= 0) {
+        u.shieldPhase = "none";
+        u.equipSlot = undefined;
+      }
+    }
+
+    if (
+      deployRequested &&
+      u.shieldPhase === "none" &&
+      u.equipSlot === "shield"
+    ) {
+      u.equipSlot = undefined;
+      u.shieldPhase = "deploying";
+      u.shieldDeployRemain = Math.max(0.02, deployT);
+    }
+
+    u.shieldActive = u.shieldPhase === "active";
+  }
+
+  /**
+   * P4.5 — tactical shield from tier + trail pressure (plan § AI Difficulty Tiers).
+   * @param {object} o
+   * @param {"easy" | "medium" | "hard"} o.tier
+   * @param {boolean} o.dangerFwd
+   * @param {boolean} o.dangerL
+   * @param {boolean} o.dangerR
+   * @param {boolean} o.escapeBlocked
+   * @param {number} o.distPlayer
+   * @param {number} o.playerSpeed
+   * @param {import('cannon-es').Body} o.body
+   */
+  function shouldEnemyDeployShield(o) {
+    const {
+      tier,
+      dangerFwd,
+      dangerL,
+      dangerR,
+      escapeBlocked,
+      distPlayer,
+      playerSpeed,
+      body,
+    } = o;
+    const u = body.userData;
+    if (u.equipSlot !== "shield") return false;
+    if (u.shieldPhase !== "none") return false;
+    const side = dangerL || dangerR;
+    if (tier === "easy") return dangerFwd;
+    if (tier === "medium") {
+      return (
+        dangerFwd ||
+        escapeBlocked ||
+        (distPlayer < 21 && playerSpeed > 9) ||
+        (side && distPlayer < 38)
+      );
+    }
+    return (
+      dangerFwd ||
+      escapeBlocked ||
+      distPlayer < 30 ||
+      (playerSpeed > 14 && distPlayer < 48) ||
+      side
+    );
+  }
 
   /**
    * @param {number} dt
@@ -193,6 +284,7 @@ export function createCampaignEnemyEntities(opts) {
           barrierBodies: barriers,
           trailSources,
           peers,
+          nitroState: e.nitroState,
         });
         keys = {
           w: ai.w,
@@ -202,6 +294,19 @@ export function createCampaignEnemyEntities(opts) {
           space: ai.space,
         };
         e.body.userData.aiSteer = ai.steer;
+
+        const tier = intelligenceTier(e.intelligence);
+        const deployShield = shouldEnemyDeployShield({
+          tier,
+          dangerFwd: ai.dangerFwd,
+          dangerL: ai.dangerL,
+          dangerR: ai.dangerR,
+          escapeBlocked: ai.escapeBlocked,
+          distPlayer: ai.distPlayer,
+          playerSpeed: pspd,
+          body: e.body,
+        });
+        tickEnemyShieldFsm(e.body, dt, hud, deployShield);
       }
 
       tickPlayerArcadeDrive({
@@ -228,6 +333,9 @@ export function eliminateCampaignEnemy(world, e) {
   if (e.eliminated) return;
   e.eliminated = true;
   e.body.userData.tronEliminated = true;
+  e.body.userData.shieldPhase = "none";
+  e.body.userData.shieldActive = false;
+  e.body.userData.equipSlot = undefined;
   e.trail.clear();
   world.removeBody(e.body);
   e.cycle.root.visible = false;
@@ -287,12 +395,18 @@ export function updateEnemyCycleMeshes(list, dt) {
     const spd = e.body.userData.speed ?? 0;
     const st = typeof e.body.userData.aiSteer === "number" ? e.body.userData.aiSteer : 0;
     const nitroVis = isNitroBurstActive(e.nitroState) ? 1 : 0;
+    const sp = e.body.userData.shieldPhase;
+    /** @type {'off' | 'deploy' | 'active'} */
+    let shieldBubbleMode = "off";
+    if (sp === "deploying") shieldBubbleMode = "deploy";
+    else if (sp === "active") shieldBubbleMode = "active";
     e.cycle.update(dt, {
       speed: spd,
       steer: st,
       accelerating: spd > 0.5,
       braking: false,
       nitroBurstStrength: nitroVis,
+      shieldBubbleMode,
     });
   }
 }

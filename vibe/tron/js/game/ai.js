@@ -269,6 +269,100 @@ export function computePeerSeparationSteer(opts) {
   return norm;
 }
 
+/**
+ * P4.5 — tiered nitro: hold Space during burst; Easy random taps, Medium chase/escape, Hard chains.
+ * @param {object} p
+ * @param {"easy" | "medium" | "hard"} p.tier
+ * @param {number} p.intelligence
+ * @param {number} p.agg
+ * @param {boolean} p.dangerFwd
+ * @param {boolean} p.wallNear
+ * @param {number} p.clearF
+ * @param {number} p.distPlayer
+ * @param {number} p.pspd — player speed
+ * @param {number} p.enemySpd
+ * @param {number} p.huntDist
+ * @param {import('cannon-es').Body["userData"]} p.userData
+ * @param {number} p.dt
+ * @param {import('../config.js').DEFAULT_DEV_HUD} p.devHud
+ */
+function computeEnemyNitroDesire(p) {
+  const {
+    tier,
+    intelligence,
+    agg,
+    dangerFwd,
+    wallNear,
+    clearF,
+    distPlayer,
+    pspd,
+    enemySpd,
+    huntDist,
+    userData,
+    dt,
+    devHud,
+  } = p;
+
+  const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
+  const minChase = 12;
+  const maxChase = tier === "hard" ? 98 : tier === "medium" ? 86 : 58;
+  const wantChase =
+    distPlayer > minChase &&
+    distPlayer < maxChase &&
+    huntDist > 3.5 &&
+    pspd > 3.5 &&
+    enemySpd < pspd * 1.12 + 10;
+
+  const wantEscape =
+    (dangerFwd && clearF < avoidRange * 1.85) || (wallNear && clearF < avoidRange * 1.05);
+
+  const wantSpeed = enemySpd < 22 && distPlayer > 22 && distPlayer < 92 && tier !== "easy";
+
+  const now = performance.now();
+  if (typeof userData._aiNitroCooldownUntilMs !== "number") userData._aiNitroCooldownUntilMs = 0;
+
+  if (tier === "easy") {
+    if (now < userData._aiNitroCooldownUntilMs) return false;
+    const tickProb = 0.00075 * Math.min(3, 60 * dt) * (0.65 + intelligence * 0.06) * Math.min(1.4, agg);
+    if (Math.random() < tickProb && enemySpd > 1.8) {
+      userData._aiNitroCooldownUntilMs = now + 2400 + Math.random() * 5200;
+      return true;
+    }
+    if (wantChase && Math.random() < 0.0011 * Math.min(3, 60 * dt)) {
+      userData._aiNitroCooldownUntilMs = now + 2000 + Math.random() * 2600;
+      return true;
+    }
+    return false;
+  }
+
+  if (tier === "medium") {
+    if (now < userData._aiNitroCooldownUntilMs) return false;
+    if (wantEscape) {
+      userData._aiNitroCooldownUntilMs = now + 380 + Math.random() * 420;
+      return true;
+    }
+    if (wantChase && distPlayer < 74) {
+      userData._aiNitroCooldownUntilMs = now + 480 + Math.random() * 820;
+      return true;
+    }
+    if (wantSpeed && Math.random() < 0.014) {
+      userData._aiNitroCooldownUntilMs = now + 900;
+      return true;
+    }
+    return false;
+  }
+
+  if (wantEscape) return true;
+  if (wantChase && distPlayer < 90) return true;
+  if (wantSpeed) return true;
+  if (distPlayer < 24 && pspd > 9) return true;
+  if (now >= userData._aiNitroCooldownUntilMs && wantChase && Math.random() < 0.085) {
+    userData._aiNitroCooldownUntilMs = now + 220;
+    return true;
+  }
+  return false;
+}
+
 export function hasDangerousTrailAhead(opts) {
   const { x, z, heading, selfId, immunitySegments, steps, halfWidth, sources } = opts;
   for (const s of sources) {
@@ -310,8 +404,9 @@ export function hasDangerousTrailAhead(opts) {
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
  * @param {import('cannon-es').Body[] | undefined} opts.barrierBodies
  * @param {Array<{ map: { hasTrailAhead: Function }; ownerId: string; edgeCount: number }>} opts.trailSources
+ * @param {import('./nitroSystem.js').NitroRuntimeState} [opts.nitroState] — P4.5 tiered nitro bursts
  * @param {Array<{ id: string; x: number; z: number }>} [opts.peers] — player + all enemy bodies for P4.4 separation
- * @returns {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean; steer: number }}
+ * @returns {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean; steer: number; dangerFwd: boolean; dangerL: boolean; dangerR: boolean; escapeBlocked: boolean; distPlayer: number }}
  */
 export function computeEnemyCycleKeys(opts) {
   const {
@@ -329,6 +424,7 @@ export function computeEnemyCycleKeys(opts) {
     barrierBodies,
     trailSources,
     peers = [],
+    nitroState,
   } = opts;
 
   const heading = typeof body.userData.heading === "number" ? body.userData.heading : 0;
@@ -485,13 +581,43 @@ export function computeEnemyCycleKeys(opts) {
     else steer = seekSteer;
   }
 
-  const keys = {
+  const distPlayer = Math.hypot(playerPos.x - px, playerPos.z - pz);
+  const enemySpd = typeof body.userData.speed === "number" ? body.userData.speed : 0;
+  const escapeBlocked = dangerFwd && !safeL && !safeR;
+
+  /** P4.5 — nitro Space: chain while bursting; otherwise tiered desire. */
+  let space = false;
+  if (nitroState && nitroState.burstRemaining > 1e-5) {
+    space = true;
+  } else if (nitroState && nitroState.bars > 0) {
+    space = computeEnemyNitroDesire({
+      tier,
+      intelligence,
+      agg,
+      dangerFwd,
+      wallNear,
+      clearF,
+      distPlayer,
+      pspd: playerSpeed,
+      enemySpd,
+      huntDist,
+      userData: body.userData,
+      dt,
+      devHud,
+    });
+  }
+
+  return {
     w: true,
     a: steer < 0,
     s: false,
     d: steer > 0,
-    space: false,
+    space,
     steer,
+    dangerFwd,
+    dangerL,
+    dangerR,
+    escapeBlocked,
+    distPlayer,
   };
-  return keys;
 }
