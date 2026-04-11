@@ -37,6 +37,22 @@
       "purpose": "any"
     }
   ],
+  "screenshots": [
+    {
+      "src": "../../assets/favicon/tron-pwa-screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tron: Light Cycles — desktop"
+    },
+    {
+      "src": "../../assets/favicon/tron-pwa-screenshot-narrow.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tron: Light Cycles — mobile"
+    }
+  ],
   "theme_color": "#0a0a0a",
   "background_color": "#0a0a0a",
   "dir": "ltr",
