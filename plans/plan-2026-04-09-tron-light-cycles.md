@@ -1384,6 +1384,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.228** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `releaseNotes` (plain-text first-release summary aligned with `softwareVersion` and `datePublished`) so structured data exposes version-change narrative alongside `creativeWorkStatus` and requirement fields | P10.227 | [x] |
 | **P10.229** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `disambiguatingDescription` (plain-text clarifying indie browser title vs official Tron franchise; respectful non-affiliation note) so structured data exposes disambiguation alongside `name`, `description`, and `abstract` | P10.228 | [x] |
 | **P10.230** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `fileFormat` (`text/html`) so structured data states the MIME type of the delivered HTML client shell alongside `browserRequirements` and `softwareRequirements` | P10.229 | [x] |
+| **P10.231** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `programmingLanguage` (`JavaScript`, client-only ES modules) so structured data exposes the implementation language alongside `fileFormat` and runtime requirement fields | P10.230 | [x] |
 
 ### HUD and progression
 
