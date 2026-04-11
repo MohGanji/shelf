@@ -1350,6 +1350,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.194** | Tron `index.html`: JSON-LD `WebSite` adds `creator` (`{ "@id": "./#organization" }`, aligned with `WebSite.author`) so structured data exposes an explicit creator reference alongside authorship for the site entity in `@graph` | P10.193 | [x] |
 | **P10.195** | Tron `index.html`: JSON-LD `WebSite` adds `image` as `ImageObject` (path-prefix–safe relative `url`, `152×152`, same asset as `Organization.logo` / `WebPage.primaryImageOfPage`) so the site entity exposes explicit preview imagery in `@graph` alongside `url`, `name`, and `mainEntity` | P10.184, P10.189 | [x] |
 | **P10.196** | Tron `index.html`: JSON-LD `WebSite` adds `about` (`{ "@id": "./#game" }`, aligned with `WebPage.about` from P10.171) so the site entity exposes the same primary-topic reference as the page entity alongside `mainEntity` in `@graph` | P10.171, P10.189 | [x] |
+| **P10.197** | Tron `index.html`: JSON-LD `WebSite` adds `breadcrumb` (`{ "@id": "./#breadcrumb" }`, aligned with `WebPage.breadcrumb` from P10.183) so the site entity exposes the same `BreadcrumbList` reference as the page in `@graph` | P10.183, P10.196 | [x] |
 
 ### HUD and progression
 
