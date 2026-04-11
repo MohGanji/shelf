@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# Loop from repo root (logs each exit code):
+#   while true; do .ralph/run-agent.sh; echo "[$(date -Iseconds)] exit=$?"; done
+#
 # Runs Cursor `agent` with the prompt from prompt.md (`-f` = --force, `-p` = --print).
 # `--print` output is appended to agent.log (see .gitignore).
 set -euo pipefail
