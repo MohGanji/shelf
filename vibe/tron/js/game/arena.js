@@ -395,6 +395,9 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
   const vis = buildArenaVisuals(scene, playCfg, gapsByEdge);
   const wallBodiesByEdge = buildArenaPhysics(world, wallMat, floorMat, playCfg, gapsByEdge);
 
+  /** First entry in `vis.materials` is the arena floor — used for PMREM env (P9.6). */
+  scene.userData.arenaFloorMaterial = vis.materials[0];
+
   scene.userData.tronPerimeter = {
     wallMaterials: vis.wallMaterials,
     edgeVisualGroups: vis.edgeVisualGroups,
@@ -526,6 +529,83 @@ export function buildArenaPhysics(world, wallMat, floorMat, cfg, gapsByEdge) {
   }
 
   return wallBodiesByEdge;
+}
+
+/**
+ * P9.6 — subtle grid floor reflections via a one-shot PMREM bake (plan § Visual Effects, env map).
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.MeshStandardMaterial} floorMat
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
+ */
+export function applyArenaFloorEnvMap(renderer, floorMat, playCfg) {
+  if (!renderer || !floorMat || !playCfg) return;
+  const devHud = playCfg.devHud ?? {};
+  const neon =
+    typeof devHud.neonIntensity === "number" && Number.isFinite(devHud.neonIntensity)
+      ? devHud.neonIntensity
+      : 1;
+  /** Tuned subtle: visible neon bounce without mirror-like floor. */
+  const envMapIntensity = Math.min(0.48, 0.12 + neon * 0.14);
+
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x02040a);
+
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(22, 36, 18),
+    new THREE.MeshStandardMaterial({
+      color: 0x050812,
+      side: THREE.BackSide,
+      metalness: 0.08,
+      roughness: 0.92,
+    }),
+  );
+  envScene.add(dome);
+
+  const lineCol = new THREE.Color(playCfg.colors?.gridLine ?? 0x00e8ff);
+  const warmCol = new THREE.Color(0xff6600);
+  for (let i = 0; i < 8; i++) {
+    const em = i % 2 === 0 ? lineCol : warmCol;
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 6, 32),
+      new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        emissive: em,
+        emissiveIntensity: 2.0 + neon * 0.35,
+        metalness: 0.15,
+        roughness: 0.45,
+      }),
+    );
+    const ang = (i / 8) * Math.PI * 2;
+    strip.position.set(Math.cos(ang) * 15, 1.5, Math.sin(ang) * 15);
+    strip.lookAt(0, 1.5, 0);
+    envScene.add(strip);
+  }
+
+  const k1 = new THREE.PointLight(lineCol, 260, 0, 2);
+  k1.position.set(14, 10, 12);
+  envScene.add(k1);
+  const k2 = new THREE.PointLight(warmCol, 140, 0, 2);
+  k2.position.set(-16, 6, -10);
+  envScene.add(k2);
+
+  const rt = pmrem.fromScene(envScene, 0.1);
+  floorMat.envMap = rt.texture;
+  floorMat.envMapIntensity = envMapIntensity;
+  floorMat.metalness = Math.min(0.26, floorMat.metalness + 0.08);
+  floorMat.roughness = Math.max(0.72, floorMat.roughness - 0.06);
+  floorMat.needsUpdate = true;
+
+  pmrem.dispose();
+  /** Keep `rt` alive — `floorMat.envMap` references its texture. */
+  for (const ch of [...envScene.children]) {
+    envScene.remove(ch);
+    if (ch instanceof THREE.Mesh) {
+      ch.geometry?.dispose();
+      const mats = Array.isArray(ch.material) ? ch.material : [ch.material];
+      for (const m of mats) m?.dispose();
+    }
+  }
 }
 
 /** After BOOT tunnel: hide tunnel mesh, switch fog/camera, add arena lighting. */

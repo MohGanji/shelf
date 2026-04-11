@@ -27,6 +27,7 @@ import {
 } from "./engine/physics.js";
 import { createTronCycleKeyState } from "./engine/input.js";
 import {
+  applyArenaFloorEnvMap,
   applyArenaStageEnvironment,
   buildArenaFromCampaignLevel,
   runtimeUnlockCampaignExitGate,
@@ -308,6 +309,9 @@ async function main() {
 
   const { world, wallMat, floorMat, playerMat } = createPhysicsWorld();
   buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
+
+  const arenaFloorMat = game.scene.userData.arenaFloorMaterial;
+  if (arenaFloorMat) applyArenaFloorEnvMap(game.renderer, arenaFloorMat, playCfg);
 
   const gameplayParticles = createGameplayParticles({ scene: game.scene, devHud });
 
