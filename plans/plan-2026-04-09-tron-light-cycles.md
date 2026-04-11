@@ -1159,6 +1159,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.3** | Mobile / desktop recommendation copy | P10.1 | [x] |
 | **P10.4** | Tron `index.html`: meta description + Open Graph / Twitter card tags for link previews | P10.1 | [x] |
 | **P10.5** | Share previews: `og:image`, `og:image:alt`, `twitter:image` pointing at site favicon asset (richer unfurls than text-only cards) | P10.4 | [x] |
+| **P10.6** | Meta / link `href` for favicon + OG/Twitter images use paths **relative to the game page** so previews and icons resolve when the site is served under a path prefix (not only at domain root) | P10.4, P10.5 | [x] |
 
 ### HUD and progression
 
@@ -1169,6 +1170,6 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 ### Status notes (snapshot)
 
-- **Current:** Checklist rows above match `vibe/tron` (full state machine, dev HUD, campaign + WIP editor, AI, gates, power-ups, audio engine with procedural fallbacks, etc.). **P9.6 / Visual Effects:** arena grid floor uses a one-shot **PMREM** bake (`applyArenaFloorEnvMap` in `js/game/arena.js` after `buildArenaFromCampaignLevel`) so the floor material picks up subtle cyan/orange neon environment reflections (plan: env map). **X2:** `playTunnel` uses `options.onBegin` for trail/equip clears; tunnel session clears stuck keys via `createTronCycleKeyState`.
+- **Current:** Checklist rows above match `vibe/tron` (full state machine, dev HUD, campaign + WIP editor, AI, gates, power-ups, audio engine with procedural fallbacks, etc.). **P9.6 / Visual Effects:** arena grid floor uses a one-shot **PMREM** bake (`applyArenaFloorEnvMap` in `js/game/arena.js` after `buildArenaFromCampaignLevel`) so the floor material picks up subtle cyan/orange neon environment reflections (plan: env map). **X2:** `playTunnel` uses `options.onBegin` for trail/equip clears; tunnel session clears stuck keys via `createTronCycleKeyState`. **P10.6:** `vibe/tron/index.html` uses `../../assets/favicon/…` for `og:image`, `twitter:image`, and favicon links so crawlers and browsers resolve icons under a subdirectory deploy.
 
 Update the **Status** column as features land.
