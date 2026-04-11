@@ -595,6 +595,149 @@ body {
   background: rgba(0, 30, 45, 0.6);
 }
 
+/* P6.2 — editor palette (six floor categories + wall-objects edge note) */
+.editor-palette-shell {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(300px, 42vw);
+  z-index: 46;
+  display: flex;
+  flex-direction: column;
+  padding: 4.5rem 0.65rem 0.85rem 0.85rem;
+  box-sizing: border-box;
+  pointer-events: none;
+  border-right: 1px solid rgba(0, 255, 255, 0.16);
+  background: linear-gradient(90deg, rgba(4, 10, 20, 0.97) 0%, rgba(4, 10, 20, 0.78) 88%, transparent 100%);
+}
+
+.editor-palette-shell.editor-palette {
+  pointer-events: auto;
+}
+
+.editor-palette {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 220, 255, 0.2);
+  background: linear-gradient(165deg, rgba(8, 14, 24, 0.94), rgba(4, 8, 16, 0.92));
+  box-shadow:
+    0 0 0 1px rgba(0, 200, 255, 0.06),
+    inset 0 0 24px rgba(0, 60, 90, 0.15);
+}
+
+.editor-palette__header {
+  flex-shrink: 0;
+  padding: 0.55rem 0.65rem 0.45rem;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.12);
+}
+
+.editor-palette__header-title {
+  display: block;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  color: var(--tron-cyan);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.35);
+}
+
+.editor-palette__header-sub {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.65rem;
+  line-height: 1.35;
+  color: rgba(160, 200, 230, 0.78);
+}
+
+.editor-palette__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.45rem 0.5rem 0.35rem;
+}
+
+.editor-palette__cat {
+  margin-bottom: 0.65rem;
+}
+
+.editor-palette__cat-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(120, 200, 255, 0.88);
+}
+
+.editor-palette__tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.editor-palette__tile {
+  margin: 0;
+  padding: 0.38rem 0.45rem;
+  text-align: left;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: rgba(200, 230, 255, 0.95);
+  cursor: pointer;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 180, 220, 0.22);
+  background: rgba(0, 24, 40, 0.45);
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.editor-palette__tile:hover {
+  border-color: rgba(0, 255, 255, 0.38);
+  background: rgba(0, 40, 56, 0.55);
+}
+
+.editor-palette__tile--active {
+  border-color: rgba(0, 255, 255, 0.65);
+  background: rgba(0, 56, 72, 0.65);
+  box-shadow: 0 0 12px rgba(0, 200, 255, 0.22);
+}
+
+.editor-palette__edge {
+  flex-shrink: 0;
+  padding: 0.5rem 0.55rem 0.55rem;
+  border-top: 1px solid rgba(0, 255, 255, 0.12);
+  background: rgba(0, 12, 22, 0.5);
+}
+
+.editor-palette__edge-title {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  color: rgba(180, 220, 255, 0.9);
+  margin-bottom: 0.35rem;
+}
+
+.editor-palette__edge-body {
+  margin: 0;
+  font-size: 0.65rem;
+  line-height: 1.4;
+  color: rgba(150, 190, 220, 0.88);
+}
+
+.editor-palette__edge-body strong {
+  color: rgba(200, 240, 255, 0.95);
+  font-weight: 600;
+}
+
 /* P9.2 — Developer HUD (`.` toggle): live devHud sliders, persists to save */
 .dev-hud {
   position: fixed;

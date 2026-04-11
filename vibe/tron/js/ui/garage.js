@@ -2,6 +2,7 @@
  * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
 
+import { mountEditorPalette } from "../levels/editorPalette.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
 /**
@@ -67,13 +68,14 @@ export function mountGarageDestinationScreen(opts) {
 }
 
 /**
- * P7.2 Architect / level editor entry — placeholder until Phase 6 editor UI.
+ * P7.2 Architect / level editor entry — P6.2 palette + P6.1 orthographic viewport.
  *
  * @param {{ onReturnToLobby: () => void }} opts
  * @returns {{ dispose(): void }}
  */
 export function mountEditorDestinationScreen(opts) {
   const root = document.getElementById("editor-destination");
+  const paletteRoot = document.getElementById("editor-palette-root");
   if (!root) {
     return { dispose() {} };
   }
@@ -82,6 +84,14 @@ export function mountEditorDestinationScreen(opts) {
   const canvas = document.getElementById("game-canvas");
   /* P6.1 — orthographic grid renders on the canvas; keep it in the accessibility tree. */
   if (canvas) canvas.removeAttribute("aria-hidden");
+
+  /** P6.2 — floor-object palette (selection feeds P6.3 placement). */
+  let paletteCtl = { dispose() {} };
+  if (paletteRoot) {
+    paletteRoot.hidden = false;
+    paletteRoot.classList.remove("tron-destination--hidden");
+    paletteCtl = mountEditorPalette(paletteRoot);
+  }
 
   const onReturn = () => opts.onReturnToLobby();
 
@@ -96,6 +106,11 @@ export function mountEditorDestinationScreen(opts) {
 
   return {
     dispose() {
+      paletteCtl.dispose();
+      if (paletteRoot) {
+        paletteRoot.hidden = true;
+        paletteRoot.classList.add("tron-destination--hidden");
+      }
       window.removeEventListener("keydown", onKey);
       if (btn) btn.removeEventListener("click", onClick);
       root.hidden = true;

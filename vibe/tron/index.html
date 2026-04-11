@@ -140,10 +140,17 @@
       >
         <h2 id="editor-destination-title" class="tron-destination__title">ARCHITECT</h2>
         <p class="tron-destination__body">
-          Orthographic grid — <kbd>middle-drag</kbd> to pan, <kbd>scroll</kbd> to zoom. Palette and tiles ship in P6.2+.
+          Orthographic grid — <kbd>middle-drag</kbd> to pan, <kbd>scroll</kbd> to zoom. Use the palette to arm a block; placement ships in P6.3.
         </p>
         <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
       </div>
+
+      <aside
+        id="editor-palette-root"
+        class="editor-palette-shell tron-destination--hidden"
+        hidden
+        aria-label="Level editor block palette"
+      ></aside>
     </div>
 
     <script type="module" src="./js/main.js"></script>
