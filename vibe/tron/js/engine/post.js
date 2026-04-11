@@ -99,15 +99,21 @@ const CrtScanlineShader = {
  * @param {import('three').Scene} scene
  * @param {import('three').Camera} camera
  * @param {Partial<typeof DEFAULT_DEV_HUD>} [devHud]
+ * @param {{ bloomResolutionScale?: number }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
  */
-export function createPostPipeline(renderer, scene, camera, devHud = {}) {
+export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpts = {}) {
   const hud = { ...DEFAULT_DEV_HUD, ...devHud };
+  const bloomScale =
+    typeof postOpts.bloomResolutionScale === "number" && Number.isFinite(postOpts.bloomResolutionScale)
+      ? Math.max(0.35, Math.min(1, postOpts.bloomResolutionScale))
+      : 1;
 
   const renderPass = new RenderPass(scene, camera);
 
   const size = renderer.getSize(new THREE.Vector2());
   const pr = renderer.getPixelRatio();
-  const bloomRes = new THREE.Vector2(size.x * pr, size.y * pr);
+  const drawablePx = new THREE.Vector2(size.x * pr, size.y * pr);
+  const bloomRes = new THREE.Vector2(drawablePx.x * bloomScale, drawablePx.y * bloomScale);
   const bloomPass = new UnrealBloomPass(
     bloomRes,
     hud.bloomIntensity,
@@ -121,7 +127,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
 
   const crtPass = new ShaderPass(CrtScanlineShader);
   crtPass.material.uniforms.uScan.value = hud.crtScanlines ? 1.0 : 0.0;
-  crtPass.material.uniforms.uResolution.value.set(bloomRes.x, bloomRes.y);
+  crtPass.material.uniforms.uResolution.value.set(drawablePx.x, drawablePx.y);
 
   const nitroPass = new ShaderPass(NitroRadialBlurShader);
   nitroPass.material.uniforms.uStrength.value = 0;
@@ -179,10 +185,10 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
       renderer.setSize(w, h, false);
       composer.setSize(w, h);
       const dpr = renderer.getPixelRatio();
-      const rw = w * dpr;
-      const rh = h * dpr;
-      bloomPass.resolution.set(rw, rh);
-      crtPass.material.uniforms.uResolution.value.set(rw, rh);
+      const fullW = w * dpr;
+      const fullH = h * dpr;
+      bloomPass.resolution.set(fullW * bloomScale, fullH * bloomScale);
+      crtPass.material.uniforms.uResolution.value.set(fullW, fullH);
     },
     render() {
       composer.render();

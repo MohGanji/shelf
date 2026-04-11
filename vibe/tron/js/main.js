@@ -16,6 +16,7 @@ import {
   recordLevelComplete,
 } from "./data/savedata.js";
 import { createAudioEngine } from "./engine/audio.js";
+import { getGraphicsProfile } from "./engine/graphicsProfile.js";
 import { createGameRenderer } from "./engine/renderer.js";
 import { isTunnelBlockingInput, playTunnel } from "./engine/tunnel.js";
 import {
@@ -203,7 +204,8 @@ async function main() {
   void audio.prefetch(MUSIC_ASSET_URLS.gameplay);
   setBootProgress(bootEls, 74);
 
-  const game = createGameRenderer(canvas, { devHud: runtime.devHud });
+  const graphicsProfile = getGraphicsProfile();
+  const game = createGameRenderer(canvas, { devHud: runtime.devHud, graphicsProfile });
   setBootProgress(bootEls, 86);
 
   const devHud = runtime.devHud; // single mutable runtime HUD — keep in sync with save via persistDevHudToSave
@@ -560,6 +562,7 @@ async function main() {
   const minimapRenderer = createArenaMinimapRenderer(
     minimapEl instanceof HTMLCanvasElement ? minimapEl : null,
   );
+  let lastMinimapDrawMs = 0;
 
   const speedLineEl = document.getElementById("nitro-speed-lines");
   const hudSpeedEl = document.getElementById("hud-speed");
@@ -1497,17 +1500,22 @@ async function main() {
       ...boostPadField.getMinimapBoostPads(),
       ...portalField.getMinimapPortals(),
     ];
-    minimapRenderer.draw({
-      arenaWidth: playCfg.arenaWidth,
-      arenaDepth: playCfg.arenaDepth,
-      playerX: playerBody.position.x,
-      playerZ: playerBody.position.z,
-      playerColor: save.player.cycleColor ?? "#00FFFF",
-      enemies: minimapEnemies,
-      trailSources: minimapTrailSources,
-      barrierBodies: game.scene.userData.barrierBodies,
-      itemPoints: itemPts,
-    });
+    const mmNow = performance.now();
+    const mmInt = graphicsProfile.minimapMinIntervalMs;
+    if (mmInt <= 0 || mmNow - lastMinimapDrawMs >= mmInt) {
+      lastMinimapDrawMs = mmNow;
+      minimapRenderer.draw({
+        arenaWidth: playCfg.arenaWidth,
+        arenaDepth: playCfg.arenaDepth,
+        playerX: playerBody.position.x,
+        playerZ: playerBody.position.z,
+        playerColor: save.player.cycleColor ?? "#00FFFF",
+        enemies: minimapEnemies,
+        trailSources: minimapTrailSources,
+        barrierBodies: game.scene.userData.barrierBodies,
+        itemPoints: itemPts,
+      });
+    }
 
     const h = playerBody.userData.heading ?? 0;
     playerCycle.root.position.set(

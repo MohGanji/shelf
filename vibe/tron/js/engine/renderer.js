@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Reflector } from "three/addons/objects/Reflector.js";
 
 import { DEFAULT_DEV_HUD } from "../config.js";
+import { getGraphicsProfile } from "./graphicsProfile.js";
 import { createPostPipeline } from "./post.js";
 
 const CYAN = 0x00ffff;
@@ -54,18 +55,20 @@ function createTunnelMaterial(gridBrightness = DEFAULT_DEV_HUD.gridBrightness) {
 
 /**
  * @param {HTMLCanvasElement} canvas
- * @param {{ devHud?: Partial<typeof DEFAULT_DEV_HUD> }} [opts]
+ * @param {{ devHud?: Partial<typeof DEFAULT_DEV_HUD>; graphicsProfile?: ReturnType<typeof getGraphicsProfile> }} [opts]
  */
 export function createGameRenderer(canvas, opts = {}) {
   const devHud = { ...DEFAULT_DEV_HUD, ...opts.devHud };
+  const gfx = opts.graphicsProfile ?? getGraphicsProfile();
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
     antialias: true,
     alpha: false,
+    stencil: false,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, gfx.maxPixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -90,7 +93,7 @@ export function createGameRenderer(canvas, opts = {}) {
 
   const w0 = canvas.clientWidth || window.innerWidth;
   const h0 = canvas.clientHeight || window.innerHeight;
-  const dpr0 = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr0 = Math.min(window.devicePixelRatio || 1, gfx.maxPixelRatio);
   const floorGeom = new THREE.PlaneGeometry(900, 900);
   const floorReflector = new Reflector(floorGeom, {
     color: 0x0c0c18,
@@ -102,7 +105,9 @@ export function createGameRenderer(canvas, opts = {}) {
   floorReflector.position.set(0, -14, 30);
   scene.add(floorReflector);
 
-  const post = createPostPipeline(renderer, scene, camera, devHud);
+  const post = createPostPipeline(renderer, scene, camera, devHud, {
+    bloomResolutionScale: gfx.bloomResolutionScale,
+  });
 
   let running = false;
   let rafId = 0;
