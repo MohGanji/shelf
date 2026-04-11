@@ -1157,6 +1157,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.1** | `vibe/index.html` link + desktop note | A4 | [x] |
 | **P10.2** | Cross-browser performance pass | (full game) | [x] |
 | **P10.3** | Mobile / desktop recommendation copy | P10.1 | [x] |
+| **P10.4** | Tron `index.html`: meta description + Open Graph / Twitter card tags for link previews | P10.1 | [x] |
 
 ### HUD and progression
 
