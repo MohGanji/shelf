@@ -1326,6 +1326,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.170** | Tron `index.html`: JSON-LD `WebSite` adds `copyrightYear` (`2026`, aligned with `VideoGame.copyrightYear`) and `copyrightHolder` (`{ "@id": "./#organization" }`) so the site entity exposes CreativeWork-style rights metadata alongside `publisher` and `isFamilyFriendly` | P10.169 | [x] |
 | **P10.171** | Tron `index.html`: JSON-LD `WebPage` adds `about` (`{ "@id": "./#game" }`) so structured data explicitly marks the page’s primary topic as the same `VideoGame` / `WebApplication` node referenced by `mainEntity` (extends P10.127) | P10.127 | [x] |
 | **P10.172** | Tron `index.html`: JSON-LD `WebPage` adds `primaryImageOfPage` as `ImageObject` (path-prefix–safe `url` and `152×152` dimensions matching `VideoGame.image`) so structured data exposes the page’s primary preview imagery alongside `mainEntity` / `about` | P10.171 | [x] |
+| **P10.173** | Tron `index.html`: JSON-LD `WebPage` adds `datePublished` and `dateModified` (ISO 8601 calendar dates, `2026-04-11`, aligned with `VideoGame`) so the page entity exposes CreativeWork freshness alongside `primaryImageOfPage`, `about`, and `mainEntity` | P10.172 | [x] |
 
 ### HUD and progression
 
