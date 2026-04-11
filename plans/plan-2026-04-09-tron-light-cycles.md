@@ -1196,6 +1196,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.40** | Tron `index.html`: `integrity` (`sha384` SRI) on jsdelivr `modulepreload` links for Three.js and cannon-es (same pinned versions as importmap) so preloaded CDN modules are cryptographically verified | P10.12 | [x] |
 | **P10.41** | Tron `index.html`: `referrerpolicy="strict-origin-when-cross-origin"` on the Google Fonts stylesheet `<link>` so font CSS requests align with the document referrer policy (limits full URL in `Referer` on cross-origin stylesheet discovery) | P10.15, P10.19 | [x] |
 | **P10.42** | Tron `index.html`: `integrity` (`sha384` SRI) + `crossorigin="anonymous"` on `preload` and `stylesheet` links for `./css/style.css` so the shell stylesheet is cryptographically verified (same pattern as CDN `modulepreload` SRI); update hash when `style.css` changes | P10.14, P10.40 | [x] |
+| **P10.43** | Tron `index.html`: `fetchpriority="high"` on the `./css/style.css` `<link rel="stylesheet">` (not only the matching `preload`) so the applied stylesheet keeps the same priority hint as the critical-path preload (extends P10.14 / P10.16) | P10.42 | [x] |
 
 ### HUD and progression
 
