@@ -1314,6 +1314,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.158** | Tron `index.html`: JSON-LD free `Offer` adds `sku` (`TLC-WEB-1.0.0`, aligned with `VideoGame.softwareVersion`) so structured data exposes a stable product identifier alongside `itemOffered`, `url`, and nested `UnitPriceSpecification` | P10.157 | [x] |
 | **P10.159** | Tron `index.html`: JSON-LD free `Offer` adds `additionalProperty` (`PropertyValue`: `name` `Distribution`, `value` browser-only digital access / no physical shipment) so structured data states fulfillment mode alongside `deliveryLeadTime`, `availableChannel`, and `eligibleRegion` | P10.158 | [x] |
 | **P10.160** | Tron `index.html`: JSON-LD free `Offer` extends `additionalProperty` with a second `PropertyValue` (`Access model` → instant browser play; no account required for the base campaign) so structured data states onboarding and access friction next to `Distribution` | P10.159 | [x] |
+| **P10.161** | Tron `index.html`: JSON-LD free `Offer` adds `eligibleCustomerType` (`https://schema.org/Consumer`) so structured data marks the zero-price grant as intended for end-user consumers alongside worldwide `eligibleRegion` | P10.160 | [x] |
 
 ### HUD and progression
 
