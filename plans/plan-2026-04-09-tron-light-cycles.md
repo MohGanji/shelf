@@ -1259,6 +1259,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.103** | Tron `index.html`: `modulepreload` for `./js/engine/post.js` is ordered **before** `./js/engine/renderer.js` (after `./js/engine/graphicsProfile.js`) because `renderer.js` statically imports `post.js`, so the post stack and its Three addon subgraph warm before the renderer module parses (narrows `renderer`→`post` transitive fetch like P10.101 / P10.102) | P10.60, P10.85 | [x] |
 | **P10.104** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `./assets/audio/music-lobby.mp3` and `./assets/audio/music-gameplay.mp3` (`fetchpriority="low"`) so optional ElevenLabs music beds may warm the HTTP cache alongside campaign JSON prefetches before `audio.prefetch` runs (same paths as `MUSIC_ASSET_URLS` in `config.js`) | P10.53, P8.1 | [x] |
 | **P10.105** | Tron `index.html`: `link rel="prefetch"` with `as="image"` for `../../assets/favicon/tron-pwa-screenshot-wide.png` and `../../assets/favicon/tron-pwa-screenshot-narrow.png` (`fetchpriority="low"`) so PWA `screenshots` assets from `site.webmanifest` may warm the HTTP cache alongside music and level JSON prefetches | P10.35, P10.104 | [x] |
+| **P10.106** | Tron `index.html`: `link rel="prefetch"` with `as="image"` for `../../assets/favicon/apple-touch-icon.png` (`fetchpriority="low"`) so the shared Open Graph / Twitter / JSON-LD preview image may warm the HTTP cache alongside PWA screenshot prefetches (same path as `og:image` / structured data) | P10.5, P10.105 | [x] |
 
 ### HUD and progression
 
