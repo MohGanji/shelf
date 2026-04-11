@@ -1390,6 +1390,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.234** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `encodingFormat` (MIME strings for the delivered shell and assets: HTML, JavaScript ES modules, JSON campaign/level data) so structured data states wire formats alongside `fileFormat` and `programmingLanguage` | P10.233 | [x] |
 | **P10.235** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `timeRequired` (ISO 8601 duration `PT45M`, informative typical base-campaign completion time) so structured data exposes approximate play-through scope alongside `softwareVersion` and `releaseNotes` | P10.234 | [x] |
 | **P10.236** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `thumbnailUrl` (path-prefix–safe relative URL, same asset as `image`) so structured data exposes explicit thumbnail imagery alongside `image` and `screenshot` | P10.235 | [x] |
+| **P10.237** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `softwareHelp` as `CreativeWork` (`name`, `inLanguage` `en`, plain-text keyboard/quick-start `text`) so structured data exposes embedded help documentation alongside `accessibilitySummary`, `browserRequirements`, and `featureList` | P10.236 | [x] |
 
 ### HUD and progression
 
