@@ -167,11 +167,23 @@
         aria-modal="true"
         aria-labelledby="garage-destination-title"
       >
-        <h2 id="garage-destination-title" class="tron-destination__title">GARAGE</h2>
-        <p class="tron-destination__body">
-          Showroom preview — colors and upgrades (P7.4). Return to the grid when ready.
-        </p>
-        <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
+        <div class="garage-chrome">
+          <h2 id="garage-destination-title" class="tron-destination__title">GARAGE</h2>
+          <div class="garage-stats" id="garage-stats" aria-live="polite"></div>
+          <div class="garage-grid">
+            <section class="garage-panel">
+              <h3 class="garage-panel__heading">Cycle color</h3>
+              <div class="garage-swatches" id="garage-cycle-swatches" role="group" aria-label="Cycle colors"></div>
+              <h3 class="garage-panel__heading">Trail color</h3>
+              <div class="garage-swatches" id="garage-trail-swatches" role="group" aria-label="Trail colors"></div>
+            </section>
+            <section class="garage-panel garage-panel--upgrades">
+              <h3 class="garage-panel__heading">Attribute upgrades</h3>
+              <div id="garage-upgrades" class="garage-upgrades"></div>
+            </section>
+          </div>
+          <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
+        </div>
       </div>
 
       <div

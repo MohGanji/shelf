@@ -664,6 +664,214 @@ body {
   color: rgba(170, 220, 255, 0.9);
 }
 
+/* P7.4 — garage UI over showroom canvas */
+.tron-destination--garage .garage-chrome {
+  pointer-events: auto;
+  width: min(1100px, 96vw);
+  max-height: min(88vh, 720px);
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+}
+
+.tron-destination--garage .tron-destination__title {
+  margin-bottom: 0.15rem;
+}
+
+.garage-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  justify-content: center;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: rgba(160, 220, 255, 0.92);
+  font-variant-numeric: tabular-nums;
+}
+
+.garage-stats__item {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+
+.garage-stats__label {
+  opacity: 0.72;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+}
+
+.garage-stats__value {
+  font-family: "Orbitron", sans-serif;
+  font-weight: 600;
+  color: #7efff0;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.35);
+}
+
+.garage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 0.85rem 1rem;
+  align-items: start;
+  text-align: left;
+}
+
+@media (max-width: 900px) {
+  .garage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.garage-panel {
+  padding: 0.65rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 255, 0.16);
+  background: rgba(4, 10, 22, 0.55);
+  box-shadow: inset 0 0 24px rgba(0, 80, 120, 0.12);
+}
+
+.garage-panel__heading {
+  margin: 0 0 0.45rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(120, 220, 255, 0.88);
+}
+
+.garage-panel--upgrades .garage-panel__heading {
+  margin-bottom: 0.5rem;
+}
+
+.garage-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.65rem;
+}
+
+.garage-swatches:last-child {
+  margin-bottom: 0;
+}
+
+.garage-swatch {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    inset 0 0 12px rgba(255, 255, 255, 0.12);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.12s ease;
+}
+
+.garage-swatch:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 255, 0.45),
+    0 0 14px rgba(0, 255, 255, 0.35);
+}
+
+.garage-swatch:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.garage-swatch--selected {
+  border-color: #ffffff;
+  box-shadow:
+    0 0 0 2px rgba(0, 255, 255, 0.75),
+    0 0 18px rgba(0, 255, 255, 0.45);
+}
+
+.garage-swatch--locked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.garage-swatch__tag {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #ffee88;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+.garage-upgrades {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.garage-upgrade-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  background: rgba(0, 20, 40, 0.35);
+}
+
+.garage-upgrade-card__title {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(200, 240, 255, 0.95);
+}
+
+.garage-upgrade-card__meta {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(150, 200, 230, 0.88);
+}
+
+.garage-upgrade-card__btn {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0.35rem 0.55rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  color: #0a1620;
+  background: linear-gradient(180deg, #66ffff, #00a8c8);
+  border: 1px solid rgba(0, 255, 255, 0.45);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.garage-upgrade-card__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  filter: grayscale(0.4);
+}
+
+.garage-upgrade-card__btn:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+
 /* P6.1 — editor: keep Three.js canvas visible; chrome bar at top */
 .tron-destination--editor {
   inset: 0 0 auto 0;

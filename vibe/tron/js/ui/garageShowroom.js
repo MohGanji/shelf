@@ -85,7 +85,7 @@ export function mountGarageShowroom(opts) {
   cycle.root.position.set(0, 0.2, 0);
   scene.add(cycle.root);
 
-  const trailCol = new THREE.Color(trailHex);
+  let trailCol = new THREE.Color(trailHex);
   const trailRoot = new THREE.Group();
   trailRoot.position.set(0, 0, -0.06);
   cycle.root.add(trailRoot);
@@ -115,6 +115,31 @@ export function mountGarageShowroom(opts) {
     seg.position.set(x, 0.12 + t * 0.06, z);
     seg.rotation.y = Math.sin(t * 1.4) * 0.12;
     trailRoot.add(seg);
+  }
+
+  /**
+   * @param {string} hex
+   */
+  function applyTrailPreviewColor(hex) {
+    trailCol.set(hex);
+    for (let i = 0; i < trailMats.length; i++) {
+      const t = i / Math.max(1, trailMats.length - 1);
+      const m = trailMats[i];
+      m.color.copy(trailCol).multiplyScalar(0.25);
+      m.emissive.copy(trailCol);
+      m.emissiveIntensity = 1.05 + t * 0.35;
+    }
+  }
+
+  /**
+   * Live-update showroom when save colors change (P7.4).
+   * @param {import("../data/savedata.js").PlayerSave} save
+   */
+  function syncFromSave(save) {
+    const ch = typeof save.player.cycleColor === "string" ? save.player.cycleColor : "#00FFFF";
+    const th = typeof save.player.trailColor === "string" ? save.player.trailColor : "#00FFFF";
+    cycle.setPrimaryColor(ch);
+    applyTrailPreviewColor(th);
   }
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
@@ -166,6 +191,7 @@ export function mountGarageShowroom(opts) {
   rafId = requestAnimationFrame(frame);
 
   return {
+    syncFromSave,
     dispose() {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", onResize);
