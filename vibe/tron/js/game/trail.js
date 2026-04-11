@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { CYCLE_BOUNDS, WORLD } from "../config.js";
 
+/** @typedef {typeof WORLD} WorldConstants */
+
 /**
  * Fading trail wall rendering (plan P2.1 + P2.2): piecewise ribbon of thin emissive boxes along anchor chords.
  * Distance-based anchor spawn (1 unit), FIFO cap from Trail Length attribute, oldest segment
@@ -11,11 +13,13 @@ import { CYCLE_BOUNDS, WORLD } from "../config.js";
  * @param {object} options
  * @param {import('three').ColorRepresentation} options.color
  * @param {import('../config.js').DEFAULT_DEV_HUD} options.devHud
+ * @param {WorldConstants} [options.world] — from `getArenaPlaytestConfig().world` / runtime; defaults to base `WORLD`
  * @param {number} options.maxSegments — max unit-length trail segments (edges); anchors cap at +1
  */
 export function createTrailWallSystem(options) {
   const color = new THREE.Color(options.color);
   const devHud = options.devHud;
+  const w = options.world ?? WORLD;
   const maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
   const maxAnchors = maxSeg + 1;
 
@@ -43,9 +47,9 @@ export function createTrailWallSystem(options) {
   let anchorsDirty = true;
 
   const tmpRear = new THREE.Vector3();
-  const thick = WORLD.trailWallThickness;
-  const wallH = WORLD.trailWallHeight;
-  const segDist = WORLD.segmentSpawnDistance;
+  const thick = w.trailWallThickness;
+  const wallH = w.trailWallHeight;
+  const segDist = w.segmentSpawnDistance;
 
   let pulseT = 0;
 

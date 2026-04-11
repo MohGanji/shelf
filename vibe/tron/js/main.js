@@ -4,12 +4,13 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import {
   AUDIO_AUTOPLAY,
   CONFIG,
+  createRuntimeFromPlayerSave,
   getArenaPlaytestConfig,
-  mergeRuntimeConfig,
+  mergeDevHud,
   TRON_COLORS,
 } from "./config.js";
 import { createChaseCamera } from "./engine/camera.js";
-import { loadOrCreateSave } from "./data/savedata.js";
+import { loadOrCreateSave, persistSave } from "./data/savedata.js";
 import { createAudioEngine } from "./engine/audio.js";
 import { createGameRenderer } from "./engine/renderer.js";
 import { isTunnelBlockingInput, playTunnel } from "./engine/tunnel.js";
@@ -70,7 +71,7 @@ async function main() {
   const bootLabel = $("boot-progress-label");
 
   const save = loadOrCreateSave();
-  const runtime = mergeRuntimeConfig(save.devHud ?? {});
+  const runtime = createRuntimeFromPlayerSave(save);
 
   const campaign = await loadCampaignLevels();
   const firstCampaignLevel = campaign.validLevels[0];
@@ -100,7 +101,14 @@ async function main() {
   grid.position.y = -0.52;
   game.scene.add(grid);
 
-  const devHud = runtime.devHud;
+  const devHud = runtime.devHud; // single mutable runtime HUD — keep in sync with save via persistDevHudToSave
+
+  /** Persist full merged devHud so keyboard tweaks survive reload (plan § Config Override Chain). */
+  function persistDevHudToSave() {
+    save.devHud = mergeDevHud({ ...devHud });
+    persistSave(save);
+  }
+
   const cycle = createLightCycle({ devHud });
   const enemy = createLightCycle({ variant: "enemy", devHud });
   cycle.root.position.set(-0.65, 0, 0);
@@ -137,14 +145,17 @@ async function main() {
       if (k === "t") {
         devHud.cycleTiltOnSteer = !devHud.cycleTiltOnSteer;
         syncHud();
+        persistDevHudToSave();
       }
       if (k === "p") {
         devHud.cyclePitchOnAccel = !devHud.cyclePitchOnAccel;
         syncHud();
+        persistDevHudToSave();
       }
       if (k === "l") {
         devHud.cycleLeanOnBrake = !devHud.cycleLeanOnBrake;
         syncHud();
+        persistDevHudToSave();
       }
       if (k === "1") cycle.setPrimaryColor(TRON_COLORS.playerCycle);
       if (k === "2") cycle.setPrimaryColor(TRON_COLORS.enemyCycle);
@@ -204,6 +215,7 @@ async function main() {
   const trailWall = createTrailWallSystem({
     color: save.player.trailColor ?? "#00FFFF",
     devHud,
+    world: playCfg.world,
     maxSegments: playCfg.trailMaxSegments,
   });
   game.scene.add(trailWall.root);
@@ -270,21 +282,25 @@ async function main() {
         devHud.nitroFovWiden = !devHud.nitroFovWiden;
         syncArenaHud();
         game.applyDevHud({ nitroFovWiden: devHud.nitroFovWiden });
+        persistDevHudToSave();
       }
       if (k === "6") {
         devHud.nitroCameraPullBack = !devHud.nitroCameraPullBack;
         syncArenaHud();
         game.applyDevHud({ nitroCameraPullBack: devHud.nitroCameraPullBack });
+        persistDevHudToSave();
       }
       if (k === "7") {
         devHud.nitroSpeedLines = !devHud.nitroSpeedLines;
         syncArenaHud();
         game.applyDevHud({ nitroSpeedLines: devHud.nitroSpeedLines });
+        persistDevHudToSave();
       }
       if (k === "8") {
         devHud.nitroMotionBlur = !devHud.nitroMotionBlur;
         syncArenaHud();
         game.applyDevHud({ nitroMotionBlur: devHud.nitroMotionBlur });
+        persistDevHudToSave();
       }
     },
     asig,

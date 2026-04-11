@@ -140,13 +140,31 @@ export function mergeDevHud(devHudPatch = {}) {
 }
 
 /**
+ * Merged gameplay config: static `WORLD` plus devHud overrides from save (plan § Config Override Chain).
+ *
+ * @typedef {{ world: typeof WORLD; devHud: ReturnType<typeof mergeDevHud> }} RuntimeConfig
+ */
+
+/**
  * @param {Partial<typeof DEFAULT_DEV_HUD>} devHud
+ * @returns {RuntimeConfig}
  */
 export function mergeRuntimeConfig(devHud = {}) {
   return {
     world: WORLD,
     devHud: mergeDevHud(devHud),
   };
+}
+
+/**
+ * Boot-time helper: load merged runtime from normalized player save (`save.devHud` is partial overrides).
+ * All gameplay should use this object (or `getArenaPlaytestConfig`) — not raw `DEFAULT_DEV_HUD` / `WORLD` alone.
+ *
+ * @param {{ devHud?: Record<string, unknown> }} playerSave
+ * @returns {RuntimeConfig}
+ */
+export function createRuntimeFromPlayerSave(playerSave) {
+  return mergeRuntimeConfig(playerSave?.devHud ?? {});
 }
 
 /** Full-screen tunnel transition (BOOT / gates) — see `engine/tunnel.js` */
@@ -207,6 +225,8 @@ export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
   return {
     arenaWidth,
     arenaDepth,
+    /** World-scale constants (tile size, trail ribbon geometry, etc.) — same as `runtime.world`. */
+    world,
     arenaWallHeight: wallH,
     physicsHz: 60,
     playerRadius: 0.35,
