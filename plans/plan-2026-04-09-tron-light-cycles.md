@@ -1299,6 +1299,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.143** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `memoryRequirements` (plain text: typical browser tab RAM range vs GPU/post tier) so structured data documents runtime memory expectations alongside `storageRequirements` | P10.142 | [x] |
 | **P10.144** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `processorRequirements` (plain text: JS main thread + WebGL, typical CPU expectations, `?perf=low` hint) so structured data documents CPU expectations alongside `memoryRequirements` | P10.143 | [x] |
 | **P10.145** | Tron `index.html`: JSON-LD free `Offer` adds `eligibleRegion` as `Place` with `name` `Worldwide` so structured data states global eligibility alongside `availability`, `price`, and `seller` | P10.144 | [x] |
+| **P10.146** | Tron `index.html`: JSON-LD free `Offer` adds `itemOffered` (`{ "@id": "./#game" }`) so structured data explicitly links the zero-price `Offer` to the `VideoGame` / `WebApplication` entity in `@graph` | P10.145 | [x] |
 
 ### HUD and progression
 
