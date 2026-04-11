@@ -1,0 +1,173 @@
+{
+  "id": "level-5",
+  "name": "The Gauntlet",
+  "arenaWidth": 400,
+  "arenaDepth": 400,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 200,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 200,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    },
+    {
+      "type": "cosmetic_wall",
+      "edge": "east",
+      "position": 200,
+      "width": 10,
+      "variant": "panel_c"
+    },
+    {
+      "type": "cosmetic_wall",
+      "edge": "west",
+      "position": 200,
+      "width": 10,
+      "variant": "panel_a"
+    },
+    {
+      "type": "cosmetic_wall",
+      "edge": "south",
+      "position": 60,
+      "width": 6,
+      "variant": "panel_b"
+    },
+    {
+      "type": "cosmetic_wall",
+      "edge": "south",
+      "position": 340,
+      "width": 6,
+      "variant": "panel_b"
+    }
+  ],
+  "barriers": [
+    { "type": "building", "x": -60, "z": 60, "height": 3, "shape": "square" },
+    { "type": "building", "x": -59, "z": 60, "height": 3, "shape": "square" },
+    { "type": "building", "x": -60, "z": 61, "height": 3, "shape": "square" },
+    { "type": "building", "x": -59, "z": 61, "height": 3, "shape": "square" },
+    { "type": "building", "x": 60, "z": 60, "height": 2, "shape": "triangle" },
+    { "type": "building", "x": 61, "z": 60, "height": 2, "shape": "triangle" },
+    { "type": "building", "x": 60, "z": -60, "height": 4, "shape": "hexagon" },
+    { "type": "building", "x": 61, "z": -60, "height": 4, "shape": "hexagon" },
+    { "type": "building", "x": 60, "z": -59, "height": 4, "shape": "hexagon" },
+    { "type": "structure", "x": 0, "z": 0, "variant": "pylon" },
+    { "type": "structure", "x": -100, "z": 0, "variant": "column" },
+    { "type": "structure", "x": 100, "z": 0, "variant": "obelisk" },
+    { "type": "wall", "x": -30, "z": -30 },
+    { "type": "wall", "x": -29, "z": -30 },
+    { "type": "wall", "x": -28, "z": -30 },
+    { "type": "wall", "x": -27, "z": -30 },
+    { "type": "wall", "x": -26, "z": -30 },
+    { "type": "wall", "x": -25, "z": -30 },
+    { "type": "wall", "x": 25, "z": 30 },
+    { "type": "wall", "x": 26, "z": 30 },
+    { "type": "wall", "x": 27, "z": 30 },
+    { "type": "wall", "x": 28, "z": 30 },
+    { "type": "wall", "x": 29, "z": 30 },
+    { "type": "wall", "x": 30, "z": 30 }
+  ],
+  "gameObjects": [
+    { "type": "boost_pad", "x": -40, "z": 100 },
+    { "type": "boost_pad", "x": 40, "z": -100 },
+    {
+      "type": "portal",
+      "x": -120,
+      "z": 120,
+      "rotation": 0,
+      "pairId": "p1",
+      "pairColor": "#FF00FF"
+    },
+    {
+      "type": "portal",
+      "x": 120,
+      "z": -120,
+      "rotation": 3.14159,
+      "pairId": "p1",
+      "pairColor": "#FF00FF"
+    }
+  ],
+  "powerups": [
+    { "type": "trail_extend", "x": -90, "z": -90, "category": "level_permanent" },
+    { "type": "nitro_capacity", "x": 90, "z": 90, "category": "level_permanent" },
+    { "type": "nitro_recharge", "x": -50, "z": 0, "category": "instant" },
+    { "type": "nitro_recharge", "x": 50, "z": 0, "category": "instant" },
+    { "type": "shield", "x": 0, "z": -80, "category": "equippable" },
+    { "type": "shield", "x": 0, "z": 80, "category": "equippable" }
+  ],
+  "enemies": [
+    {
+      "x": -80,
+      "z": 140,
+      "rotation": 3.14159,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 7,
+        "acceleration": 6,
+        "trailLength": 7,
+        "nitroBars": 5,
+        "handling": 7,
+        "intelligence": 8
+      }
+    },
+    {
+      "x": 0,
+      "z": 150,
+      "rotation": 3.14159,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 4,
+        "handling": 5,
+        "intelligence": 6
+      }
+    },
+    {
+      "x": 80,
+      "z": 140,
+      "rotation": 3.14159,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 6,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 4,
+        "handling": 6,
+        "intelligence": 6
+      }
+    },
+    {
+      "x": 0,
+      "z": -80,
+      "rotation": 0,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 5,
+        "trailLength": 5,
+        "nitroBars": 4,
+        "handling": 5,
+        "intelligence": 5
+      }
+    }
+  ],
+  "rewards": {
+    "coins": 150,
+    "timeBonusThreshold": 120,
+    "timeBonusCoins": 75
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "id": "level-0",
+  "name": "Lobby",
+  "arenaWidth": 400,
+  "arenaDepth": 200,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 200,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 120,
+      "width": 5,
+      "role": "arena",
+      "signText": "ENTER ARENA",
+      "locked": false,
+      "destination": "level"
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 200,
+      "width": 5,
+      "role": "garage",
+      "signText": "GARAGE",
+      "locked": false,
+      "destination": "garage"
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 280,
+      "width": 5,
+      "role": "architect",
+      "signText": "ARCHITECT",
+      "locked": false,
+      "destination": "editor"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [],
+  "rewards": null
+}
