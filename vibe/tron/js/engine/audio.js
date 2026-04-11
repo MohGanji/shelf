@@ -676,6 +676,58 @@ export function createAudioEngine(options = {}) {
         /* ignore */
       }
     },
+
+    /** Triumphant chord when all combat enemies are cleared — plan P2.6 (procedural). */
+    playLevelCompleteChord() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const freqs = [261.6, 329.6, 392.0, 523.2];
+      let i = 0;
+      for (const f of freqs) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(f, t0);
+        const delay = i * 0.045;
+        g.gain.setValueAtTime(0.0001, t0 + delay);
+        g.gain.exponentialRampToValueAtTime(0.055 * sfxVolume, t0 + delay + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.55);
+        osc.connect(g);
+        g.connect(sfxGain);
+        try {
+          osc.start(t0 + delay);
+          osc.stop(t0 + delay + 0.65);
+        } catch {
+          /* ignore */
+        }
+        i += 1;
+      }
+    },
+
+    /** Tinkling digital coins when NEON is banked on exit gate — plan P2.6 (procedural). */
+    playCoinRewardTinkle() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      for (let k = 0; k < 6; k++) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        const f = 1800 + k * 140 + (k % 2) * 80;
+        osc.frequency.setValueAtTime(f, t0);
+        const delay = k * 0.055;
+        g.gain.setValueAtTime(0.0001, t0 + delay);
+        g.gain.exponentialRampToValueAtTime(0.06 * sfxVolume, t0 + delay + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.07);
+        osc.connect(g);
+        g.connect(sfxGain);
+        try {
+          osc.start(t0 + delay);
+          osc.stop(t0 + delay + 0.09);
+        } catch {
+          /* ignore */
+        }
+      }
+    },
   };
 }
 
@@ -711,5 +763,7 @@ function createNoopEngine() {
     playShieldShatterClang: () => {},
     playShieldExpireFade: () => {},
     playPortalWarp: () => {},
+    playLevelCompleteChord: () => {},
+    playCoinRewardTinkle: () => {},
   };
 }

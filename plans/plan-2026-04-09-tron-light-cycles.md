@@ -1065,7 +1065,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P2.3** | Collision: tile map for trails; cycle↔cycle rules (low speed, shield); cannon groups | P1.2, P2.1, P3.4 | [x] |
 | **P2.4** | Derez sequence: implosion, trail vanish, player slow-mo / overhead / shake / glitch toggles; SFX | P2.1–P2.3 | [x] |
 | **P2.5** | Near-miss detection + audio; own-trail immunity alignment | P2.3, A3 | [x] |
-| **P2.6** | Level outcomes: player derez path; all enemies dead → exit gate + coin overlay; zero-enemy rules | X1, P5.6, P5.7, P5.8 | [ ] |
+| **P2.6** | Level outcomes: player derez path; all enemies dead → exit gate + coin overlay; zero-enemy rules | X1, P5.6, P5.7, P5.8 | [x] |
 
 ### Phase 3 — Power-ups and game objects
 

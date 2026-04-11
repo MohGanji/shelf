@@ -532,6 +532,7 @@ async function main() {
       bonusEl.textContent =
         th > 0 && tb > 0 ? `Exit within ${th}s for +${tb} NEON (timer).` : "";
     }
+    audio.playLevelCompleteChord();
     levelCompleteOverlay.hidden = false;
     if (combatVictoryOverlayTimeoutId) window.clearTimeout(combatVictoryOverlayTimeoutId);
     const sec = typeof devHud.coinOverlayDuration === "number" ? devHud.coinOverlayDuration : 3;
@@ -580,6 +581,7 @@ async function main() {
       addCoins(save, add);
       recordLevelComplete(save, levelIdx);
       persistSave(save);
+      audio.playCoinRewardTinkle();
     }
     playTunnel(
       game.renderer,
@@ -852,48 +854,10 @@ async function main() {
       devHud,
     });
 
-    if (
-      !exitGateUnlocked &&
-      !isLobby &&
-      rawEnemyCount > 0 &&
-      enemyRoster.list.length > 0 &&
-      enemyRoster.list.every((e) => e.eliminated)
-    ) {
-      if (runtimeUnlockCampaignExitGate(game.scene, world, playCfg, wallMat)) {
-        exitGateUnlocked = true;
-        const gr = game.scene.userData.gates;
-        const anim = game.scene.userData.gateAnimatables;
-        if (gr?.root && Array.isArray(anim)) {
-          applyExitGateRuntimeOpenVisual(gr.root, playCfg, anim);
-        }
-        showCombatVictoryOverlay();
-      }
-    }
-
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
     applyEnemyWallAndBarrierSlide(enemyRoster.list, game.scene);
-
-    if (
-      exitGateUnlocked &&
-      !isLobby &&
-      (levelStarted || rawEnemyCount === 0) &&
-      !winTunnelStarted &&
-      playerDerezPhase === "alive"
-    ) {
-      const gatesList = game.scene.userData.gates?.list ?? wallGates;
-      const hit = queryOpenGateAtPosition(
-        gatesList,
-        playCfg.arenaWidth,
-        playCfg.arenaDepth,
-        playerBody.position,
-      );
-      if (hit && hit.gate.role === "exit") {
-        beginWinTunnelToLobby();
-        return;
-      }
-    }
 
     portalField.tick(dt, {
       isLobby,
@@ -1013,6 +977,49 @@ async function main() {
             if (out.derezB) eliminateCampaignEnemy(world, b);
           }
         }
+      }
+    }
+
+    /**
+     * P2.6 — after eliminations this frame: open exit + overlay once all combat enemies are gone;
+     * then allow same-frame exit ride-through if already in the trigger volume.
+     */
+    if (
+      playerDerezPhase === "alive" &&
+      !exitGateUnlocked &&
+      !isLobby &&
+      rawEnemyCount > 0 &&
+      enemyRoster.list.length > 0 &&
+      enemyRoster.list.every((e) => e.eliminated)
+    ) {
+      if (runtimeUnlockCampaignExitGate(game.scene, world, playCfg, wallMat)) {
+        exitGateUnlocked = true;
+        const gr = game.scene.userData.gates;
+        const anim = game.scene.userData.gateAnimatables;
+        if (gr?.root && Array.isArray(anim)) {
+          applyExitGateRuntimeOpenVisual(gr.root, playCfg, anim);
+        }
+        showCombatVictoryOverlay();
+      }
+    }
+
+    if (
+      exitGateUnlocked &&
+      !isLobby &&
+      (levelStarted || rawEnemyCount === 0) &&
+      !winTunnelStarted &&
+      playerDerezPhase === "alive"
+    ) {
+      const gatesList = game.scene.userData.gates?.list ?? wallGates;
+      const hit = queryOpenGateAtPosition(
+        gatesList,
+        playCfg.arenaWidth,
+        playCfg.arenaDepth,
+        playerBody.position,
+      );
+      if (hit && hit.gate.role === "exit") {
+        beginWinTunnelToLobby();
+        return;
       }
     }
 
