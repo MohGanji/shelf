@@ -3,6 +3,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap");
 
 :root {
+  color-scheme: dark;
   --tron-bg: #0a0a0a;
   --tron-grid: #1a1a3e;
   --tron-cyan: #00ffff;
