@@ -24,8 +24,8 @@ export function createTrailWallSystem(options) {
   const color = new THREE.Color(options.color);
   const devHud = options.devHud;
   const w = options.world ?? WORLD;
-  const maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
-  const maxAnchors = maxSeg + 1;
+  let maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
+  let maxAnchors = maxSeg + 1;
   const ownerId = typeof options.ownerId === "string" && options.ownerId.length ? options.ownerId : "player";
   const arenaWidth = typeof options.arenaWidth === "number" ? options.arenaWidth : w.defaultArenaWidth;
   const arenaDepth = typeof options.arenaDepth === "number" ? options.arenaDepth : w.defaultArenaDepth;
@@ -255,6 +255,21 @@ export function createTrailWallSystem(options) {
     return anchors.length - 1;
   }
 
+  /**
+   * Raise or lower FIFO cap (plan P3.3 Trail Extend). Trims excess anchors from the tail if shrinking.
+   * @param {number} nextMaxSegments — max logical segments (edges), same units as constructor `maxSegments`
+   */
+  function setMaxSegments(nextMaxSegments) {
+    const cap = Math.max(4, Math.floor(nextMaxSegments));
+    maxSeg = cap;
+    maxAnchors = maxSeg + 1;
+    while (anchors.length > maxAnchors) {
+      anchors.shift();
+      if (segmentOpacities.length > 0) segmentOpacities.shift();
+    }
+    anchorsDirty = true;
+  }
+
   function dispose() {
     clear();
     disposeSegmentChildren();
@@ -266,6 +281,7 @@ export function createTrailWallSystem(options) {
     update,
     clear,
     setColor,
+    setMaxSegments,
     getActiveSegmentCount,
     getLogicalEdgeCount,
     getTrailTileMap() {

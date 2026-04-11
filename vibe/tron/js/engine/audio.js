@@ -447,6 +447,73 @@ export function createAudioEngine(options = {}) {
       }
     },
 
+    /** Instant power-up (green) — quick ascending chime (plan P3.1). */
+    playPowerupPickupInstant() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(520, t0);
+      osc.frequency.exponentialRampToValueAtTime(1980, t0 + 0.07);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.1 * sfxVolume, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.12);
+      } catch {
+        /* ignore */
+      }
+    },
+
+    /** Level-permanent power-up (blue) — deep resonant chord (plan P3.1). */
+    playPowerupPickupLevelPermanent() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const freqs = [130.8, 196.0, 293.7];
+      for (const f of freqs) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(f, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.045 * sfxVolume, t0 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
+        osc.connect(g);
+        g.connect(sfxGain);
+        try {
+          osc.start(t0);
+          osc.stop(t0 + 0.42);
+        } catch {
+          /* ignore */
+        }
+      }
+    },
+
+    /** Equippable power-up (purple) — staccato ping (plan P3.1). */
+    playPowerupPickupEquippable() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.setValueAtTime(1760, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.09 * sfxVolume, t0 + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.07);
+      } catch {
+        /* ignore */
+      }
+    },
+
     /** Near-miss tension zip — procedural (plan P2.5; audio-only feedback). */
     playNearMissWhoosh() {
       if (!ctx) return;
@@ -505,6 +572,9 @@ function createNoopEngine() {
     loadBuffer: async () => null,
     playNitroEmptyBuzz: () => {},
     playDerezShatter: () => {},
+    playPowerupPickupInstant: () => {},
+    playPowerupPickupLevelPermanent: () => {},
+    playPowerupPickupEquippable: () => {},
     playNearMissWhoosh: () => {},
   };
 }

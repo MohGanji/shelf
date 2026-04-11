@@ -28,6 +28,7 @@ import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
 import { createNitroState } from "./game/nitroSystem.js";
+import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
   applyEnemyWallAndBarrierSlide,
@@ -146,6 +147,16 @@ async function main() {
   bootOverlay.classList.add("boot-overlay--hidden");
 
   const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
+  /** Shallow copy so P3.1 can override `nitroBarCount` per level bonuses without mutating `playCfg`. */
+  const playerDriveCfg = { ...playCfg };
+  /** Trail Length attribute cap + Trail Extend pickups (P3.3) — segments. */
+  let levelTrailExtendBonus = 0;
+  /** Nitro Bars attribute cap + Nitro Capacity+ pickups (P3.3) — discrete bars. */
+  let levelExtraNitroBars = 0;
+
+  function effectivePlayerNitroMax() {
+    return playCfg.nitroBarCount + levelExtraNitroBars;
+  }
 
   applyArenaStageEnvironment(game, playCfg);
 
@@ -215,7 +226,13 @@ async function main() {
   chase.spawnAt(playerCycle.root.position, spawnHeading);
 
   let nitroVis = 0;
-  const nitroState = createNitroState(playCfg.nitroBarCount);
+  const nitroState = createNitroState(effectivePlayerNitroMax());
+
+  const powerupField = createCampaignPowerupField({
+    scene: game.scene,
+    powerups: activeCampaignLevel && Array.isArray(activeCampaignLevel.powerups) ? activeCampaignLevel.powerups : [],
+    devHud,
+  });
 
   const speedLineEl = document.getElementById("nitro-speed-lines");
   const hudSpeedEl = document.getElementById("hud-speed");
@@ -261,7 +278,7 @@ async function main() {
 
   function renderNitroHud() {
     if (!hudNitroEl) return;
-    const max = Math.max(1, playCfg.nitroBarCount);
+    const max = Math.max(1, effectivePlayerNitroMax());
     hudNitroEl.classList.toggle("nitro-bar-strip--empty-flash", nitroState.emptyFlash > 0);
     hudNitroEl.replaceChildren();
     for (let i = 0; i < max; i++) {
@@ -389,12 +406,13 @@ async function main() {
       syncArenaHud();
     }
 
+    playerDriveCfg.nitroBarCount = effectivePlayerNitroMax();
     const { nitroBurstActive: nitroOn } = tickPlayerArcadeDrive({
       body: playerBody,
       dt,
       keys: arenaKeys,
       nitroState,
-      playCfg,
+      playCfg: playerDriveCfg,
       devHud,
       levelStarted: isLobby || levelStarted,
       onNitroEmptyPress: () => {
@@ -412,6 +430,44 @@ async function main() {
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
     applyEnemyWallAndBarrierSlide(enemyRoster.list, game.scene);
+
+    powerupField.tick(dt, {
+      isLobby,
+      levelStarted,
+      playerBody,
+      enemies: enemyRoster.list,
+      devHud,
+      onPickupSound: (cat) => {
+        if (cat === "instant") audio.playPowerupPickupInstant();
+        else if (cat === "level_permanent") audio.playPowerupPickupLevelPermanent();
+        else audio.playPowerupPickupEquippable();
+      },
+      apply: {
+        onPlayerNitroRecharge: () => {
+          refillNitroBars(nitroState, effectivePlayerNitroMax());
+        },
+        onPlayerTrailExtend: () => {
+          levelTrailExtendBonus += typeof devHud.trailExtendAmount === "number" ? devHud.trailExtendAmount : 10;
+          trailWall.setMaxSegments(playCfg.trailMaxSegments + levelTrailExtendBonus);
+        },
+        onPlayerNitroCapacity: () => {
+          const add =
+            typeof devHud.nitroCapacityPlusAmount === "number" ? devHud.nitroCapacityPlusAmount : 1;
+          levelExtraNitroBars += add;
+          refillNitroBars(nitroState, effectivePlayerNitroMax());
+        },
+        onPlayerShield: () => {
+          playerBody.userData.equipSlot = "shield";
+        },
+        onEnemyPickup: (e, kind) => {
+          if (kind === "nitro_recharge") {
+            refillNitroBars(e.nitroState, e.playCfg.nitroBarCount);
+          } else {
+            e.body.userData.equipSlot = "shield";
+          }
+        },
+      },
+    });
 
     const gateAnim = game.scene.userData.gateAnimatables;
     if (Array.isArray(gateAnim) && gateAnim.length > 0) {
