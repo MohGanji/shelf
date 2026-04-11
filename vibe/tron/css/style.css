@@ -52,7 +52,9 @@ body {
   padding: 0 8vw 10vh;
   pointer-events: none;
   z-index: 20;
-  transition: opacity 0.45s ease, visibility 0.45s;
+  transition:
+    opacity 0.45s ease,
+    visibility 0.45s;
 }
 
 .boot-overlay--hidden {
@@ -94,6 +96,24 @@ body {
   background: var(--boot-bar-fill);
   box-shadow: 0 0 14px rgba(102, 255, 255, 0.85);
   transition: width 0.12s ease-out;
+}
+
+.cycle-hud {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 18;
+  max-width: min(520px, 92vw);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(200, 240, 255, 0.9);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  background: rgba(4, 12, 22, 0.58);
+  border: 1px solid rgba(0, 255, 255, 0.18);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 .state-banner {

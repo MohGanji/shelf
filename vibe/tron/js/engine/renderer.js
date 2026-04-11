@@ -91,6 +91,14 @@ export function createGameRenderer(canvas, opts = {}) {
 
   let running = false;
   let rafId = 0;
+  let lastFrameTimeMs = 0;
+
+  /** @type {((args: { t: number; dt: number }) => void) | null} */
+  let onFrame = null;
+
+  function setOnFrame(fn) {
+    onFrame = fn;
+  }
 
   function resize() {
     const w = canvas.clientWidth || window.innerWidth;
@@ -102,17 +110,24 @@ export function createGameRenderer(canvas, opts = {}) {
 
   function renderFrame(timeMs) {
     const t = timeMs * 0.001;
+    let dt = 0;
+    if (lastFrameTimeMs > 0) {
+      dt = Math.min((timeMs - lastFrameTimeMs) * 0.001, 0.05);
+    }
+    lastFrameTimeMs = timeMs;
+
     tunnelMat.uniforms.uTime.value = t;
+    if (onFrame) onFrame({ t, dt });
     composer.render();
   }
 
   function startLoop() {
     if (running) return;
     running = true;
-    const loop = (t) => {
+    const loop = (tf) => {
       if (!running) return;
       rafId = requestAnimationFrame(loop);
-      renderFrame(t);
+      renderFrame(tf);
     };
     rafId = requestAnimationFrame(loop);
   }
@@ -135,8 +150,11 @@ export function createGameRenderer(canvas, opts = {}) {
     startLoop,
     stopLoop,
     resize,
+    setOnFrame,
     dispose() {
       stopLoop();
+      onFrame = null;
+      lastFrameTimeMs = 0;
       window.removeEventListener("resize", resize);
       tunnelGeom.dispose();
       tunnelMat.dispose();

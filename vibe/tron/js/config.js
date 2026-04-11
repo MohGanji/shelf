@@ -28,6 +28,18 @@ export const WORLD = {
   coinOverlayDuration: 3,
 };
 
+/** Canonical cycle footprint + palette (plan § Light Cycle model) */
+export const CYCLE_BOUNDS = {
+  length: WORLD.cycleMeshLength,
+  width: WORLD.cycleMeshWidth,
+  height: WORLD.cycleMeshHeight,
+};
+
+export const TRON_COLORS = {
+  playerCycle: 0x00ffff,
+  enemyCycle: 0xff6600,
+};
+
 /** Default dev HUD keys — override chain: config defaults ← save devHud (plan save schema) */
 export const DEFAULT_DEV_HUD = {
   bloomIntensity: 1.5,
@@ -52,8 +64,13 @@ export const DEFAULT_DEV_HUD = {
   nitroMaxSpeedMultiplier: 1.2,
   shieldSlowdownPercent: 0.3,
   cycleTiltMax: 0.3,
+  cycleTiltOnSteer: true,
   cyclePitchOnAccel: true,
   cycleLeanOnBrake: true,
+  cyclePitchAccelAngle: 0.12,
+  cycleLeanBrakeAngle: 0.1,
+  cycleTiltSmoothing: 14,
+  cycleWheelSpinScale: 3.2,
   nitroFovWiden: true,
   nitroCameraPullBack: true,
   nitroSpeedLines: true,
@@ -99,10 +116,10 @@ export const POWERUP_COLORS = {
 export const PORTAL_PAIR_COLORS = ["#ff00ff", "#ffff00", "#00ff88", "#ff4444", "#44aaff"];
 
 /**
- * @param {Record<string, unknown>} devHudPatch
+ * @param {Record<string, unknown>} [devHudPatch]
  * @returns {typeof DEFAULT_DEV_HUD}
  */
-export function mergeDevHud(devHudPatch) {
+export function mergeDevHud(devHudPatch = {}) {
   return { ...DEFAULT_DEV_HUD, ...devHudPatch };
 }
 
