@@ -18,6 +18,7 @@ import {
 } from "./engine/physics.js";
 import { createTronCycleKeyState } from "./engine/input.js";
 import { applyArenaStageEnvironment, buildArenaFromCampaignLevel } from "./game/arena.js";
+import { updateGateAnimations } from "./game/gates.js";
 import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
@@ -239,8 +240,13 @@ async function main() {
       },
     });
     world.step(step, dt, 10);
-    applyContinuousArenaWallSlide(playerBody, playCfg);
+    applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
+
+    const gateAnim = game.scene.userData.gateAnimatables;
+    if (Array.isArray(gateAnim) && gateAnim.length > 0) {
+      updateGateAnimations(gateAnim, performance.now() * 0.001);
+    }
     syncHeadingSpeedFromVelocity(playerBody);
 
     const raw = nitroOn ? 1 : 0;
@@ -326,7 +332,7 @@ async function main() {
       : "default size";
     p.textContent = [
       `P5.3 — Arena dimensions and metadata from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
-      "P2.2 — Trail fades at the tail (devHud trailFadeSpeed). Barriers / gates next (P5.4–P5.6).",
+      "P5.6 — Gates from level JSON: neon arch + sign, open gates cut perimeter wall/physics; locked gates slide like walls. P2.2 — trail fade.",
     ].join(" ");
   }
 

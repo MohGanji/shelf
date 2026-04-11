@@ -98,24 +98,66 @@ export function createWallPhysicsBody({ halfExtents, center, wallMatRef }) {
  * cannon-es `collide` fires only on first overlap; wall riding needs per-frame correction.
  * When the sphere is in the boundary band, damp velocity into each perimeter plane using the plan slide formula.
  */
-export function applyContinuousArenaWallSlide(playerBody, cfg) {
+/**
+ * @param {import('cannon-es').Body} playerBody
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} cfg
+ * @param {ReturnType<import('../game/gates.js').computeOpenGateWallFootprints> | null | undefined} [openFootprints] — open gate spans: skip slide so cycles can pass through holes
+ */
+export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
   const p = playerBody.position;
   const r = cfg.playerRadius;
   const halfW = cfg.arenaWidth / 2;
   const halfD = cfg.arenaDepth / 2;
   const pad = 0.12;
+  const fp = openFootprints;
 
   if (p.x - r <= -halfW + pad) {
-    applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
+    let skip = false;
+    if (fp?.west) {
+      for (const { z0, z1 } of fp.west) {
+        if (p.z >= z0 - r - 0.02 && p.z <= z1 + r + 0.02) {
+          skip = true;
+          break;
+        }
+      }
+    }
+    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
   }
   if (p.x + r >= halfW - pad) {
-    applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
+    let skip = false;
+    if (fp?.east) {
+      for (const { z0, z1 } of fp.east) {
+        if (p.z >= z0 - r - 0.02 && p.z <= z1 + r + 0.02) {
+          skip = true;
+          break;
+        }
+      }
+    }
+    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
   }
   if (p.z - r <= -halfD + pad) {
-    applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
+    let skip = false;
+    if (fp?.south) {
+      for (const { x0, x1 } of fp.south) {
+        if (p.x >= x0 - r - 0.02 && p.x <= x1 + r + 0.02) {
+          skip = true;
+          break;
+        }
+      }
+    }
+    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
   }
   if (p.z + r >= halfD - pad) {
-    applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+    let skip = false;
+    if (fp?.north) {
+      for (const { x0, x1 } of fp.north) {
+        if (p.x >= x0 - r - 0.02 && p.x <= x1 + r + 0.02) {
+          skip = true;
+          break;
+        }
+      }
+    }
+    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
   }
 }
 

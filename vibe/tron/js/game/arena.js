@@ -2,6 +2,13 @@ import * as THREE from "three";
 import { Vec3 } from "cannon-es";
 import { createFloorBody, createWallPhysicsBody } from "../engine/physics.js";
 import { buildBarriersFromLevel } from "./blocks.js";
+import {
+  buildGateMeshes,
+  computeOpenGateWallFootprints,
+  extractGatesFromWallObjects,
+  openGateGapsByEdge,
+  solidSegmentsAlongWall,
+} from "./gates.js";
 
 function makePanelMaterial(colorHex, emissive, neon) {
   return new THREE.MeshStandardMaterial({
@@ -15,8 +22,13 @@ function makePanelMaterial(colorHex, emissive, neon) {
 
 /**
  * Visual arena: 1-unit grid on floor, emissive perimeter wall panels, dark plane base.
+ * Open gates (from `gapsByEdge`) omit wall mesh in that span so the neon arch reads as a passage.
+ *
+ * @param {import('three').Scene} scene
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} cfg
+ * @param {ReturnType<typeof openGateGapsByEdge> | null | undefined} [gapsByEdge] — merged open-gate intervals per edge (wall coords)
  */
-export function buildArenaVisuals(scene, cfg) {
+export function buildArenaVisuals(scene, cfg, gapsByEdge) {
   const group = new THREE.Group();
   const halfW = cfg.arenaWidth / 2;
   const halfD = cfg.arenaDepth / 2;
@@ -51,38 +63,81 @@ export function buildArenaVisuals(scene, cfg) {
   const matA = makePanelMaterial(cfg.colors.wallPanelA, 0x004455, neon);
   const matB = makePanelMaterial(cfg.colors.wallPanelB, 0x00aadd, neon * 1.15);
 
-  function addStripWE(xSign) {
-    const segments = Math.ceil(cfg.arenaDepth / panelLen);
-    const segSize = cfg.arenaDepth / segments;
-    const cx = xSign * (halfW + t / 2);
-    for (let i = 0; i < segments; i++) {
-      const mat = i % 2 === 0 ? matA : matB;
-      const geo = new THREE.BoxGeometry(t, h, segSize);
-      const mesh = new THREE.Mesh(geo, mat);
-      const z = -halfD + segSize * (i + 0.5);
-      mesh.position.set(cx, h / 2, z);
-      group.add(mesh);
+  const g =
+    gapsByEdge ??
+    /** @type {ReturnType<typeof openGateGapsByEdge>} */ ({
+      north: [],
+      south: [],
+      east: [],
+      west: [],
+    });
+
+  const aw = cfg.arenaWidth;
+  const ad = cfg.arenaDepth;
+
+  /** @param {number} s0 @param {number} s1 @param {(u: number, v: number, idx: number) => void} fn */
+  function forChunks(s0, s1, fn) {
+    let u = s0;
+    let idx = 0;
+    while (u < s1 - 1e-4) {
+      const v = Math.min(s1, u + panelLen);
+      fn(u, v, idx);
+      u = v;
+      idx += 1;
     }
   }
 
-  function addStripNS(zSign) {
-    const segments = Math.ceil(cfg.arenaWidth / panelLen);
-    const segSize = cfg.arenaWidth / segments;
-    const cz = zSign * (halfD + t / 2);
-    for (let i = 0; i < segments; i++) {
-      const mat = i % 2 === 0 ? matB : matA;
-      const geo = new THREE.BoxGeometry(segSize, h, t);
-      const mesh = new THREE.Mesh(geo, mat);
-      const x = -halfW + segSize * (i + 0.5);
-      mesh.position.set(x, h / 2, cz);
+  let nsNegIdx = 0;
+  for (const seg of solidSegmentsAlongWall(aw, g.south)) {
+    forChunks(seg.start, seg.end, (u, v) => {
+      const mat = nsNegIdx % 2 === 0 ? matB : matA;
+      const slen = v - u;
+      const cx = -halfW + (u + v) / 2;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), mat);
+      mesh.position.set(cx, h / 2, -halfD - t / 2);
       group.add(mesh);
-    }
+      nsNegIdx += 1;
+    });
   }
 
-  addStripWE(-1);
-  addStripWE(1);
-  addStripNS(-1);
-  addStripNS(1);
+  let nsPosIdx = 0;
+  for (const seg of solidSegmentsAlongWall(aw, g.north)) {
+    forChunks(seg.start, seg.end, (u, v) => {
+      const mat = nsPosIdx % 2 === 0 ? matB : matA;
+      const slen = v - u;
+      const cx = -halfW + (u + v) / 2;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), mat);
+      mesh.position.set(cx, h / 2, halfD + t / 2);
+      group.add(mesh);
+      nsPosIdx += 1;
+    });
+  }
+
+  let weNegIdx = 0;
+  for (const seg of solidSegmentsAlongWall(ad, g.west)) {
+    forChunks(seg.start, seg.end, (u, v) => {
+      const mat = weNegIdx % 2 === 0 ? matA : matB;
+      const slen = v - u;
+      const cz = -halfD + (u + v) / 2;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), mat);
+      mesh.position.set(-halfW - t / 2, h / 2, cz);
+      group.add(mesh);
+      weNegIdx += 1;
+    });
+  }
+
+  let wePosIdx = 0;
+  for (const seg of solidSegmentsAlongWall(ad, g.east)) {
+    forChunks(seg.start, seg.end, (u, v) => {
+      const mat = wePosIdx % 2 === 0 ? matA : matB;
+      const slen = v - u;
+      const cz = -halfD + (u + v) / 2;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), mat);
+      mesh.position.set(halfW + t / 2, h / 2, cz);
+      group.add(mesh);
+      wePosIdx += 1;
+    });
+  }
 
   scene.add(group);
   return { group, materials: [floorMat, matA, matB] };
@@ -117,8 +172,27 @@ function buildGridGeometry(halfW, halfD) {
  * @param {Record<string, unknown> | null} [level] — validated campaign level; attached to `scene.userData.campaignLevel`
  */
 export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, playCfg, level = null) {
-  buildArenaVisuals(scene, playCfg);
-  buildArenaPhysics(world, wallMat, floorMat, playCfg);
+  const gates =
+    level && Array.isArray(level.wallObjects) ? extractGatesFromWallObjects(level.wallObjects) : [];
+  const gapsByEdge = openGateGapsByEdge(gates);
+
+  buildArenaVisuals(scene, playCfg, gapsByEdge);
+  buildArenaPhysics(world, wallMat, floorMat, playCfg, gapsByEdge);
+
+  if (gates.length > 0) {
+    const built = buildGateMeshes(scene, playCfg, gates, playCfg.arenaWidth, playCfg.arenaDepth);
+    scene.userData.gateAnimatables = built.animatables;
+    scene.userData.gates = { list: gates, root: built.root };
+    scene.userData.openGateFootprints = computeOpenGateWallFootprints(
+      gates,
+      playCfg.arenaWidth,
+      playCfg.arenaDepth,
+    );
+  } else {
+    delete scene.userData.gateAnimatables;
+    delete scene.userData.gates;
+    delete scene.userData.openGateFootprints;
+  }
 
   /** @type {import('cannon-es').Body[]} */
   let barrierBodies = [];
@@ -141,8 +215,11 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
   }
 }
 
-/** cannon-es static bodies for floor + four perimeter walls (aligned with visuals). */
-export function buildArenaPhysics(world, wallMat, floorMat, cfg) {
+/**
+ * cannon-es static bodies for floor + perimeter walls (aligned with visuals). Open gates omit physics so cycles can pass through.
+ * @param {ReturnType<typeof openGateGapsByEdge> | null | undefined} [gapsByEdge]
+ */
+export function buildArenaPhysics(world, wallMat, floorMat, cfg, gapsByEdge) {
   const halfW = cfg.arenaWidth / 2;
   const halfD = cfg.arenaDepth / 2;
   const h = cfg.arenaWallHeight;
@@ -152,37 +229,70 @@ export function buildArenaPhysics(world, wallMat, floorMat, cfg) {
   world.addBody(floor);
 
   const y = h / 2;
-  const heW = new Vec3(t / 2, h / 2, halfD + t / 2);
-  const heN = new Vec3(halfW + t / 2, h / 2, t / 2);
+  const aw = cfg.arenaWidth;
+  const ad = cfg.arenaDepth;
 
-  world.addBody(
-    createWallPhysicsBody({
-      halfExtents: heW,
-      center: new Vec3(-halfW - t / 2, y, 0),
-      wallMatRef: wallMat,
-    }),
-  );
-  world.addBody(
-    createWallPhysicsBody({
-      halfExtents: heW,
-      center: new Vec3(halfW + t / 2, y, 0),
-      wallMatRef: wallMat,
-    }),
-  );
-  world.addBody(
-    createWallPhysicsBody({
-      halfExtents: heN,
-      center: new Vec3(0, y, -halfD - t / 2),
-      wallMatRef: wallMat,
-    }),
-  );
-  world.addBody(
-    createWallPhysicsBody({
-      halfExtents: heN,
-      center: new Vec3(0, y, halfD + t / 2),
-      wallMatRef: wallMat,
-    }),
-  );
+  const g =
+    gapsByEdge ??
+    /** @type {ReturnType<typeof openGateGapsByEdge>} */ ({
+      north: [],
+      south: [],
+      east: [],
+      west: [],
+    });
+
+  for (const seg of solidSegmentsAlongWall(aw, g.south)) {
+    const s0 = seg.start;
+    const s1 = seg.end;
+    const hx = (s1 - s0) / 2;
+    const cx = -halfW + (s0 + s1) / 2;
+    world.addBody(
+      createWallPhysicsBody({
+        halfExtents: new Vec3(hx, h / 2, t / 2),
+        center: new Vec3(cx, y, -halfD - t / 2),
+        wallMatRef: wallMat,
+      }),
+    );
+  }
+  for (const seg of solidSegmentsAlongWall(aw, g.north)) {
+    const s0 = seg.start;
+    const s1 = seg.end;
+    const hx = (s1 - s0) / 2;
+    const cx = -halfW + (s0 + s1) / 2;
+    world.addBody(
+      createWallPhysicsBody({
+        halfExtents: new Vec3(hx, h / 2, t / 2),
+        center: new Vec3(cx, y, halfD + t / 2),
+        wallMatRef: wallMat,
+      }),
+    );
+  }
+  for (const seg of solidSegmentsAlongWall(ad, g.west)) {
+    const s0 = seg.start;
+    const s1 = seg.end;
+    const hz = (s1 - s0) / 2;
+    const cz = -halfD + (s0 + s1) / 2;
+    world.addBody(
+      createWallPhysicsBody({
+        halfExtents: new Vec3(t / 2, h / 2, hz),
+        center: new Vec3(-halfW - t / 2, y, cz),
+        wallMatRef: wallMat,
+      }),
+    );
+  }
+  for (const seg of solidSegmentsAlongWall(ad, g.east)) {
+    const s0 = seg.start;
+    const s1 = seg.end;
+    const hz = (s1 - s0) / 2;
+    const cz = -halfD + (s0 + s1) / 2;
+    world.addBody(
+      createWallPhysicsBody({
+        halfExtents: new Vec3(t / 2, h / 2, hz),
+        center: new Vec3(halfW + t / 2, y, cz),
+        wallMatRef: wallMat,
+      }),
+    );
+  }
 }
 
 /** After BOOT tunnel: hide tunnel mesh, switch fog/camera, add arena lighting. */
