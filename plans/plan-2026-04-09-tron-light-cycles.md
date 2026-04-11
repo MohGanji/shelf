@@ -1304,6 +1304,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.148** | Tron `index.html`: JSON-LD free `Offer` adds `url` (`./`, path-prefix–safe) so structured data links the zero-price offer to the canonical play URL alongside `itemOffered`, `validFrom`, and `seller` | P10.147 | [x] |
 | **P10.149** | Tron `index.html`: JSON-LD free `Offer` adds `priceSpecification` as `UnitPriceSpecification` (`price` `0`, `priceCurrency` `USD`) so structured data exposes nested unit pricing alongside top-level `price` / `priceCurrency` | P10.148 | [x] |
 | **P10.150** | Tron `index.html`: JSON-LD `UnitPriceSpecification` (nested under the free `Offer`) adds `valueAddedTaxIncluded` (`false`) so structured data states VAT/sales-tax treatment alongside nested zero USD pricing | P10.149 | [x] |
+| **P10.151** | Tron `index.html`: JSON-LD `UnitPriceSpecification` (nested under the free `Offer`) adds `referenceQuantity` (`QuantitativeValue` with `value` 1) so structured data states the zero USD unit price applies per single copy alongside nested `price` / `priceCurrency` | P10.150 | [x] |
 
 ### HUD and progression
 
