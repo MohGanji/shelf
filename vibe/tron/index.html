@@ -616,44 +616,57 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "VideoGame",
-        "name": "Tron: Light Cycles",
-        "description": "Tron: Legacy–inspired light cycle arena — neon trails, AI hunters, garage upgrades, and a level editor. Desktop browser; keyboard controls.",
-        "url": "./",
-        "image": "../../assets/favicon/apple-touch-icon.png",
-        "screenshot": [
+        "@graph": [
           {
-            "@type": "ImageObject",
-            "url": "../../assets/favicon/tron-pwa-screenshot-wide.png",
-            "width": 1280,
-            "height": 720
+            "@type": "WebPage",
+            "@id": "./#webpage",
+            "url": "./",
+            "inLanguage": "en",
+            "mainEntity": { "@id": "./#game" }
           },
           {
-            "@type": "ImageObject",
-            "url": "../../assets/favicon/tron-pwa-screenshot-narrow.png",
-            "width": 540,
-            "height": 960
+            "@type": "VideoGame",
+            "@id": "./#game",
+            "mainEntityOfPage": { "@id": "./#webpage" },
+            "name": "Tron: Light Cycles",
+            "description": "Tron: Legacy–inspired light cycle arena — neon trails, AI hunters, garage upgrades, and a level editor. Desktop browser; keyboard controls.",
+            "url": "./",
+            "image": "../../assets/favicon/apple-touch-icon.png",
+            "screenshot": [
+              {
+                "@type": "ImageObject",
+                "url": "../../assets/favicon/tron-pwa-screenshot-wide.png",
+                "width": 1280,
+                "height": 720
+              },
+              {
+                "@type": "ImageObject",
+                "url": "../../assets/favicon/tron-pwa-screenshot-narrow.png",
+                "width": 540,
+                "height": 960
+              }
+            ],
+            "inLanguage": "en",
+            "playMode": "https://schema.org/SinglePlayer",
+            "isAccessibleForFree": true,
+            "numberOfPlayers": {
+              "@type": "QuantitativeValue",
+              "minValue": 1,
+              "maxValue": 1
+            },
+            "genre": ["Action", "Racing"],
+            "gamePlatform": ["Web browser"],
+            "applicationCategory": "Game",
+            "operatingSystem": "Any",
+            "publisher": { "@type": "Organization", "name": "Vibe Projects" },
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            }
           }
-        ],
-        "inLanguage": "en",
-        "playMode": "https://schema.org/SinglePlayer",
-        "isAccessibleForFree": true,
-        "numberOfPlayers": {
-          "@type": "QuantitativeValue",
-          "minValue": 1,
-          "maxValue": 1
-        },
-        "genre": ["Action", "Racing"],
-        "gamePlatform": ["Web browser"],
-        "applicationCategory": "Game",
-        "operatingSystem": "Any",
-        "publisher": { "@type": "Organization", "name": "Vibe Projects" },
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD",
-          "availability": "https://schema.org/InStock"
-        }
+        ]
       }
     </script>
     <link
