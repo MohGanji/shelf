@@ -1402,6 +1402,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.246** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `areaServed` as `Place` with `name` `Worldwide` so structured data marks geographic service scope for the zero-price grant alongside `eligibleRegion` and `Organization.areaServed` | P10.245, P10.168 | [x] |
 | **P10.247** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `priceValidUntil` (`2099-12-31`, aligned with `validThrough`) so structured data states when the listed zero USD `price` / nested `UnitPriceSpecification` ceases to apply for consumers that distinguish `priceValidUntil` from offer validity window fields | P10.246, P10.243 | [x] |
 | **P10.248** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `inLanguage` (`en`) so structured data marks the commercial offer language alongside `availableLanguage` on `availableChannel` and `WebPage` / `VideoGame` / `WebSite` language signals | P10.247 | [x] |
+| **P10.249** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `availabilityEnds` (`2099-12-31`, aligned with `validThrough` / `priceValidUntil`) so structured data exposes explicit end of the offer availability window alongside `availabilityStarts` for consumers that model availability separately from price validity fields | P10.248 | [x] |
 
 ### HUD and progression
 
