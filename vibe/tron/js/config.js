@@ -143,3 +143,32 @@ export const CONFIG = {
   tunnelGridRepeatU: 10,
   tunnelGridRepeatV: 6,
 };
+
+/**
+ * Flattened config for arena foundation + physics playtest (P1.2).
+ * @param {ReturnType<typeof mergeRuntimeConfig>} runtime
+ */
+export function getArenaPlaytestConfig(runtime) {
+  const { world, devHud } = runtime;
+  const wallH = devHud.wallHeight ?? world.arenaWallHeight;
+  return {
+    arenaWidth: world.defaultArenaWidth,
+    arenaDepth: world.defaultArenaDepth,
+    arenaWallHeight: wallH,
+    physicsHz: 60,
+    playerRadius: 0.35,
+    playerMass: 5,
+    maxMoveSpeed: world.defaultTopSpeed,
+    moveAcceleration: 120,
+    wallSlideDamping: 1,
+    colors: {
+      gridLine: 0x00d4ff,
+      gridFloor: 0x020810,
+      wallPanelA: 0x003344,
+      wallPanelB: 0x006688,
+      ambient: 0x88ccff,
+      sun: 0xffffff,
+    },
+    devHud,
+  };
+}
