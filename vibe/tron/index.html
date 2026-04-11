@@ -618,10 +618,18 @@
         "@context": "https://schema.org",
         "@graph": [
           {
+            "@type": "WebSite",
+            "@id": "./#website",
+            "url": "./",
+            "name": "Tron: Light Cycles",
+            "publisher": { "@type": "Organization", "name": "Vibe Projects" }
+          },
+          {
             "@type": "WebPage",
             "@id": "./#webpage",
             "url": "./",
             "inLanguage": "en",
+            "isPartOf": { "@id": "./#website" },
             "mainEntity": { "@id": "./#game" }
           },
           {
