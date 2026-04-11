@@ -1267,6 +1267,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.111** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `./site.webmanifest` (`fetchpriority="low"`) so the Web App Manifest JSON may warm the HTTP cache alongside other low-priority fetches (complements `<link rel="manifest">` and install/detail surfaces under path-prefix deploys) | P10.8, P10.110 | [x] |
 | **P10.112** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `./browserconfig.xml` (`fetchpriority="low"`) so the Windows tile XML referenced by `meta name="msapplication-config"` may warm the HTTP cache alongside `site.webmanifest` and other low-priority fetches (path-prefix–safe) | P10.111, P10.29 | [x] |
 | **P10.113** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `../../assets/favicon/favicon.ico` (`fetchpriority="low"`) so the legacy `shortcut icon` `.ico` may warm the HTTP cache alongside PNG/SVG favicon prefetches (complements P10.108) | P10.112 | [x] |
+| **P10.114** | Tron `index.html`: `crossorigin="anonymous"` on `rel="preload" as="fetch"` for `./levels/manifest.json` so the preload request uses CORS anonymous mode and aligns with `fetch()` from `loadCampaignManifest` for HTTP cache reuse | P10.47 | [x] |
 
 ### HUD and progression
 
