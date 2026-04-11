@@ -315,6 +315,13 @@ async function main() {
 
   gameMode = isLobby ? GameMode.LOBBY : GameMode.LEVEL;
 
+  try {
+    await audio.playMusicProfile(isLobby ? "lobby" : "gameplay");
+    audio.startAmbientBed();
+  } catch {
+    /* ignore */
+  }
+
   const rawEnemyCount =
     activeCampaignLevel && Array.isArray(activeCampaignLevel.enemies)
       ? activeCampaignLevel.enemies.length

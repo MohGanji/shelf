@@ -195,6 +195,70 @@ function createMusicCrossfader(ctx, musicOut) {
  */
 
 /**
+ * P8.2 — Seamless looping procedural pads (no external WAV). Integer-cycle carriers + sidechain period.
+ * @param {Float32Array} chL
+ * @param {Float32Array} chR
+ * @param {number} n
+ * @param {number} sr
+ */
+function fillLobbyMusicLoop(chL, chR, n, sr) {
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const breathe = 0.85 + 0.15 * Math.sin(2 * Math.PI * 0.25 * t);
+    let s = 0;
+    s += Math.sin(2 * Math.PI * 60 * t) * 0.055;
+    s += Math.sin(2 * Math.PI * 80 * t) * 0.045;
+    s += Math.sin(2 * Math.PI * 100 * t) * 0.04;
+    s *= breathe;
+    chL[i] = s * 0.85;
+    chR[i] = s * 1.12;
+  }
+}
+
+/**
+ * @param {Float32Array} chL
+ * @param {Float32Array} chR
+ * @param {number} n
+ * @param {number} sr
+ */
+function fillGameplayMusicLoop(chL, chR, n, sr) {
+  const bps = 120 / 60;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const side = 0.35 + 0.65 * (Math.sin(2 * Math.PI * bps * t) * 0.5 + 0.5);
+    let s = 0;
+    s += Math.sin(2 * Math.PI * 75 * t) * 0.1 * side;
+    s += Math.sin(2 * Math.PI * 150 * t) * 0.065 * side;
+    s += Math.sin(2 * Math.PI * 225 * t) * 0.04 * side;
+    chL[i] = s * 0.95;
+    chR[i] = s * 1.05;
+  }
+}
+
+/**
+ * @param {number} sampleRate
+ * @param {number} durationSec
+ * @param {'lobby' | 'gameplay'} kind
+ * @returns {AudioBuffer}
+ */
+function createProceduralMusicBuffer(sampleRate, durationSec, kind) {
+  const frames = Math.max(2, Math.floor(sampleRate * durationSec));
+  const buf = new AudioBuffer({
+    length: frames,
+    numberOfChannels: 2,
+    sampleRate,
+  });
+  const chL = buf.getChannelData(0);
+  const chR = buf.getChannelData(1);
+  if (kind === "lobby") {
+    fillLobbyMusicLoop(chL, chR, frames, sampleRate);
+  } else {
+    fillGameplayMusicLoop(chL, chR, frames, sampleRate);
+  }
+  return buf;
+}
+
+/**
  * @param {AudioEngineOptions} options
  */
 export function createAudioEngine(options = {}) {
@@ -238,6 +302,37 @@ export function createAudioEngine(options = {}) {
   music.setCrossfadeDuration(musicCrossfadeSec);
 
   let musicStarted = false;
+
+  /** @type {{ lobby: AudioBuffer; gameplay: AudioBuffer } | null} */
+  let proceduralMusicBuffers = null;
+
+  /** @type {{ stop(): void }[]} */
+  const ambientBedNodes = [];
+
+  function ensureProceduralMusicBuffers() {
+    if (proceduralMusicBuffers) return proceduralMusicBuffers;
+    const sr = ctx.sampleRate;
+    proceduralMusicBuffers = {
+      lobby: createProceduralMusicBuffer(sr, 4, "lobby"),
+      gameplay: createProceduralMusicBuffer(sr, 4, "gameplay"),
+    };
+    return proceduralMusicBuffers;
+  }
+
+  /**
+   * Same as {@link playMusicLoop} but uses an in-memory buffer (P8.2 procedural or decoded WAV).
+   * @param {AudioBuffer} buf
+   */
+  function playMusicLoopBuffer(buf) {
+    if (!buf) return false;
+    if (!musicStarted) {
+      music.startFirst(buf);
+      musicStarted = true;
+      return true;
+    }
+    music.crossfadeTo(buf, music.getCrossfadeDuration());
+    return true;
+  }
 
   /** @type {Map<string, AudioBuffer | null>} */
   const bufferCache = new Map();
@@ -343,18 +438,96 @@ export function createAudioEngine(options = {}) {
     async playMusicLoop(url) {
       const buf = await loadBuffer(url);
       if (!buf) return false;
-      if (!musicStarted) {
-        music.startFirst(buf);
-        musicStarted = true;
-        return true;
-      }
-      music.crossfadeTo(buf, music.getCrossfadeDuration());
-      return true;
+      return playMusicLoopBuffer(buf);
+    },
+
+    /**
+     * P8.2 — Lobby / garage / editor ambience vs driving combat loop. Uses procedural buffers unless
+     * optional URLs are supplied later (same profile names).
+     * @param {'lobby' | 'gameplay'} profile
+     */
+    async playMusicProfile(profile) {
+      const b = ensureProceduralMusicBuffers();
+      const buf = profile === "gameplay" ? b.gameplay : b.lobby;
+      return playMusicLoopBuffer(buf);
     },
 
     stopMusic() {
       music.stopAll();
       musicStarted = false;
+    },
+
+    /**
+     * P8.3 — Grid hum + harmonic + sub drone + filtered noise crackle on `ambientIn` bus.
+     */
+    startAmbientBed() {
+      if (ambientBedNodes.length > 0) return;
+      const t0 = ctx.currentTime;
+
+      /**
+       * @param {string} type
+       * @param {number} freq
+       * @param {number} gainVal
+       */
+      function addOsc(type, freq, gainVal) {
+        const osc = ctx.createOscillator();
+        osc.type = type;
+        osc.frequency.value = freq;
+        const g = ctx.createGain();
+        g.gain.value = gainVal;
+        osc.connect(g);
+        g.connect(ambientIn);
+        osc.start(t0);
+        ambientBedNodes.push({
+          stop() {
+            try {
+              osc.stop();
+            } catch {
+              /* ignore */
+            }
+          },
+        });
+      }
+
+      addOsc("sine", 58, 0.022);
+      addOsc("sine", 117, 0.008);
+      addOsc("triangle", 36, 0.014);
+
+      const nFrames = Math.max(256, Math.floor(ctx.sampleRate * 0.31));
+      const nBuf = ctx.createBuffer(1, nFrames, ctx.sampleRate);
+      const nd = nBuf.getChannelData(0);
+      for (let i = 0; i < nFrames; i++) {
+        nd[i] = (Math.random() * 2 - 1) * 0.55;
+      }
+      const ns = ctx.createBufferSource();
+      ns.buffer = nBuf;
+      ns.loop = true;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 2400;
+      bp.Q.value = 0.55;
+      const ng = ctx.createGain();
+      ng.gain.value = 0.014;
+      ns.connect(bp);
+      bp.connect(ng);
+      ng.connect(ambientIn);
+      ns.start(t0);
+      ambientBedNodes.push({
+        stop() {
+          try {
+            ns.stop();
+          } catch {
+            /* ignore */
+          }
+        },
+      });
+    },
+
+    stopAmbientBed() {
+      for (const n of ambientBedNodes) {
+        n.stop();
+      }
+      ambientBedNodes.length = 0;
     },
 
     /**
@@ -748,7 +921,10 @@ function createNoopEngine() {
     setMusicCrossfadeDuration: () => {},
     getMusicCrossfadeDuration: () => 1,
     playMusicLoop: async () => false,
+    playMusicProfile: async () => false,
     stopMusic: () => {},
+    startAmbientBed: () => {},
+    stopAmbientBed: () => {},
     playSfx: async () => false,
     prefetch: async () => null,
     loadBuffer: async () => null,
