@@ -1208,6 +1208,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.52** | Tron `index.html`: `link rel="prefetch" as="fetch"` for `./levels/level-4-neon-sprawl.json` (`fetchpriority="low"`) so the fifth campaign level may warm the HTTP cache for players progressing past The Rift (fifth entry in `manifest.json`) | P10.51 | [x] |
 | **P10.53** | Tron `index.html`: `link rel="prefetch" as="fetch"` for `./levels/level-5-the-gauntlet.json` (`fetchpriority="low"`) so the sixth campaign level may warm the HTTP cache for players progressing past Neon Sprawl (sixth entry in `manifest.json`) | P10.52 | [x] |
 | **P10.54** | Tron `index.html`: `modulepreload` for `./js/config.js` (`crossorigin="anonymous"`, `fetchpriority="high"`) so the first static import from `main.js` begins loading in parallel with Three.js / cannon-es / `main.js` (narrows module-graph waterfall) | P10.13 | [x] |
+| **P10.55** | Tron `index.html`: `modulepreload` for `./js/gameState.js` (`crossorigin="anonymous"`, `fetchpriority="high"`) so the second static import in `main.js` (after `config.js`) begins loading in parallel with the same critical-path roots | P10.54 | [x] |
 
 ### HUD and progression
 
