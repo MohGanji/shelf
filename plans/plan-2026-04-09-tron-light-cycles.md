@@ -1083,7 +1083,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
-| **P4.1** | Enemy spawn from level data; stationary until player W; attributes + color | X3, P5.3 | [ ] |
+| **P4.1** | Enemy spawn from level data; stationary until player W; attributes + color | X3, P5.3 | [x] |
 | **P4.2** | AI steering: tile trail avoidance + raycast walls | P4.1, A3 | [ ] |
 | **P4.3** | Hunting: seek, trail cuts, flanking, aggression | P4.2 | [ ] |
 | **P4.4** | Self-preservation: avoidance ranges, reaction time | P4.2 | [ ] |
@@ -1171,5 +1171,6 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 - **Partial:** `main.js` is boot → arena sandbox only (no full state machine); no `.` dev HUD UI; many planned `js/game/*`, `js/ui/*`, `js/levels/{defaults,editor}.js` files not yet present — `assets/audio/README.txt` holds the folder for future tracks; perimeter arena is driven by selected campaign level (`selectPlaytestCampaignLevel` + `buildArenaFromCampaignLevel`); barriers/gates not yet built from JSON.
 - **X2 (tunnel):** `playTunnel` documents universal use (BOOT vs gate durations); `options.onBegin` for trail/equip clears; `window` `tron-tunnel-session` event + `createTronCycleKeyState` clears held keys on start/end so swallowed keyups do not stick; `onComplete` is the hook for future spawn-at-entrance after transitions.
 - **Missing:** trail derez wiring (P2.3), AI, gates, interior barrier merge (P5.5), power-ups, portals, garage, editor, full HUD beyond speed/nitro/trail count, most SFX/music content, Phase 6–7 UI flows.
+- **P4.1:** `js/game/enemies.js` — campaign enemies from `level.enemies[]` (per-enemy `getArenaPlaytestConfig` for speed/accel/handling/trail/nitro bars), cycle mesh + trail `ownerId` `enemy-*`, physics bodies; frozen until first W in non-lobby, then placeholder forward-only drive until P4.2.
 
 Update the **Status** column as features land.

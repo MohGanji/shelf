@@ -29,6 +29,13 @@ import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
 import { createNitroState } from "./game/nitroSystem.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
+  applyEnemyWallAndBarrierSlide,
+  createCampaignEnemyEntities,
+  syncEnemyHeadingSpeed,
+  updateEnemyCycleMeshes,
+  updateEnemyTrails,
+} from "./game/enemies.js";
+import {
   extractArenaDimensionsFromLevel,
   loadCampaignLevels,
   selectPlaytestCampaignLevel,
@@ -131,6 +138,16 @@ async function main() {
 
   const { world, wallMat, floorMat, playerMat } = createPhysicsWorld();
   buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
+
+  const enemyRoster = createCampaignEnemyEntities({
+    scene: game.scene,
+    world,
+    playerMat,
+    runtime,
+    devHud,
+    campaignLevel: activeCampaignLevel,
+    arenaSize: arenaSizeFromCampaign,
+  });
 
   const wallGates =
     activeCampaignLevel && Array.isArray(activeCampaignLevel.wallObjects)
@@ -297,15 +314,18 @@ async function main() {
         audio.playNitroEmptyBuzz();
       },
     });
+    enemyRoster.tick(dt, { levelStarted, isLobby });
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
+    applyEnemyWallAndBarrierSlide(enemyRoster.list, game.scene);
 
     const gateAnim = game.scene.userData.gateAnimatables;
     if (Array.isArray(gateAnim) && gateAnim.length > 0) {
       updateGateAnimations(gateAnim, performance.now() * 0.001);
     }
     syncHeadingSpeedFromVelocity(playerBody);
+    syncEnemyHeadingSpeed(enemyRoster.list);
 
     const raw = nitroOn ? 1 : 0;
     nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));
@@ -316,6 +336,7 @@ async function main() {
       heading: playerBody.userData.heading ?? 0,
       speed: playerBody.userData.speed ?? 0,
     });
+    updateEnemyTrails(enemyRoster.list, dt);
 
     if (hudSpeedEl) {
       const spd = playerBody.userData.speed ?? 0;
@@ -364,6 +385,7 @@ async function main() {
       braking,
       nitroBurstStrength: nitroVis,
     });
+    updateEnemyCycleMeshes(enemyRoster.list, dt);
 
     chase.update(dt, {
       playerPos: playerCycle.root.position,
@@ -399,6 +421,7 @@ async function main() {
       `P5.3 — Arena from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
       "X3 — Spawn at entrance gate (2 u inward), facing inward; lobby: free ride. Arenas: press W to start + timer.",
       "P5.6 — Gates: open cuts wall; locked slides. P2.2 — trail fade.",
+      `P4.1 — Enemies from JSON: ${enemyRoster.list.length} cycle(s); frozen until first W, then forward drive (AI in P4.2).`,
     ].join(" ");
   }
 
