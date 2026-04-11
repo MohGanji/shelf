@@ -99,6 +99,63 @@ export function extractGatesFromWallObjects(wallObjects) {
   return out;
 }
 
+/** Plan § Spawn System — units into the arena along the wall inward normal from the gate center. */
+export const ENTRANCE_SPAWN_CLEAR_DEPTH = 2;
+
+/**
+ * Player spawn at the **entrance** gate: centered on the gate width, `clearDepth` units inside the arena,
+ * facing = inward normal. Matches `integratePlayerCycleMovement` (`heading = atan2(inward.x, inward.z)`).
+ *
+ * @param {ParsedGate[]} gates
+ * @param {number} arenaWidth
+ * @param {number} arenaDepth
+ * @param {{ clearDepth?: number }} [opts]
+ * @returns {{ x: number; z: number; heading: number } | null}
+ */
+export function computePlayerSpawnFromEntranceGate(gates, arenaWidth, arenaDepth, opts = {}) {
+  const clearDepth =
+    typeof opts.clearDepth === "number" && Number.isFinite(opts.clearDepth)
+      ? opts.clearDepth
+      : ENTRANCE_SPAWN_CLEAR_DEPTH;
+  const entrance = gates.find((g) => g.role === "entrance");
+  if (!entrance) return null;
+
+  const halfW = arenaWidth / 2;
+  const halfD = arenaDepth / 2;
+  const p = entrance.position;
+  const inward = inwardNormalFromEdge(entrance.edge);
+
+  let x = 0;
+  let z = 0;
+  switch (entrance.edge) {
+    case "south": {
+      x = -halfW + p;
+      z = -halfD + clearDepth * inward.z;
+      break;
+    }
+    case "north": {
+      x = -halfW + p;
+      z = halfD + clearDepth * inward.z;
+      break;
+    }
+    case "west": {
+      x = -halfW + clearDepth * inward.x;
+      z = -halfD + p;
+      break;
+    }
+    case "east": {
+      x = halfW + clearDepth * inward.x;
+      z = -halfD + p;
+      break;
+    }
+    default:
+      return null;
+  }
+
+  const heading = Math.atan2(inward.x, inward.z);
+  return { x, z, heading };
+}
+
 /**
  * @param {Interval[]} intervals
  * @returns {Interval[]}

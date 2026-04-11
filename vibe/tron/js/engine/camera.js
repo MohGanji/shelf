@@ -88,10 +88,15 @@ export function createChaseCamera(camera, devHud) {
     camera.updateProjectionMatrix();
   }
 
-  /** Snap behind the player (e.g. arena spawn). */
-  function spawnAt(playerPos) {
-    forward.set(0, 0, -1);
-    right.set(-forward.z, 0, forward.x).normalize();
+  /**
+   * Snap behind the player (e.g. arena spawn).
+   * @param {THREE.Vector3} playerPos
+   * @param {number} [heading=0] — horizontal facing (matches `body.userData.heading`; 0 = +Z)
+   */
+  function spawnAt(playerPos, heading = 0) {
+    forward.set(Math.sin(heading), 0, Math.cos(heading));
+    right.set(-forward.z, 0, forward.x);
+    if (right.lengthSq() > 1e-8) right.normalize();
     tmp
       .copy(forward)
       .multiplyScalar(-devHud.cameraDistance)

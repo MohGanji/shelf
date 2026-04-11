@@ -19,22 +19,28 @@ import { integratePlayerCycleMovement } from "./playerMovement.js";
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {() => void} [opts.onNitroEmptyPress]
+ * @param {boolean} [opts.levelStarted=true] — when false (plan X3), W and Space are ignored until the first W (handled in `main.js`)
  */
 export function tickPlayerArcadeDrive(opts) {
   const { body, dt, keys, nitroState, playCfg, devHud, onNitroEmptyPress } = opts;
+  const levelStarted = opts.levelStarted !== false;
+
+  const keysDrive = levelStarted
+    ? keys
+    : { ...keys, w: false, space: false };
 
   const spd0 = typeof body.userData.speed === "number" ? body.userData.speed : 0;
 
   updateNitroBattery({
     state: nitroState,
     dt,
-    space: keys.space,
+    space: keysDrive.space,
     maxBars: playCfg.nitroBarCount,
     burstDuration: devHud.nitroBurstDuration,
     rechargeTime: devHud.nitroBarRechargeTime,
     nitroSpeedReturnTime: devHud.nitroSpeedReturnTime,
     topSpeed: playCfg.maxMoveSpeed,
-    holdingGas: keys.w,
+    holdingGas: keysDrive.w,
     currentSpeed: spd0,
     onEmptyPress: onNitroEmptyPress,
   });
@@ -43,7 +49,7 @@ export function tickPlayerArcadeDrive(opts) {
   const nitroHandlingFactor = nitroBurstActive ? devHud.nitroHandlingMultiplier : 1;
   const speedReturn = getSpeedReturnForMovement(nitroState);
 
-  integratePlayerCycleMovement(body, dt, keys, nitroBurstActive, playCfg, devHud, {
+  integratePlayerCycleMovement(body, dt, keysDrive, nitroBurstActive, playCfg, devHud, {
     nitroHandlingFactor,
     speedReturn,
   });

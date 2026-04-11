@@ -173,6 +173,22 @@ body {
   text-shadow: 0 0 8px rgba(255, 60, 90, 0.85);
 }
 
+.cycle-hud__timer-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  font-size: 0.95rem;
+}
+
+.cycle-hud__timer {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
 .nitro-bar-strip {
   display: flex;
   gap: 5px;

@@ -18,7 +18,11 @@ import {
 } from "./engine/physics.js";
 import { createTronCycleKeyState } from "./engine/input.js";
 import { applyArenaStageEnvironment, buildArenaFromCampaignLevel } from "./game/arena.js";
-import { updateGateAnimations } from "./game/gates.js";
+import {
+  computePlayerSpawnFromEntranceGate,
+  extractGatesFromWallObjects,
+  updateGateAnimations,
+} from "./game/gates.js";
 import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
@@ -29,11 +33,20 @@ import {
   loadCampaignLevels,
   selectPlaytestCampaignLevel,
 } from "./levels/loader.js";
+import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 
 function $(id) {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Missing #${id}`);
   return el;
+}
+
+/** @param {number} sec */
+function formatHudMmSs(sec) {
+  const s = Math.max(0, sec);
+  const m = Math.floor(s / 60);
+  const r = Math.floor(s % 60);
+  return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
 }
 
 /**
@@ -119,12 +132,40 @@ async function main() {
   const { world, wallMat, floorMat, playerMat } = createPhysicsWorld();
   buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
 
+  const wallGates =
+    activeCampaignLevel && Array.isArray(activeCampaignLevel.wallObjects)
+      ? extractGatesFromWallObjects(activeCampaignLevel.wallObjects)
+      : [];
+  const entranceSpawn = computePlayerSpawnFromEntranceGate(
+    wallGates,
+    playCfg.arenaWidth,
+    playCfg.arenaDepth,
+  );
+  const spawnX = entranceSpawn ? entranceSpawn.x : 0;
+  const spawnZ = entranceSpawn ? entranceSpawn.z : 0;
+  const spawnHeading = entranceSpawn ? entranceSpawn.heading : 0;
+
+  const isLobby =
+    activeCampaignLevel && typeof activeCampaignLevel.id === "string"
+      ? activeCampaignLevel.id === LOBBY_LEVEL_ID
+      : false;
+
+  /** Plan X3: campaign arenas stay frozen until first W; lobby allows immediate riding. */
+  let levelStarted = isLobby;
+  /** @type {number} */
+  let levelStartMonotonicMs = 0;
+
   const playerBody = createPlayerBody(playCfg, playerMat);
-  playerBody.position.set(0, playCfg.playerSpawnY, 0);
+  playerBody.position.set(spawnX, playCfg.playerSpawnY, spawnZ);
+  playerBody.velocity.set(0, 0, 0);
+  playerBody.userData.heading = spawnHeading;
+  playerBody.userData.speed = 0;
   playerBody.allowSleep = false;
   world.addBody(playerBody);
 
   const playerCycle = createLightCycle({ devHud });
+  playerCycle.root.position.set(spawnX, playCfg.playerSpawnY, spawnZ);
+  playerCycle.root.rotation.y = spawnHeading;
   game.scene.add(playerCycle.root);
 
   const trailWall = createTrailWallSystem({
@@ -141,7 +182,7 @@ async function main() {
   const { state: arenaKeys } = createTronCycleKeyState();
 
   const chase = createChaseCamera(game.camera, devHud);
-  chase.spawnAt(playerCycle.root.position);
+  chase.spawnAt(playerCycle.root.position, spawnHeading);
 
   let nitroVis = 0;
   const nitroState = createNitroState(playCfg.nitroBarCount);
@@ -151,6 +192,8 @@ async function main() {
   const hudTrailEl = document.getElementById("hud-trail");
   const hudNitroEl = document.getElementById("hud-nitro");
   const hudHintEl = document.getElementById("hud-hint");
+  const hudTimerWrap = document.getElementById("hud-timer-wrap");
+  const hudTimerEl = document.getElementById("hud-timer");
 
   const arenaHudAbort = new AbortController();
   const asig = { signal: arenaHudAbort.signal };
@@ -185,8 +228,14 @@ async function main() {
 
   function syncArenaHud() {
     if (hudHintEl) {
-      hudHintEl.textContent =
-        "A3 tile map — trail segments stamp grid; red trail # = center on lethal tile (P2.3 wires derez)";
+      hudHintEl.textContent = isLobby
+        ? "Lobby — ride freely. X3 spawn: south entrance gate, facing inward."
+        : levelStarted
+          ? "Arena — timer runs after first W (X3). A3 tile map; red trail # = lethal tile preview."
+          : "Press W to start — timer and movement begin together (X3).";
+    }
+    if (hudTimerWrap) {
+      hudTimerWrap.hidden = isLobby;
     }
     renderNitroHud();
   }
@@ -228,6 +277,14 @@ async function main() {
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
+    if (!levelStarted && !isLobby && arenaKeys.w) {
+      levelStarted = true;
+      levelStartMonotonicMs = performance.now();
+      const fn = game.scene.userData.onLevelStart;
+      if (typeof fn === "function") fn();
+      syncArenaHud();
+    }
+
     const { nitroBurstActive: nitroOn } = tickPlayerArcadeDrive({
       body: playerBody,
       dt,
@@ -235,6 +292,7 @@ async function main() {
       nitroState,
       playCfg,
       devHud,
+      levelStarted: isLobby || levelStarted,
       onNitroEmptyPress: () => {
         audio.playNitroEmptyBuzz();
       },
@@ -262,6 +320,13 @@ async function main() {
     if (hudSpeedEl) {
       const spd = playerBody.userData.speed ?? 0;
       hudSpeedEl.textContent = String(Math.round(spd));
+    }
+    if (hudTimerEl && !isLobby) {
+      const elapsedSec =
+        levelStarted && levelStartMonotonicMs > 0
+          ? (performance.now() - levelStartMonotonicMs) / 1000
+          : 0;
+      hudTimerEl.textContent = formatHudMmSs(elapsedSec);
     }
     if (hudTrailEl) {
       hudTrailEl.textContent = String(trailWall.getActiveSegmentCount());
@@ -331,8 +396,9 @@ async function main() {
       ? `${Math.round(arenaSizeFromCampaign.arenaWidth)}×${Math.round(arenaSizeFromCampaign.arenaDepth)} u`
       : "default size";
     p.textContent = [
-      `P5.3 — Arena dimensions and metadata from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
-      "P5.6 — Gates from level JSON: neon arch + sign, open gates cut perimeter wall/physics; locked gates slide like walls. P2.2 — trail fade.",
+      `P5.3 — Arena from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
+      "X3 — Spawn at entrance gate (2 u inward), facing inward; lobby: free ride. Arenas: press W to start + timer.",
+      "P5.6 — Gates: open cuts wall; locked slides. P2.2 — trail fade.",
     ].join(" ");
   }
 
