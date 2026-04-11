@@ -1158,6 +1158,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.2** | Cross-browser performance pass | (full game) | [x] |
 | **P10.3** | Mobile / desktop recommendation copy | P10.1 | [x] |
 | **P10.4** | Tron `index.html`: meta description + Open Graph / Twitter card tags for link previews | P10.1 | [x] |
+| **P10.5** | Share previews: `og:image`, `og:image:alt`, `twitter:image` pointing at site favicon asset (richer unfurls than text-only cards) | P10.4 | [x] |
 
 ### HUD and progression
 
