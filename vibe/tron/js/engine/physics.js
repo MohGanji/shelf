@@ -65,7 +65,11 @@ export function createPlayerBody(cfg, playerMat) {
     fixedRotation: true,
   });
   body.addShape(shape);
-  body.position.set(0, cfg.playerHeight, 0);
+  const spawnY =
+    typeof cfg.playerSpawnY === "number" && Number.isFinite(cfg.playerSpawnY)
+      ? cfg.playerSpawnY
+      : radius + 0.06;
+  body.position.set(0, spawnY, 0);
   body.type = Body.DYNAMIC;
   return body;
 }

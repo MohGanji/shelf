@@ -222,6 +222,8 @@ export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
       ? arenaSize.arenaDepth
       : world.defaultArenaDepth;
 
+  const playerRadius = 0.35;
+
   return {
     arenaWidth,
     arenaDepth,
@@ -229,7 +231,9 @@ export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
     world,
     arenaWallHeight: wallH,
     physicsHz: 60,
-    playerRadius: 0.35,
+    playerRadius,
+    /** Sphere center Y so the cycle sits slightly above the grid (matches `main.js` spawn). */
+    playerSpawnY: playerRadius + 0.06,
     playerMass: 5,
     /** rad/s before speed falloff (plan § Movement; scales with Handling attribute). */
     baseTurnRate,

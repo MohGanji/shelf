@@ -1045,7 +1045,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P1.2** | Arena foundation: grid floor (1-unit), perimeter walls, emissive panels, lighting; wall collision = slide + angle-based speed reduction | P1.1 | [x] |
 | **P1.3** | Light cycle mesh: procedural low-poly, emissive, cyan/orange, wheel spin, tilt / pitch-on-accel / lean-on-brake | P1.1 | [x] |
 | **P1.4** | Third-person chase cam: smooth follow behind, stationary turning, devHud camera params; nitro FOV, pull-back, speed lines, motion blur | P1.3 | [x] |
-| **P1.5** | Movement: W/S (no reverse), A/D at any speed, speed-dependent turn, coast, brake; nitro overrides brake; handling penalty during nitro; input manager | P1.2, P1.3 | [~] |
+| **P1.5** | Movement: W/S (no reverse), A/D at any speed, speed-dependent turn, coast, brake; nitro overrides brake; handling penalty during nitro; input manager | P1.2, P1.3 | [x] |
 | **P1.6** | Full nitro system: bar battery, Space semantics, recharge, speed return, HUD segments, empty feedback, non-collidable nitro trail visual | P1.5, A2 | [x] |
 
 ### Cross-cut: state machine and transitions

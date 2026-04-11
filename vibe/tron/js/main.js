@@ -19,16 +19,9 @@ import {
 import { createTronCycleKeyState } from "./engine/input.js";
 import { applyArenaStageEnvironment, buildArenaFromCampaignLevel } from "./game/arena.js";
 import { createLightCycle } from "./game/cycle.js";
-import {
-  integratePlayerCycleMovement,
-  syncHeadingSpeedFromVelocity,
-} from "./game/playerMovement.js";
-import {
-  createNitroState,
-  getSpeedReturnForMovement,
-  isNitroBurstActive,
-  updateNitroBattery,
-} from "./game/nitroSystem.js";
+import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
+import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
+import { createNitroState } from "./game/nitroSystem.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
   extractArenaDimensionsFromLevel,
@@ -126,7 +119,7 @@ async function main() {
   buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
 
   const playerBody = createPlayerBody(playCfg, playerMat);
-  playerBody.position.set(0, playCfg.playerRadius + 0.06, 0);
+  playerBody.position.set(0, playCfg.playerSpawnY, 0);
   playerBody.allowSleep = false;
   world.addBody(playerBody);
 
@@ -234,31 +227,16 @@ async function main() {
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
-    const spd0 = typeof playerBody.userData.speed === "number" ? playerBody.userData.speed : 0;
-
-    updateNitroBattery({
-      state: nitroState,
+    const { nitroBurstActive: nitroOn } = tickPlayerArcadeDrive({
+      body: playerBody,
       dt,
-      space: arenaKeys.space,
-      maxBars: playCfg.nitroBarCount,
-      burstDuration: devHud.nitroBurstDuration,
-      rechargeTime: devHud.nitroBarRechargeTime,
-      nitroSpeedReturnTime: devHud.nitroSpeedReturnTime,
-      topSpeed: playCfg.maxMoveSpeed,
-      holdingGas: arenaKeys.w,
-      currentSpeed: spd0,
-      onEmptyPress: () => {
+      keys: arenaKeys,
+      nitroState,
+      playCfg,
+      devHud,
+      onNitroEmptyPress: () => {
         audio.playNitroEmptyBuzz();
       },
-    });
-
-    const nitroOn = isNitroBurstActive(nitroState);
-    const handleFactor = nitroOn ? devHud.nitroHandlingMultiplier : 1;
-    const speedReturn = getSpeedReturnForMovement(nitroState);
-
-    integratePlayerCycleMovement(playerBody, dt, arenaKeys, nitroOn, playCfg, devHud, {
-      nitroHandlingFactor: handleFactor,
-      speedReturn,
     });
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg);
