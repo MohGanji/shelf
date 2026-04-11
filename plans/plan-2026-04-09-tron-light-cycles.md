@@ -1403,6 +1403,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.247** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `priceValidUntil` (`2099-12-31`, aligned with `validThrough`) so structured data states when the listed zero USD `price` / nested `UnitPriceSpecification` ceases to apply for consumers that distinguish `priceValidUntil` from offer validity window fields | P10.246, P10.243 | [x] |
 | **P10.248** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `inLanguage` (`en`) so structured data marks the commercial offer language alongside `availableLanguage` on `availableChannel` and `WebPage` / `VideoGame` / `WebSite` language signals | P10.247 | [x] |
 | **P10.249** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `availabilityEnds` (`2099-12-31`, aligned with `validThrough` / `priceValidUntil`) so structured data exposes explicit end of the offer availability window alongside `availabilityStarts` for consumers that model availability separately from price validity fields | P10.248 | [x] |
+| **P10.250** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `eligibleDuration` (ISO 8601 duration `P73Y`, approximate calendar span from `validFrom` to `validThrough`) so structured data states the temporal length of the offer eligibility window in duration form alongside `availabilityStarts` / `availabilityEnds` date endpoints | P10.249 | [x] |
 
 ### HUD and progression
 
