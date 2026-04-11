@@ -557,6 +557,7 @@ async function main() {
       shieldBubbleMode: "off",
     });
     audio.playDerezShatter();
+    audio.tickEngineSound({ active: false, dt: 1 / 60 });
     if (derezOverlay) derezOverlay.hidden = false;
   }
 
@@ -1160,6 +1161,20 @@ async function main() {
     }
     syncHeadingSpeedFromVelocity(playerBody);
     syncEnemyHeadingSpeed(enemyRoster.list);
+
+    const spdEngine = playerBody.userData.speed ?? 0;
+    const nitroCapMul =
+      typeof devHud.nitroMaxSpeedMultiplier === "number" && Number.isFinite(devHud.nitroMaxSpeedMultiplier)
+        ? devHud.nitroMaxSpeedMultiplier
+        : 1.2;
+    audio.tickEngineSound({
+      active: playerDerezPhase === "alive" && !isTunnelBlockingInput(),
+      dt,
+      speed: spdEngine,
+      speedRatioDenominator: playerDriveCfg.maxMoveSpeed * nitroCapMul,
+      enginePitch: typeof devHud.enginePitch === "number" ? devHud.enginePitch : 1,
+      gearShiftCount: typeof devHud.gearShiftCount === "number" ? devHud.gearShiftCount : 5,
+    });
 
     const raw = nitroOn ? 1 : 0;
     nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));

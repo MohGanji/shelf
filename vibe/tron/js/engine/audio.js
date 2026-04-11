@@ -259,6 +259,33 @@ function createProceduralMusicBuffer(sampleRate, durationSec, kind) {
 }
 
 /**
+ * Gear shift thresholds — plan: ~10%, ~25%, ~45%, ~70%, ~100% for 5 gears; equal splits for other counts.
+ * @param {number} count
+ * @returns {number[]}
+ */
+function getGearThresholds(count) {
+  const n = Math.max(1, Math.min(10, Math.round(count)));
+  if (n === 5) return [0.1, 0.25, 0.45, 0.7, 1.0];
+  const t = [];
+  for (let i = 1; i <= n; i += 1) {
+    t.push(i / n);
+  }
+  return t;
+}
+
+/**
+ * @param {number} ratio 0..1
+ * @param {number[]} thresholds ascending
+ */
+function gearBandIndex(ratio, thresholds) {
+  const r = Math.max(0, Math.min(1, ratio));
+  for (let i = 0; i < thresholds.length; i += 1) {
+    if (r < thresholds[i]) return i;
+  }
+  return thresholds.length;
+}
+
+/**
  * @param {AudioEngineOptions} options
  */
 export function createAudioEngine(options = {}) {
@@ -394,6 +421,125 @@ export function createAudioEngine(options = {}) {
     if (ctx.state !== "running") {
       attachUserGestureUnlock();
     }
+  }
+
+  /** P8.4 — Engine layer state (idle hum + moving whine + gear chunks). */
+  let engineGearBand = -1;
+  /** @type {{ mix: GainNode; idle: OscillatorNode; main: OscillatorNode; idleG: GainNode; mainG: GainNode } | null} */
+  let engineNodes = null;
+  let engineLfoPhase = 0;
+
+  function ensureEngineGraph() {
+    if (engineNodes || !ctx) return engineNodes;
+    const mix = ctx.createGain();
+    mix.gain.value = 0;
+    mix.connect(sfxGain);
+    const idle = ctx.createOscillator();
+    idle.type = "sine";
+    idle.frequency.value = 62;
+    const idleG = ctx.createGain();
+    idleG.gain.value = 0;
+    idle.connect(idleG);
+    idleG.connect(mix);
+    const main = ctx.createOscillator();
+    main.type = "triangle";
+    main.frequency.value = 110;
+    const mainG = ctx.createGain();
+    mainG.gain.value = 0;
+    main.connect(mainG);
+    mainG.connect(mix);
+    const t = ctx.currentTime;
+    try {
+      idle.start(t);
+      main.start(t);
+    } catch {
+      return null;
+    }
+    engineNodes = { mix, idle, main, idleG, mainG };
+    return engineNodes;
+  }
+
+  function playEngineGearChunk() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxGain.gain.value) * 0.12;
+    const o = ctx.createOscillator();
+    o.type = "square";
+    o.frequency.setValueAtTime(240, t0);
+    o.frequency.exponentialRampToValueAtTime(48, t0 + 0.055);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(amp, t0 + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.085);
+    o.connect(g);
+    g.connect(sfxGain);
+    try {
+      o.start(t0);
+      o.stop(t0 + 0.1);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Drive engine synth from player speed (plan P8.4). Call once per frame while in arena.
+   * @param {object} opts
+   * @param {boolean} [opts.active]
+   * @param {number} [opts.dt]
+   * @param {number} [opts.speed]
+   * @param {number} [opts.speedRatioDenominator] — e.g. top speed × nitro cap for 0..1 ratio
+   * @param {number} [opts.enginePitch] — devHud `enginePitch`
+   * @param {number} [opts.gearShiftCount] — devHud `gearShiftCount`
+   */
+  function tickEngineSound(opts = {}) {
+    if (!ctx) return;
+    const {
+      active = true,
+      dt = 1 / 60,
+      speed = 0,
+      speedRatioDenominator = 72,
+      enginePitch = 1,
+      gearShiftCount = 5,
+    } = opts;
+    const gGraph = ensureEngineGraph();
+    if (!gGraph) return;
+    const t = ctx.currentTime;
+    if (!active) {
+      engineGearBand = -1;
+      engineLfoPhase = 0;
+      gGraph.mix.gain.setTargetAtTime(0, t, 0.035);
+      return;
+    }
+
+    const pitch = typeof enginePitch === "number" && enginePitch > 0 ? enginePitch : 1;
+    const denom = Math.max(0.001, speedRatioDenominator);
+    const ratio = Math.max(0, Math.min(1, Math.abs(speed) / denom));
+    const th = getGearThresholds(
+      typeof gearShiftCount === "number" && Number.isFinite(gearShiftCount) ? gearShiftCount : 5,
+    );
+    const band = gearBandIndex(ratio, th);
+    if (engineGearBand >= 0 && band > engineGearBand) {
+      playEngineGearChunk();
+    }
+    engineGearBand = band;
+
+    engineLfoPhase += dt * 5.2;
+    const idleFlutter = 0.86 + 0.14 * Math.sin(engineLfoPhase);
+    const spd = Math.abs(speed);
+    const nearIdle = spd < 2.2;
+    const idleVol = (nearIdle ? 0.038 : 0.012) * idleFlutter;
+    const moveCore = Math.pow(ratio, 0.88) * 0.092;
+    const topWhine = ratio > 0.88 ? 0.045 * ((ratio - 0.88) / 0.12) : 0;
+    const mainVol = Math.min(0.14, moveCore + topWhine);
+
+    const fMain = (86 + Math.pow(ratio, 1.16) * 410 * pitch) * (ratio > 0.9 ? 1.05 : 1);
+    const fIdle = 55 + 8 * pitch;
+
+    gGraph.idle.frequency.setTargetAtTime(fIdle, t, 0.025);
+    gGraph.main.frequency.setTargetAtTime(fMain, t, 0.03);
+    gGraph.idleG.gain.setTargetAtTime(idleVol, t, 0.045);
+    gGraph.mainG.gain.setTargetAtTime(mainVol, t, 0.038);
+    gGraph.mix.gain.setTargetAtTime(1, t, 0.04);
   }
 
   return {
@@ -901,6 +1047,8 @@ export function createAudioEngine(options = {}) {
         }
       }
     },
+
+    tickEngineSound,
   };
 }
 
@@ -941,5 +1089,6 @@ function createNoopEngine() {
     playPortalWarp: () => {},
     playLevelCompleteChord: () => {},
     playCoinRewardTinkle: () => {},
+    tickEngineSound: () => {},
   };
 }
