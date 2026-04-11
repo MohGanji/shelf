@@ -1162,6 +1162,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.6** | Meta / link `href` for favicon + OG/Twitter images use paths **relative to the game page** so previews and icons resolve when the site is served under a path prefix (not only at domain root) | P10.4, P10.5 | [x] |
 | **P10.7** | Tron `index.html` head parity: `og:site_name`; 16×16 + `.ico` + Safari `mask-icon` links (all **relative** `href` like P10.6) | P10.6 | [x] |
 | **P10.8** | Tron `index.html`: `link rel="manifest"` → `vibe/tron/site.webmanifest` with game name/short_name/description, Tron `theme_color` / `background_color`, `start_url` + `scope` as `./`, icon `src` paths relative to the manifest (`../../assets/favicon/…`) for path-prefix installs | P10.7 | [x] |
+| **P10.9** | Tron `index.html`: JSON-LD `VideoGame` structured data (name, description, image path relative to page, genre, free `Offer`, publisher) for search/discoverability | P10.4 | [x] |
 
 ### HUD and progression
 
