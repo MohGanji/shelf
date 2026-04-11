@@ -3,6 +3,14 @@
  * Runtime config merges save `devHud` over these defaults (see mergeRuntimeConfig).
  */
 
+/**
+ * When true, boot calls `AudioContext.resume()` immediately. If the browser blocks
+ * autoplay, `createAudioEngine` still attaches one-time pointer/key unlock handlers.
+ * Set to `false` to defer audio startup until an explicit `unlock()` / user gesture.
+ * @type {boolean}
+ */
+export const AUDIO_AUTOPLAY = true;
+
 /** @type {const} */
 export const TILE_SIZE = 1;
 

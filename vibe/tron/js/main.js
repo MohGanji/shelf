@@ -1,16 +1,25 @@
 import * as THREE from "three";
 import { Vec3 } from "cannon-es";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { CONFIG, getArenaPlaytestConfig, mergeRuntimeConfig } from "./config.js";
+import {
+  AUDIO_AUTOPLAY,
+  CONFIG,
+  getArenaPlaytestConfig,
+  mergeRuntimeConfig,
+  TRON_COLORS,
+} from "./config.js";
 import { loadOrCreateSave } from "./data/savedata.js";
+import { createAudioEngine } from "./engine/audio.js";
 import { createGameRenderer } from "./engine/renderer.js";
-import { playTunnel } from "./engine/tunnel.js";
+import { isTunnelBlockingInput, playTunnel } from "./engine/tunnel.js";
 import {
   applyContinuousArenaWallSlide,
   createPhysicsWorld,
   createPlayerBody,
 } from "./engine/physics.js";
 import { applyArenaStageEnvironment, buildArenaPhysics, buildArenaVisuals } from "./game/arena.js";
+import { createLightCycle } from "./game/cycle.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -40,7 +49,7 @@ function runBootLoadingBar(durationMs, els) {
   return () => clearInterval(iv);
 }
 
-function bindMovementKeys(keys) {
+function bindArenaMovementKeys(keys) {
   window.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
     if (k === "w" || k === "arrowup") keys.w = true;
@@ -90,9 +99,86 @@ async function main() {
 
   const save = loadOrCreateSave();
   const runtime = mergeRuntimeConfig(save.devHud ?? {});
-  const playCfg = getArenaPlaytestConfig(runtime);
+
+  const audio = createAudioEngine({
+    masterVolume: save.settings.masterVolume,
+    musicVolume: save.settings.musicVolume,
+    sfxVolume: save.settings.sfxVolume,
+    ambientVolume: save.settings.ambientVolume,
+    musicCrossfadeSec: runtime.devHud.musicCrossfadeDuration,
+    autoplay: AUDIO_AUTOPLAY,
+  });
+  await audio.unlock();
 
   const game = createGameRenderer(canvas, { devHud: runtime.devHud });
+
+  const grid = new THREE.GridHelper(12, 24, 0x1a3a55, 0x0c1828);
+  grid.position.y = -0.52;
+  game.scene.add(grid);
+
+  const devHud = runtime.devHud;
+  const cycle = createLightCycle({ devHud });
+  const enemy = createLightCycle({ variant: "enemy", devHud });
+  cycle.root.position.set(-0.65, 0, 0);
+  enemy.root.position.set(0.75, 0, 0);
+  game.scene.add(cycle.root, enemy.root);
+
+  const controls = new OrbitControls(game.camera, canvas);
+  controls.enableDamping = true;
+  controls.target.set(0, 0.05, 0);
+  controls.maxPolarAngle = Math.PI * 0.49;
+
+  const keys = /** @type {Record<string, boolean>} */ ({});
+
+  const cycleInputAbort = new AbortController();
+  const sig = { signal: cycleInputAbort.signal };
+
+  const hudEl = document.getElementById("cycle-hud");
+  function syncHud() {
+    if (!hudEl) return;
+    hudEl.innerHTML = [
+      "W/S accelerate · brake · A/D steer",
+      "T / P / L — toggle tilt · pitch-on-accel · lean-on-brake",
+      "1 / 2 — player cyan · enemy orange (player cycle)",
+      `tilt ${devHud.cycleTiltOnSteer ? "on" : "off"} · pitch ${devHud.cyclePitchOnAccel ? "on" : "off"} · lean ${devHud.cycleLeanOnBrake ? "on" : "off"}`,
+    ].join("<br/>");
+  }
+
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (isTunnelBlockingInput()) return;
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      keys[k] = true;
+      if (k === "t") {
+        devHud.cycleTiltOnSteer = !devHud.cycleTiltOnSteer;
+        syncHud();
+      }
+      if (k === "p") {
+        devHud.cyclePitchOnAccel = !devHud.cyclePitchOnAccel;
+        syncHud();
+      }
+      if (k === "l") {
+        devHud.cycleLeanOnBrake = !devHud.cycleLeanOnBrake;
+        syncHud();
+      }
+      if (k === "1") cycle.setPrimaryColor(TRON_COLORS.playerCycle);
+      if (k === "2") cycle.setPrimaryColor(TRON_COLORS.enemyCycle);
+    },
+    sig,
+  );
+
+  window.addEventListener(
+    "keyup",
+    (e) => {
+      if (isTunnelBlockingInput()) return;
+      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      keys[k] = false;
+    },
+    sig,
+  );
+
+  syncHud();
 
   const bootEls = { fill: bootFill, label: bootLabel };
   setBootProgress(bootEls, 0);
@@ -109,6 +195,13 @@ async function main() {
   );
 
   bootOverlay.classList.add("boot-overlay--hidden");
+
+  cycleInputAbort.abort();
+  game.scene.remove(grid);
+  game.scene.remove(cycle.root, enemy.root);
+  controls.dispose();
+
+  const playCfg = getArenaPlaytestConfig(runtime);
 
   applyArenaStageEnvironment(game, playCfg);
   buildArenaVisuals(game.scene, playCfg);
@@ -132,27 +225,34 @@ async function main() {
   );
   game.scene.add(playerMesh);
 
-  const keys = { w: false, a: false, s: false, d: false };
-  bindMovementKeys(keys);
+  const arenaKeys = { w: false, a: false, s: false, d: false };
+  bindArenaMovementKeys(arenaKeys);
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
-    applyMovement(playerBody, playCfg, keys);
+    applyMovement(playerBody, playCfg, arenaKeys);
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg);
     clampHorizontalSpeed(playerBody, playCfg);
     playerMesh.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z);
   });
 
-  game.startLoop();
-
   lobbyBanner.hidden = false;
   lobbyBanner.classList.remove("state-banner--hidden");
   const p = lobbyBanner.querySelector("p");
   if (p) {
     p.textContent =
-      "P1.2 arena — WASD moves the proxy sphere; wall slide uses sin(impactAngle) damping per plan.";
+      "P1.2 arena — WASD proxy sphere, wall slide (sin impact angle). Cycles demo ran pre-tunnel only.";
   }
+
+  if (hudEl) {
+    hudEl.innerHTML = [
+      "W/A/S/D — move proxy sphere on the arena floor",
+      "P1.3 cycles + orbit cam were removed from the scene after BOOT (see README)",
+    ].join("<br/>");
+  }
+
+  game.startLoop();
 
   canvas.addEventListener("click", () => canvas.focus());
   canvas.focus();
