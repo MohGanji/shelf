@@ -1386,6 +1386,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.230** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `fileFormat` (`text/html`) so structured data states the MIME type of the delivered HTML client shell alongside `browserRequirements` and `softwareRequirements` | P10.229 | [x] |
 | **P10.231** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `programmingLanguage` (`JavaScript`, client-only ES modules) so structured data exposes the implementation language alongside `fileFormat` and runtime requirement fields | P10.230 | [x] |
 | **P10.232** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `permissions` (plain-text browser sandbox summary: ES modules, WebGL, Web Audio, optional localStorage for saves/WIP/settings; no mic/camera/geo/notifications/background sync) so structured data states client capability boundaries alongside `programmingLanguage` and requirement fields | P10.231 | [x] |
+| **P10.233** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `countriesSupported` (plain text: worldwide browser delivery; no regional storefront lock) so structured data states geographic availability alongside `spatialCoverage` and the free `Offer`’s `eligibleRegion` | P10.232 | [x] |
 
 ### HUD and progression
 
