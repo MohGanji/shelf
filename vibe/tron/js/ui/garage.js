@@ -3,11 +3,12 @@
  */
 
 import { upsertWipLevel } from "../levels/loader.js";
-import { ensureEditorWipLevel } from "../levels/editorLevel.js";
+import { createBlankWipLevel, ensureEditorWipLevel } from "../levels/editorLevel.js";
 import { mountEditorOrthographicViewport } from "../levels/editorView.js";
 import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
 import { mountEditorPropertiesPanel } from "../levels/editorPropertiesPanel.js";
+import { MIN_ARENA_SIZE } from "../levels/schema.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
 /**
@@ -85,6 +86,11 @@ export function mountEditorDestinationScreen(opts) {
   const root = document.getElementById("editor-destination");
   const paletteRoot = document.getElementById("editor-palette-root");
   const propsRoot = document.getElementById("editor-properties-root");
+  const newLevelDialog = /** @type {HTMLDialogElement | null} */ (
+    document.getElementById("editor-new-level-dialog")
+  );
+  const newLevelForm = document.getElementById("editor-new-level-form");
+  const newLevelErr = document.getElementById("editor-new-level-error");
   if (!root || !opts.game?.renderer) {
     return { dispose() {} };
   }
@@ -97,66 +103,156 @@ export function mountEditorDestinationScreen(opts) {
   /* P6.1 — orthographic grid renders on the canvas; keep it in the accessibility tree. */
   canvas.removeAttribute("aria-hidden");
 
-  const level = ensureEditorWipLevel();
-  const aw = typeof level.arenaWidth === "number" ? level.arenaWidth : 80;
-  const ad = typeof level.arenaDepth === "number" ? level.arenaDepth : 80;
+  /**
+   * P6.5 — viewport + workbench + UI for one WIP level; dispose fully before remounting (arena size is immutable per level).
+   * @param {Record<string, unknown>} level
+   */
+  function mountEditorSession(level) {
+    const aw = typeof level.arenaWidth === "number" ? level.arenaWidth : 80;
+    const ad = typeof level.arenaDepth === "number" ? level.arenaDepth : 80;
 
-  const viewport = mountEditorOrthographicViewport({
-    renderer: opts.game.renderer,
-    canvas,
-    arenaWidth: aw,
-    arenaDepth: ad,
-  });
-
-  /** P6.2 — floor-object palette (selection feeds P6.3 placement). */
-  let paletteCtl = { getSelection: () => null, dispose() {} };
-  if (paletteRoot) {
-    paletteRoot.hidden = false;
-    paletteRoot.classList.remove("tron-destination--hidden");
-    paletteCtl = mountEditorPalette(paletteRoot);
-  }
-
-  /** P6.4 — properties panel (synced to workbench selection). */
-  const editorUi = { syncProps: () => {} };
-  let propsCtl = { sync: () => {}, dispose() {} };
-
-  const workbench = mountEditorWorkbench({
-    viewport,
-    getPaletteSelection: () => paletteCtl.getSelection(),
-    level,
-    onPersist: (L) => upsertWipLevel(L),
-    onSelectionChange: () => editorUi.syncProps(),
-  });
-
-  if (propsRoot) {
-    propsRoot.hidden = false;
-    propsRoot.classList.remove("tron-destination--hidden");
-    propsCtl = mountEditorPropertiesPanel(propsRoot, {
-      level,
-      getSelection: () => workbench.getSelection(),
-      onApply: () => workbench.refresh(),
+    const viewport = mountEditorOrthographicViewport({
+      renderer: opts.game.renderer,
+      canvas,
+      arenaWidth: aw,
+      arenaDepth: ad,
     });
-    editorUi.syncProps = () => propsCtl.sync();
-    propsCtl.sync();
+
+    /** P6.2 — floor-object palette (selection feeds P6.3 placement). */
+    let paletteCtl = { getSelection: () => null, dispose() {} };
+    if (paletteRoot) {
+      paletteRoot.hidden = false;
+      paletteRoot.classList.remove("tron-destination--hidden");
+      paletteCtl = mountEditorPalette(paletteRoot);
+    }
+
+    /** P6.4 — properties panel (synced to workbench selection). */
+    const editorUi = { syncProps: () => {} };
+    let propsCtl = { sync: () => {}, dispose() {} };
+
+    const workbench = mountEditorWorkbench({
+      viewport,
+      getPaletteSelection: () => paletteCtl.getSelection(),
+      level,
+      onPersist: (L) => upsertWipLevel(L),
+      onSelectionChange: () => editorUi.syncProps(),
+    });
+
+    if (propsRoot) {
+      propsRoot.hidden = false;
+      propsRoot.classList.remove("tron-destination--hidden");
+      propsCtl = mountEditorPropertiesPanel(propsRoot, {
+        level,
+        getSelection: () => workbench.getSelection(),
+        onApply: () => workbench.refresh(),
+      });
+      editorUi.syncProps = () => propsCtl.sync();
+      propsCtl.sync();
+    }
+
+    return { level, viewport, workbench, paletteCtl, propsCtl };
   }
+
+  /**
+   * @param {{
+   *   propsCtl: { dispose(): void };
+   *   workbench: { dispose(): void };
+   *   viewport: { dispose(): void };
+   *   paletteCtl: { dispose(): void };
+   * }} s
+   */
+  function disposeEditorSession(s) {
+    s.propsCtl.dispose();
+    s.workbench.dispose();
+    s.viewport.dispose();
+    s.paletteCtl.dispose();
+  }
+
+  let session = mountEditorSession(ensureEditorWipLevel());
 
   const onReturn = () => opts.onReturnToLobby();
 
   const btn = root.querySelector("[data-return-lobby]");
+  const newLevelBtn = root.querySelector("[data-editor-new-level]");
   const onClick = () => onReturn();
   if (btn) btn.addEventListener("click", onClick);
 
+  /** @param {string} msg */
+  function setNewLevelError(msg) {
+    if (!newLevelErr) return;
+    if (!msg) {
+      newLevelErr.hidden = true;
+      newLevelErr.textContent = "";
+      return;
+    }
+    newLevelErr.hidden = false;
+    newLevelErr.textContent = msg;
+  }
+
+  function openNewLevelDialog() {
+    setNewLevelError("");
+    if (newLevelDialog) {
+      try {
+        newLevelDialog.showModal();
+      } catch {
+        /* already open */
+      }
+    }
+  }
+
+  /** @param {Event} e */
+  function onNewLevelSubmit(e) {
+    e.preventDefault();
+    setNewLevelError("");
+    const fd = newLevelForm instanceof HTMLFormElement ? new FormData(newLevelForm) : null;
+    const rawW = fd ? fd.get("arenaWidth") : null;
+    const rawD = fd ? fd.get("arenaDepth") : null;
+    const w = Math.floor(Number(rawW));
+    const d = Math.floor(Number(rawD));
+    if (!Number.isFinite(w) || !Number.isFinite(d)) {
+      setNewLevelError(`Enter whole numbers for width and depth (minimum ${MIN_ARENA_SIZE}).`);
+      return;
+    }
+    if (w < MIN_ARENA_SIZE || d < MIN_ARENA_SIZE) {
+      setNewLevelError(`Arena must be at least ${MIN_ARENA_SIZE}×${MIN_ARENA_SIZE} units.`);
+      return;
+    }
+    const next = createBlankWipLevel(w, d);
+    upsertWipLevel(next);
+    disposeEditorSession(session);
+    session = mountEditorSession(/** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(next))));
+    if (newLevelDialog) newLevelDialog.close();
+  }
+
+  const onNewLevelClick = () => openNewLevelDialog();
+  if (newLevelBtn) newLevelBtn.addEventListener("click", onNewLevelClick);
+
+  const cancelBtn = document.querySelector("[data-editor-new-level-cancel]");
+  const onNewLevelCancel = () => {
+    setNewLevelError("");
+    if (newLevelDialog) newLevelDialog.close();
+  };
+  if (cancelBtn) cancelBtn.addEventListener("click", onNewLevelCancel);
+
+  if (newLevelForm instanceof HTMLFormElement) {
+    newLevelForm.addEventListener("submit", onNewLevelSubmit);
+  }
+
   const onKey = (e) => {
-    if (e.key === "Escape") onReturn();
+    if (e.key !== "Escape") return;
+    if (newLevelDialog?.open) {
+      e.preventDefault();
+      e.stopPropagation();
+      newLevelDialog.close();
+      return;
+    }
+    onReturn();
   };
   window.addEventListener("keydown", onKey);
 
   return {
     dispose() {
-      propsCtl.dispose();
-      workbench.dispose();
-      viewport.dispose();
-      paletteCtl.dispose();
+      disposeEditorSession(session);
       if (propsRoot) {
         propsRoot.hidden = true;
         propsRoot.classList.add("tron-destination--hidden");
@@ -167,6 +263,11 @@ export function mountEditorDestinationScreen(opts) {
       }
       window.removeEventListener("keydown", onKey);
       if (btn) btn.removeEventListener("click", onClick);
+      if (newLevelBtn) newLevelBtn.removeEventListener("click", onNewLevelClick);
+      if (cancelBtn) cancelBtn.removeEventListener("click", onNewLevelCancel);
+      if (newLevelForm instanceof HTMLFormElement) {
+        newLevelForm.removeEventListener("submit", onNewLevelSubmit);
+      }
       root.hidden = true;
       root.classList.add("tron-destination--hidden");
       if (canvas) canvas.removeAttribute("aria-hidden");
