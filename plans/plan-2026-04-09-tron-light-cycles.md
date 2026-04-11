@@ -1101,7 +1101,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P5.6** | `gates.js`: neon arcs, triggers, open vs locked, signage | P5.3 | [ ] |
 | **P5.7** | Transitions: tunnel; coin overlay; coins on exit ride-through; equip cleared | X2, P5.6 | [~] |
 | **P5.8** | `savedata.js`: full schema, progression, cosmetics, settings | A2 | [x] |
-| **P5.9** | Campaign: `level-0-lobby.json` + five starter levels + `manifest.json` | P5.1, P5.2 | [ ] |
+| **P5.9** | Campaign: `level-0-lobby.json` + five starter levels + `manifest.json` | P5.1, P5.2 | [x] |
 
 ### Phase 6 — Level editor
 

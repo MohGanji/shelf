@@ -1,0 +1,90 @@
+{
+  "id": "level-3",
+  "name": "The Rift",
+  "arenaWidth": 400,
+  "arenaDepth": 400,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 200,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 200,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [
+    {
+      "type": "portal",
+      "x": -90,
+      "z": 50,
+      "rotation": 0,
+      "pairId": "p1",
+      "pairColor": "#FF00FF"
+    },
+    {
+      "type": "portal",
+      "x": 90,
+      "z": -50,
+      "rotation": 3.14159,
+      "pairId": "p1",
+      "pairColor": "#FF00FF"
+    }
+  ],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": 15,
+      "z": -25,
+      "category": "equippable"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -40,
+      "z": 100,
+      "rotation": 0,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 4,
+        "trailLength": 5,
+        "nitroBars": 4,
+        "handling": 4,
+        "intelligence": 5
+      }
+    },
+    {
+      "x": 55,
+      "z": -90,
+      "rotation": 1.57,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 4,
+        "trailLength": 5,
+        "nitroBars": 4,
+        "handling": 4,
+        "intelligence": 5
+      }
+    }
+  ],
+  "rewards": {
+    "coins": 75,
+    "timeBonusThreshold": 150,
+    "timeBonusCoins": 35
+  }
+}

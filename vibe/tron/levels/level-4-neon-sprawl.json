@@ -1,0 +1,97 @@
+{
+  "id": "level-4",
+  "name": "Neon Sprawl",
+  "arenaWidth": 400,
+  "arenaDepth": 400,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 200,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 200,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    { "type": "wall", "x": 0, "z": 30 },
+    { "type": "wall", "x": 1, "z": 30 },
+    { "type": "wall", "x": 2, "z": 30 }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "trail_extend",
+      "x": -45,
+      "z": 20,
+      "category": "level_permanent"
+    },
+    {
+      "type": "nitro_capacity",
+      "x": 50,
+      "z": -35,
+      "category": "level_permanent"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -70,
+      "z": 110,
+      "rotation": 0,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 4,
+        "handling": 5,
+        "intelligence": 5
+      }
+    },
+    {
+      "x": 80,
+      "z": -60,
+      "rotation": 3.14,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 4,
+        "handling": 5,
+        "intelligence": 6
+      }
+    },
+    {
+      "x": -20,
+      "z": -100,
+      "rotation": 1.57,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 5,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 4,
+        "handling": 5,
+        "intelligence": 5
+      }
+    }
+  ],
+  "rewards": {
+    "coins": 90,
+    "timeBonusThreshold": 180,
+    "timeBonusCoins": 40
+  }
+}

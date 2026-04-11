@@ -1,0 +1,119 @@
+{
+  "id": "level-5",
+  "name": "The Gauntlet",
+  "arenaWidth": 400,
+  "arenaDepth": 400,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 200,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 200,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    { "type": "building", "x": -30, "z": 40, "height": 3, "shape": "square" },
+    { "type": "building", "x": 40, "z": -25, "height": 2, "shape": "square" },
+    { "type": "structure", "x": -10, "z": -80, "variant": "pylon" }
+  ],
+  "gameObjects": [
+    { "type": "boost_pad", "x": -60, "z": -40 }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": 70,
+      "z": 60,
+      "category": "instant"
+    },
+    {
+      "type": "shield",
+      "x": -55,
+      "z": 75,
+      "category": "equippable"
+    },
+    {
+      "type": "trail_extend",
+      "x": 25,
+      "z": -70,
+      "category": "level_permanent"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 90,
+      "z": 100,
+      "rotation": 0,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 7,
+        "acceleration": 6,
+        "trailLength": 7,
+        "nitroBars": 6,
+        "handling": 6,
+        "intelligence": 9
+      }
+    },
+    {
+      "x": -85,
+      "z": 50,
+      "rotation": 1.57,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 6,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 5,
+        "handling": 5,
+        "intelligence": 6
+      }
+    },
+    {
+      "x": 30,
+      "z": -95,
+      "rotation": 3.14,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 6,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 5,
+        "handling": 5,
+        "intelligence": 5
+      }
+    },
+    {
+      "x": -40,
+      "z": -50,
+      "rotation": 0.78,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 6,
+        "acceleration": 5,
+        "trailLength": 6,
+        "nitroBars": 5,
+        "handling": 5,
+        "intelligence": 6
+      }
+    }
+  ],
+  "rewards": {
+    "coins": 120,
+    "timeBonusThreshold": 240,
+    "timeBonusCoins": 50
+  }
+}

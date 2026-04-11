@@ -1,0 +1,52 @@
+{
+  "id": "level-1",
+  "name": "The Grid",
+  "arenaWidth": 200,
+  "arenaDepth": 200,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 100,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 100,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": 40,
+      "z": 70,
+      "rotation": 0,
+      "color": "#FF6600",
+      "attributes": {
+        "speed": 3,
+        "acceleration": 3,
+        "trailLength": 4,
+        "nitroBars": 3,
+        "handling": 3,
+        "intelligence": 2
+      }
+    }
+  ],
+  "rewards": {
+    "coins": 50,
+    "timeBonusThreshold": 90,
+    "timeBonusCoins": 25
+  }
+}
