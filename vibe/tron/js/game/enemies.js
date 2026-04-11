@@ -1,6 +1,6 @@
 /**
- * Campaign enemy cycles (plan P4.1 + P4.2): spawn from level JSON; stationary until first W,
- * then tile-trail + solid-ray steering (`computeEnemyCycleKeys`).
+ * Campaign enemy cycles (plan P4.1 + P4.2 + P4.3): spawn from level JSON; stationary until first W,
+ * then tile-trail + solid-ray steering + hunting (intercept, flank, aggression smoothing).
  */
 
 import { getArenaPlaytestConfig } from "../config.js";
@@ -152,7 +152,13 @@ export function createCampaignEnemyEntities(opts) {
       });
     }
 
-    for (const e of list) {
+    const pvx = playerBody.velocity.x;
+    const pvz = playerBody.velocity.z;
+    const pspd =
+      typeof playerBody.userData.speed === "number" ? playerBody.userData.speed : 0;
+
+    for (let ei = 0; ei < list.length; ei++) {
+      const e = list[ei];
       /** @type {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean }} */
       let keys = { w: false, a: false, s: false, d: false, space: false };
 
@@ -160,11 +166,17 @@ export function createCampaignEnemyEntities(opts) {
         e.body.velocity.set(0, e.body.velocity.y, 0);
         e.body.userData.speed = 0;
         e.body.userData.aiSteer = 0;
+        e.body.userData.aiSteerSmoothed = 0;
       } else {
         const ai = computeEnemyCycleKeys({
           body: e.body,
           intelligence: e.intelligence,
           playerPos: { x: playerBody.position.x, z: playerBody.position.z },
+          playerVx: pvx,
+          playerVz: pvz,
+          playerSpeed: pspd,
+          dt,
+          enemyIndex: ei,
           selfId: e.id,
           devHud: hud,
           playCfg: e.playCfg,

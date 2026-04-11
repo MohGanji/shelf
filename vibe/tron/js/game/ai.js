@@ -1,6 +1,6 @@
 /**
  * Enemy AI (plan Phase 4): P4.2 steering — tile-map trail lookahead + solid (arena/barrier) ray checks.
- * Hunting / nitro / flanking land in P4.3+.
+ * P4.3 — hunting: intercept (trail-cut lead), tiered flanking, aggression + reaction-time smoothing.
  */
 
 import { Box } from "cannon-es";
@@ -20,6 +20,31 @@ export function intelligenceTier(intelligence) {
   if (i <= INTELLIGENCE_EASY_MAX) return "easy";
   if (i <= INTELLIGENCE_MEDIUM_MAX) return "medium";
   return "hard";
+}
+
+/**
+ * Flank blend weight by tier (plan § Flanking at Intelligence 4+).
+ * @param {"easy" | "medium" | "hard"} tier
+ */
+function flankBlendForTier(tier) {
+  if (tier === "easy") return 0;
+  if (tier === "medium") return 0.26;
+  return 0.48;
+}
+
+/**
+ * Intercept lead time (seconds), scaled by intelligence and player speed.
+ * @param {number} intelligence
+ * @param {number} playerSpeed
+ * @param {number} aggression — devHud.aiAggression
+ */
+function interceptLeadSeconds(intelligence, playerSpeed, aggression) {
+  const i = Math.max(1, Math.min(10, intelligence));
+  const base = 0.28 + i * 0.09;
+  const spd = Math.max(0, playerSpeed);
+  const spdBoost = 1 + Math.min(1.2, spd / 55);
+  const agg = Math.max(0.25, Math.min(2.5, aggression));
+  return Math.min(2.2, base * spdBoost * agg);
 }
 
 /**
@@ -238,6 +263,11 @@ export function hasDangerousTrailAhead(opts) {
  * @param {import('cannon-es').Body} opts.body
  * @param {number} opts.intelligence
  * @param {{ x: number; z: number }} opts.playerPos
+ * @param {number} [opts.playerVx] — world X velocity (for intercept)
+ * @param {number} [opts.playerVz] — world Z velocity
+ * @param {number} [opts.playerSpeed] — scalar speed (for lead scaling)
+ * @param {number} [opts.dt] — delta time (reaction smoothing)
+ * @param {number} [opts.enemyIndex] — roster index (flank left/right alternation)
  * @param {string} opts.selfId
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
@@ -250,6 +280,11 @@ export function computeEnemyCycleKeys(opts) {
     body,
     intelligence,
     playerPos,
+    playerVx = 0,
+    playerVz = 0,
+    playerSpeed = 0,
+    dt = 1 / 60,
+    enemyIndex: enemyIndexOpt,
     selfId,
     devHud,
     playCfg,
@@ -261,13 +296,57 @@ export function computeEnemyCycleKeys(opts) {
   const px = body.position.x;
   const pz = body.position.z;
 
-  const tpx = playerPos.x - px;
-  const tpz = playerPos.z - pz;
-  const toH = Math.atan2(tpx, tpz);
-  const dh = wrapAngle(toH - heading);
+  let enemyIndex = typeof enemyIndexOpt === "number" && Number.isFinite(enemyIndexOpt) ? enemyIndexOpt : 0;
+  const idMatch = /^enemy-(\d+)$/.exec(selfId);
+  if (idMatch) enemyIndex = Number(idMatch[1]);
+
+  const tier = intelligenceTier(intelligence);
+  const agg = Math.max(0.2, Math.min(3, devHud.aiAggression));
+  const leadT = interceptLeadSeconds(intelligence, playerSpeed, agg);
+  let predX = playerPos.x + playerVx * leadT;
+  let predZ = playerPos.z + playerVz * leadT;
+
+  const flankBase = flankBlendForTier(tier) * agg;
+  const toPredX = predX - px;
+  const toPredZ = predZ - pz;
+  const distPred = Math.hypot(toPredX, toPredZ);
+  if (distPred > 1e-4 && flankBase > 1e-6) {
+    const inv = 1 / distPred;
+    const nx = toPredX * inv;
+    const nz = toPredZ * inv;
+    const perpX = -nz;
+    const perpZ = nx;
+    const side = enemyIndex % 2 === 0 ? 1 : -1;
+    const flankMag = flankBase * Math.min(20, 3 + distPred * 0.38);
+    predX += perpX * flankMag * side;
+    predZ += perpZ * flankMag * side;
+  }
+
+  const ttx = predX - px;
+  const ttz = predZ - pz;
+  const huntDist = Math.hypot(ttx, ttz);
+  let dh;
+  if (huntDist < 0.12) {
+    const tpx = playerPos.x - px;
+    const tpz = playerPos.z - pz;
+    dh = wrapAngle(Math.atan2(tpx, tpz) - heading);
+  } else {
+    dh = wrapAngle(Math.atan2(ttx, ttz) - heading);
+  }
+
+  const errGain = 2.85 * Math.min(1.2, 0.65 + agg * 0.35);
+  let steerCmd = Math.max(-1, Math.min(1, dh * errGain));
+
+  const react = Math.max(0.04, devHud.aiReactionTime);
+  const alpha = Math.min(1, dt / react);
+  let smoothed =
+    typeof body.userData.aiSteerSmoothed === "number" ? body.userData.aiSteerSmoothed : 0;
+  smoothed += (steerCmd - smoothed) * alpha;
+  body.userData.aiSteerSmoothed = smoothed;
+
   let seekSteer = 0;
-  if (dh > 0.04) seekSteer = 1;
-  else if (dh < -0.04) seekSteer = -1;
+  if (smoothed > 0.12) seekSteer = 1;
+  else if (smoothed < -0.12) seekSteer = -1;
 
   const steps = lookaheadSteps(intelligence);
   const halfWTrail = lookaheadHalfWidth(intelligence);
