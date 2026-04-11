@@ -1371,6 +1371,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.215** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `typicalAgeRange` (`0-`, aligned with `contentRating` `Everyone` and `audience.audienceType`) so structured data exposes schema.org CreativeWork age-band hints alongside `isFamilyFriendly` and `Audience` | P10.214 | [x] |
 | **P10.216** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `maintainer` (`{ "@id": "./#organization" }`) so structured data exposes an explicit software maintainer alongside `publisher`, `author`, and the deduplicated `Organization` from P10.123 | P10.215 | [x] |
 | **P10.217** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `provider` (`{ "@id": "./#organization" }`) so structured data exposes an explicit software/service provider on the game entity alongside `PlayAction.provider` from P10.208, `publisher`, `author`, and `maintainer` | P10.216 | [x] |
+| **P10.218** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `creator` (`{ "@id": "./#organization" }`) so the game node exposes explicit CreativeWork-style creation credit aligned with `WebSite.creator` from P10.194 alongside `author`, `publisher`, `maintainer`, and `provider` | P10.217 | [x] |
 
 ### HUD and progression
 
