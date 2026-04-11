@@ -7,6 +7,9 @@
 import { BUNDLED_CAMPAIGN_LEVEL_FILENAMES } from "./defaults.js";
 import { LOBBY_LEVEL_ID, validateLevel } from "./schema.js";
 
+/** Per-level WIP key helpers (alternate prefix vs consolidated `WIP_STORAGE_KEY` store). */
+export { getWipLevelKeyPrefix, wipLevelStorageKey } from "./editor.js";
+
 /** WIP blob version — bump if storage shape changes. */
 export const WIP_STORAGE_VERSION = 1;
 
