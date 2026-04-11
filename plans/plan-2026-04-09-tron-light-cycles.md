@@ -1334,6 +1334,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.178** | Tron `index.html`: JSON-LD `WebPage` adds `genre` (same `["Action", "Racing"]` as `VideoGame.genre`) so the page entity exposes genre classification alongside `keywords`, `about`, and `mainEntity` | P10.177 | [x] |
 | **P10.179** | Tron `index.html`: JSON-LD `WebPage` adds `isAccessibleForFree` (`true`, aligned with `VideoGame.isAccessibleForFree`) so the page entity exposes the same free-access CreativeWork signal as the main game node in `@graph` | P10.178 | [x] |
 | **P10.180** | Tron `index.html`: JSON-LD `WebPage` adds `gamePlatform` (same `["Web browser"]` as `VideoGame.gamePlatform`) so the page entity exposes runtime platform signals alongside `genre`, `keywords`, and `isAccessibleForFree` in `@graph` | P10.179 | [x] |
+| **P10.181** | Tron `index.html`: JSON-LD `WebPage` adds `author` (`{ "@id": "./#organization" }`, aligned with `VideoGame.author`) so the page entity exposes explicit authorship alongside `publisher`, `copyrightHolder`, and `copyrightYear` in `@graph` | P10.180 | [x] |
 
 ### HUD and progression
 
