@@ -171,6 +171,7 @@ export function createGameRenderer(canvas, opts = {}) {
     tunnelMaterial: tunnelMat,
     floorReflector,
     composer: post.composer,
+    postPipeline: post,
     applyDevHud,
     startLoop,
     stopLoop,

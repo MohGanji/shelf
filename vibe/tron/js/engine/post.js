@@ -35,6 +35,34 @@ const TronGradeShader = {
 };
 
 /** Horizontal CRT-style scanlines (disabled when uScan is 0). */
+/** Cheap radial smear from center — driven only during nitro bursts when enabled in HUD. */
+const NitroRadialBlurShader = {
+  name: "NitroRadialBlurShader",
+  uniforms: {
+    tDiffuse: { value: null },
+    uStrength: { value: 0 },
+  },
+  vertexShader: CopyShader.vertexShader,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uStrength;
+    varying vec2 vUv;
+    void main() {
+      vec2 dir = vUv - 0.5;
+      vec4 acc = vec4(0.0);
+      float wsum = 0.0;
+      for (float i = 0.0; i < 6.0; i++) {
+        float t = i / 5.0;
+        vec2 uvo = vUv - dir * uStrength * t * 0.14;
+        float w = 1.0 - t * 0.35;
+        acc += texture2D(tDiffuse, uvo) * w;
+        wsum += w;
+      }
+      gl_FragColor = vec4(acc.rgb / max(wsum, 0.0001), 1.0);
+    }
+  `,
+};
+
 const CrtScanlineShader = {
   name: "CrtScanlineShader",
   uniforms: {
@@ -89,6 +117,9 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
   crtPass.material.uniforms.uScan.value = hud.crtScanlines ? 1.0 : 0.0;
   crtPass.material.uniforms.uResolution.value.set(bloomRes.x, bloomRes.y);
 
+  const nitroPass = new ShaderPass(NitroRadialBlurShader);
+  nitroPass.material.uniforms.uStrength.value = 0;
+
   const outputPass = new OutputPass();
 
   const composer = new EffectComposer(renderer);
@@ -96,6 +127,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
   composer.addPass(bloomPass);
   composer.addPass(gradePass);
   composer.addPass(crtPass);
+  composer.addPass(nitroPass);
   composer.addPass(outputPass);
 
   function syncFog() {
@@ -112,6 +144,13 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
     gradePass.material.uniforms.amount.value = hud.chromaticAberration;
     gradePass.material.uniforms.neonIntensity.value = hud.neonIntensity;
     crtPass.material.uniforms.uScan.value = hud.crtScanlines ? 1.0 : 0.0;
+  }
+
+  /** @param {{ strength?: number }} [opts] strength 0–1 */
+  function setNitroFx(opts = {}) {
+    const s = typeof opts.strength === "number" ? opts.strength : 0;
+    const on = hud.nitroMotionBlur !== false;
+    nitroPass.material.uniforms.uStrength.value = on ? Math.max(0, Math.min(1, s)) : 0;
   }
 
   syncFog();
@@ -132,11 +171,13 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
       composer.render();
     },
     applyDevHud,
+    setNitroFx,
     dispose() {
       composer.dispose();
       bloomPass.dispose();
       gradePass.dispose();
       crtPass.dispose();
+      nitroPass.dispose();
       outputPass.dispose();
     },
   };
