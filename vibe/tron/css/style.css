@@ -1,6 +1,5 @@
 /* Tron: Light Cycles — base HUD, overlays, boot tunnel UI, developer HUD (P9.2) */
-
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap");
+/* Google Fonts are loaded from index.html (preconnect + stylesheet) — avoid @import blocking */
 
 :root {
   color-scheme: dark;
