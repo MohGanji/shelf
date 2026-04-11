@@ -3,6 +3,7 @@
  */
 
 import * as THREE from "three";
+import { parseCampaignLevelIndex } from "../levels/loader.js";
 import { GATE_WIDTH, LOBBY_LEVEL_ID } from "../levels/schema.js";
 
 export { GATE_WIDTH };
@@ -77,6 +78,64 @@ export function withLobbyRuntimeGateOverrides(level, nextArenaLevelIndex) {
     return { ...g, signText: `ENTER ARENA ${n}` };
   });
   return { ...level, wallObjects };
+}
+
+/**
+ * Lobby START gate: lock + sign when no arenas, all levels cleared, or missing level JSON (plan § Lobby / P7.2).
+ * Run after {@link withLobbyRuntimeGateOverrides} so `ENTER ARENA N` remains when unlocked.
+ *
+ * @param {Record<string, unknown> | null | undefined} level
+ * @param {Record<string, unknown>[]} validLevels
+ * @param {{ progress?: { completedLevels?: unknown; currentLevel?: unknown } }} save
+ * @returns {Record<string, unknown> | null | undefined}
+ */
+export function withLobbyArenaGateLock(level, validLevels, save) {
+  if (!level || typeof level !== "object" || level.id !== LOBBY_LEVEL_ID) return level;
+  if (!Array.isArray(level.wallObjects)) return level;
+  const progress = save && typeof save === "object" && save.progress && typeof save.progress === "object" ? save.progress : null;
+  const completedRaw = progress && Array.isArray(progress.completedLevels) ? progress.completedLevels : [];
+  const completed = completedRaw.map((x) => Number(x)).filter((n) => Number.isFinite(n));
+  const currentRaw = progress && progress.currentLevel;
+  const currentLevel =
+    typeof currentRaw === "number" && Number.isFinite(currentRaw) ? Math.max(1, Math.floor(currentRaw)) : 1;
+
+  const arenaEntries = validLevels
+    .map((L) => ({ idx: parseCampaignLevelIndex(L) }))
+    .filter((x) => Number.isFinite(x.idx) && x.idx >= 1);
+
+  /** @param {() => Record<string, unknown>} patch */
+  function mapArenaGate(patch) {
+    const wallObjects = level.wallObjects.map((wo) => {
+      if (!wo || typeof wo !== "object") return wo;
+      const o = /** @type {Record<string, unknown>} */ (wo);
+      if (o.type !== "gate" || o.role !== "arena") return wo;
+      return { ...o, ...patch() };
+    });
+    return { ...level, wallObjects };
+  }
+
+  if (arenaEntries.length === 0) {
+    return mapArenaGate(() => ({ locked: true, signText: "NO CAMPAIGN\nLEVELS" }));
+  }
+
+  const maxIdx = Math.max(...arenaEntries.map((x) => x.idx));
+  let allDone = true;
+  for (let i = 1; i <= maxIdx; i++) {
+    if (!completed.includes(i)) {
+      allDone = false;
+      break;
+    }
+  }
+  if (allDone && maxIdx >= 1) {
+    return mapArenaGate(() => ({ locked: true, signText: "MORE ARENAS\nCOMING SOON" }));
+  }
+
+  const hasNext = arenaEntries.some((x) => x.idx === currentLevel);
+  if (!hasNext) {
+    return mapArenaGate(() => ({ locked: true, signText: "NO ARENA\nDATA" }));
+  }
+
+  return mapArenaGate(() => ({ locked: false }));
 }
 
 /**

@@ -89,6 +89,36 @@
         <p class="level-complete-overlay__bonus" data-coin-bonus-hint></p>
         <p class="level-complete-overlay__hint">Ride through the EXIT gate to claim rewards.</p>
       </div>
+
+      <div
+        id="garage-destination"
+        class="tron-destination tron-destination--hidden"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="garage-destination-title"
+      >
+        <h2 id="garage-destination-title" class="tron-destination__title">GARAGE</h2>
+        <p class="tron-destination__body">
+          Showroom upgrades and colors land in P7.3–P7.4. Use Return to ride back to the lobby.
+        </p>
+        <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
+      </div>
+
+      <div
+        id="editor-destination"
+        class="tron-destination tron-destination--hidden"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="editor-destination-title"
+      >
+        <h2 id="editor-destination-title" class="tron-destination__title">ARCHITECT</h2>
+        <p class="tron-destination__body">
+          The tile level editor (Phase 6) will open here. For now, return to the lobby to keep riding.
+        </p>
+        <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
+      </div>
     </div>
 
     <script type="module" src="./js/main.js"></script>

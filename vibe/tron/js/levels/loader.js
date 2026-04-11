@@ -255,6 +255,19 @@ export function parseCampaignLevelIndex(level) {
 }
 
 /**
+ * Next campaign arena by `level-N` index (1 = first arena after lobby).
+ * @param {Record<string, unknown>[]} validLevels
+ * @param {number} campaignIndex
+ * @returns {Record<string, unknown> | null}
+ */
+export function findCampaignLevelByCampaignIndex(validLevels, campaignIndex) {
+  const idx = Math.floor(campaignIndex);
+  if (!Number.isFinite(idx) || idx < 1) return null;
+  const found = validLevels.find((L) => parseCampaignLevelIndex(L) === idx);
+  return found && typeof found === "object" ? /** @type {Record<string, unknown>} */ (found) : null;
+}
+
+/**
  * @param {Record<string, unknown> | null | undefined} level
  * @returns {{ arenaWidth: number; arenaDepth: number } | undefined}
  */

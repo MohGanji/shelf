@@ -33,6 +33,7 @@ import {
   extractGatesFromWallObjects,
   queryOpenGateAtPosition,
   updateGateAnimations,
+  withLobbyArenaGateLock,
   withLobbyRuntimeGateOverrides,
 } from "./game/gates.js";
 import { createLightCycle } from "./game/cycle.js";
@@ -58,11 +59,14 @@ import {
 import { computePlayerNearMissDistance } from "./game/nearMiss.js";
 import {
   extractArenaDimensionsFromLevel,
+  findCampaignLevelByCampaignIndex,
   findCampaignLevelById,
   loadCampaignLevels,
   parseCampaignLevelIndex,
   selectPlaytestCampaignLevel,
 } from "./levels/loader.js";
+import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
+import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 
 function $(id) {
@@ -103,12 +107,35 @@ async function main() {
 
   const campaign = await loadCampaignLevels();
   setBootProgress(bootEls, 44);
-  /** P7.1 — BOOT → lobby (`level-0`) when present; else fall back to legacy playtest picker. */
-  const lobbyOrFallback =
-    findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
-    selectPlaytestCampaignLevel(campaign.validLevels, save);
-  const activeCampaignLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
-  const arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+
+  const bootPeek = peekSessionBootTarget();
+  const skipArenaForBoot =
+    bootPeek && (bootPeek.mode === "garage" || bootPeek.mode === "editor");
+
+  /** P7.1 / P7.2 — lobby + gate locks, or campaign level after arena gate, or skip arena for garage/editor boot. */
+  /** @type {Record<string, unknown> | null} */
+  let activeCampaignLevel = null;
+  /** @type {{ arenaWidth: number; arenaDepth: number } | undefined} */
+  let arenaSizeFromCampaign;
+
+  if (skipArenaForBoot) {
+    arenaSizeFromCampaign = undefined;
+  } else if (bootPeek?.mode === "campaign" && typeof bootPeek.levelId === "string") {
+    const found = findCampaignLevelById(campaign.validLevels, bootPeek.levelId);
+    activeCampaignLevel =
+      found ??
+      findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
+      selectPlaytestCampaignLevel(campaign.validLevels, save);
+    arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+  } else {
+    const lobbyOrFallback =
+      findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
+      selectPlaytestCampaignLevel(campaign.validLevels, save);
+    let lobbyLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
+    lobbyLevel = withLobbyArenaGateLock(lobbyLevel, campaign.validLevels, save);
+    activeCampaignLevel = lobbyLevel;
+    arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+  }
 
   const audio = createAudioEngine({
     masterVolume: save.settings.masterVolume,
@@ -158,6 +185,38 @@ async function main() {
   }
 
   bootOverlay.classList.add("boot-overlay--hidden");
+
+  const bootConsumed = consumeSessionBootTarget();
+
+  if (bootConsumed?.mode === "garage") {
+    const hud = document.getElementById("cycle-hud");
+    const ban = document.getElementById("lobby-placeholder");
+    if (hud) hud.hidden = true;
+    if (ban) ban.hidden = true;
+    mountGarageDestinationScreen({
+      onReturnToLobby: () => {
+        window.location.reload();
+      },
+    });
+    return;
+  }
+  if (bootConsumed?.mode === "editor") {
+    const hud = document.getElementById("cycle-hud");
+    const ban = document.getElementById("lobby-placeholder");
+    if (hud) hud.hidden = true;
+    if (ban) ban.hidden = true;
+    mountEditorDestinationScreen({
+      onReturnToLobby: () => {
+        window.location.reload();
+      },
+    });
+    return;
+  }
+
+  if (!activeCampaignLevel) {
+    console.error("[main] missing campaign level after boot");
+    return;
+  }
 
   const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
   /** Shallow copy so P3.1 can override `nitroBarCount` per level bonuses without mutating `playCfg`. */
@@ -255,6 +314,36 @@ async function main() {
     ownerId: "player",
   });
   game.scene.add(trailWall.root);
+
+  /** P7.2 — lobby functional gates: rising-edge ride-through → tunnel → {@link setSessionBootTarget} + reload. */
+  let lobbyGateWasInside = false;
+
+  function clearTrailAndEquipForTunnel() {
+    trailWall.clear();
+    const u = playerBody.userData;
+    u.equipSlot = undefined;
+    u.equipSlotQueued = undefined;
+  }
+
+  /**
+   * @param {Record<string, unknown>} nextBoot
+   */
+  function beginLobbyGateTunnel(nextBoot) {
+    setSessionBootTarget(nextBoot);
+    game.stopLoop();
+    playTunnel(
+      game.renderer,
+      () => {
+        window.location.reload();
+      },
+      {
+        durationSeconds: CONFIG.tunnelGateSeconds,
+        onBegin: clearTrailAndEquipForTunnel,
+      },
+    ).catch(() => {
+      window.location.reload();
+    });
+  }
 
   const { state: arenaKeys } = createTronCycleKeyState();
   /** @type {boolean} */
@@ -605,6 +694,35 @@ async function main() {
 
     if (playerDerezPhase !== "alive") {
       return;
+    }
+
+    if (isLobby) {
+      const gh = queryOpenGateAtPosition(
+        wallGates,
+        playCfg.arenaWidth,
+        playCfg.arenaDepth,
+        playerBody.position,
+      );
+      const inside = !!gh && gh.gate.role !== "entrance" && !gh.gate.locked;
+      if (inside && !lobbyGateWasInside) {
+        const role = gh.gate.role;
+        if (role === "arena") {
+          const target = findCampaignLevelByCampaignIndex(campaign.validLevels, save.progress.currentLevel);
+          if (target && typeof target.id === "string") {
+            beginLobbyGateTunnel({ mode: "campaign", levelId: target.id });
+            return;
+          }
+        } else if (role === "garage") {
+          beginLobbyGateTunnel({ mode: "garage" });
+          return;
+        } else if (role === "architect") {
+          beginLobbyGateTunnel({ mode: "editor" });
+          return;
+        }
+      }
+      lobbyGateWasInside = inside;
+    } else {
+      lobbyGateWasInside = false;
     }
 
     if (!levelStarted && !isLobby && arenaKeys.w) {
