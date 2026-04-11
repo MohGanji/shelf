@@ -231,7 +231,8 @@ All player state persists in localStorage under a single key.
     "aiReactionTime": 0.5,
     "aiAvoidanceRange": 5.0,
     "steeringSpeedFalloff": 0.02,
-    "wallHeight": 3.0
+    "wallHeight": 3.0,
+    "musicCrossfadeDuration": 1.0
   },
   "controlsShown": false
 }
@@ -280,6 +281,7 @@ Cycle mesh fits within 1 unit tile: ~0.8 units long, ~0.3 units wide, ~0.4 units
 - **Coasting** (no gas, no brake) — cycle slows via drag. Each frame: `speed *= cycleFriction` (default **0.98**). At 60 units/s this means ~1.2 units/s lost per frame at 60fps — gentle coast to near-stop over several seconds
 - **Turning while stationary** — steering works at any speed including zero, so player can reorient after stopping
 - **Nitro boost** — See Nitro System below. **Handling becomes heavier during nitro** (turn rate multiplied by `nitroHandlingMultiplier`, default 0.6)
+- **Nitro overrides brake** — if the player holds S (brake) and presses Space (nitro), the nitro burst fires and overrides the braking deceleration for the burst duration. Speed increases toward the nitro cap. Once the burst ends, braking resumes if S is still held
 
 ### Nitro System
 
@@ -320,7 +322,7 @@ When nitro activates, the game should FEEL powerful. All of these are toggleable
 - Oldest segments fade and disappear as new ones are created — **FIFO**: new segments added at the front (behind cycle), oldest removed from the end
 - **Trail does NOT spawn while stationary** (speed = 0 → no new segments)
 - Trail segments are collidable — touching any trail (yours or enemy's) = **derez** (death)
-- Trail color matches cycle color (customizable for player in Garage)
+- Trail color matches cycle color — player trail matches player's selected cycle color (customizable in Garage), **enemy trail matches the enemy's configured cycle color** (set per enemy in level data)
 - Visual: glowing translucent wall panels (~0.6 units tall, ~0.1 units thick), slight pulse animation, fade-out dissolve on oldest segments
 - **Trail vanishes instantly on derez** — when a cycle is destroyed, all its trail segments disappear immediately
 
@@ -333,6 +335,7 @@ Trail collision uses a **unit-based (tile-based) hitbox system**, NOT mesh-based
 - When a cycle's center enters a tile occupied by ANY trail (own or enemy), the cycle **derezes**
 - This creates effectively solid walls — trails cannot be "threaded through" because the entire tile is lethal, not just the thin visual ribbon
 - Trail tile occupancy is recalculated as segments are added/removed (oldest fading)
+- **Trail CAN occupy arena perimeter tiles** — wall-riding deposits trail along the edge, effectively sealing off that wall segment. This is valid gameplay (intentional strategy)
 - This system also simplifies minimap rendering — trails are just colored tile marks
 
 ### Trail Self-Immunity
@@ -352,7 +355,7 @@ Trail collision uses a **unit-based (tile-based) hitbox system**, NOT mesh-based
 | Collides with | Result |
 |---------------|--------|
 | **Any trail (own or enemy)** | **Derez** (death) — always lethal regardless of speed |
-| **Any other cycle body** (player-vs-enemy OR enemy-vs-enemy) | **Both derez** — unless one has shield (see Shield rules). Exception: if a cycle's speed is below `lowSpeedThreshold` (default 10 units/s), it cannot kill the opponent in cycle-to-cycle but CAN still be killed. **If BOTH are below threshold: neither derezes** — they bump and stop. Discourages stationary play. **Same rules apply to enemy-vs-enemy collisions** — enemies can and will kill each other |
+| **Any other cycle body** (player-vs-enemy OR enemy-vs-enemy) | **Both derez** — unless one has shield (see Shield rules). Exception: if a cycle's speed is below `lowSpeedThreshold` (default 10 units/s), it cannot kill the opponent in cycle-to-cycle but CAN still be killed. **If BOTH are below threshold: neither derezes** — they bump and stop. Discourages stationary play. **Same rules apply to enemy-vs-enemy collisions** — enemies can and will kill each other. **Nitro-boosted speed does NOT change the collision outcome** — same rules apply regardless of whether a cycle is nitro-boosting |
 | Arena wall | **Slide** — cycle slides along the wall surface with angle-based speed reduction. Head-on (90°) = near full stop. Glancing (small angle) = slight slowdown, cycle redirects along wall. Speed reduction = `sin(impactAngle) × currentSpeed`. **Heading gradually lerps toward velocity direction** — cycle initially still points at the wall, then smoothly rotates to match its slide direction (not instant snap, not stuck facing the wall). Wall-hit sound + slight camera shake. Not lethal |
 | Barrier (building, wall, structure) | **Slide** — same as arena wall. Cycle redirects along barrier surface with angle-based speed reduction. Not lethal |
 | Power-up (any type) | Pickup (see Power-up Categories) |
@@ -375,7 +378,7 @@ When any cycle (player or enemy) is destroyed:
 - Camera pulls back to a dramatic overhead view (`derezCameraOverhead` toggle)
 - "DEREZZED" text overlay
 - After ~2 second animation → transition back to lobby (player spawns 2 units in front of lobby entrance gate)
-- The Start gate still shows the same arena number — player can re-enter to retry. **Level fully resets on re-entry**: all enemies respawn, ALL power-ups respawn (including level-permanent ones), all trails gone, game objects reset to default state. Player retains their purchased upgrades and cosmetics from save data — only in-level state resets. Level-permanent power-ups are "permanent for that playthrough" — they respawn fresh each time the player enters the level
+- The Start gate still shows the same arena number — player can re-enter to retry. **Level fully resets on re-entry**: all enemies respawn, ALL power-ups respawn (including level-permanent ones), all trails gone, game objects reset to default state, **player's equip slot empties** (any held/active equippable is lost). Player retains their purchased upgrades and cosmetics from save data — only in-level state resets. Level-permanent power-ups are "permanent for that playthrough" — they respawn fresh each time the player enters the level
 
 **Enemy derez:**
 - Same implosion (shatter inward into dissolving fragments) + trail vanish
@@ -393,7 +396,7 @@ Placed anywhere on the arena floor. Solid — colliding with them causes the cyc
 | Block | Size | Mergeable | Height | Notes |
 |-------|------|-----------|--------|-------|
 | **Wall** | 1 tile | Yes (linear) | Fixed (3 units, tunable via Dev HUD `wallHeight`) | Basic interior wall. Merges into continuous walls when adjacent |
-| **Building** | 1 tile | Yes (cluster) | Selectable (1-5 units, default 2, editor slider) | Tron-style glowing structure. All buildings are 1×1 tiles. **3 shape variants**: `square` (default rectangular block), `triangle` (triangular prism — allows angular/diagonal layouts), `hexagon` (hexagonal prism — allows organic/rounded arena shapes). Shape selectable in editor. Adjacent buildings of the same shape visually merge into larger connected structures. If merge graphics prove too complex, buildings remain standalone 1×1 blocks with selectable height and shape for visual variety |
+| **Building** | 1 tile | Yes (cluster) | Selectable (1-5 units, default 2, editor slider) | Tron-style glowing structure. All buildings are 1×1 tiles. **3 shape variants**: `square` (default rectangular block), `triangle` (triangular prism — allows angular/diagonal layouts), `hexagon` (hexagonal prism — allows organic/rounded arena shapes). Shape selectable in editor. Adjacent buildings of the same shape visually merge into larger connected structures. **Adjacent buildings of different shapes do NOT merge** — they remain standalone. If merge graphics prove too complex, buildings remain standalone 1×1 blocks with selectable height and shape for visual variety |
 | **Structure** | 1 tile | No | Fixed (~2 units) | Decorative solid. Variants below |
 
 **Structure Variants** (selectable in editor):
@@ -432,7 +435,7 @@ Remain in place after interaction. Can be used repeatedly but have a **cooldown*
 | Object | Behavior |
 |--------|----------|
 | **Boost Pad** | Ground-placed. Ride over = instant 1-bar nitro burst (free, no bar consumed). **If hit during an active nitro burst**: the boost pad burst overlaps — speed stays at the nitro cap (does NOT exceed it), and the boost effect extends until whichever burst (pad or pressed) ends latest. Visual: glowing floor panel (no directional arrow — just a pad). Dims during cooldown |
-| **Portal** | **Always placed in pairs.** Ride into one → teleport to paired portal. Each pair has a unique neon ring color (auto-assigned randomly in editor). Editor forces pair placement — cannot place just one. **Portals are one-sided** (like a mirror): one face is the active portal surface (glowing, rideable), the other face looks and behaves like a wall (solid, stops/slides cycle). Portal has a `rotation` field in schema that determines which direction the active face points. Editor provides rotation control (R key or rotation handle). Exit orientation: cycle exits facing the portal's active face outward direction. Trail does NOT pass through portals — trail ends at entry, new trail starts at exit. **Speed maintained through portal.** Both players and enemies can use portals. Teleportation visual: brief warp flash + screen distortion (`portalWarpIntensity` in Dev HUD) + warp sound effect. **Portal exit immunity**: very brief immunity (`portalExitImmunityDuration`, default **0.15s**) — just long enough for the cycle to render the warp-out animation, but short enough that a **portal trap is viable** (laying trail near exit portal so enemies who teleport in will derez after the brief animation). The immunity should NOT be long enough for the cycle to ride out of the trail tile — the player/enemy sees their cycle warp in and then derez |
+| **Portal** | **Always placed in pairs. Multiple portal pairs allowed per level** (each pair identified by a unique `pairId`). Ride into one → teleport to paired portal. Each pair has a unique neon ring color (auto-assigned randomly in editor). Editor forces pair placement — cannot place just one. **Portals are one-sided** (like a mirror): one face is the active portal surface (glowing, rideable), the other face looks and behaves like a wall (solid, stops/slides cycle). Portal has a `rotation` field in schema that determines which direction the active face points. Editor provides rotation control (R key or rotation handle). Exit orientation: cycle exits facing the portal's active face outward direction. Trail does NOT pass through portals — trail ends at entry, new trail starts at exit. **Speed maintained through portal.** **Cycle is invulnerable during the teleport warp itself** — from the moment the cycle enters the portal until the exit immunity begins, no collision can derez it. Both players and enemies can use portals. Teleportation visual: brief warp flash + screen distortion (`portalWarpIntensity` in Dev HUD) + warp sound effect. **Portal exit immunity**: very brief immunity (`portalExitImmunityDuration`, default **0.15s**) — just long enough for the cycle to render the warp-out animation, but short enough that a **portal trap is viable** (laying trail near exit portal so enemies who teleport in will derez after the brief animation). The immunity should NOT be long enough for the cycle to ride out of the trail tile — the player/enemy sees their cycle warp in and then derez |
 
 ### 4. Power-ups: Instant (consumed on pickup, respawn after timer)
 
@@ -593,7 +596,7 @@ The START gate dynamically shows the next arena number. E.g., if player has comp
 
 ## Level Transitions
 
-**The Tron-grid tunnel is the universal transition animation** — a short (~1 second) forward-flying warp through a glowing grid tunnel. Used for **every state transition**: level entries/exits, Garage entry/return, Editor entry/return, and BOOT loading. Even UI button returns ("Return to Lobby" in Garage/Editor) trigger the tunnel animation. Feels fast and immersive, not jarring.
+**The Tron-grid tunnel is the universal transition animation** — a short (~1 second) forward-flying warp through a glowing grid tunnel. Used for **every state transition**: level entries/exits, Garage entry/return, Editor entry/return, and BOOT loading. Even UI button returns ("Return to Lobby" in Garage/Editor) trigger the tunnel animation. Feels fast and immersive, not jarring. **All keyboard input is ignored during the tunnel transition** — no buffering. Player arrives at destination with a clean input state.
 
 | Transition | Sequence |
 |------------|----------|
@@ -647,14 +650,14 @@ The editor uses a **select-then-act** pattern:
 
 - **Undo/Redo**: Ctrl+Z / Ctrl+Y (Cmd on Mac). Tracks all place/remove/move/property-change operations in an undo stack
 - **Level select**: Dropdown to switch between levels (Lobby, Level 1, 2, 3...). Loads from localStorage (WIP) or campaign files
-- **Arena size**: Slider/input to adjust width and depth. **Minimum 40×40 units** (enforced). Walls update. Blocks outside new bounds are removed with confirmation dialog
-- **Wall object placement (click-then-choose)**: Clicking on an arena edge tile opens a context menu with cosmetic wall options (variant + width). The cosmetic wall replaces the default wall at that position. **Gates are NOT placeable** — they pre-exist and can only be selected and moved along edges. This is distinct from the palette-first flow used for floor objects
+- **Arena size**: Set at level creation time (see "New Level" flow in Editor Navigation). **Minimum 40×40 units** (enforced). **Immutable after creation** — delete and recreate to change size
+- **Wall object placement (click-then-choose)**: Clicking on an arena edge tile opens a context menu with cosmetic wall options (variant + width). The cosmetic wall replaces the default wall at that position. **Gates are NOT placeable** — they pre-exist and can only be selected and moved along edges. This is distinct from the palette-first flow used for floor objects. **The editor prevents placing cosmetic walls that overlap with gates** — any wall object that would cover tiles already occupied by a gate is rejected. Adjacent placement (touching the gate edge) is allowed
 - **Portal pair enforcement**: When placing a portal, editor requires placing the paired portal before finalizing. Auto-assigns a random neon color to the pair
-- **Gate clear zones**: A **5×5 unit area** directly in front of each gate (entrance AND exit) is reserved. The editor prevents placing any objects (barriers, game objects, power-ups, enemies) in these zones. Visually highlighted in the editor grid (e.g., subtle tint). Player spawns at the center of the entrance gate's clear zone (2 units in front of the entrance gate). **Clear zones move with their gate** — when a gate is moved in the editor, the clear zone repositions automatically. Any objects that would overlap the new clear zone are flagged/prevented
+- **Gate clear zones**: A **5×5 unit area** directly in front of each gate (entrance AND exit) is reserved. The editor prevents placing any objects (barriers, game objects, power-ups, enemies) in these zones. Visually highlighted in the editor grid (e.g., subtle tint). Player spawns at the center of the entrance gate's clear zone (2 units in front of the entrance gate). **Clear zones move with their gate** — when a gate is moved in the editor, the clear zone repositions automatically. Any objects that would overlap the new clear zone are flagged/prevented. **Overlapping clear zones between nearby gates are allowed** — since gates are 5 units wide and cannot overlap each other on the same wall, the 5×5 clear zones in front of them naturally don't conflict
 
 ### Editor Navigation
 
-- **Level List**: First screen when entering editor. Shows all WIP levels (localStorage) and campaign levels. **"New Level" button at the top** creates a blank arena with default size (400×400) and default gate placement: **entrance gate on south wall center, exit gate on north wall center** (opposite walls). No default enemies or objects — only the two gates and the auto-derived spawn point (5×5 clear zone in front of entrance). A zero-enemy level has exit gate open from start
+- **Level List**: First screen when entering editor. Shows all WIP levels (localStorage). **Campaign levels are NOT shown and cannot be edited** — they are read-only static JSON files. The editor is for creating new levels only. **"New Level" button at the top** prompts for arena size (width × depth, minimum 40×40, default 400×400) then creates a blank arena with default gate placement: **entrance gate on south wall center, exit gate on north wall center** (opposite walls). **Arena size is immutable after creation** — to change the size, delete the level and create a new one. No default enemies or objects — only the two gates and the auto-derived spawn point (5×5 clear zone in front of entrance). A zero-enemy level has exit gate open from start
 - **"Back to Level List" button**: Returns from the tile editor to the level list (auto-saves to localStorage)
 - **"Return to Lobby" button**: Exits the editor entirely and returns to lobby
 - **ESC in editor**: Discards current selection — if a palette item is selected, deselects it. If a placed item is selected (with move/delete/rotate overlay active), deselects it. Does NOT exit the editor
@@ -674,9 +677,9 @@ HTML/CSS overlay panels on top of the Three.js canvas (simplest approach). The 3
 ### Save / Load / Export
 
 - **Save**: Stores current level to localStorage (WIP levels). Auto-saves on changes
-- **Load**: Level select dropdown loads any WIP level from localStorage or campaign level for editing
-- **Export to Campaign**: "Export" button triggers a browser file download of the level as `level-N-slug.json`. A separate "Export Manifest" button downloads an updated `manifest.json`. These files are dropped into the `vibe/tron/levels/` directory to become permanent campaign levels
-- **Import**: "Import" button opens a file picker to load any level JSON into the editor for editing
+- **Load**: Level select dropdown loads WIP levels from localStorage only. **Campaign levels cannot be loaded for editing** — they are read-only static files
+- **Export to Campaign**: "Export" button triggers a browser file download of the level as `level-N-slug.json`. A separate "Export Manifest" button downloads an updated `manifest.json`. These files are dropped into the `vibe/tron/levels/` directory to become permanent campaign levels. **Once exported and placed in the filesystem, levels become campaign levels and can no longer be edited in the level editor**
+- **Import**: "Import" button opens a file picker to load any level JSON into the editor as a **new WIP level** for editing
 - **Play-test**: "Test" button instantly enters game mode for the current level. Quick iteration loop
 
 ### Block Merging in Editor
@@ -808,7 +811,7 @@ Daft Punk / synthwave electronic soundtrack. Minimum 2 tracks:
 
 **Audio autoplay**: Attempt to start music on page load. Use a constant flag (`AUDIO_AUTOPLAY = true`) so it can easily be switched to first-interaction mode if browsers block it.
 
-Looping, crossfade on state transitions.
+Looping, crossfade on state transitions (**1 second crossfade duration** by default, configurable in Dev HUD as `musicCrossfadeDuration`).
 
 ### Ambient Layer
 
@@ -918,6 +921,8 @@ Total cost to max one attribute: 940 coins. Total to max all five: 4,700 coins.
 
 8 purchasable colors × 50 coins = 400 coins for all cycle colors + 400 for all trail colors = **800 coins total for full cosmetics.**
 
+**Note**: Tron Orange (`#FF6600`) is intentionally the same as the default enemy color. A player choosing this color will appear visually identical to enemies — this is a deliberate advanced/fun option, no special distinguisher is added.
+
 ## Controls
 
 | Key | Action |
@@ -984,7 +989,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | # | Task | Description |
 |---|------|-------------|
 | 5.1 | **Level data schema** | `schema.js`: JSON format per schema above. Validation function. Arena size, wallObjects, barriers, gameObjects, powerups, enemies, rewards |
-| 5.2 | **Level loading pipeline** | `loader.js`: fetch campaign levels from `levels/manifest.json` + individual JSON files. Load WIP levels from localStorage separately. Merge into level list |
+| 5.2 | **Level loading pipeline** | `loader.js`: fetch campaign levels from `levels/manifest.json` + individual JSON files (read-only, not editable). Load WIP levels from localStorage separately for the editor. Campaign levels are played in game, WIP levels are edited in editor and play-tested |
 | 5.3 | **Arena builder** | `arena.js`: construct full Three.js scene + physics from level data. Build floor grid, walls, place all barriers, game objects, power-ups, enemies. Handle wall object replacements on edges |
 | 5.4 | **Barrier blocks** | `blocks.js`: Wall (1×1, fixed height 3u tunable via `wallHeight` in Dev HUD), Building (1×1, selectable height 1-5u, **3 shapes**: square/triangle/hexagon — triangle enables angular layouts, hexagon enables rounded arena shapes), Structure (1×1, fixed height ~2u, 3 variants). Tron-style emissive geometry. All cause slide-along-surface on contact (not death) |
 | 5.5 | **Block merging** | Adjacent walls merge into continuous wall mesh. Adjacent buildings merge into complex. Check 4-neighbors on place/remove → regenerate merged geometry |
@@ -1001,11 +1006,11 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 6.2 | **Block palette UI** | HTML/CSS side panel. **6 floor-object categories**: Barriers, Game Objects, Instant Power-ups, Level-Permanent Power-ups, Equippable Power-ups, Enemy Objects. Click to select. **Wall Objects are NOT in the palette** — cosmetic walls placed via click-on-edge context menu |
 | 6.3 | **Place/remove/move blocks** | **Floor objects**: select from palette → click tile to place (palette-first). **Wall objects**: click arena edge tile → context menu with cosmetic wall options (click-then-choose). Click any existing item to select → Move (drag), Delete (Del key), Rotate (R key). Gates can only be moved along walls (not deleted/rotated/placed). Portal placement forces pair. Immediate 3D preview. Palette hover shows preview on cursor tile |
 | 6.4 | **Properties panel** | HTML/CSS panel. Click placed block → edit: enemy attributes (**6 sliders** 1-10: speed, accel, trailLength, nitroBars, handling, intelligence) + color picker, **building height slider** (1-5 units, default 2) + **shape dropdown** (square/triangle/hexagon, default square), **structure variant** dropdown (pylon/column/obelisk), portal pair ID + rotation, **gate properties** (destination is read-only — fixed per role. **`locked` is not shown** — always derived at runtime per role. **signText is read-only** for entrance + lobby functional gates (fixed values), **editable for exit gates** only. Gates cannot be placed, removed, or rotated — only moved along walls), **cosmetic wall variant** dropdown (panel_a/panel_b/panel_c) + **width slider** (1-10 units, default 5) |
-| 6.5 | **Arena size control** | Width/depth inputs. **Minimum 40×40** enforced. Walls rebuild. Blocks outside new bounds are removed with confirmation dialog |
-| 6.6 | **Save/Load + Undo** | Auto-save WIP to localStorage. Level select dropdown (WIP levels + campaign levels). Load into editor. **Undo/Redo** (Ctrl+Z / Ctrl+Y): operation stack tracking all place/remove/move/property-change actions |
+| 6.5 | **Arena size control** | Arena size (width × depth) is set at level creation time via the "New Level" dialog. **Minimum 40×40** enforced. **Size is immutable after creation** — to change dimensions, delete the level and create a new one. This avoids complexity of gate repositioning, block removal, and clear zone recalculation on resize |
+| 6.6 | **Save/Load + Undo** | Auto-save WIP to localStorage. Level select dropdown shows **WIP levels only** — campaign levels are read-only and not editable. Load WIP level into editor. **Undo/Redo** (Ctrl+Z / Ctrl+Y): operation stack tracking all place/remove/move/property-change actions |
 | 6.7 | **Export to Campaign** | "Export" button → browser downloads `level-N-slug.json`. "Export Manifest" → downloads updated `manifest.json`. Ready to drop into `levels/` directory |
 | 6.8 | **Import JSON** | File picker → load level JSON into editor |
-| 6.9 | **Play-test** | "Test" button → enter game mode for current level. **Backtick (`` ` ``) key → quit back to editor** (ESC remains pause menu only — no conflict). **Derez and level completion follow normal game flow** — derez returns to lobby (not editor), completion returns to lobby with coins. Backtick is the only editor-specific exit path. Fast iteration loop |
+| 6.9 | **Play-test** | "Test" button → enter game mode for current level. **Backtick (`` ` ``) key → quit back to editor** (ESC remains pause menu only — no conflict). **Derez and level completion follow normal game flow** — derez returns to lobby (not editor), completion returns to lobby with coins. Backtick is the only editor-specific exit path. **Editor play-test flag persists** — if the player entered the level via play-test and gets returned to the lobby (derez or completion), a "Return to Editor" prompt/shortcut appears in the lobby so the player can quickly get back to editing without riding to the Architect gate. Fast iteration loop |
 
 ### Phase 7: Lobby & Garage
 
