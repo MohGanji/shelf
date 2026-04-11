@@ -1034,7 +1034,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 |----|------|------------|--------|
 | **A1** | Tech stack: Three.js r160+ importmap, ES modules, cannon-es, no server | — | [x] |
 | **A2** | Config override chain: `config.js` + save `devHud` merge; gameplay reads merged runtime config only | A1 | [x] |
-| **A3** | Physics split: cannon-es for solids/triggers; custom tile map for trails + AI trail lookahead | A1 | [~] |
+| **A3** | Physics split: cannon-es for solids/triggers; custom tile map for trails + AI trail lookahead | A1 | [x] |
 | **A4** | File tree under `vibe/tron/` per plan (engine, game, levels, ui, data, `levels/` campaign, `assets/audio/`) | A1 | [~] |
 
 ### Phase 1 — Foundation

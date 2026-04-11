@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { CYCLE_BOUNDS, WORLD } from "../config.js";
+import { createTrailTileMap } from "./trailTileMap.js";
 
 /** @typedef {typeof WORLD} WorldConstants */
 
@@ -8,13 +9,16 @@ import { CYCLE_BOUNDS, WORLD } from "../config.js";
  * Fading trail wall rendering (plan P2.1 + P2.2): piecewise ribbon of thin emissive boxes along anchor chords.
  * Distance-based anchor spawn (1 unit), FIFO cap from Trail Length attribute, oldest segment
  * fades (opacity → 0) before removal using `trailFadeSpeed`. No new anchors at near-zero speed.
- * Collision / tile map is P2.3.
+ * Tile occupancy for trails is maintained in `trailTileMap` (plan A3); lethal collision wiring is P2.3.
  *
  * @param {object} options
  * @param {import('three').ColorRepresentation} options.color
  * @param {import('../config.js').DEFAULT_DEV_HUD} options.devHud
  * @param {WorldConstants} [options.world] — from `getArenaPlaytestConfig().world` / runtime; defaults to base `WORLD`
  * @param {number} options.maxSegments — max unit-length trail segments (edges); anchors cap at +1
+ * @param {number} options.arenaWidth — world units (for tile grid)
+ * @param {number} options.arenaDepth — world units
+ * @param {string} [options.ownerId='player'] — occupancy owner id for collision map
  */
 export function createTrailWallSystem(options) {
   const color = new THREE.Color(options.color);
@@ -22,6 +26,10 @@ export function createTrailWallSystem(options) {
   const w = options.world ?? WORLD;
   const maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
   const maxAnchors = maxSeg + 1;
+  const ownerId = typeof options.ownerId === "string" && options.ownerId.length ? options.ownerId : "player";
+  const arenaWidth = typeof options.arenaWidth === "number" ? options.arenaWidth : w.defaultArenaWidth;
+  const arenaDepth = typeof options.arenaDepth === "number" ? options.arenaDepth : w.defaultArenaDepth;
+  const trailTileMap = createTrailTileMap({ arenaWidth, arenaDepth });
 
   const root = new THREE.Group();
   const segmentsGroup = new THREE.Group();
@@ -133,6 +141,7 @@ export function createTrailWallSystem(options) {
 
   function rebuildGeometry() {
     disposeSegmentChildren();
+    trailTileMap.clear();
 
     if (anchors.length < 2) {
       return;
@@ -142,6 +151,16 @@ export function createTrailWallSystem(options) {
       const o = segmentOpacities[i] ?? 1;
       if (o <= 0.001) continue;
       buildSegmentMeshes(anchors[i], anchors[i + 1], o);
+      if (o > 0.001) {
+        trailTileMap.stampEdge(
+          anchors[i].x,
+          anchors[i].z,
+          anchors[i + 1].x,
+          anchors[i + 1].z,
+          i,
+          ownerId,
+        );
+      }
     }
   }
 
@@ -231,6 +250,11 @@ export function createTrailWallSystem(options) {
     return n;
   }
 
+  function getLogicalEdgeCount() {
+    if (anchors.length < 2) return 0;
+    return anchors.length - 1;
+  }
+
   function dispose() {
     clear();
     disposeSegmentChildren();
@@ -243,6 +267,10 @@ export function createTrailWallSystem(options) {
     clear,
     setColor,
     getActiveSegmentCount,
+    getLogicalEdgeCount,
+    getTrailTileMap() {
+      return trailTileMap;
+    },
     dispose,
   };
 }

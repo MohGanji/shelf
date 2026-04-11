@@ -168,6 +168,11 @@ body {
   letter-spacing: 0.02em;
 }
 
+.cycle-hud__trail--tile-hit {
+  color: #ff4466;
+  text-shadow: 0 0 8px rgba(255, 60, 90, 0.85);
+}
+
 .nitro-bar-strip {
   display: flex;
   gap: 5px;

@@ -217,6 +217,9 @@ async function main() {
     devHud,
     world: playCfg.world,
     maxSegments: playCfg.trailMaxSegments,
+    arenaWidth: playCfg.arenaWidth,
+    arenaDepth: playCfg.arenaDepth,
+    ownerId: "player",
   });
   game.scene.add(trailWall.root);
 
@@ -268,7 +271,7 @@ async function main() {
   function syncArenaHud() {
     if (hudHintEl) {
       hudHintEl.textContent =
-        "P2.2 trail — FIFO + oldest-segment fade (trailFadeSpeed) before drop · Trail Length cap · P1.6 nitro";
+        "A3 tile map — trail segments stamp grid; red trail # = center on lethal tile (P2.3 wires derez)";
     }
     renderNitroHud();
   }
@@ -356,6 +359,17 @@ async function main() {
     }
     if (hudTrailEl) {
       hudTrailEl.textContent = String(trailWall.getActiveSegmentCount());
+      const tileHit = trailWall.getTrailTileMap().evaluateCollision(
+        playerBody.position.x,
+        playerBody.position.z,
+        "player",
+        trailWall.getLogicalEdgeCount(),
+        devHud.trailImmunitySegments,
+      );
+      hudTrailEl.classList.toggle(
+        "cycle-hud__trail--tile-hit",
+        tileHit === "own-lethal" || tileHit === "other-trail",
+      );
     }
     renderNitroHud();
 
