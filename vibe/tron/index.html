@@ -90,6 +90,30 @@
         </div>
       </div>
 
+      <div
+        id="pause-overlay"
+        class="pause-overlay"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pause-overlay-title"
+      >
+        <div class="pause-overlay__panel">
+          <h2 id="pause-overlay-title" class="pause-overlay__title">PAUSED</h2>
+          <p class="pause-overlay__lead">
+            <kbd>ESC</kbd> to resume · Quit returns to the lobby (no rewards).
+          </p>
+          <div class="pause-overlay__actions">
+            <button type="button" class="pause-overlay__btn pause-overlay__btn--primary" data-pause-resume>
+              RESUME
+            </button>
+            <button type="button" class="pause-overlay__btn pause-overlay__btn--danger" data-pause-quit>
+              QUIT TO LOBBY
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
         <p>
           Campaign hub — south entrance spawn; north gates (arena, garage, architect). WASD to ride; orbit with mouse.

@@ -5,6 +5,7 @@ import {
   getArenaPlaytestConfig,
   mergeDevHud,
 } from "./config.js";
+import { GameMode, isArenaRideableMode } from "./gameState.js";
 import { createChaseCamera } from "./engine/camera.js";
 import {
   addCoins,
@@ -67,7 +68,12 @@ import {
 } from "./levels/loader.js";
 import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
-import { isControlsOverlayBlockingInput, showFirstVisitControlsOverlayIfNeeded } from "./ui/menus.js";
+import {
+  createPauseMenuController,
+  isControlsOverlayBlockingInput,
+  isPauseOverlayBlockingInput,
+  showFirstVisitControlsOverlayIfNeeded,
+} from "./ui/menus.js";
 import { createDevHudController } from "./ui/devhud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 
@@ -96,6 +102,9 @@ function setBootProgress(els, pct) {
 }
 
 async function main() {
+  /** Plan X1 — explicit mode for lobby / level / overlays / destinations. */
+  let gameMode = GameMode.BOOT;
+
   const canvas = /** @type {HTMLCanvasElement} */ ($("game-canvas"));
   const bootOverlay = $("boot-overlay");
   const lobbyBanner = $("lobby-placeholder");
@@ -191,6 +200,7 @@ async function main() {
   const bootConsumed = consumeSessionBootTarget();
 
   if (bootConsumed?.mode === "garage") {
+    gameMode = GameMode.GARAGE;
     const hud = document.getElementById("cycle-hud");
     const ban = document.getElementById("lobby-placeholder");
     if (hud) hud.hidden = true;
@@ -206,6 +216,7 @@ async function main() {
     return;
   }
   if (bootConsumed?.mode === "editor") {
+    gameMode = GameMode.EDITOR;
     const hud = document.getElementById("cycle-hud");
     const ban = document.getElementById("lobby-placeholder");
     if (hud) hud.hidden = true;
@@ -268,6 +279,8 @@ async function main() {
     activeCampaignLevel && typeof activeCampaignLevel.id === "string"
       ? activeCampaignLevel.id === LOBBY_LEVEL_ID
       : false;
+
+  gameMode = isLobby ? GameMode.LOBBY : GameMode.LEVEL;
 
   const rawEnemyCount =
     activeCampaignLevel && Array.isArray(activeCampaignLevel.enemies)
@@ -460,6 +473,7 @@ async function main() {
 
   function beginPlayerDerezSequence() {
     if (playerDerezPhase !== "alive") return;
+    gameMode = GameMode.PLAYER_DEREZ;
     playerDerezPhase = "imploding";
     playerDerezT0Ms = performance.now();
     playerBody.userData.tronEliminated = true;
@@ -503,6 +517,7 @@ async function main() {
 
   function showCombatVictoryOverlay() {
     if (!levelCompleteOverlay) return;
+    gameMode = GameMode.LEVEL_COMPLETE;
     const rewards =
       activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
         ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
@@ -523,6 +538,14 @@ async function main() {
     combatVictoryOverlayTimeoutId = window.setTimeout(() => {
       levelCompleteOverlay.hidden = true;
       combatVictoryOverlayTimeoutId = 0;
+      if (
+        playerDerezPhase === "alive" &&
+        !winTunnelStarted &&
+        !isLobby &&
+        gameMode === GameMode.LEVEL_COMPLETE
+      ) {
+        gameMode = GameMode.LEVEL;
+      }
     }, Math.max(0.5, sec) * 1000);
   }
 
@@ -577,6 +600,87 @@ async function main() {
     });
   }
 
+  /** @type {import("./gameState.js").GameModeValue} */
+  let modeBeforePause = GameMode.LOBBY;
+
+  /** @type {ReturnType<typeof createPauseMenuController> | null} */
+  let pauseMenu = null;
+
+  function resumeFromPause() {
+    if (!pauseMenu) return;
+    pauseMenu.close();
+    gameMode = modeBeforePause;
+    game.startLoop();
+  }
+
+  function enterPause() {
+    if (!pauseMenu) return;
+    if (!isArenaRideableMode(gameMode)) return;
+    modeBeforePause = gameMode;
+    gameMode = GameMode.PAUSE;
+    game.stopLoop();
+    pauseMenu.open();
+  }
+
+  function beginQuitTunnelToLobby() {
+    if (pauseMenu) pauseMenu.close();
+    setSessionBootTarget(null);
+    game.stopLoop();
+    playTunnel(
+      game.renderer,
+      () => {
+        window.location.reload();
+      },
+      {
+        durationSeconds: CONFIG.tunnelGateSeconds,
+        onBegin: clearTrailAndEquipForTunnel,
+      },
+    ).catch(() => {
+      window.location.reload();
+    });
+  }
+
+  pauseMenu = createPauseMenuController({
+    root: document.getElementById("pause-overlay"),
+    onResume: resumeFromPause,
+    onQuitToLobby: beginQuitTunnelToLobby,
+  });
+
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "Escape") return;
+      const pauseEl = document.getElementById("pause-overlay");
+      const pauseVisible = pauseEl && !pauseEl.hidden;
+      if (pauseVisible) {
+        e.preventDefault();
+        resumeFromPause();
+        return;
+      }
+      if (isTunnelBlockingInput()) return;
+      if (isControlsOverlayBlockingInput()) return;
+      if (playerDerezPhase !== "alive") return;
+      if (
+        gameMode !== GameMode.LOBBY &&
+        gameMode !== GameMode.LEVEL &&
+        gameMode !== GameMode.LEVEL_COMPLETE
+      ) {
+        return;
+      }
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      enterPause();
+    },
+    true,
+  );
+
   function renderNitroHud() {
     if (!hudNitroEl) return;
     const max = Math.max(1, effectivePlayerNitroMax());
@@ -626,7 +730,8 @@ async function main() {
     },
     persist: persistDevHudToSave,
     syncHud: syncArenaHud,
-    isInputBlocked: () => isTunnelBlockingInput() || isControlsOverlayBlockingInput(),
+    isInputBlocked: () =>
+      isTunnelBlockingInput() || isControlsOverlayBlockingInput() || isPauseOverlayBlockingInput(),
   });
 
   syncArenaHud();

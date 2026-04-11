@@ -1052,7 +1052,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
-| **X1** | State machine in `main.js`: BOOT → LOBBY → (LEVEL / GARAGE / EDITOR) + PAUSE + PLAYER_DEREZ + LEVEL_COMPLETE | P1.1, P5.2, P5.7, P7.x | [ ] |
+| **X1** | State machine in `main.js`: BOOT → LOBBY → (LEVEL / GARAGE / EDITOR) + PAUSE + PLAYER_DEREZ + LEVEL_COMPLETE | P1.1, P5.2, P5.7, P7.x | [x] |
 | **X2** | Tunnel `playTunnel(onComplete)` for all transitions; input blocked; trails cleared; spawn rules on arrival | P1.1 | [x] |
 | **X3** | Spawn system: entrance gate offset, facing, stationary; timer + enemies start on first W | P5.3, P5.6 | [x] |
 
