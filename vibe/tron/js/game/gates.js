@@ -576,3 +576,54 @@ export function updateGateAnimations(animatables, timeSeconds) {
     a.update(timeSeconds);
   }
 }
+
+/**
+ * When a locked exit opens mid-level (P5.7), swap dim materials for neon and attach pulse animation
+ * (locked exits were built without an animatable entry).
+ *
+ * @param {THREE.Group} gatesRoot — `buildGateMeshes` root
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
+ * @param {{ update: (t: number) => void }[]} animatables — mutated (new pulse updater appended)
+ */
+export function applyExitGateRuntimeOpenVisual(gatesRoot, playCfg, animatables) {
+  if (!gatesRoot) return;
+  for (const obj of gatesRoot.children) {
+    if (!(obj instanceof THREE.Group)) continue;
+    if (obj.userData.gateRole !== "exit") continue;
+
+    const neon = 0.35 + playCfg.devHud.neonIntensity * 0.55;
+    const colorHex = 0x00fff0;
+    const emissive = 0x00ddff;
+    const mats = /** @type {THREE.MeshStandardMaterial[]} */ (obj.userData.pillarMaterials || []);
+    for (const m of mats) {
+      if (!m || !("color" in m)) continue;
+      m.color.setHex(colorHex);
+      m.emissive.setHex(emissive);
+      m.emissiveIntensity = neon;
+      m.opacity = 0.96;
+      m.transparent = true;
+    }
+    const torMat = obj.userData.torusMaterial;
+    if (torMat && "color" in torMat && "emissive" in torMat) {
+      torMat.color.setHex(colorHex);
+      torMat.emissive.setHex(emissive);
+      torMat.emissiveIntensity = neon * 1.1;
+    }
+    obj.userData.pulse = true;
+    obj.userData.gateLocked = false;
+
+    const pillarMats = mats;
+    animatables.push({
+      update: (t) => {
+        const pulse = 0.75 + 0.25 * Math.sin(t * 2.6);
+        for (const m of pillarMats) {
+          m.emissiveIntensity = (0.35 + playCfg.devHud.neonIntensity * 0.55) * pulse;
+        }
+        if (torMat && "emissiveIntensity" in torMat) {
+          torMat.emissiveIntensity = (0.35 + playCfg.devHud.neonIntensity * 0.55) * pulse * 1.15;
+        }
+      },
+    });
+    return;
+  }
+}
