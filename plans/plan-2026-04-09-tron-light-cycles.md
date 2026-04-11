@@ -1283,6 +1283,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.127** | Tron `index.html`: JSON-LD `WebPage` adds `name` (`Tron: Light Cycles`) and `description` (same copy as `meta name="description"`) so the page entity exposes explicit title and summary in `@graph` alongside `url` / `inLanguage` | P10.126 | [x] |
 | **P10.128** | Tron `index.html`: JSON-LD `VideoGame` adds `potentialAction` as `PlayAction` with path-prefix–safe `target` (`./`) so structured data exposes an explicit browser play entry point alongside `url` and `offers` | P10.127 | [x] |
 | **P10.129** | Tron `index.html`: JSON-LD `VideoGame` adds `keywords` (array of topical strings: light cycles, neon arena, Tron-inspired, browser game, arcade racing, AI opponents, campaign, level editor, WebGL, keyboard controls) so crawlers get discoverable topic signals alongside `genre` and `gamePlatform` | P10.128 | [x] |
+| **P10.130** | Tron `index.html`: JSON-LD `VideoGame` adds `copyrightYear` (`2026`, aligned with `copyrightHolder`) and `softwareRequirements` (plain-text browser prerequisites: JavaScript + WebGL) for rights-year and runtime constraint signals alongside existing publisher/authorship | P10.129 | [x] |
 
 ### HUD and progression
 
