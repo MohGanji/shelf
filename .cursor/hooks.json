@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "/usr/local/bin/gt tap guard pr-workflow",
+        "matcher": "Shell(gh pr create*)"
+      },
+      {
+        "command": "/usr/local/bin/gt tap guard pr-workflow",
+        "matcher": "Shell(git checkout -b*)"
+      },
+      {
+        "command": "/usr/local/bin/gt tap guard pr-workflow",
+        "matcher": "Shell(git switch -c*)"
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": "/usr/local/bin/gt prime --hook && /usr/local/bin/gt mail check --inject"
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "/usr/local/bin/gt prime --hook"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "/usr/local/bin/gt mail check --inject"
+      }
+    ],
+    "stop": [
+      {
+        "command": "/usr/local/bin/gt costs record &"
+      }
+    ]
+  }
+}
