@@ -144,7 +144,7 @@ BOOT → LOBBY → (gate interaction) → LEVEL / GARAGE / EDITOR
 - **LEVEL**: Brief Tron-grid tunnel transition → spawn 2 units in front of entrance gate → gameplay → all enemies eliminated → exit gate opens → coin reward overlay (game NOT paused during overlay — player can ride, and if they reach exit gate the overlay disappears and transition triggers). **Coins only awarded on exit gate** — derez after overlay but before exiting forfeits reward → ride through exit → tunnel transition → LOBBY at entrance
 - **GARAGE**: Showroom space — bike on glowing plate with trail preview. Customize cycle/trail colors. Upgrade attributes. "Return to Lobby" button
 - **EDITOR**: Birds-eye view. Level list (select existing or create new blank level). Tile grid, block palette. Save/export/import. "Return to Lobby" + "Back to Level List" buttons
-- **PAUSE**: ESC key — shows controls, settings (audio/visual), resume, quit to lobby. Settings is an **overlay accessed from pause menu only** — no separate gate or 3D scene
+- **PAUSE**: ESC key — shows controls, settings (audio/visual), resume, quit to lobby. **Freezes ALL game state** (physics, AI, all timers, all animations). **Quit to Lobby = same as derez** (no coins, tunnel transition, full level reset on re-entry). Settings is an **overlay accessed from pause menu only** — no separate gate or 3D scene
 - **PLAYER_DEREZ**: Derez animation (implosion + overhead camera pull-back) → respawn at lobby entrance gate → same level gate still shows same arena N
 
 ## Player Save Data Schema
@@ -297,7 +297,7 @@ Nitro is a **battery bar system**, not a continuous gauge.
 - Bars **recharge slowly** — 1 bar per `nitroBarRechargeTime` seconds (default 5s, tunable in Dev HUD)
 - HUD shows bars as discrete glowing segments (filled = charged, empty = recharging)
 - **Empty nitro feedback**: pressing Space with 0 bars plays an error buzz sound (like nitro trying to ignite but fizzling out) and flashes the bar display
-- **Nitro Recharge power-up**: fills ALL bars instantly
+- **Nitro Recharge power-up**: fills ALL bars instantly (including any bonus bars from Nitro Capacity+ — "all bars" means current max capacity, not base capacity)
 - **Nitro Capacity+ power-up**: adds `nitroCapacityPlusAmount` bars (default 1) AND fills the new capacity (level-permanent)
 - **Boost Pad game object**: equivalent to 1 bar burst but doesn't consume a bar — free boost
 
@@ -434,7 +434,7 @@ Remain in place after interaction. Can be used repeatedly but have a **cooldown*
 
 | Object | Behavior |
 |--------|----------|
-| **Boost Pad** | Ground-placed. Ride over = instant 1-bar nitro burst (free, no bar consumed). **If hit during an active nitro burst**: the boost pad burst overlaps — speed stays at the nitro cap (does NOT exceed it), and the boost effect extends until whichever burst (pad or pressed) ends latest. Visual: glowing floor panel (no directional arrow — just a pad). Dims during cooldown |
+| **Boost Pad** | Ground-placed. Ride over = instant 1-bar nitro burst (free, no bar consumed). **Handling penalty applies during boost pad burst** (same `nitroHandlingMultiplier` as regular nitro — boost pad is mechanically identical to a nitro burst). **If hit during an active nitro burst**: the boost pad burst overlaps — speed stays at the nitro cap (does NOT exceed it), and the boost effect extends until whichever burst (pad or pressed) ends latest. Visual: glowing floor panel (no directional arrow — just a pad). Dims during cooldown |
 | **Portal** | **Always placed in pairs. Multiple portal pairs allowed per level** (each pair identified by a unique `pairId`). Ride into one → teleport to paired portal. Each pair has a unique neon ring color (auto-assigned randomly in editor). Editor forces pair placement — cannot place just one. **Portals are one-sided** (like a mirror): one face is the active portal surface (glowing, rideable), the other face looks and behaves like a wall (solid, stops/slides cycle). Portal has a `rotation` field in schema that determines which direction the active face points. Editor provides rotation control (R key or rotation handle). Exit orientation: cycle exits facing the portal's active face outward direction. Trail does NOT pass through portals — trail ends at entry, new trail starts at exit. **Speed maintained through portal.** **Cycle is invulnerable during the teleport warp itself** — from the moment the cycle enters the portal until the exit immunity begins, no collision can derez it. Both players and enemies can use portals. Teleportation visual: brief warp flash + screen distortion (`portalWarpIntensity` in Dev HUD) + warp sound effect. **Portal exit immunity**: very brief immunity (`portalExitImmunityDuration`, default **0.15s**) — just long enough for the cycle to render the warp-out animation, but short enough that a **portal trap is viable** (laying trail near exit portal so enemies who teleport in will derez after the brief animation). The immunity should NOT be long enough for the cycle to ride out of the trail tile — the player/enemy sees their cycle warp in and then derez |
 
 ### 4. Power-ups: Instant (consumed on pickup, respawn after timer)
@@ -471,7 +471,7 @@ Picked up on contact, stored in equip slot. Player presses **E** to activate. Si
 **Shield interaction rules:**
 - **Activation**: Pressing E deploys the shield near-instantly (`shieldDeployTime`, default 0.15s — range 0.1–0.2s). No interruption to movement or speed. Quick energy-dome animation + sound
 - **Trail collision**: Shield absorbs the hit. Shield shatters (visual + sound). Cycle **loses 30% of current speed** (`shieldSlowdownPercent`, default 0.3, tunable in Dev HUD) and continues. Cycle is NOT derezzed
-- **Cycle-to-cycle collision**: Shielded cycle survives (shield shatters). Unshielded cycle derezes. If BOTH have shields, both shields shatter, neither derezes
+- **Cycle-to-cycle collision**: Shielded cycle survives (shield shatters). Unshielded cycle derezes. If BOTH have shields, both shields shatter, neither derezes. **Low-speed + shield edge case**: if a slow cycle (below `lowSpeedThreshold`) with a shield collides with a fast cycle — shield absorbs the hit (shatters), slow cycle survives, fast cycle also survives (slow opponent couldn't kill it anyway)
 - **Wall/barrier collision**: Shield is NOT consumed. Walls don't kill, so shield doesn't need to activate
 - **Expiry**: If unused for `shieldDuration` seconds, shield fades out and equip slot empties
 
@@ -574,8 +574,7 @@ Each gate is a **neon arc** (5 units wide) with a large glowing text sign above 
 
 - **No win condition** — lobby is the only level without enemies (by default). The north-wall gates (Arena N, Garage, Architect) serve as functional exits
 - **Entrance gate on south wall** — always locked (acts as wall from inside), player spawns 2 units in front of it (same system as all levels), facing north toward the function gates. Entrance gate signText is empty
-- Everything else works normally: trails, physics, power-ups (if placed via editor)
-- Enemies CAN be placed in lobby via editor for testing AI behavior
+- Everything else works normally: trails, physics, power-ups (if any exist in the lobby JSON)
 - **Lobby fully resets** on every return (from Garage, Editor, or any level) — same as any level re-entry. All trails cleared, enemies respawn, power-ups reset, game objects off cooldown. Player spawns stationary at entrance gate
 - Lobby is Level 0 in the campaign manifest
 
@@ -600,7 +599,7 @@ The START gate dynamically shows the next arena number. E.g., if player has comp
 
 | Transition | Sequence |
 |------------|----------|
-| **Lobby → Level** | Ride through Start gate → tunnel animation → **all trail cleared** → spawn 2 units in front of level entrance gate **stationary** (speed = 0), facing inward. **All enemies also stationary.** Game starts when player presses W — enemies begin moving at the same moment. Fresh start every level entry |
+| **Lobby → Level** | Ride through Start gate → tunnel animation → **all trail cleared** → spawn 2 units in front of level entrance gate **stationary** (speed = 0), facing inward. **All enemies also stationary.** Game starts when player presses W — enemies begin moving at the same moment. **Level timer starts on W press** (not on tunnel exit — player controls when the clock starts, which matters for time bonus scoring). Fresh start every level entry |
 | **Level → Lobby (win)** | **Coin reward overlay** appears — single overlay containing: "LEVEL COMPLETE" text, coins earned, time bonus (if any), and hint to ride to exit gate. Half-transparent neon screen. **Auto-dismisses after `coinOverlayDuration` seconds (default 3s, tunable in Dev HUD)** — timer only, no click/key dismiss. **Game is NOT paused during overlay** — player can continue riding. If player reaches exit gate while overlay is still showing, overlay disappears and transition triggers immediately. Player rides to exit gate → tunnel animation → **all trail cleared** → spawn at lobby entrance gate **stationary**. **Coins are awarded only upon riding through the exit gate** — if player derezes after the overlay but before exiting, reward is forfeited |
 | **Level → Lobby (derez)** | Derez animation → overhead camera → "DEREZZED" text → tunnel animation → **all trail cleared** → spawn at lobby entrance gate **stationary**. Level fully resets on re-entry. No coins awarded |
 
@@ -640,7 +639,7 @@ Player rides INTO the Garage gate from lobby. Inside the Garage, navigation is U
 
 The editor uses a **select-then-act** pattern:
 
-1. **Select from palette** → click a tile to **place** the item. The item appears in the 3D viewport
+1. **Select from palette** → click a tile to **place** the item. **Only one floor object per tile** — the editor prevents placing a second object on an occupied tile. The item appears in the 3D viewport
 2. **Next click on an already-placed item** → **selects it** for editing (highlight, properties panel opens)
 3. **Selected item actions**: Move (drag to new tile), Delete (Del key or button), Rotate (R key or button). **All action hotkeys (Move, Delete, Rotate) apply to all placeable item types.** If an item has a disabled action (e.g., gates cannot be deleted), the hotkey is also disabled for that item — pressing Del on a selected gate does nothing
 4. **Gates are special**: Gates can only be **moved** along walls — they cannot be deleted or rotated. **Non-lobby levels**: exactly one entrance gate + one exit gate (present by default, cannot be deleted). **Lobby**: one entrance gate + three functional gates (Arena N, Garage, Architect — all present by default, cannot be deleted)
@@ -657,7 +656,8 @@ The editor uses a **select-then-act** pattern:
 
 ### Editor Navigation
 
-- **Level List**: First screen when entering editor. Shows all WIP levels (localStorage). **Campaign levels are NOT shown and cannot be edited** — they are read-only static JSON files. The editor is for creating new levels only. **"New Level" button at the top** prompts for arena size (width × depth, minimum 40×40, default 400×400) then creates a blank arena with default gate placement: **entrance gate on south wall center, exit gate on north wall center** (opposite walls). **Arena size is immutable after creation** — to change the size, delete the level and create a new one. No default enemies or objects — only the two gates and the auto-derived spawn point (5×5 clear zone in front of entrance). A zero-enemy level has exit gate open from start
+- **Level List**: First screen when entering editor. Shows all WIP levels (localStorage). **Campaign levels are NOT shown and cannot be edited** — they are read-only static JSON files. The editor is for creating new levels only. **"New Level" button at the top** prompts for arena size (width × depth, minimum 40×40, default 400×400) then creates a blank **normal level** (entrance + exit gates only — lobby-style 4-gate levels cannot be created in the editor). Default gate placement: **entrance gate on south wall center, exit gate on north wall center** (opposite walls). **Arena size is immutable after creation** — to change the size, delete the level and create a new one. No default enemies or objects — only the two gates and the auto-derived spawn point (5×5 clear zone in front of entrance). A zero-enemy level has exit gate open from start
+- **"Delete Level" button**: Available in the level list next to each WIP level. Confirmation dialog before deletion. Permanently removes the WIP level from localStorage
 - **"Back to Level List" button**: Returns from the tile editor to the level list (auto-saves to localStorage)
 - **"Return to Lobby" button**: Exits the editor entirely and returns to lobby
 - **ESC in editor**: Discards current selection — if a palette item is selected, deselects it. If a placed item is selected (with move/delete/rotate overlay active), deselects it. Does NOT exit the editor
@@ -665,10 +665,7 @@ The editor uses a **select-then-act** pattern:
 
 ### Lobby Editing
 
-The lobby (Level 0) **is editable** in the editor. However:
-- All lobby gates (entrance on south wall, Arena N + Garage + Architect on north wall) are present by default and **cannot be deleted** — they can only be moved along their respective walls
-- Lobby minimum arena size is 40×40 (same as all levels) — must fit all gates with spacing
-- The designer can add barriers, game objects, power-ups, and even enemies to the lobby for testing
+The lobby (Level 0) is a **fixed campaign level** (`level-0-lobby.json`) and **cannot be edited** in the level editor. It is not shown in the editor's level list. The lobby layout (gates, dimensions, barriers) is defined entirely by the campaign JSON file. This is consistent with the rule that campaign levels are read-only.
 
 ### Editor UI Approach
 
@@ -680,7 +677,7 @@ HTML/CSS overlay panels on top of the Three.js canvas (simplest approach). The 3
 - **Load**: Level select dropdown loads WIP levels from localStorage only. **Campaign levels cannot be loaded for editing** — they are read-only static files
 - **Export to Campaign**: "Export" button triggers a browser file download of the level as `level-N-slug.json`. A separate "Export Manifest" button downloads an updated `manifest.json`. These files are dropped into the `vibe/tron/levels/` directory to become permanent campaign levels. **Once exported and placed in the filesystem, levels become campaign levels and can no longer be edited in the level editor**
 - **Import**: "Import" button opens a file picker to load any level JSON into the editor as a **new WIP level** for editing
-- **Play-test**: "Test" button instantly enters game mode for the current level. Quick iteration loop
+- **Play-test**: "Test" button instantly enters game mode for the current level. **WIP levels are play-testable from the editor only** — they do NOT appear in the lobby's Arena gate progression. The Arena gate only loads campaign levels from the filesystem. To make a WIP level part of the campaign, use Export → place file in `levels/` directory. Quick iteration loop
 
 ### Block Merging in Editor
 
@@ -743,10 +740,10 @@ Visual feedback is immediate:
 **Schema notes:**
 - `arenaWidth`/`arenaDepth` in units (tiles). Default 400×400. **Minimum 40×40** (enforced by editor — lobby requires enough space for all gates on one wall with spacing)
 - `wallObjects[].edge`: "north", "south", "east", "west" — which arena wall
-- `wallObjects[].position`: absolute position along the wall edge measured from the wall's start (0 = west end for north/south walls, 0 = south end for east/west walls). For a 400-unit wide arena, position 200 = center of the wall. Gate/wall object center is placed at this position (e.g., a 5-wide gate at position 200 spans 197.5–202.5)
+- `wallObjects[].position`: absolute position along the wall edge measured from the wall's start (0 = west end for north/south walls, 0 = south end for east/west walls). For a 400-unit wide arena, position 200 = center of the wall. Gate/wall object center is placed at this position (e.g., a 5-wide gate at position 200 spans 197.5–202.5). **Editor clamps positions** so the full object width stays within the wall: minimum = `width/2`, maximum = `wallLength - width/2`
 - `barriers[]`, `gameObjects[]`, `powerups[]`, `enemies[]`: floor-placed, x/z in units from arena center
 - `rewards.timeBonusThreshold`: if player completes in fewer seconds than this, they earn bonus coins
-- **No `playerSpawn` field in schema.** Spawn position is **derived from the entrance gate**: player spawns **2 units in front of the entrance gate**, centered in a **5×5 unit clear zone** that the editor enforces (nothing can be placed in this zone). Facing inward (away from the entrance gate). This applies to ALL levels including the lobby
+- **No `playerSpawn` field in schema.** Spawn position is **derived from the entrance gate**: player spawns **2 units in front of the entrance gate**, centered in a **5×5 unit clear zone** that the editor enforces (nothing can be placed in this zone). **Facing = wall inward normal** (south wall → faces north/+Z, north wall → faces south/-Z, east wall → faces west/-X, west wall → faces east/+X). This applies to ALL levels including the lobby
 - **Gate clear zones**: 5×5 area directly in front of both entrance and exit gates is reserved. The editor prevents placing any objects in these zones. Clear zones move with their gates when repositioned in the editor. Player spawns at the center of the entrance gate's clear zone
 - Enemy `rotation`: 0 = facing +Z (north). All rotations in radians
 - **Non-lobby levels**: exactly one entrance gate (always locked, empty signText) + one exit gate (locked until all enemies eliminated). **Lobby**: one entrance gate (always locked, empty signText) + three functional gates (Arena N with `destination: "level"`, Garage with `destination: "garage"`, Architect with `destination: "editor"`). Editor enforces this — gates are present by default and **cannot be placed, removed, or rotated** — only moved along walls
@@ -1021,7 +1018,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 7.3 | **Garage environment** | Dark Tron-themed void room. Player cycle on glowing circular plate, short trail behind it. Cycle rotates slowly. Neon ambient lighting |
 | 7.4 | **Garage UI** | HTML/CSS panels over the 3D garage scene. Sections: Customize Colors (cycle + trail, live preview), Upgrade Attributes (5 cards with level/cost/buy), Stats (coins, level progress). "Return to Lobby" button |
 | 7.5 | **Controls overlay** | Shown on first lobby entry (checks `controlsShown` save flag — if false, auto-shows and sets to true). Also accessible from pause menu. Shows all key bindings in Tron-styled overlay. **Dismiss**: prominent "GOT IT" button + ESC key to dismiss |
-| 7.6 | **Pause menu + Settings** | ESC → overlay with controls reference, **Settings panel** (audio levels: master/music/SFX/ambient, effect toggles), Resume, Quit to Lobby. Game paused (physics + AI frozen). Settings is an overlay within the pause menu — no separate gate or 3D scene |
+| 7.6 | **Pause menu + Settings** | ESC → overlay with controls reference, **Settings panel** (audio levels: master/music/SFX/ambient, effect toggles), Resume, Quit to Lobby. **Pause freezes EVERYTHING**: physics, AI, trail FIFO aging, power-up respawn timers, boost pad/portal cooldowns, nitro bar recharge, shield duration, coin overlay auto-dismiss timer — all game timers stop. **Quit to Lobby behaves like derez**: no coins awarded, tunnel transition plays, level fully resets on re-entry. Settings is an overlay within the pause menu — no separate gate or 3D scene |
 
 ### Phase 8: Audio
 
@@ -1041,7 +1038,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 9.1 | **Post-processing** | Bloom (UnrealBloomPass), chromatic aberration (ShaderPass), optional CRT scanlines. All intensity values from save data devHud section |
 | 9.2 | **Developer HUD** | `.` key toggle. HTML/CSS panel organized by category (Cycle Feel, Nitro Camera, Derez, Portal, Cooldowns, Power-ups, Gameplay, Post-processing, Trail, Audio, AI, Near-miss). All values live-update and auto-save to localStorage |
 | 9.3 | **Particle effects** | Nitro flame trail behind cycle during burst. Derez implosion particles. Power-up pickup burst (color-matched). Portal warp ring particles. Shield activation shimmer. Shield shatter fragments |
-| 9.4 | **Minimap** | Bottom-right corner minimap — **simplified Tron classic birds-eye view**. Player = cyan dot, enemies = colored dots, trails = colored lines (simplified, not full curve detail — leverages tile-based collision data), obstacles/barriers = white/gray squares, items (power-ups, game objects) = bright colored hollow circles (intentionally ambiguous — player can't tell power-up type from minimap). Clean, minimal, readable at a glance |
+| 9.4 | **Minimap** | Bottom-right corner minimap — **simplified Tron classic birds-eye view**. **Auto-scales to match arena aspect ratio** (lobby's 400×200 renders as a wide rectangle, not a distorted square). Player = cyan dot, enemies = colored dots, trails = colored lines (simplified, not full curve detail — leverages tile-based collision data), obstacles/barriers = white/gray squares, items (power-ups, game objects) = bright colored hollow circles (intentionally ambiguous — player can't tell power-up type from minimap). **No enemy count in HUD** — minimap is the sole source for tracking remaining enemies. **No coin counter in HUD** — coins are a Garage concern only. Clean, minimal, readable at a glance |
 | 9.5 | **Tunnel transition** | Tron-grid tunnel fly-through animation (~1s). Glowing grid lines rushing past. **Universal transition** — used for BOOT loading (with title + progress bar overlay), all gate transitions, and all UI button returns (Garage/Editor "Return to Lobby"). Single reusable animation system |
 | 9.6 | **Final visual pass** | Tron: Legacy fidelity check — neon consistency, glow levels, atmosphere, architectural detail on walls and structures. Ensure color coding is clear at speed |
 
