@@ -528,3 +528,39 @@ body {
 .tron-destination__btn:hover {
   filter: brightness(1.08);
 }
+
+/* P6.1 — editor: keep Three.js canvas visible; chrome bar at top */
+.tron-destination--editor {
+  inset: 0 0 auto 0;
+  height: auto;
+  min-height: unset;
+  justify-content: flex-start;
+  padding: 0.85rem 1.25rem 1rem;
+  background: linear-gradient(
+    180deg,
+    rgba(6, 10, 20, 0.92) 0%,
+    rgba(6, 10, 20, 0.55) 70%,
+    transparent 100%
+  );
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.tron-destination--editor .tron-destination__title,
+.tron-destination--editor .tron-destination__body,
+.tron-destination--editor .tron-destination__btn {
+  pointer-events: auto;
+}
+
+.tron-destination--editor .tron-destination__body {
+  max-width: 36rem;
+  font-size: 0.9rem;
+}
+
+.tron-destination--editor kbd {
+  font: inherit;
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 220, 255, 0.35);
+  background: rgba(0, 30, 45, 0.6);
+}

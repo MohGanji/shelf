@@ -67,7 +67,8 @@ export function mountEditorDestinationScreen(opts) {
   root.hidden = false;
   root.classList.remove("tron-destination--hidden");
   const canvas = document.getElementById("game-canvas");
-  if (canvas) canvas.setAttribute("aria-hidden", "true");
+  /* P6.1 — orthographic grid renders on the canvas; keep it in the accessibility tree. */
+  if (canvas) canvas.removeAttribute("aria-hidden");
 
   const onReturn = () => opts.onReturnToLobby();
 
