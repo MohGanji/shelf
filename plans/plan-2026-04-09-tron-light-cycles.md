@@ -1343,6 +1343,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.187** | Tron `index.html`: JSON-LD `WebSite` adds `copyrightNotice` (plain text: © year + `Organization` name; aligned with `copyrightYear` and `copyrightHolder` → `./#organization`) so the site entity exposes an explicit rights notice in `@graph` alongside existing copyright metadata | P10.186 | [x] |
 | **P10.188** | Tron `index.html`: JSON-LD `WebPage` adds `copyrightNotice` (same plain-text notice as `WebSite` in P10.187, aligned with `copyrightYear` / `copyrightHolder` → `./#organization`) so the page entity exposes explicit rights language in `@graph` alongside the site-level `copyrightNotice` | P10.187 | [x] |
 | **P10.189** | Tron `index.html`: JSON-LD `WebSite` adds `mainEntity` (`{ "@id": "./#game" }`) so structured data marks the `VideoGame` / `WebApplication` as the canonical primary subject of the site alongside `url`, `name`, and `publisher` | P10.186 | [x] |
+| **P10.190** | Tron `index.html`: JSON-LD `WebSite` adds `keywords` (same string array as `VideoGame` / `WebPage`) so the site entity exposes topical discoverability in `@graph` alongside `description`, `mainEntity`, and `publisher` | P10.189 | [x] |
 
 ### HUD and progression
 
