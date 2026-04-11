@@ -1180,6 +1180,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.24** | Tron `index.html` + `css/style.css`: `viewport-fit=cover` on the viewport meta so `env(safe-area-inset-*)` applies on notched devices; fixed HUD/minimap/state banner/editor-return/dev HUD use `max()` with safe-area insets (extends P10.11 mobile-adjacent shell) | P10.11, P10.1 | [x] |
 | **P10.25** | Tron `site.webmanifest`: stable `id` (`./`), `lang` (`en`), `categories` (`games`, `entertainment`) for install identity and store/catalog hints | P10.8 | [x] |
 | **P10.26** | Tron `index.html`: `og:url` (`./`, path-prefix–safe); JSON-LD `VideoGame.url`; `site.webmanifest`: `orientation` (`any`) for installed PWA behavior | P10.4, P10.8 | [x] |
+| **P10.27** | Tron `index.html`: JSON-LD `VideoGame` adds `inLanguage` (`en`) and `playMode` (`https://schema.org/SinglePlayer`) for clearer search/entity signals | P10.9 | [x] |
 
 ### HUD and progression
 
