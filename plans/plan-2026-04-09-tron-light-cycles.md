@@ -1293,6 +1293,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.137** | Tron `index.html`: JSON-LD `VideoGame` adds `isFamilyFriendly` (`true`) so structured data exposes CreativeWork-style audience suitability alongside `keywords`, `genre`, and accessibility signals | P10.136 | [x] |
 | **P10.138** | Tron `index.html`: JSON-LD `VideoGame` adds `creativeWorkStatus` (`https://schema.org/Published`) so structured data exposes an explicit CreativeWork lifecycle state alongside `datePublished`, `dateModified`, and `isFamilyFriendly` | P10.137 | [x] |
 | **P10.139** | Tron `index.html`: JSON-LD `VideoGame` adds `softwareVersion` (`1.0.0`) so structured data exposes a static client release label alongside `datePublished` / `dateModified` and `creativeWorkStatus` | P10.138 | [x] |
+| **P10.140** | Tron `index.html`: JSON-LD `VideoGame` adds `contentRating` (`Everyone`) so structured data exposes a simple audience rating label alongside `isFamilyFriendly`, `genre`, and `keywords` | P10.137 | [x] |
 
 ### HUD and progression
 
