@@ -1156,7 +1156,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 |----|------|------------|--------|
 | **P10.1** | `vibe/index.html` link + desktop note | A4 | [x] |
 | **P10.2** | Cross-browser performance pass | (full game) | [ ] |
-| **P10.3** | Mobile / desktop recommendation copy | P10.1 | [ ] |
+| **P10.3** | Mobile / desktop recommendation copy | P10.1 | [x] |
 
 ### HUD and progression
 
