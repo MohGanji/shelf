@@ -65,6 +65,7 @@ export function clampNitroCapacity(state, maxBars) {
  * @param {boolean} opts.holdingGas — W held
  * @param {number} opts.currentSpeed — horizontal speed magnitude
  * @param {() => void} [opts.onEmptyPress]
+ * @param {() => void} [opts.onBurstStart] — one bar consumed, burst begins (plan P8.5 nitro SFX)
  */
 export function updateNitroBattery(opts) {
   const {
@@ -79,6 +80,7 @@ export function updateNitroBattery(opts) {
     holdingGas,
     currentSpeed,
     onEmptyPress,
+    onBurstStart,
   } = opts;
 
   if (dt <= 0) return;
@@ -103,6 +105,7 @@ export function updateNitroBattery(opts) {
       state.bars -= 1;
       state.speedReturnRemaining = 0;
       if (burstEnded) chainedFromBurstEnd = true;
+      onBurstStart?.();
     } else if (spaceEdge && state.bars === 0) {
       state.emptyFlash = 0.35;
       onEmptyPress?.();

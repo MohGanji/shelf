@@ -1048,6 +1048,188 @@ export function createAudioEngine(options = {}) {
       }
     },
 
+    /** P8.5 — Nitro burst: whoosh + bass pulse (procedural). */
+    playNitroBurstWhoosh() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const amp = sfxVolume;
+      const sweep = ctx.createOscillator();
+      const sg = ctx.createGain();
+      sweep.type = "sine";
+      sweep.frequency.setValueAtTime(180, t0);
+      sweep.frequency.exponentialRampToValueAtTime(2200, t0 + 0.14);
+      sg.gain.setValueAtTime(0.0001, t0);
+      sg.gain.exponentialRampToValueAtTime(0.1 * amp, t0 + 0.02);
+      sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+      sweep.connect(sg);
+      sg.connect(sfxGain);
+
+      const bass = ctx.createOscillator();
+      const bg = ctx.createGain();
+      bass.type = "sine";
+      bass.frequency.setValueAtTime(62, t0);
+      bg.gain.setValueAtTime(0.0001, t0);
+      bg.gain.exponentialRampToValueAtTime(0.09 * amp, t0 + 0.035);
+      bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      bass.connect(bg);
+      bg.connect(sfxGain);
+
+      try {
+        sweep.start(t0);
+        sweep.stop(t0 + 0.22);
+        bass.start(t0);
+        bass.stop(t0 + 0.24);
+      } catch {
+        /* ignore */
+      }
+    },
+
+    /**
+     * P8.5 — Arena / barrier slide impact: metallic thud + scrape (procedural).
+     * @param {number} [intensity] 0–1 from speed loss / impact
+     */
+    playWallHitThud(intensity = 0.5) {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const a = Math.max(0.15, Math.min(1, intensity)) * sfxVolume;
+      const nFrames = 2048;
+      const buf = ctx.createBuffer(1, nFrames, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < nFrames; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / nFrames);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(420, t0);
+      bp.frequency.exponentialRampToValueAtTime(90, t0 + 0.12);
+      bp.Q.value = 1.1;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.14 * a, t0 + 0.004);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      noise.connect(bp);
+      bp.connect(ng);
+      ng.connect(sfxGain);
+
+      const scrape = ctx.createOscillator();
+      const sg = ctx.createGain();
+      scrape.type = "sawtooth";
+      scrape.frequency.setValueAtTime(210, t0);
+      scrape.frequency.linearRampToValueAtTime(95, t0 + 0.09);
+      sg.gain.setValueAtTime(0.0001, t0);
+      sg.gain.exponentialRampToValueAtTime(0.05 * a, t0 + 0.006);
+      sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
+      scrape.connect(sg);
+      sg.connect(sfxGain);
+
+      try {
+        noise.start(t0);
+        noise.stop(t0 + 0.15);
+        scrape.start(t0);
+        scrape.stop(t0 + 0.12);
+      } catch {
+        /* ignore */
+      }
+    },
+
+    /** P8.5 — New trail segment — soft crystalline tink (procedural). */
+    playTrailSegmentTink() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const amp = 0.055 * sfxVolume;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(3520, t0);
+      osc.frequency.exponentialRampToValueAtTime(5280, t0 + 0.012);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(amp, t0 + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.045);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.05);
+      } catch {
+        /* ignore */
+      }
+    },
+
+    /** P8.5 — Riding through an open gate — deep resonant hum (procedural). */
+    playGateEnterHum() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const amp = sfxVolume;
+      const freqs = [98, 147, 196];
+      for (const f of freqs) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(f * 0.92, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.042 * amp, t0 + 0.08);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
+        osc.connect(g);
+        g.connect(sfxGain);
+        try {
+          osc.start(t0);
+          osc.stop(t0 + 0.58);
+        } catch {
+          /* ignore */
+        }
+      }
+    },
+
+    /** P8.5 — Tunnel transition — rushing wind + grid shimmer (procedural). */
+    playTunnelTransitionWind() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const dur = 0.85;
+      const amp = sfxVolume;
+      const nFrames = Math.max(256, Math.floor(ctx.sampleRate * 0.2));
+      const buf = ctx.createBuffer(1, nFrames, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < nFrames; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.9;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      noise.loop = true;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(700, t0);
+      lp.frequency.exponentialRampToValueAtTime(5200, t0 + dur);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.1 * amp, t0 + 0.06);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      noise.connect(lp);
+      lp.connect(ng);
+      ng.connect(sfxGain);
+
+      const grid = ctx.createOscillator();
+      const gg = ctx.createGain();
+      grid.type = "triangle";
+      grid.frequency.setValueAtTime(880, t0);
+      grid.frequency.exponentialRampToValueAtTime(2640, t0 + dur * 0.6);
+      gg.gain.setValueAtTime(0.0001, t0);
+      gg.gain.exponentialRampToValueAtTime(0.035 * amp, t0 + 0.04);
+      gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      grid.connect(gg);
+      gg.connect(sfxGain);
+
+      try {
+        noise.start(t0);
+        noise.stop(t0 + dur + 0.05);
+        grid.start(t0);
+        grid.stop(t0 + dur + 0.05);
+      } catch {
+        /* ignore */
+      }
+    },
+
     tickEngineSound,
   };
 }
@@ -1089,6 +1271,11 @@ function createNoopEngine() {
     playPortalWarp: () => {},
     playLevelCompleteChord: () => {},
     playCoinRewardTinkle: () => {},
+    playNitroBurstWhoosh: () => {},
+    playWallHitThud: () => {},
+    playTrailSegmentTink: () => {},
+    playGateEnterHum: () => {},
+    playTunnelTransitionWind: () => {},
     tickEngineSound: () => {},
   };
 }

@@ -28,10 +28,12 @@ import { createTrailTileMap } from "./trailTileMap.js";
  * @param {number} options.arenaWidth — world units (for tile grid)
  * @param {number} options.arenaDepth — world units
  * @param {string} [options.ownerId='player'] — occupancy owner id for collision map
+ * @param {() => void} [options.onNewSegment] — plan P8.5: soft tink when a new trail segment is created
  */
 export function createTrailWallSystem(options) {
   const color = new THREE.Color(options.color);
   const devHud = options.devHud;
+  const onNewSegment = typeof options.onNewSegment === "function" ? options.onNewSegment : null;
   const w = options.world ?? WORLD;
   let maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
   const ownerId = typeof options.ownerId === "string" && options.ownerId.length ? options.ownerId : "player";
@@ -256,7 +258,10 @@ export function createTrailWallSystem(options) {
       if (spd <= 0.12) break;
       if (totalEdgeCount() < maxSeg) {
         anchors.push(tmpRear.clone());
-        if (anchors.length >= 2) segmentOpacities.push(1);
+        if (anchors.length >= 2) {
+          segmentOpacities.push(1);
+          onNewSegment?.();
+        }
         distSinceAnchor -= segDist;
         anchorsDirty = true;
         continue;
@@ -274,6 +279,7 @@ export function createTrailWallSystem(options) {
       if (liveRecycle) {
         anchors.push(tmpRear.clone());
         segmentOpacities.push(1);
+        onNewSegment?.();
         distSinceAnchor -= segDist;
       }
       anchorsDirty = true;

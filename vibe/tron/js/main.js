@@ -212,7 +212,12 @@ async function main() {
       () => {
         setBootProgress(bootEls, 100);
       },
-      { durationSeconds: CONFIG.tunnelBootSeconds },
+      {
+        durationSeconds: CONFIG.tunnelBootSeconds,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+        },
+      },
     );
   } finally {
     if (rampIv) clearInterval(rampIv);
@@ -380,6 +385,8 @@ async function main() {
   playerCycle.root.rotation.y = spawnHeading;
   game.scene.add(playerCycle.root);
 
+  /** P8.5 — throttle trail segment tinks (distance-based spawn can be very dense at high speed). */
+  let lastTrailTinkMs = 0;
   const trailWall = createTrailWallSystem({
     color: save.player.trailColor ?? "#00FFFF",
     devHud,
@@ -388,6 +395,12 @@ async function main() {
     arenaWidth: playCfg.arenaWidth,
     arenaDepth: playCfg.arenaDepth,
     ownerId: "player",
+    onNewSegment: () => {
+      const now = performance.now();
+      if (now - lastTrailTinkMs < 72) return;
+      lastTrailTinkMs = now;
+      audio.playTrailSegmentTink();
+    },
   });
   game.scene.add(trailWall.root);
 
@@ -405,6 +418,7 @@ async function main() {
    * @param {Record<string, unknown>} nextBoot
    */
   function beginLobbyGateTunnel(nextBoot) {
+    audio.playGateEnterHum();
     setEditorPlaytestReturn(null);
     setSessionBootTarget(nextBoot);
     game.stopLoop();
@@ -415,7 +429,10 @@ async function main() {
       },
       {
         durationSeconds: CONFIG.tunnelGateSeconds,
-        onBegin: clearTrailAndEquipForTunnel,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+          clearTrailAndEquipForTunnel();
+        },
       },
     ).catch(() => {
       window.location.reload();
@@ -533,6 +550,8 @@ async function main() {
   let playerDerezT0Ms = 0;
   /** P2.5 — throttle near-miss SFX (same `nearMissDistance` band). */
   let lastNearMissMs = 0;
+  /** P8.5 — throttle wall-hit SFX while sliding along perimeter / barriers. */
+  let lastWallHitSfxMs = 0;
 
   function beginPlayerDerezSequence() {
     if (playerDerezPhase !== "alive") return;
@@ -568,7 +587,12 @@ async function main() {
     game.stopLoop();
     playTunnel(game.renderer, () => {
       window.location.reload();
-    }, { durationSeconds: CONFIG.tunnelGateSeconds }).catch(() => {
+    }, {
+      durationSeconds: CONFIG.tunnelGateSeconds,
+      onBegin: () => {
+        audio.playTunnelTransitionWind();
+      },
+    }).catch(() => {
       window.location.reload();
     });
   }
@@ -628,6 +652,7 @@ async function main() {
 
   function beginWinTunnelToLobby() {
     if (winTunnelStarted || playerDerezPhase !== "alive") return;
+    audio.playGateEnterHum();
     winTunnelStarted = true;
     game.stopLoop();
     const levelIdx = activeCampaignLevel ? parseCampaignLevelIndex(activeCampaignLevel) : Number.NaN;
@@ -667,6 +692,7 @@ async function main() {
       {
         durationSeconds: CONFIG.tunnelGateSeconds,
         onBegin: () => {
+          audio.playTunnelTransitionWind();
           trailWall.clear();
           const u = playerBody.userData;
           u.equipSlot = undefined;
@@ -824,7 +850,10 @@ async function main() {
       },
       {
         durationSeconds: CONFIG.tunnelGateSeconds,
-        onBegin: clearTrailAndEquipForTunnel,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+          clearTrailAndEquipForTunnel();
+        },
       },
     ).catch(() => {
       window.location.reload();
@@ -846,7 +875,10 @@ async function main() {
       },
       {
         durationSeconds: CONFIG.tunnelGateSeconds,
-        onBegin: clearTrailAndEquipForTunnel,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+          clearTrailAndEquipForTunnel();
+        },
       },
     ).catch(() => {
       window.location.reload();
@@ -1086,6 +1118,9 @@ async function main() {
       onNitroEmptyPress: () => {
         audio.playNitroEmptyBuzz();
       },
+      onNitroBurstStart: () => {
+        audio.playNitroBurstWhoosh();
+      },
     });
     enemyRoster.tick(dt, {
       levelStarted,
@@ -1096,8 +1131,22 @@ async function main() {
     });
 
     world.step(step, dt, 10);
+    const spWall0 = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
+    const spWall1 = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
+    const wallSlip = spWall0 - spWall1;
+    const wallHitMs = performance.now();
+    if (
+      playerDerezPhase === "alive" &&
+      !isTunnelBlockingInput() &&
+      wallSlip > 0.85 &&
+      spWall0 > 4 &&
+      wallHitMs - lastWallHitSfxMs > 95
+    ) {
+      lastWallHitSfxMs = wallHitMs;
+      audio.playWallHitThud(Math.min(1, wallSlip / Math.max(spWall0, 0.01)));
+    }
     applyEnemyWallAndBarrierSlide(enemyRoster.list, game.scene);
 
     portalField.tick(dt, {
@@ -1456,7 +1505,10 @@ async function main() {
           },
           {
             durationSeconds: CONFIG.tunnelGateSeconds,
-            onBegin: clearTrailAndEquipForTunnel,
+            onBegin: () => {
+              audio.playTunnelTransitionWind();
+              clearTrailAndEquipForTunnel();
+            },
           },
         ).catch(() => {
           window.location.reload();

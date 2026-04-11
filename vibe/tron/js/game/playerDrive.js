@@ -19,10 +19,11 @@ import { integratePlayerCycleMovement } from "./playerMovement.js";
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {() => void} [opts.onNitroEmptyPress]
+ * @param {() => void} [opts.onNitroBurstStart]
  * @param {boolean} [opts.levelStarted=true] — when false (plan X3), W and Space are ignored until the first W (handled in `main.js`)
  */
 export function tickPlayerArcadeDrive(opts) {
-  const { body, dt, keys, nitroState, playCfg, devHud, onNitroEmptyPress } = opts;
+  const { body, dt, keys, nitroState, playCfg, devHud, onNitroEmptyPress, onNitroBurstStart } = opts;
   if (body.userData?.tronEliminated) {
     body.velocity.x = 0;
     body.velocity.z = 0;
@@ -49,6 +50,7 @@ export function tickPlayerArcadeDrive(opts) {
     holdingGas: keysDrive.w,
     currentSpeed: spd0,
     onEmptyPress: onNitroEmptyPress,
+    onBurstStart: onNitroBurstStart,
   });
 
   const nitroBurstActive = isNitroBurstActive(nitroState);
