@@ -189,6 +189,10 @@ export function getArenaPlaytestConfig(runtime, attributes) {
   const nitroBarCount = nitroBarsFromAttributeLevel(
     typeof a.nitroBars === "number" ? a.nitroBars : 1,
   );
+  /** Trail Length attribute 1–10 → max segment count 40–100 (plan § Light Cycle). */
+  const trailMaxSegments = Math.round(
+    attrScalar(typeof a.trailLength === "number" ? a.trailLength : 1, 40, 100),
+  );
 
   return {
     arenaWidth: world.defaultArenaWidth,
@@ -204,6 +208,8 @@ export function getArenaPlaytestConfig(runtime, attributes) {
     maxMoveSpeed,
     /** Nitro segments from Nitro Bars attribute (5–12). */
     nitroBarCount,
+    /** Max trail wall segments from Trail Length attribute (40–100). */
+    trailMaxSegments,
     /** Legacy force-based tuning (unused by arcade drive; kept for tooling). */
     moveAcceleration: 120,
     /** Horizontal damping off — coast/brake come from movement integration. */

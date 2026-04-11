@@ -153,6 +153,21 @@ body {
   font-family: "Rajdhani", sans-serif;
 }
 
+.cycle-hud__trail-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  font-size: 0.95rem;
+}
+
+.cycle-hud__trail {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .nitro-bar-strip {
   display: flex;
   gap: 5px;

@@ -1060,7 +1060,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
-| **P2.1** | Trail rendering: CatmullRom segments, 1 unit traveled spawn, FIFO, emissive walls, color = cycle | P1.3 | [ ] |
+| **P2.1** | Trail rendering: CatmullRom segments, 1 unit traveled spawn, FIFO, emissive walls, color = cycle | P1.3 | [x] |
 | **P2.2** | Trail limits / fade: max segments from attribute, fade/despawn oldest, no trail at speed 0 | P2.1, P5.8 | [ ] |
 | **P2.3** | Collision: tile map for trails; cycle↔cycle rules (low speed, shield); cannon groups | P1.2, P2.1, P3.4 | [ ] |
 | **P2.4** | Derez sequence: implosion, trail vanish, player slow-mo / overhead / shake / glitch toggles; SFX | P2.1–P2.3 | [ ] |
@@ -1167,8 +1167,8 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 ### Status notes (snapshot)
 
-- **Implemented or largely present:** importmap and cannon-es; `config.js` + devHud defaults; boot tunnel with title/progress; arena grid + walls + wall slide; procedural light cycle + chase camera + post (bloom, CA, CRT, nitro blur); core WASD movement with coast/brake; `js/levels/schema.js` with `validateLevel`; `savedata.js`; tunnel helper + input blocking; Tron link on vibe index; partial `audio.js` scaffolding.
+- **Implemented or largely present:** importmap and cannon-es; `config.js` + devHud defaults; boot tunnel with title/progress; arena grid + walls + wall slide; procedural light cycle + chase camera + post (bloom, CA, CRT, nitro blur); core WASD movement with coast/brake; `js/game/trail.js` — CatmullRom trail wall meshes (1u anchors, FIFO cap from Trail Length attribute, save trail color); `js/levels/schema.js` with `validateLevel`; `savedata.js`; tunnel helper + input blocking; Tron link on vibe index; partial `audio.js` scaffolding.
 - **Partial:** runtime config merge not driving attribute-based speeds in playtest; no tile trail map yet; `main.js` is boot → arena sandbox only (no full state machine); `arena.js` not driven by level JSON; `levels/manifest.json` empty; no `.` dev HUD UI; nitro is burst demo only.
-- **Missing:** trails, AI, gates, barriers, power-ups, portals, garage, editor, lobby level JSON, full HUD, most SFX/music content, Phase 6–7 UI flows.
+- **Missing:** trail fade/collision (P2.2–P2.3), AI, gates, barriers, power-ups, portals, garage, editor, lobby level JSON, full HUD beyond speed/nitro/trail count, most SFX/music content, Phase 6–7 UI flows.
 
 Update the **Status** column as features land.

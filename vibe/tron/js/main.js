@@ -31,6 +31,7 @@ import {
   isNitroBurstActive,
   updateNitroBattery,
 } from "./game/nitroSystem.js";
+import { createTrailWallSystem } from "./game/trail.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -187,6 +188,13 @@ async function main() {
   const playerCycle = createLightCycle({ devHud });
   game.scene.add(playerCycle.root);
 
+  const trailWall = createTrailWallSystem({
+    color: save.player.trailColor ?? "#00FFFF",
+    devHud,
+    maxSegments: playCfg.trailMaxSegments,
+  });
+  game.scene.add(trailWall.root);
+
   const { state: arenaKeys } = createTronCycleKeyState();
 
   const chase = createChaseCamera(game.camera, devHud);
@@ -197,6 +205,7 @@ async function main() {
 
   const speedLineEl = document.getElementById("nitro-speed-lines");
   const hudSpeedEl = document.getElementById("hud-speed");
+  const hudTrailEl = document.getElementById("hud-trail");
   const hudNitroEl = document.getElementById("hud-nitro");
   const hudHintEl = document.getElementById("hud-hint");
 
@@ -234,7 +243,7 @@ async function main() {
   function syncArenaHud() {
     if (hudHintEl) {
       hudHintEl.textContent =
-        "P1.6 nitro — discrete bars, hold Space to chain, recharge over time · 5–8 toggles nitro camera FX";
+        "P2.1 trail — CatmullRom walls, 1u anchors, FIFO cap from Trail Length attr · P1.6 nitro (Space, 5–8 FX)";
     }
     renderNitroHud();
   }
@@ -305,9 +314,19 @@ async function main() {
     const raw = nitroOn ? 1 : 0;
     nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));
 
+    trailWall.update(dt, {
+      x: playerBody.position.x,
+      z: playerBody.position.z,
+      heading: playerBody.userData.heading ?? 0,
+      speed: playerBody.userData.speed ?? 0,
+    });
+
     if (hudSpeedEl) {
       const spd = playerBody.userData.speed ?? 0;
       hudSpeedEl.textContent = String(Math.round(spd));
+    }
+    if (hudTrailEl) {
+      hudTrailEl.textContent = String(trailWall.getActiveSegmentCount());
     }
     renderNitroHud();
 
@@ -352,7 +371,7 @@ async function main() {
   const p = lobbyBanner.querySelector("p");
   if (p) {
     p.textContent =
-      "P1.6 — full nitro battery (bars, chain, recharge) + attribute-based speed/handling (see HUD).";
+      "P2.1 — CatmullRom trail walls (1u anchors, attribute max length) + P1.6 nitro. Ride to lay a neon wall.";
   }
 
   game.startLoop();
