@@ -72,6 +72,10 @@ Two collision systems coexist — clear division of responsibility:
 
 AI uses the **tile collision map** to detect trail-occupied tiles ahead (not raycasts against trail meshes). AI uses **raycasts** for wall/barrier detection (solid geometry, reliable).
 
+### Config Override Chain
+
+`config.js` provides base defaults for all gameplay values. On boot, `devHud` values from save data are loaded and override matching keys. All gameplay code reads from the merged runtime config — never directly from `config.js` or save data.
+
 ### File Structure
 
 ```
@@ -160,6 +164,8 @@ BOOT → LOBBY → (gate interaction) → LEVEL / GARAGE / EDITOR
 ## Level Transitions
 
 **The Tron-grid tunnel is the universal transition animation** — a short (~1 second) forward-flying warp through a glowing grid tunnel. Used for **every state transition**: level entries/exits, Garage entry/return, Editor entry/return, BOOT loading, and Quit to Lobby. **All keyboard input is ignored during the tunnel** — no buffering, clean input state on arrival.
+
+**Implementation**: dedicated Three.js scene — an open-ended `CylinderGeometry` tube with a grid-line emissive texture, camera flying forward along the tube's axis. Reusable function: `playTunnel(onComplete)`. During BOOT, title text + progress bar are HTML overlays on top of the tunnel canvas. Same tunnel geometry for all transitions — only duration varies (BOOT = longer with loading progress, gate transitions = ~1s).
 
 **On every transition**: all trails cleared, player spawns stationary at destination's entrance gate, equip slot empties.
 
@@ -256,7 +262,12 @@ All player state persists in localStorage under a single key.
     "aiAvoidanceRange": 5.0,
     "steeringSpeedFalloff": 0.02,
     "wallHeight": 3.0,
-    "musicCrossfadeDuration": 1.0
+    "musicCrossfadeDuration": 1.0,
+    "cameraDistance": 8,
+    "cameraHeight": 4,
+    "cameraLookAhead": 3,
+    "cameraDamping": 0.08,
+    "cameraTurnOffset": 1.5
   },
   "controlsShown": false
 }
@@ -265,7 +276,7 @@ All player state persists in localStorage under a single key.
 **Field notes:**
 - `attributes` levels are 1-10 (1 = base, 10 = max). Mapped to gameplay values in `config.js`
 - `completedLevels` is an array of level IDs (0 = lobby, always completed)
-- `devHud` stores ALL developer HUD tweakable values — these override defaults from `config.js`. Key values: `cycleFriction` = velocity multiplier per frame when coasting (0.98 = gentle drag), `brakeDeceleration` = deceleration rate in units/s² when pressing brake, `boostPadStrength` = duration multiplier for boost pad nitro burst (1.0 = same as 1 bar burst duration), `enginePitch` = base pitch multiplier for engine sounds (1.0 = normal, higher = whine shifted up)
+- `devHud` stores ALL developer HUD tweakable values — these override defaults from `config.js` (see Config Override Chain). Key values: `cycleFriction` = velocity multiplier per frame when coasting (0.98 = gentle drag), `brakeDeceleration` = deceleration rate in units/s² when pressing brake, `boostPadStrength` = duration multiplier for boost pad nitro burst (1.0 = same as 1 bar burst duration), `enginePitch` = base pitch multiplier for engine sounds (1.0 = normal, higher = whine shifted up), `cameraDistance` / `cameraHeight` / `cameraLookAhead` / `cameraDamping` / `cameraTurnOffset` = chase cam positioning (see Third-person chase cam)
 - `cosmetics.ownedCycleColors` / `ownedTrailColors` — colors the player has purchased
 - `settings` is the player-facing settings (from pause menu Settings panel)
 - `controlsShown` — tracks whether the controls overlay has been shown (set `true` after first lobby entry)
@@ -435,7 +446,7 @@ Remain in place after use. Cooldown of `specialObjectCooldown` seconds (default 
 | Object | Behavior |
 |--------|----------|
 | **Boost Pad** | Ground-placed. Ride over = free 1-bar nitro burst (including handling penalty). If hit during active nitro: speed stays at cap, boost extends until whichever burst ends last. Glowing floor panel, dims during cooldown |
-| **Portal** | **Paired** (identified by unique `pairId`). **Multiple pairs per level allowed.** **One-sided**: active face = portal surface (glowing, rideable), back face = solid wall. `rotation` determines facing. Trail ends at entry, new trail starts at exit. Speed maintained. **Cycle is invulnerable during teleport warp** (from entry until exit immunity begins). **Exit immunity**: `portalExitImmunityDuration` (default 0.15s) — short enough for portal traps. Neon ring color per pair (auto-assigned in editor). Editor forces pair placement |
+| **Portal** | **Paired** (identified by unique `pairId`). **Multiple pairs per level allowed** (max 5 pairs). **One-sided**: active face = portal surface (glowing, rideable), back face = solid wall. `rotation` determines facing. Trail ends at entry, new trail starts at exit. Speed maintained. **Cycle is invulnerable during teleport warp** (from entry until exit immunity begins). **Exit immunity**: `portalExitImmunityDuration` (default 0.15s) — short enough for portal traps. **Pair color auto-assigned** from fixed palette: `['#FF00FF', '#FFFF00', '#00FF88', '#FF4444', '#44AAFF']` indexed by pair order (first pair = magenta, second = yellow, etc.). Deleted pair frees its index for reuse. Editor forces pair placement |
 
 ### 4. Power-ups: Instant (green glow, consumed, respawn)
 
@@ -611,8 +622,8 @@ The editor creates **WIP levels** stored in localStorage. WIP levels are **play-
 
 - **Undo/Redo**: Ctrl+Z / Ctrl+Y (Cmd on Mac). Tracks all place/remove/move/property-change operations
 - **Arena size**: Set at level creation via "New Level" dialog. **Minimum 40×40**. **Immutable after creation** — delete and recreate to change size
-- **Wall object placement**: Click arena edge → context menu with cosmetic wall options (variant + width). **Editor prevents cosmetic walls overlapping gates** (adjacent is OK)
-- **Portal pair enforcement**: Must place both portals before finalizing. Auto-assigns pair color
+- **Wall object placement**: Click arena edge → context menu with cosmetic wall options (variant + width). **Overlap prevention**: compute wall's range `[position - width/2, position + width/2]` on its edge — reject if range overlaps any gate's or other cosmetic wall's range on the same edge. Touching (shared endpoint) is allowed, only true overlap (shared interior) is rejected. Visual feedback: red highlight on the edge segment when placement would be rejected
+- **Portal pair enforcement**: Must place both portals before finalizing. Auto-assigns pair color from fixed palette (see Portal section)
 - **Gate clear zones**: **5×5 area** in front of each gate (entrance AND exit). Editor prevents placing any objects in these zones. Visually highlighted. Clear zones move with gates. Overlapping clear zones between nearby gates are allowed (gates can't overlap each other, so 5×5 zones naturally don't conflict)
 - **Gate position clamping**: Editor clamps gate positions so the full width stays within the wall: min = `width/2`, max = `wallLength - width/2`
 
@@ -637,12 +648,12 @@ Click placed block to edit:
 
 - **Save**: Auto-saves WIP to localStorage. Explicit "Save" button also available
 - **Load**: Level select shows WIP levels only
-- **Export to Campaign**: "Export" → browser downloads `level-N-slug.json`. "Export Manifest" → downloads updated `manifest.json`. Once in filesystem, levels become campaign (no longer editable)
-- **Import**: File picker → loads any level JSON as a new WIP level
+- **Export to Campaign**: "Export" → browser downloads level JSON. **Filename format**: `level-{N}-{slug}.json` where N = next integer after highest existing campaign level number, slug = level name lowercased, spaces → hyphens, non-alphanumeric stripped, max 30 chars (e.g. level name "The Maze" with 3 existing levels → `level-4-the-maze.json`). "Export Manifest" → downloads updated `manifest.json` with the new entry appended. Once in filesystem, levels become campaign (no longer editable)
+- **Import**: File picker → loads level JSON as a new WIP level. **Validation**: `schema.js` exports `validateLevel(json)` returning `{ valid, errors[] }`. Parse errors or validation failures → show error toast ("Invalid level file: [first error]"), reject import. Same validation runs on all campaign loads — invalid campaign levels are skipped with `console.warn`, never crash the game
 
 ### Play-test
 
-"Test" button → enter game mode for current level. **Backtick (`` ` ``) → quit back to editor** (ESC = pause menu, no conflict). Derez and completion follow normal game flow (return to lobby). **Editor play-test flag persists** — returning to lobby after play-test shows a "Return to Editor" prompt so the player can quickly resume editing.
+"Test" button → enter game mode for current level. **Backtick (`` ` ``) → quit back to editor** (ESC = pause menu, no conflict). Derez and completion follow normal game flow (return to lobby). **Editor play-test return**: a session-only in-memory flag (`editorPlayTestReturn = { levelId }`) is set when entering play-test. On lobby load, if this flag exists, a floating neon "Return to Editor" button appears. Clicking it → tunnel → editor with that level loaded. Flag clears on dismiss, on entering any gate, or on browser reload (not persisted to save data — ephemeral to the current editing session).
 
 ### Block Merging in Editor
 
@@ -744,7 +755,7 @@ Immediate visual feedback:
 
 HTML/CSS overlay panel with labeled sliders/toggles. All values live-update and persist to `devHud` in save data.
 
-**Categories:** Cycle Feel, Nitro Camera, Derez, Portal, Cooldowns, Power-ups, Nitro, Trail, Gameplay, Post-processing, Audio, AI, Near-miss
+**Categories:** Camera, Cycle Feel, Nitro Camera, Derez, Portal, Cooldowns, Power-ups, Nitro, Trail, Gameplay, Post-processing, Audio, AI, Near-miss
 
 ## Audio
 
@@ -887,7 +898,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 1.1 | **Project scaffold** | `index.html` with Three.js + cannon-es importmap, module structure per file tree, basic renderer with post-processing stub, `config.js` with all constants + devHud defaults, `style.css` base styles. **Loading screen**: Tron-grid tunnel with title + progress bar (doubles as universal transition) |
 | 1.2 | **Arena foundation** | Grid floor (400×400) with glowing lines (1-unit spacing), enclosing walls (~3 units) with emissive panels, basic lighting. Arena from `config.js` constants. Wall collision = slide with angle-based speed reduction |
 | 1.3 | **Light cycle model** | Procedural low-poly mesh (~0.8×0.3×0.4) with emissive materials. Wheel rotation. Cyan + orange variants. Tilt/pitch/lean animations (all toggleable). Color parameterized |
-| 1.4 | **Third-person chase cam** | Smooth-follow behind cycle. **Always orbits to stay behind** (including stationary turning). Offset on turns, slight lag. Nitro effects: FOV widen, pull-back, speed lines, motion blur (independently toggleable) |
+| 1.4 | **Third-person chase cam** | Smooth-follow behind cycle. **Always orbits to stay behind** (including stationary turning). Defaults: `cameraDistance: 8`, `cameraHeight: 4`, `cameraLookAhead: 3`, `cameraDamping: 0.08`, `cameraTurnOffset: 1.5` (all tunable in Dev HUD Camera category). Nitro effects: FOV widen, pull-back, speed lines, motion blur (independently toggleable) |
 | 1.5 | **Movement system** | Acceleration (W), braking (S, no reverse), steering (A/D, works at zero speed). Speed-dependent steering formula. Nitro overrides brake. Input manager |
 | 1.6 | **Nitro boost** | Battery bar system per Nitro System spec. Hold for continuous. Handling penalty. Speed return. Recharge. HUD bars. Nitro trail visual |
 
@@ -928,7 +939,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 
 | # | Task | Description |
 |---|------|-------------|
-| 5.1 | **Level data schema** | `schema.js`: JSON format per spec. Validation |
+| 5.1 | **Level data schema** | `schema.js`: JSON format per spec. `validateLevel(json)` → `{ valid, errors[] }`. All loads go through validation — invalid files skipped with `console.warn`, never crash |
 | 5.2 | **Level loading** | `loader.js`: fetch campaign from `levels/manifest.json` (read-only). Load WIP from localStorage (editor-only). Campaign = gameplay, WIP = editor play-test |
 | 5.3 | **Arena builder** | `arena.js`: construct scene + physics from level data |
 | 5.4 | **Barrier blocks** | `blocks.js`: Wall, Building (3 shapes), Structure (3 variants). Emissive geometry. Slide on contact |
@@ -936,7 +947,17 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 5.6 | **Gate wall objects** | `gates.js`: Neon arc (5 wide), open vs locked states, trigger zones, dynamic sign text |
 | 5.7 | **Level transitions** | Tunnel animation (~1s). Input ignored during tunnel. Trail clears. Stationary spawn. Coin overlay auto-dismiss. Coins on exit only. Zero-enemy: exit open from start |
 | 5.8 | **Save data system** | `savedata.js`: load/create/save to localStorage. Linear progression |
-| 5.9 | **Campaign levels** | Lobby JSON (400×200, 4 gates, no enemies). 5 starter levels with increasing difficulty. `manifest.json` |
+| 5.9 | **Campaign levels** | Lobby JSON (400×200, 4 gates, no enemies). 5 starter levels per difficulty curve below. `manifest.json` |
+
+**Campaign Level Difficulty Curve** (polecat designs actual layouts within these constraints):
+
+| Level | Arena | Enemies | New Mechanic Introduced | Power-ups |
+|-------|-------|---------|------------------------|-----------|
+| 1 — The Grid | 200×200 | 1 (Easy) | Basic combat — trails kill | None |
+| 2 — Boost Alley | 300×300 | 2 (Easy) | Boost pads | 1 boost pad, 1 nitro recharge |
+| 3 — The Rift | 400×400 | 2 (Medium) | Portals + shield | 1 portal pair, 1 shield |
+| 4 — Neon Sprawl | 400×400 | 3 (Medium) | Level-permanent power-ups | Trail Extend, Nitro Capacity+ |
+| 5 — The Gauntlet | 400×400 | 4 (1 Hard, 3 Medium) | Full mechanics + buildings | All types, complex layout |
 
 ### Phase 6: Level Editor
 
@@ -950,7 +971,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 6.6 | **Save/Load + Undo** | Auto-save WIP to localStorage. WIP levels only in dropdown. Undo/Redo stack |
 | 6.7 | **Export to Campaign** | Browser download of level JSON + manifest. Becomes campaign (no longer editable) |
 | 6.8 | **Import JSON** | File picker → loads as new WIP level |
-| 6.9 | **Play-test** | Test button → game mode. Backtick → back to editor. Normal game flow on derez/completion. **Editor flag persists** — "Return to Editor" prompt in lobby after play-test |
+| 6.9 | **Play-test** | Test button → game mode. Backtick → back to editor. Normal game flow on derez/completion. **Session-only in-memory flag** — "Return to Editor" neon button in lobby after play-test (clears on dismiss, gate entry, or browser reload) |
 
 ### Phase 7: Lobby & Garage
 
@@ -982,7 +1003,7 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 | 9.2 | **Developer HUD** | `.` key toggle. Organized by category. Live-update + auto-save |
 | 9.3 | **Particle effects** | Nitro flame, derez particles, power-up burst, portal warp, shield shimmer/shatter |
 | 9.4 | **Minimap** | Auto-scale to arena aspect ratio. Player/enemy dots, trail lines, obstacle squares, item circles. No enemy count, no coin count |
-| 9.5 | **Tunnel transition** | Reusable fly-through animation. Used for BOOT (+ title/progress), all gates, all UI returns |
+| 9.5 | **Tunnel transition** | Dedicated Three.js scene: open-ended `CylinderGeometry` tube with grid-line emissive texture, camera flying forward along axis. `playTunnel(onComplete)`. BOOT = longer with HTML title/progress overlay, gate transitions = ~1s. Same geometry for all transitions |
 | 9.6 | **Final visual pass** | Tron: Legacy fidelity check. Neon consistency, glow levels, atmosphere, color coding |
 
 ### Phase 10: Integration & Vibe Index
