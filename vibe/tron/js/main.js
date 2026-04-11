@@ -203,6 +203,11 @@ async function main() {
   playerBody.userData.heading = spawnHeading;
   playerBody.userData.speed = 0;
   playerBody.allowSleep = false;
+  playerBody.userData.shieldPhase = "none";
+  playerBody.userData.shieldDeployRemain = 0;
+  playerBody.userData.shieldActiveRemain = 0;
+  playerBody.userData.shieldActive = false;
+  playerBody.userData.equipSlotQueued = undefined;
   world.addBody(playerBody);
 
   const playerCycle = createLightCycle({ devHud });
@@ -222,6 +227,68 @@ async function main() {
   game.scene.add(trailWall.root);
 
   const { state: arenaKeys } = createTronCycleKeyState();
+  /** @type {boolean} */
+  let prevEquipE = false;
+
+  /**
+   * P3.4 — queued shield pickup applies when current deploy/active shield ends.
+   */
+  function promoteShieldQueue() {
+    const u = playerBody.userData;
+    if (u.equipSlotQueued === "shield") {
+      u.equipSlot = "shield";
+      u.equipSlotQueued = undefined;
+    }
+  }
+
+  function assignPlayerShieldPickup() {
+    const u = playerBody.userData;
+    if (u.shieldPhase === "deploying" || u.shieldPhase === "active") {
+      u.equipSlotQueued = "shield";
+      return;
+    }
+    u.equipSlot = "shield";
+  }
+
+  function syncPlayerShieldActiveFromPhase() {
+    const u = playerBody.userData;
+    u.shieldActive = u.shieldPhase === "active";
+  }
+
+  /**
+   * E to deploy equippable shield; deploy timer → active timer (devHud `shieldDeployTime` / `shieldDuration`).
+   * @param {number} dt
+   */
+  function tickPlayerShieldFsm(dt) {
+    if (dt <= 0) return;
+    const u = playerBody.userData;
+    const deployT = typeof devHud.shieldDeployTime === "number" ? devHud.shieldDeployTime : 0.15;
+    const durT = typeof devHud.shieldDuration === "number" ? devHud.shieldDuration : 5;
+
+    if (u.shieldPhase === "deploying") {
+      u.shieldDeployRemain -= dt;
+      if (u.shieldDeployRemain <= 0) {
+        u.shieldPhase = "active";
+        u.shieldActiveRemain = durT;
+        audio.playShieldDeployRise();
+      }
+    } else if (u.shieldPhase === "active") {
+      u.shieldActiveRemain -= dt;
+      if (u.shieldActiveRemain <= 0) {
+        u.shieldPhase = "none";
+        audio.playShieldExpireFade();
+        promoteShieldQueue();
+      }
+    }
+
+    const eEdge = !!arenaKeys.e && !prevEquipE;
+    prevEquipE = !!arenaKeys.e;
+    if (eEdge && (isLobby || levelStarted) && u.shieldPhase === "none" && u.equipSlot === "shield") {
+      u.equipSlot = undefined;
+      u.shieldPhase = "deploying";
+      u.shieldDeployRemain = Math.max(0.02, deployT);
+    }
+  }
 
   const chase = createChaseCamera(game.camera, devHud);
   chase.spawnAt(playerCycle.root.position, spawnHeading);
@@ -265,8 +332,22 @@ async function main() {
     playerDerezPhase = "imploding";
     playerDerezT0Ms = performance.now();
     playerBody.userData.tronEliminated = true;
+    playerBody.userData.shieldPhase = "none";
+    playerBody.userData.shieldDeployRemain = 0;
+    playerBody.userData.shieldActiveRemain = 0;
+    playerBody.userData.shieldActive = false;
+    playerBody.userData.equipSlot = undefined;
+    playerBody.userData.equipSlotQueued = undefined;
     playerBody.velocity.set(0, 0, 0);
     trailWall.clear();
+    playerCycle.update(1 / 60, {
+      speed: 0,
+      steer: 0,
+      accelerating: false,
+      braking: false,
+      nitroBurstStrength: 0,
+      shieldBubbleMode: "off",
+    });
     audio.playDerezShatter();
     if (derezOverlay) derezOverlay.hidden = false;
   }
@@ -425,6 +506,8 @@ async function main() {
         audio.playBoostPadWhoosh();
       },
     });
+    tickPlayerShieldFsm(dt);
+    syncPlayerShieldActiveFromPhase();
     const { nitroBurstActive: nitroOn } = tickPlayerArcadeDrive({
       body: playerBody,
       dt,
@@ -475,7 +558,7 @@ async function main() {
           refillNitroBars(nitroState, effectivePlayerNitroMax());
         },
         onPlayerShield: () => {
-          playerBody.userData.equipSlot = "shield";
+          assignPlayerShieldPickup();
         },
         onEnemyPickup: (e, kind) => {
           if (kind === "nitro_recharge") {
@@ -512,6 +595,13 @@ async function main() {
     const playerTrailHit = tryTrailHitOnBody(playerBody, px, pz, "player", trailSources, devHud);
     if (playerTrailHit === "lethal") {
       beginPlayerDerezSequence();
+    } else if (playerTrailHit === "absorbed") {
+      playerBody.userData.shieldPhase = "none";
+      playerBody.userData.shieldDeployRemain = 0;
+      playerBody.userData.shieldActiveRemain = 0;
+      playerBody.userData.shieldActive = false;
+      audio.playShieldShatterClang();
+      promoteShieldQueue();
     } else {
       for (const e of enemyRoster.list) {
         if (e.eliminated) continue;
@@ -608,12 +698,19 @@ async function main() {
     const spd = playerBody.userData.speed ?? 0;
     const braking = arenaKeys.s && !nitroOn;
     const accelerating = arenaKeys.w && !braking;
+    const sp = playerBody.userData.shieldPhase;
+    /** @type {'off' | 'deploy' | 'active'} */
+    let shieldBubbleMode = "off";
+    if (sp === "deploying") shieldBubbleMode = "deploy";
+    else if (sp === "active") shieldBubbleMode = "active";
+
     playerCycle.update(dt, {
       speed: spd,
       steer,
       accelerating,
       braking,
       nitroBurstStrength: nitroVis,
+      shieldBubbleMode,
     });
     updateEnemyCycleMeshes(enemyRoster.list, dt);
 

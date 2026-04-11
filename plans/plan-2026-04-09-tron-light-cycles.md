@@ -1072,9 +1072,9 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
 | **P3.1** | Power-up core: three categories, colors, sounds, pickup rules | P2.3 | [x] |
-| **P3.2** | Instant: Nitro Recharge | P3.1 | [ ] |
-| **P3.3** | Level-permanent: Trail Extend, Nitro Capacity+ (player-only) | P3.1 | [ ] |
-| **P3.4** | Shield equippable: E, trail/cycle rules, walls do not consume, expiry | P3.1, P2.3 | [ ] |
+| **P3.2** | Instant: Nitro Recharge | P3.1 | [x] |
+| **P3.3** | Level-permanent: Trail Extend, Nitro Capacity+ (player-only) | P3.1 | [x] |
+| **P3.4** | Shield equippable: E, trail/cycle rules, walls do not consume, expiry | P3.1, P2.3 | [x] |
 | **P3.5** | Boost pads: 1-bar burst, cooldown, dim | P3.1, P1.6 | [x] |
 | **P3.6** | Portals: paired, one-sided, invuln + exit immunity, trail break, speed kept, cooldown | P3.1, P2.1 | [ ] |
 | **P3.7** | Power-up visuals: float/bob/rotate, distinct shapes, pickup particles | P3.1 | [ ] |

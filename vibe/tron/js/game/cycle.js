@@ -117,6 +117,36 @@ export function createLightCycle(options = {}) {
 
   const wheels = [wheelL, wheelR];
 
+  /** Equippable shield dome — neon wire + translucent shell (plan P3.4). */
+  const shieldBubble = new THREE.Group();
+  shieldBubble.name = "shield-bubble";
+  const shieldR = Math.max(L, W, H) * 0.95;
+  const shieldFill = new THREE.Mesh(
+    new THREE.SphereGeometry(shieldR, 20, 14),
+    new THREE.MeshBasicMaterial({
+      color: 0x9966ff,
+      transparent: true,
+      opacity: 0.06,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    }),
+  );
+  const shieldWire = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(shieldR * 1.02, 2),
+    new THREE.MeshBasicMaterial({
+      color: 0xdd99ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.42,
+      depthWrite: false,
+    }),
+  );
+  shieldBubble.add(shieldFill, shieldWire);
+  shieldBubble.visible = false;
+  animationRoot.add(shieldBubble);
+
+  let shieldPulse = 0;
+
   /** Non-collidable nitro burst streak — additive planes behind rear (P1.6). */
   const nitroVfx = new THREE.Group();
   nitroVfx.position.set(0, H * 0.02, -L * 0.36);
@@ -172,6 +202,7 @@ export function createLightCycle(options = {}) {
    * @param {boolean} [input.accelerating]
    * @param {boolean} [input.braking]
    * @param {number} [input.nitroBurstStrength] — 0–1 visual only (non-collidable nitro trail)
+   * @param {'off'|'deploy'|'active'} [input.shieldBubbleMode] — P3.4 equippable shield dome
    */
   function update(dt, input) {
     if (dt <= 0) return;
@@ -206,6 +237,19 @@ export function createLightCycle(options = {}) {
     const nitroS = THREE.MathUtils.clamp(input.nitroBurstStrength ?? 0, 0, 1);
     streakMat.opacity = nitroS * 0.78;
     nitroVfx.visible = nitroS > 0.02;
+
+    const shieldMode = input.shieldBubbleMode ?? "off";
+    if (shieldMode === "off") {
+      shieldBubble.visible = false;
+    } else {
+      shieldBubble.visible = true;
+      shieldPulse += dt * (shieldMode === "deploy" ? 14 : 5.5);
+      const pulse = 0.5 + 0.5 * Math.sin(shieldPulse);
+      const a = shieldMode === "deploy" ? 0.22 + pulse * 0.2 : 0.55 + pulse * 0.12;
+      shieldFill.material.opacity = shieldMode === "deploy" ? 0.04 + pulse * 0.05 : 0.08 + pulse * 0.04;
+      shieldWire.material.opacity = shieldMode === "deploy" ? 0.25 + pulse * 0.35 : 0.5 + pulse * 0.22;
+      shieldBubble.scale.setScalar(shieldMode === "deploy" ? 0.72 + pulse * 0.12 : 1);
+    }
   }
 
   function setPrimaryColor(hex) {
@@ -243,6 +287,10 @@ export function createLightCycle(options = {}) {
     glowGeo.dispose();
     streakGeo.dispose();
     streakMat.dispose();
+    shieldFill.geometry.dispose();
+    shieldWire.geometry.dispose();
+    shieldFill.material.dispose();
+    shieldWire.material.dispose();
     bodyMat.dispose();
     stripMatStrong.dispose();
     stripMatSoft.dispose();

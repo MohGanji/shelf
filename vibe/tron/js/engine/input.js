@@ -7,6 +7,7 @@ import { isTunnelBlockingInput, TUNNEL_SESSION_EVENT } from "./tunnel.js";
  * @property {boolean} s
  * @property {boolean} d
  * @property {boolean} space
+ * @property {boolean} e — equippable activate (plan P3.4 Shield)
  */
 
 /**
@@ -23,6 +24,7 @@ export function createTronCycleKeyState() {
     s: false,
     d: false,
     space: false,
+    e: false,
   };
 
   const controller = new AbortController();
@@ -44,6 +46,7 @@ export function createTronCycleKeyState() {
     if (k === "s") state.s = true;
     if (k === "a") state.a = true;
     if (k === "d") state.d = true;
+    if (k === "e") state.e = true;
     if (e.code === "Space") {
       state.space = true;
       e.preventDefault();
@@ -57,6 +60,7 @@ export function createTronCycleKeyState() {
     if (k === "s") state.s = false;
     if (k === "a") state.a = false;
     if (k === "d") state.d = false;
+    if (k === "e") state.e = false;
     if (e.code === "Space") state.space = false;
   }
 
@@ -67,6 +71,7 @@ export function createTronCycleKeyState() {
     state.s = false;
     state.d = false;
     state.space = false;
+    state.e = false;
   }
 
   window.addEventListener("keydown", onDown, opts);

@@ -536,6 +536,92 @@ export function createAudioEngine(options = {}) {
       }
     },
 
+    /** Shield deploy completes — rising energy tone (plan P3.4; procedural). */
+    playShieldDeployRise() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(220, t0);
+      osc.frequency.exponentialRampToValueAtTime(660, t0 + 0.12);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.09 * sfxVolume, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.18);
+      } catch {
+        /* ignore */
+      }
+    },
+
+    /** Shield absorbs trail — clang + glassy noise (plan P3.4; procedural). */
+    playShieldShatterClang() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(420, t0);
+      osc.frequency.exponentialRampToValueAtTime(90, t0 + 0.14);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.11 * sfxVolume, t0 + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+      osc.connect(g);
+      g.connect(sfxGain);
+      const n = 2048;
+      const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "highpass";
+      bp.frequency.value = 1800;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.06 * sfxVolume, t0 + 0.01);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+      noise.connect(bp);
+      bp.connect(ng);
+      ng.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.22);
+        noise.start(t0);
+        noise.stop(t0 + 0.14);
+      } catch {
+        /* ignore */
+      }
+    },
+
+    /** Shield timer expired unused — soft fade hum (plan P3.4; procedural). */
+    playShieldExpireFade() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(380, t0);
+      osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.35);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.05 * sfxVolume, t0 + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.45);
+      } catch {
+        /* ignore */
+      }
+    },
+
     /** Near-miss tension zip — procedural (plan P2.5; audio-only feedback). */
     playNearMissWhoosh() {
       if (!ctx) return;
@@ -599,5 +685,8 @@ function createNoopEngine() {
     playPowerupPickupEquippable: () => {},
     playNearMissWhoosh: () => {},
     playBoostPadWhoosh: () => {},
+    playShieldDeployRise: () => {},
+    playShieldShatterClang: () => {},
+    playShieldExpireFade: () => {},
   };
 }
