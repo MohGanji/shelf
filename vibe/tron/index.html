@@ -630,10 +630,7 @@
               "Interactive web experiments",
               "Single-player arcade experiences"
             ],
-            "areaServed": {
-              "@type": "Place",
-              "name": "Worldwide"
-            },
+            "areaServed": { "@id": "./#place-worldwide" },
             "logo": {
               "@type": "ImageObject",
               "url": "../../assets/favicon/apple-touch-icon.png",
@@ -735,6 +732,16 @@
             ]
           },
           {
+            "@type": "Place",
+            "@id": "./#place-worldwide",
+            "name": "Worldwide"
+          },
+          {
+            "@type": "DefinedRegion",
+            "@id": "./#defined-region-worldwide",
+            "name": "Worldwide"
+          },
+          {
             "@type": "MerchantReturnPolicy",
             "@id": "./#merchant-return-policy-tlc",
             "name": "Free digital access — returns not applicable",
@@ -751,10 +758,7 @@
               "value": 0,
               "currency": "USD"
             },
-            "shippingDestination": {
-              "@type": "DefinedRegion",
-              "name": "Worldwide"
-            },
+            "shippingDestination": { "@id": "./#defined-region-worldwide" },
             "deliveryTime": {
               "@type": "ShippingDeliveryTime",
               "handlingTime": {
@@ -809,14 +813,8 @@
             "eligibleDuration": "P73Y",
             "availability": "https://schema.org/InStock",
             "itemOffered": { "@id": "./#game" },
-            "eligibleRegion": {
-              "@type": "Place",
-              "name": "Worldwide"
-            },
-            "areaServed": {
-              "@type": "Place",
-              "name": "Worldwide"
-            },
+            "eligibleRegion": { "@id": "./#place-worldwide" },
+            "areaServed": { "@id": "./#place-worldwide" },
             "eligibleCustomerType": "https://schema.org/Consumer",
             "eligibleQuantity": {
               "@type": "QuantitativeValue",
@@ -1009,10 +1007,7 @@
               "@type": "VirtualLocation",
               "url": "./"
             },
-            "spatialCoverage": {
-              "@type": "Place",
-              "name": "Worldwide"
-            },
+            "spatialCoverage": { "@id": "./#place-worldwide" },
             "countriesSupported": "Worldwide — browser-delivered; no regional storefront lock or geo-fencing for the free web client.",
             "temporalCoverage": "2026/",
             "softwareRequirements": "Requires a modern browser with JavaScript enabled and WebGL 1 or 2.",
