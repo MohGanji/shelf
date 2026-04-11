@@ -289,10 +289,11 @@ function gearBandIndex(ratio, thresholds) {
  * @param {AudioEngineOptions} options
  */
 export function createAudioEngine(options = {}) {
-  const masterVolume = options.masterVolume ?? 1;
-  const musicVolume = options.musicVolume ?? 0.7;
-  const sfxVolume = options.sfxVolume ?? 1;
-  const ambientVolume = options.ambientVolume ?? 0.5;
+  /** Kept in sync with gain nodes via `setVolumes` so procedural SFX envelopes match saved / UI levels. */
+  let masterVolume = options.masterVolume ?? 1;
+  let musicVolume = options.musicVolume ?? 0.7;
+  let sfxVolume = options.sfxVolume ?? 1;
+  let ambientVolume = options.ambientVolume ?? 0.5;
   let musicCrossfadeSec = options.musicCrossfadeSec ?? 1;
   const sfxPoolSize = options.sfxPoolSize ?? 16;
   const autoplay = options.autoplay ?? true;
@@ -563,10 +564,22 @@ export function createAudioEngine(options = {}) {
      * @param {Partial<{ master: number; music: number; sfx: number; ambient: number }>} v
      */
     setVolumes(v) {
-      if (v.master != null) masterGain.gain.value = v.master;
-      if (v.music != null) musicGain.gain.value = v.music;
-      if (v.sfx != null) sfxGain.gain.value = v.sfx;
-      if (v.ambient != null) ambientGain.gain.value = v.ambient;
+      if (v.master != null) {
+        masterVolume = v.master;
+        masterGain.gain.value = v.master;
+      }
+      if (v.music != null) {
+        musicVolume = v.music;
+        musicGain.gain.value = v.music;
+      }
+      if (v.sfx != null) {
+        sfxVolume = v.sfx;
+        sfxGain.gain.value = v.sfx;
+      }
+      if (v.ambient != null) {
+        ambientVolume = v.ambient;
+        ambientGain.gain.value = v.ambient;
+      }
     },
 
     setMusicCrossfadeDuration(sec) {

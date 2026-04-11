@@ -1137,7 +1137,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P8.3** | Ambient layers: grid hum, crackle, resonance | P8.1 | [x] |
 | **P8.4** | Engine sounds: idle, accel pitch, gears, top-speed | P8.1, P1.5 | [x] |
 | **P8.5** | Full SFX table from plan | P8.1 | [x] |
-| **P8.6** | Audio settings persisted | P5.8, P7.6 | [ ] |
+| **P8.6** | Audio settings persisted | P5.8, P7.6 | [x] |
 
 ### Phase 9 — Polish
 
