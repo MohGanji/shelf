@@ -202,7 +202,7 @@ async function main() {
     musicGameplayUrl: getGameplayMusicUrl(runtime.devHud),
   });
   setBootProgress(bootEls, 58);
-  await audio.unlock();
+  audio.unlock();
   for (const url of MUSIC_ASSET_URLS.lobbyVariants) {
     void audio.prefetch(url);
   }
@@ -297,6 +297,15 @@ async function main() {
   if (!activeCampaignLevel) {
     console.error("[main] missing campaign level after boot");
     return;
+  }
+
+  {
+    const hudEl = document.getElementById("cycle-hud");
+    const mmEl = document.getElementById("hud-minimap-wrap");
+    const nitroLinesEl = document.getElementById("nitro-speed-lines");
+    if (hudEl) hudEl.hidden = false;
+    if (mmEl) mmEl.hidden = false;
+    if (nitroLinesEl) nitroLinesEl.hidden = false;
   }
 
   const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
@@ -1057,17 +1066,17 @@ async function main() {
     if (hudHintEl) {
       if (isLobby) {
         hudHintEl.textContent =
-          "Lobby — ride freely. X3 spawn: south entrance gate, facing inward.";
+          "Hub — you spawn by the south gate. Ride north to the wall gates: Arena, Garage, Architect.";
       } else if (isEditorPlaytest) {
         hudHintEl.textContent = levelStarted
-          ? "Play-test — ` (backtick) returns to Architect. ESC = pause."
-          : "Play-test — Press W to start. ` (backtick) returns to Architect. ESC = pause.";
+          ? "Play-test — ` (backtick) returns to Architect. ESC pauses."
+          : "Play-test — Press W to start. ` (backtick) returns to Architect. ESC pauses.";
       } else if (levelStarted) {
         hudHintEl.textContent =
-          "Arena — timer runs after first W (X3). A3 tile map; red trail # = lethal tile preview.";
+          "Arena — timer is running. Dodge trails and walls; reach the exit gate.";
       } else {
         hudHintEl.textContent =
-          "Press W to start — timer and movement begin together (X3).";
+          "Press W to start — the run timer begins with your first throttle.";
       }
     }
     if (hudTimerWrap) {
@@ -1120,6 +1129,8 @@ async function main() {
   }
 
   const step = 1 / playCfg.physicsHz;
+  /** Hide bottom welcome strip once the player is moving (hub + arena tips). */
+  let hubWelcomeBannerVisible = true;
   game.setOnFrame(({ dt }) => {
     if (playerDerezPhase === "imploding") {
       const durationSec = Math.max(0.4, devHud.derezSequenceSeconds ?? 2);
@@ -1323,6 +1334,15 @@ async function main() {
     }
     syncHeadingSpeedFromVelocity(playerBody);
     syncEnemyHeadingSpeed(enemyRoster.list);
+
+    if (hubWelcomeBannerVisible) {
+      const planar = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
+      if (planar > 0.35) {
+        hubWelcomeBannerVisible = false;
+        lobbyBanner.hidden = true;
+        lobbyBanner.classList.add("state-banner--hidden");
+      }
+    }
 
     const spdEngine = playerBody.userData.speed ?? 0;
     const nitroCapMul =
@@ -1548,7 +1568,7 @@ async function main() {
     playerCycle.root.rotation.y = h;
 
     const steer =
-      (arenaKeys.d ? 1 : 0) - (arenaKeys.a ? 1 : 0);
+      (arenaKeys.a ? 1 : 0) - (arenaKeys.d ? 1 : 0);
     const spd = playerBody.userData.speed ?? 0;
     const braking = arenaKeys.s && !nitroOn;
     const accelerating = arenaKeys.w && !braking;
@@ -1573,6 +1593,7 @@ async function main() {
       playerVel: playerBody.velocity,
       keys: arenaKeys,
       nitroStrength: nitroVis,
+      playerHeading: playerBody.userData.heading,
     });
 
     game.postPipeline.setNitroFx({ strength: nitroVis });
@@ -1622,25 +1643,28 @@ async function main() {
   lobbyBanner.classList.remove("state-banner--hidden");
   const p = lobbyBanner.querySelector("p");
   if (p) {
-    const lid =
-      activeCampaignLevel && typeof activeCampaignLevel.id === "string"
-        ? activeCampaignLevel.id
-        : "—";
     const lname =
       activeCampaignLevel && typeof activeCampaignLevel.name === "string"
         ? activeCampaignLevel.name
         : "";
-    const sz = arenaSizeFromCampaign
-      ? `${Math.round(arenaSizeFromCampaign.arenaWidth)}×${Math.round(arenaSizeFromCampaign.arenaDepth)} u`
-      : "default size";
-    p.textContent = [
-      `P5.3 — Arena from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
-      isLobby
-        ? `P7.1 — Lobby: 400×200, four gates, no enemies; timer hidden. Arena gate sign → ENTER ARENA ${save.progress.currentLevel}.`
-        : "X3 — Spawn at entrance gate (2 u inward), facing inward. Press W to start + timer.",
-      "P5.6 — Gates: open cuts wall; locked slides. P2.2 — trail fade.",
-      `P4.1–P4.4 — Enemies: ${enemyRoster.list.length} cycle(s); frozen until first W; hunt + trail/wall/peer separation (avoidance range, reaction time).`,
-    ].join(" ");
+    const stage = Math.max(1, Math.floor(save.progress.currentLevel));
+    if (isLobby) {
+      p.textContent = [
+        "Welcome to the hub. Ride north toward the wall — gates lead to the campaign arena, garage, and level editor.",
+        `Your next numbered arena stage is ${stage}; earlier stages must be cleared before later gates unlock.`,
+      ].join(" ");
+    } else {
+      const title = lname || "Arena";
+      const enemyN = enemyRoster.list.length;
+      const enemyLine =
+        enemyN === 0
+          ? "No rival cycles on this map — focus on the course and the exit."
+          : `${enemyN} rival cycle${enemyN === 1 ? "" : "s"} on the grid — avoid their trails.`;
+      p.textContent = [
+        `${title} — ${enemyLine}`,
+        "Reach the exit gate to finish. Press W when ready; the timer starts on your first throttle.",
+      ].join(" ");
+    }
   }
 
   game.startLoop();

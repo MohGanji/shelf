@@ -184,11 +184,11 @@ export function createTrailWallSystem(options) {
     const merged = mergeGeometries(parts);
     for (const g of parts) g.dispose();
 
-    const mat = baseMaterial.clone();
+    const segMaterial = baseMaterial.clone();
     const op = devHud.trailOpacity * Math.max(0, Math.min(1, segOpacity));
-    mat.opacity = op;
-    mat.transparent = op < 0.995;
-    const mesh = new THREE.Mesh(merged, mat);
+    segMaterial.opacity = op;
+    segMaterial.transparent = op < 0.995;
+    const mesh = new THREE.Mesh(merged, segMaterial);
     mesh.frustumCulled = false;
     segmentsGroup.add(mesh);
   }
@@ -284,6 +284,16 @@ export function createTrailWallSystem(options) {
       }
       anchorsDirty = true;
       break;
+    }
+
+    /**
+     * Keep the newest anchor on the rear axle every frame while the chain is at the FIFO cap.
+     * Otherwise the last point stays fixed until the tail opacity hits zero — the gap to the bike
+     * grows and the wall appears to jump on each recycle instead of sliding smoothly.
+     */
+    if (anchors.length >= 1 && totalEdgeCount() >= maxSeg) {
+      anchors[anchors.length - 1].copy(tmpRear);
+      anchorsDirty = true;
     }
 
     if (anchorsDirty) {

@@ -33,7 +33,7 @@ export function integratePlayerCycleMovement(
     typeof body.userData.heading === "number" ? body.userData.heading : 0;
   let speed = typeof body.userData.speed === "number" ? body.userData.speed : 0;
 
-  const steer = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
+  const steer = (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
   const baseTurn = playCfg.baseTurnRate;
   const handleMul =
     typeof options.nitroHandlingFactor === "number" ? options.nitroHandlingFactor : 1;

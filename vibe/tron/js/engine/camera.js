@@ -2,7 +2,8 @@ import * as THREE from "three";
 
 /**
  * Third-person chase camera: stays behind the player’s horizontal heading (velocity when moving,
- * else last facing / WASD intent). Smoothing uses `cameraDamping`. Nitro adds FOV + optional pull-back.
+ * else bike heading when nearly stationary — world-fixed WASD alone does not match steer-based movement).
+ * Smoothing uses `cameraDamping`. Nitro adds FOV + optional pull-back.
  *
  * @param {THREE.PerspectiveCamera} camera
  * @param {import("../config.js").DEFAULT_DEV_HUD} devHud — mutable runtime HUD
@@ -23,9 +24,10 @@ export function createChaseCamera(camera, devHud) {
    * @param {import("cannon-es").Vec3} playerVel
    * @param {{ w?: boolean; a?: boolean; s?: boolean; d?: boolean }} keys
    * @param {number} nitroStrength 0–1 (visual / burst strength)
+   * @param {number} [playerHeading] — yaw (rad), same as `body.userData.heading`; keeps chase behind the cycle at low speed
    * @param {{ active: true; playerPos: THREE.Vector3; elapsedSec: number; playerHeading: number } | { active?: false }} [derez]
    */
-  function update(dt, { playerPos, playerVel, keys, nitroStrength, derez }) {
+  function update(dt, { playerPos, playerVel, keys, nitroStrength, playerHeading, derez }) {
     if (dt <= 0) return;
 
     if (derez && derez.active) {
@@ -88,8 +90,13 @@ export function createChaseCamera(camera, devHud) {
     if (keys.d) ix += 1;
     const intentLen = Math.hypot(ix, iz);
 
+    const head =
+      typeof playerHeading === "number" && Number.isFinite(playerHeading) ? playerHeading : null;
+
     if (hs > 0.2) {
       forward.set(vx / hs, 0, vz / hs);
+    } else if (head != null) {
+      forward.set(Math.sin(head), 0, Math.cos(head));
     } else if (intentLen > 1e-5) {
       forward.set(ix / intentLen, 0, iz / intentLen);
     }
@@ -97,7 +104,7 @@ export function createChaseCamera(camera, devHud) {
     right.set(-forward.z, 0, forward.x);
     if (right.lengthSq() > 1e-8) right.normalize();
 
-    const steer = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
+    const steer = (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
 
     const n = Math.max(0, Math.min(1, nitroStrength));
     const dist =

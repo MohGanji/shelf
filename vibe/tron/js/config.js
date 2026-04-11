@@ -6,9 +6,9 @@ import { nitroBarsFromAttributeLevel } from "./game/nitroSystem.js";
  */
 
 /**
- * When true, boot calls `AudioContext.resume()` immediately. If the browser blocks
- * autoplay, `createAudioEngine` still attaches one-time pointer/key unlock handlers.
- * Set to `false` to defer audio startup until an explicit `unlock()` / user gesture.
+ * When true, boot attempts `AudioContext.resume()` without blocking (the resume promise can
+ * stay pending under autoplay policy). Pointer/key handlers finish unlocking after the first gesture.
+ * Set to `false` to skip the initial resume attempt.
  * @type {boolean}
  */
 export const AUDIO_AUTOPLAY = true;
@@ -139,13 +139,15 @@ export const DEFAULT_DEV_HUD = {
   lobbyMusicVariant: 0,
   /** 0 = first gameplay stem, 1 = second (`MUSIC_ASSET_URLS.gameplayVariants`). */
   gameplayMusicVariant: 0,
-  cameraDistance: 8,
-  cameraHeight: 4,
-  cameraLookAhead: 3,
+  /** Tighter chase cam so the cycle reads at a glance on large arenas (was 8 / 58°). */
+  cameraDistance: 5.75,
+  /** Raised so the bike and trail stay in frame near tall perimeter walls. */
+  cameraHeight: 4.65,
+  cameraLookAhead: 2.65,
   cameraDamping: 0.08,
   cameraTurnOffset: 1.5,
   /** Chase cam base vertical FOV (degrees). Nitro widens from here when enabled. */
-  cameraBaseFov: 58,
+  cameraBaseFov: 52,
   /** Extra FOV during nitro when `nitroFovWiden` is true. */
   nitroFovAdd: 14,
   /** Extra camera distance (units) during nitro when `nitroCameraPullBack` is true. */

@@ -78,8 +78,8 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
 
   const t = 1;
   const panelLen = 20;
-  const matA = makePanelMaterial(cfg.colors.wallPanelA, 0x004455, neon);
-  const matB = makePanelMaterial(cfg.colors.wallPanelB, 0x00aadd, neon * 1.15);
+  /** Single finish for all perimeter panels (no A/B checkerboard). */
+  const wallPanelMat = makePanelMaterial(cfg.colors.wallPanelA, 0x004455, neon);
 
   const g =
     gapsByEdge ??
@@ -117,55 +117,43 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
     }
   }
 
-  let nsNegIdx = 0;
   for (const seg of solidSegmentsAlongWall(aw, g.south)) {
     forChunks(seg.start, seg.end, (u, v) => {
-      const mat = nsNegIdx % 2 === 0 ? matB : matA;
       const slen = v - u;
       const cx = -halfW + (u + v) / 2;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), mat);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), wallPanelMat);
       mesh.position.set(cx, h / 2, -halfD - t / 2);
       edgeVisualGroups.south.add(mesh);
-      nsNegIdx += 1;
     });
   }
 
-  let nsPosIdx = 0;
   for (const seg of solidSegmentsAlongWall(aw, g.north)) {
     forChunks(seg.start, seg.end, (u, v) => {
-      const mat = nsPosIdx % 2 === 0 ? matB : matA;
       const slen = v - u;
       const cx = -halfW + (u + v) / 2;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), mat);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), wallPanelMat);
       mesh.position.set(cx, h / 2, halfD + t / 2);
       edgeVisualGroups.north.add(mesh);
-      nsPosIdx += 1;
     });
   }
 
-  let weNegIdx = 0;
   for (const seg of solidSegmentsAlongWall(ad, g.west)) {
     forChunks(seg.start, seg.end, (u, v) => {
-      const mat = weNegIdx % 2 === 0 ? matA : matB;
       const slen = v - u;
       const cz = -halfD + (u + v) / 2;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), mat);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), wallPanelMat);
       mesh.position.set(-halfW - t / 2, h / 2, cz);
       edgeVisualGroups.west.add(mesh);
-      weNegIdx += 1;
     });
   }
 
-  let wePosIdx = 0;
   for (const seg of solidSegmentsAlongWall(ad, g.east)) {
     forChunks(seg.start, seg.end, (u, v) => {
-      const mat = wePosIdx % 2 === 0 ? matA : matB;
       const slen = v - u;
       const cz = -halfD + (u + v) / 2;
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), mat);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), wallPanelMat);
       mesh.position.set(halfW + t / 2, h / 2, cz);
       edgeVisualGroups.east.add(mesh);
-      wePosIdx += 1;
     });
   }
 
@@ -177,7 +165,7 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
   );
 
   scene.add(group);
-  return { group, materials: [floorMat, matA, matB], wallMaterials: { matA, matB }, edgeVisualGroups };
+  return { group, materials: [floorMat, wallPanelMat], wallMaterials: { wallPanel: wallPanelMat }, edgeVisualGroups };
 }
 
 function buildGridGeometry(halfW, halfD) {
@@ -213,7 +201,8 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
 
   const visGroup = per.edgeVisualGroups[edge];
   const bodies = per.wallBodiesByEdge[edge];
-  const { matA, matB } = per.wallMaterials;
+  const wallPanel = per.wallMaterials.wallPanel;
+  if (!wallPanel) return;
 
   disposeWallMeshGroup(visGroup);
   for (const b of bodies) {
@@ -245,16 +234,13 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
   const g = gapsByEdge[edge];
 
   if (edge === "south") {
-    let idx = 0;
     for (const seg of solidSegmentsAlongWall(aw, g)) {
       forChunks(seg.start, seg.end, (u, v) => {
-        const mat = idx % 2 === 0 ? matB : matA;
         const slen = v - u;
         const cx = -halfW + (u + v) / 2;
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), mat);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), wallPanel);
         mesh.position.set(cx, h / 2, -halfD - t / 2);
         visGroup.add(mesh);
-        idx += 1;
       });
     }
     for (const seg of solidSegmentsAlongWall(aw, g)) {
@@ -271,16 +257,13 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
       bodies.push(body);
     }
   } else if (edge === "north") {
-    let idx = 0;
     for (const seg of solidSegmentsAlongWall(aw, g)) {
       forChunks(seg.start, seg.end, (u, v) => {
-        const mat = idx % 2 === 0 ? matB : matA;
         const slen = v - u;
         const cx = -halfW + (u + v) / 2;
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), mat);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(slen, h, t), wallPanel);
         mesh.position.set(cx, h / 2, halfD + t / 2);
         visGroup.add(mesh);
-        idx += 1;
       });
     }
     for (const seg of solidSegmentsAlongWall(aw, g)) {
@@ -297,16 +280,13 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
       bodies.push(body);
     }
   } else if (edge === "west") {
-    let idx = 0;
     for (const seg of solidSegmentsAlongWall(ad, g)) {
       forChunks(seg.start, seg.end, (u, v) => {
-        const mat = idx % 2 === 0 ? matA : matB;
         const slen = v - u;
         const cz = -halfD + (u + v) / 2;
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), mat);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), wallPanel);
         mesh.position.set(-halfW - t / 2, h / 2, cz);
         visGroup.add(mesh);
-        idx += 1;
       });
     }
     for (const seg of solidSegmentsAlongWall(ad, g)) {
@@ -323,16 +303,13 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
       bodies.push(body);
     }
   } else if (edge === "east") {
-    let idx = 0;
     for (const seg of solidSegmentsAlongWall(ad, g)) {
       forChunks(seg.start, seg.end, (u, v) => {
-        const mat = idx % 2 === 0 ? matA : matB;
         const slen = v - u;
         const cz = -halfD + (u + v) / 2;
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), mat);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(t, h, slen), wallPanel);
         mesh.position.set(halfW + t / 2, h / 2, cz);
         visGroup.add(mesh);
-        idx += 1;
       });
     }
     for (const seg of solidSegmentsAlongWall(ad, g)) {

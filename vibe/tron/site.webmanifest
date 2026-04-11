@@ -7,31 +7,31 @@
   "categories": ["games", "entertainment"],
   "icons": [
     {
-      "src": "../../assets/favicon/android-chrome-512x512.png",
+      "src": "./assets/favicon/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "../../assets/favicon/android-chrome-192x192.png",
+      "src": "./assets/favicon/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "../../assets/favicon/android-chrome-144x144.png",
+      "src": "./assets/favicon/android-chrome-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "../../assets/favicon/apple-touch-icon.png",
+      "src": "./assets/favicon/apple-touch-icon.png",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "../../assets/favicon/favicon-32x32.png",
+      "src": "./assets/favicon/favicon-32x32.png",
       "sizes": "32x32",
       "type": "image/png",
       "purpose": "any"
@@ -39,14 +39,14 @@
   ],
   "screenshots": [
     {
-      "src": "../../assets/favicon/tron-pwa-screenshot-wide.png",
+      "src": "./assets/favicon/tron-pwa-screenshot-wide.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Tron: Light Cycles — desktop"
     },
     {
-      "src": "../../assets/favicon/tron-pwa-screenshot-narrow.png",
+      "src": "./assets/favicon/tron-pwa-screenshot-narrow.png",
       "sizes": "540x960",
       "type": "image/png",
       "form_factor": "narrow",
@@ -74,7 +74,7 @@
       "url": "./?perf=high",
       "icons": [
         {
-          "src": "../../assets/favicon/android-chrome-192x192.png",
+          "src": "./assets/favicon/android-chrome-192x192.png",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"
@@ -88,7 +88,7 @@
       "url": "./?perf=low",
       "icons": [
         {
-          "src": "../../assets/favicon/android-chrome-192x192.png",
+          "src": "./assets/favicon/android-chrome-192x192.png",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any maskable"

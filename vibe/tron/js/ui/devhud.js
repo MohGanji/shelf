@@ -3,7 +3,7 @@
  * Mutates the same `devHud` object as gameplay; calls `applyDevHud` + `persist` on change.
  */
 
-import { DEFAULT_DEV_HUD } from "../config.js";
+import { DEFAULT_DEV_HUD, mergeDevHud } from "../config.js";
 
 /**
  * @typedef {{
@@ -36,18 +36,27 @@ export function createDevHudController(opts) {
   root.className = "dev-hud";
   root.hidden = true;
   root.setAttribute("role", "dialog");
-  root.setAttribute("aria-label", "Developer HUD");
+  root.setAttribute("aria-label", "Advanced tuning");
   root.setAttribute("aria-hidden", "true");
 
   const header = document.createElement("div");
   header.className = "dev-hud__header";
+  const headerTop = document.createElement("div");
+  headerTop.className = "dev-hud__header-top";
   const title = document.createElement("div");
   title.className = "dev-hud__title";
-  title.textContent = "DEV HUD";
+  title.textContent = "Advanced tuning";
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "dev-hud__reset";
+  resetBtn.textContent = "Reset defaults";
+  resetBtn.setAttribute("aria-label", "Reset all tuning values to built-in defaults");
+  headerTop.appendChild(title);
+  headerTop.appendChild(resetBtn);
   const hint = document.createElement("div");
   hint.className = "dev-hud__hint";
-  hint.textContent = "Press . to close · changes persist to save";
-  header.appendChild(title);
+  hint.textContent = "Press . to hide · optional settings persist in your save";
+  header.appendChild(headerTop);
   header.appendChild(hint);
 
   const scroll = document.createElement("div");
@@ -286,7 +295,7 @@ export function createDevHudController(opts) {
       const val = devHud[key];
       if (el.type === "checkbox") {
         el.checked = !!val;
-      } else       if (el.type === "range" && typeof val === "number") {
+      } else if (el.type === "range" && typeof val === "number") {
         el.value = String(val);
         const row = el.closest(".dev-hud__row");
         const num = row && row.querySelector(".dev-hud__val");
@@ -299,6 +308,20 @@ export function createDevHudController(opts) {
       }
     }
   }
+
+  function resetToDefaults() {
+    const next = mergeDevHud({});
+    for (const k of Object.keys(DEFAULT_DEV_HUD)) {
+      const key = /** @type {keyof typeof DEFAULT_DEV_HUD} */ (k);
+      devHud[key] = next[key];
+    }
+    applyDevHud(next);
+    persist();
+    refreshControls();
+    if (typeof syncHud === "function") syncHud();
+  }
+
+  resetBtn.addEventListener("click", () => resetToDefaults());
 
   /** @param {KeyboardEvent} e */
   function onGlobalKeydown(e) {

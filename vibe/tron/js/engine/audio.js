@@ -406,28 +406,29 @@ export function createAudioEngine(options = {}) {
   function attachUserGestureUnlock() {
     if (gestureUnlockAttached) return;
     gestureUnlockAttached = true;
-    const once = async () => {
-      try {
-        await ctx.resume();
-      } catch {
-        /* ignore */
-      }
+    /**
+     * Do not `await ctx.resume()` — while autoplay-blocked, Chrome may leave that promise pending
+     * forever, which would stall boot (`main.js` calls `unlock` before the tunnel). Fire-and-forget
+     * and detach listeners once the context actually reaches `"running"`.
+     */
+    const tryResume = () => {
+      void ctx.resume().catch(() => {});
+    };
+    const onState = () => {
       if (ctx.state === "running") {
-        window.removeEventListener("pointerdown", once);
-        window.removeEventListener("keydown", once);
+        ctx.removeEventListener("statechange", onState);
+        window.removeEventListener("pointerdown", tryResume);
+        window.removeEventListener("keydown", tryResume);
       }
     };
-    window.addEventListener("pointerdown", once, { passive: true });
-    window.addEventListener("keydown", once);
+    ctx.addEventListener("statechange", onState);
+    window.addEventListener("pointerdown", tryResume, { passive: true });
+    window.addEventListener("keydown", tryResume);
   }
 
-  async function unlock() {
-    try {
-      if (ctx.state === "suspended") {
-        await ctx.resume();
-      }
-    } catch {
-      /* ignore */
+  function unlock() {
+    if (ctx.state === "suspended") {
+      void ctx.resume().catch(() => {});
     }
     if (ctx.state !== "running") {
       attachUserGestureUnlock();
@@ -1291,7 +1292,7 @@ function createNoopEngine() {
     ambientIn: null,
     needsUserGesture: () => false,
     attachUserGestureUnlock: () => {},
-    unlock: async () => {},
+    unlock: () => {},
     setVolumes: () => {},
     setMusicCrossfadeDuration: () => {},
     getMusicCrossfadeDuration: () => 1,
