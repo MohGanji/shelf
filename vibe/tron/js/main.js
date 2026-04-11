@@ -9,6 +9,7 @@ import {
   mergeRuntimeConfig,
   TRON_COLORS,
 } from "./config.js";
+import { createChaseCamera } from "./engine/camera.js";
 import { loadOrCreateSave } from "./data/savedata.js";
 import { createAudioEngine } from "./engine/audio.js";
 import { createGameRenderer } from "./engine/renderer.js";
@@ -49,21 +50,39 @@ function runBootLoadingBar(durationMs, els) {
   return () => clearInterval(iv);
 }
 
-function bindArenaMovementKeys(keys) {
-  window.addEventListener("keydown", (e) => {
-    const k = e.key.toLowerCase();
-    if (k === "w" || k === "arrowup") keys.w = true;
-    if (k === "s" || k === "arrowdown") keys.s = true;
-    if (k === "a" || k === "arrowleft") keys.a = true;
-    if (k === "d" || k === "arrowright") keys.d = true;
-  });
-  window.addEventListener("keyup", (e) => {
-    const k = e.key.toLowerCase();
-    if (k === "w" || k === "arrowup") keys.w = false;
-    if (k === "s" || k === "arrowdown") keys.s = false;
-    if (k === "a" || k === "arrowleft") keys.a = false;
-    if (k === "d" || k === "arrowright") keys.d = false;
-  });
+/**
+ * @param {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean }} keys
+ * @param {AbortSignal} [signal]
+ */
+function bindArenaMovementKeys(keys, signal) {
+  const opts = signal ? { signal } : undefined;
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      const k = e.key.toLowerCase();
+      if (k === "w" || k === "arrowup") keys.w = true;
+      if (k === "s" || k === "arrowdown") keys.s = true;
+      if (k === "a" || k === "arrowleft") keys.a = true;
+      if (k === "d" || k === "arrowright") keys.d = true;
+      if (e.code === "Space") {
+        keys.space = true;
+        e.preventDefault();
+      }
+    },
+    opts,
+  );
+  window.addEventListener(
+    "keyup",
+    (e) => {
+      const k = e.key.toLowerCase();
+      if (k === "w" || k === "arrowup") keys.w = false;
+      if (k === "s" || k === "arrowdown") keys.s = false;
+      if (k === "a" || k === "arrowleft") keys.a = false;
+      if (k === "d" || k === "arrowright") keys.d = false;
+      if (e.code === "Space") keys.space = false;
+    },
+    opts,
+  );
 }
 
 function applyMovement(playerBody, cfg, keys) {
@@ -225,8 +244,60 @@ async function main() {
   );
   game.scene.add(playerMesh);
 
-  const arenaKeys = { w: false, a: false, s: false, d: false };
+  const arenaKeys = { w: false, a: false, s: false, d: false, space: false };
   bindArenaMovementKeys(arenaKeys);
+
+  const chase = createChaseCamera(game.camera, devHud);
+  chase.spawnAt(playerMesh.position);
+
+  let nitroBurstTimer = 0;
+  let nitroVis = 0;
+  let prevSpace = false;
+
+  const speedLineEl = document.getElementById("nitro-speed-lines");
+
+  const arenaHudAbort = new AbortController();
+  const asig = { signal: arenaHudAbort.signal };
+
+  function syncArenaHud() {
+    if (!hudEl) return;
+    hudEl.innerHTML = [
+      "W/A/S/D — move · Space — nitro burst (camera + FX demo)",
+      "5 / 6 / 7 / 8 — toggle nitro FOV · pullback · speed lines · motion blur",
+      `FX: fov ${devHud.nitroFovWiden ? "on" : "off"} · pull ${devHud.nitroCameraPullBack ? "on" : "off"} · lines ${devHud.nitroSpeedLines ? "on" : "off"} · blur ${devHud.nitroMotionBlur ? "on" : "off"}`,
+    ].join("<br/>");
+  }
+
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (isTunnelBlockingInput()) return;
+      const k = e.key;
+      if (k === "5") {
+        devHud.nitroFovWiden = !devHud.nitroFovWiden;
+        syncArenaHud();
+        game.applyDevHud({ nitroFovWiden: devHud.nitroFovWiden });
+      }
+      if (k === "6") {
+        devHud.nitroCameraPullBack = !devHud.nitroCameraPullBack;
+        syncArenaHud();
+        game.applyDevHud({ nitroCameraPullBack: devHud.nitroCameraPullBack });
+      }
+      if (k === "7") {
+        devHud.nitroSpeedLines = !devHud.nitroSpeedLines;
+        syncArenaHud();
+        game.applyDevHud({ nitroSpeedLines: devHud.nitroSpeedLines });
+      }
+      if (k === "8") {
+        devHud.nitroMotionBlur = !devHud.nitroMotionBlur;
+        syncArenaHud();
+        game.applyDevHud({ nitroMotionBlur: devHud.nitroMotionBlur });
+      }
+    },
+    asig,
+  );
+
+  syncArenaHud();
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
@@ -235,6 +306,29 @@ async function main() {
     applyContinuousArenaWallSlide(playerBody, playCfg);
     clampHorizontalSpeed(playerBody, playCfg);
     playerMesh.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+
+    const spaceNow = arenaKeys.space;
+    if (spaceNow && !prevSpace && nitroBurstTimer <= 0) {
+      nitroBurstTimer = devHud.nitroBurstDuration;
+    }
+    prevSpace = spaceNow;
+    nitroBurstTimer = Math.max(0, nitroBurstTimer - dt);
+    const raw = nitroBurstTimer > 0 ? 1 : 0;
+    nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));
+
+    chase.update(dt, {
+      playerPos: playerMesh.position,
+      playerVel: playerBody.velocity,
+      keys: arenaKeys,
+      nitroStrength: nitroVis,
+    });
+
+    game.postPipeline.setNitroFx({ strength: nitroVis });
+    if (speedLineEl) {
+      speedLineEl.style.opacity = String(
+        devHud.nitroSpeedLines ? nitroVis * 0.78 : 0,
+      );
+    }
   });
 
   lobbyBanner.hidden = false;
@@ -242,14 +336,7 @@ async function main() {
   const p = lobbyBanner.querySelector("p");
   if (p) {
     p.textContent =
-      "P1.2 arena — WASD proxy sphere, wall slide (sin impact angle). Cycles demo ran pre-tunnel only.";
-  }
-
-  if (hudEl) {
-    hudEl.innerHTML = [
-      "W/A/S/D — move proxy sphere on the arena floor",
-      "P1.3 cycles + orbit cam were removed from the scene after BOOT (see README)",
-    ].join("<br/>");
+      "P1.4 chase camera — third-person follow + nitro FOV / pullback / speed lines / motion blur (see HUD).";
   }
 
   game.startLoop();

@@ -98,6 +98,23 @@ body {
   transition: width 0.12s ease-out;
 }
 
+.nitro-speed-lines {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  opacity: 0;
+  transition: opacity 0.06s linear;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 255, 255, 0.42) 0%,
+    transparent 10%,
+    transparent 90%,
+    rgba(0, 255, 255, 0.42) 100%
+  );
+  mix-blend-mode: screen;
+}
+
 .cycle-hud {
   position: fixed;
   left: 16px;
