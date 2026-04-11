@@ -29,7 +29,7 @@ export function mountEditorPalette(root, opts) {
   root.innerHTML = `
     <div class="editor-palette__header">
       <span class="editor-palette__header-title">Palette</span>
-      <span class="editor-palette__header-sub">Floor objects — click to arm (placement: P6.3)</span>
+      <span class="editor-palette__header-sub">Floor objects — click to arm, then click the grid to place</span>
     </div>
     <div class="editor-palette__scroll" role="tabpanel" aria-label="Block categories">
       ${renderCategory("Barriers", "barrier", [

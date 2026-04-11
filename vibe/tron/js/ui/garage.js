@@ -2,6 +2,10 @@
  * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
 
+import { upsertWipLevel } from "../levels/loader.js";
+import { ensureEditorWipLevel } from "../levels/editorLevel.js";
+import { mountEditorOrthographicViewport } from "../levels/editorView.js";
+import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
@@ -68,30 +72,54 @@ export function mountGarageDestinationScreen(opts) {
 }
 
 /**
- * P7.2 Architect / level editor entry — P6.2 palette + P6.1 orthographic viewport.
+ * P7.2 Architect / level editor entry — P6.2 palette + P6.1 viewport + P6.3 workbench.
  *
- * @param {{ onReturnToLobby: () => void }} opts
+ * @param {{
+ *   game: { renderer: import("three").WebGLRenderer };
+ *   onReturnToLobby: () => void;
+ * }} opts
  * @returns {{ dispose(): void }}
  */
 export function mountEditorDestinationScreen(opts) {
   const root = document.getElementById("editor-destination");
   const paletteRoot = document.getElementById("editor-palette-root");
-  if (!root) {
+  if (!root || !opts.game?.renderer) {
     return { dispose() {} };
   }
   root.hidden = false;
   root.classList.remove("tron-destination--hidden");
-  const canvas = document.getElementById("game-canvas");
+  const canvas = /** @type {HTMLCanvasElement | null} */ (document.getElementById("game-canvas"));
+  if (!canvas || !opts.game?.renderer) {
+    return { dispose() {} };
+  }
   /* P6.1 — orthographic grid renders on the canvas; keep it in the accessibility tree. */
-  if (canvas) canvas.removeAttribute("aria-hidden");
+  canvas.removeAttribute("aria-hidden");
+
+  const level = ensureEditorWipLevel();
+  const aw = typeof level.arenaWidth === "number" ? level.arenaWidth : 80;
+  const ad = typeof level.arenaDepth === "number" ? level.arenaDepth : 80;
+
+  const viewport = mountEditorOrthographicViewport({
+    renderer: opts.game.renderer,
+    canvas,
+    arenaWidth: aw,
+    arenaDepth: ad,
+  });
 
   /** P6.2 — floor-object palette (selection feeds P6.3 placement). */
-  let paletteCtl = { dispose() {} };
+  let paletteCtl = { getSelection: () => null, dispose() {} };
   if (paletteRoot) {
     paletteRoot.hidden = false;
     paletteRoot.classList.remove("tron-destination--hidden");
     paletteCtl = mountEditorPalette(paletteRoot);
   }
+
+  const workbench = mountEditorWorkbench({
+    viewport,
+    getPaletteSelection: () => paletteCtl.getSelection(),
+    level,
+    onPersist: (L) => upsertWipLevel(L),
+  });
 
   const onReturn = () => opts.onReturnToLobby();
 
@@ -106,6 +134,8 @@ export function mountEditorDestinationScreen(opts) {
 
   return {
     dispose() {
+      workbench.dispose();
+      viewport.dispose();
       paletteCtl.dispose();
       if (paletteRoot) {
         paletteRoot.hidden = true;

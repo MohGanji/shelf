@@ -66,7 +66,6 @@ import {
   selectPlaytestCampaignLevel,
 } from "./levels/loader.js";
 import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
-import { mountEditorOrthographicViewport } from "./levels/editorView.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import { isControlsOverlayBlockingInput, showFirstVisitControlsOverlayIfNeeded } from "./ui/menus.js";
 import { createDevHudController } from "./ui/devhud.js";
@@ -211,15 +210,9 @@ async function main() {
     const ban = document.getElementById("lobby-placeholder");
     if (hud) hud.hidden = true;
     if (ban) ban.hidden = true;
-    const editorViewport = mountEditorOrthographicViewport({
-      renderer: game.renderer,
-      canvas,
-      arenaWidth: 80,
-      arenaDepth: 80,
-    });
     mountEditorDestinationScreen({
+      game,
       onReturnToLobby: () => {
-        editorViewport.dispose();
         window.location.reload();
       },
     });

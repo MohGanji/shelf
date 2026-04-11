@@ -1109,7 +1109,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 |----|------|------------|--------|
 | **P6.1** | Orthographic editor camera, pan, zoom, grid | P5.1 | [x] |
 | **P6.2** | Palette (six floor categories) + edge UI for wall objects | P6.1 | [x] |
-| **P6.3** | Place/move/delete/rotate; gates along walls; portal pairs; clear zones; hover preview | P6.2, P5.1 | [ ] |
+| **P6.3** | Place/move/delete/rotate; gates along walls; portal pairs; clear zones; hover preview | P6.2, P5.1 | [x] |
 | **P6.4** | Properties panel per object type | P6.3 | [ ] |
 | **P6.5** | New level dialog (min 40×40, immutable size) | P6.1 | [ ] |
 | **P6.6** | WIP save/load localStorage, undo/redo | P6.3 | [ ] |

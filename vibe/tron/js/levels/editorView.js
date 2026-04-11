@@ -13,7 +13,16 @@ const FLOOR_COLOR = 0x0c1018;
 
 /**
  * @param {{ renderer: THREE.WebGLRenderer; canvas: HTMLCanvasElement; arenaWidth?: number; arenaDepth?: number }} opts
- * @returns {{ dispose(): void }}
+ * @returns {{
+ *   dispose(): void;
+ *   scene: THREE.Scene;
+ *   camera: THREE.OrthographicCamera;
+ *   renderer: THREE.WebGLRenderer;
+ *   canvas: HTMLCanvasElement;
+ *   arenaWidth: number;
+ *   arenaDepth: number;
+ *   screenToGround: (sx: number, sy: number) => THREE.Vector3;
+ * }}
  */
 export function mountEditorOrthographicViewport(opts) {
   const { renderer, canvas } = opts;
@@ -190,6 +199,13 @@ export function mountEditorOrthographicViewport(opts) {
   tick();
 
   return {
+    scene,
+    camera,
+    renderer,
+    canvas,
+    arenaWidth,
+    arenaDepth,
+    screenToGround,
     dispose() {
       cancelAnimationFrame(rafId);
       canvas.removeEventListener("pointerdown", onPointerDown);
