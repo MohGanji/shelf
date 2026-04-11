@@ -3,7 +3,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { CYCLE_BOUNDS, WORLD } from "../config.js";
 
 /**
- * Fading trail wall rendering (plan P2.1 + P2.2): CatmullRom-style ribbon of thin emissive boxes.
+ * Fading trail wall rendering (plan P2.1 + P2.2): piecewise ribbon of thin emissive boxes along anchor chords.
  * Distance-based anchor spawn (1 unit), FIFO cap from Trail Length attribute, oldest segment
  * fades (opacity → 0) before removal using `trailFadeSpeed`. No new anchors at near-zero speed.
  * Collision / tile map is P2.3.
