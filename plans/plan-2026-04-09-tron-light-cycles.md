@@ -1398,6 +1398,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.242** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `shippingDetails` as `OfferShippingDetails` (`shippingRate` zero USD `MonetaryAmount`, worldwide `DefinedRegion`, `ShippingDeliveryTime` with zero-second `handlingTime` / `transitTime`) so structured data states explicit free instant digital shipment alongside `deliveryLeadTime`, `availableChannel`, and `availableDeliveryMethod` | P10.241 | [x] |
 | **P10.243** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `validThrough` (`2099-12-31`, conventional distant-future end date signaling no scheduled sunset for the perpetual zero-price grant) alongside `validFrom` / `availabilityStarts` | P10.242 | [x] |
 | **P10.244** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `image` as `ImageObject` (path-prefix–safe relative `url`, `152×152`, same asset as `VideoGame.image` / Open Graph preview) so the deduplicated offer node exposes preview imagery in `@graph` alongside `name`, `description`, and `url` | P10.243 | [x] |
+| **P10.245** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `brand` (`{ "@id": "./#organization" }`) so structured data links the zero-price grant to the same deduplicated publisher entity as `seller` / `offeredBy` | P10.244 | [x] |
 
 ### HUD and progression
 
