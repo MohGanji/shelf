@@ -1053,7 +1053,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
 | **X1** | State machine in `main.js`: BOOT → LOBBY → (LEVEL / GARAGE / EDITOR) + PAUSE + PLAYER_DEREZ + LEVEL_COMPLETE | P1.1, P5.2, P5.7, P7.x | [ ] |
-| **X2** | Tunnel `playTunnel(onComplete)` for all transitions; input blocked; trails cleared; spawn rules on arrival | P1.1 | [~] |
+| **X2** | Tunnel `playTunnel(onComplete)` for all transitions; input blocked; trails cleared; spawn rules on arrival | P1.1 | [x] |
 | **X3** | Spawn system: entrance gate offset, facing, stationary; timer + enemies start on first W | P5.3, P5.6 | [ ] |
 
 ### Phase 2 — Trail + collisions
@@ -1169,6 +1169,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 
 - **Implemented or largely present:** importmap and cannon-es; `config.js` + devHud defaults; **A2** — `createRuntimeFromPlayerSave`, `getArenaPlaytestConfig(...).world` for trail geometry chain, devHud keyboard toggles persisted to save, attribute speeds via merged runtime + `getArenaPlaytestConfig`; boot tunnel with title/progress; arena grid + walls + wall slide; **P5.4** — `js/game/blocks.js` builds wall / building / structure barriers from level JSON (emissive meshes + static boxes), `applyContinuousBarrierSlide` in `physics.js` so arcade drive slides on barriers; procedural light cycle + chase camera + post (bloom, CA, CRT, nitro blur); core WASD movement with coast/brake; `js/game/trail.js` — CatmullRom trail wall meshes (1u anchors, FIFO cap from Trail Length attribute, save trail color); `js/levels/schema.js` with `validateLevel`; `js/levels/loader.js` — campaign manifest fetch + per-file validation (warn/skip invalid), WIP CRUD in localStorage; first valid campaign level (if any) drives sandbox arena dimensions via `getArenaPlaytestConfig`; `savedata.js`; tunnel helper + input blocking; Tron link on vibe index; partial `audio.js` scaffolding; **A4** — planned module stubs live: `js/ui/{hud,devhud,menus,garage}.js`, `js/game/{attributes,powerups,objects,ai,gates}.js`, `js/levels/{defaults,editor}.js`, `assets/audio/.gitkeep`.
 - **Partial:** `main.js` is boot → arena sandbox only (no full state machine); no `.` dev HUD UI; many planned `js/game/*`, `js/ui/*`, `js/levels/{defaults,editor}.js` files not yet present — `assets/audio/README.txt` holds the folder for future tracks; perimeter arena is driven by selected campaign level (`selectPlaytestCampaignLevel` + `buildArenaFromCampaignLevel`); barriers/gates not yet built from JSON.
+- **X2 (tunnel):** `playTunnel` documents universal use (BOOT vs gate durations); `options.onBegin` for trail/equip clears; `window` `tron-tunnel-session` event + `createTronCycleKeyState` clears held keys on start/end so swallowed keyups do not stick; `onComplete` is the hook for future spawn-at-entrance after transitions.
 - **Missing:** trail derez wiring (P2.3), AI, gates, interior barrier merge (P5.5), power-ups, portals, garage, editor, full HUD beyond speed/nitro/trail count, most SFX/music content, Phase 6–7 UI flows.
 
 Update the **Status** column as features land.

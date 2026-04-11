@@ -3,9 +3,20 @@ import { CONFIG } from '../config.js';
 
 let tunnelBlocksInput = false;
 
+/** Fired on `window` when a tunnel session starts or ends — `detail.active` true while flying. */
+export const TUNNEL_SESSION_EVENT = 'tron-tunnel-session';
+
 /** True while a tunnel animation is running — keyboard handlers must ignore input (no buffering). */
 export function isTunnelBlockingInput() {
   return tunnelBlocksInput;
+}
+
+function dispatchTunnelSession(active) {
+  window.dispatchEvent(
+    new CustomEvent(TUNNEL_SESSION_EVENT, {
+      detail: { active },
+    }),
+  );
 }
 
 function createGridTextures() {
@@ -54,19 +65,34 @@ function disposeObject3D(root) {
 }
 
 /**
- * Full-screen tunnel transition: open-ended cylinder, emissive grid, camera flies along axis.
+ * Universal transition (plan § Level Transitions + X2): Tron-grid cylinder tunnel, camera along axis.
+ * Use for BOOT, lobby ↔ level, garage, editor, quit — same geometry; vary `durationSeconds` only.
+ *
+ * Contract:
+ * - While running, {@link isTunnelBlockingInput} is true — discard input, do not buffer.
+ * - `onBegin` runs immediately after input block (clear trails, reset equip, etc.); `onComplete` runs after the fly-through (teleport / spawn-at-entrance rules live here once the state machine exists).
  *
  * @param {THREE.WebGLRenderer} renderer
  * @param {() => void} [onComplete]
- * @param {{ durationSeconds?: number }} [options]
+ * @param {{ durationSeconds?: number; onBegin?: () => void }} [options]
  * @returns {Promise<void>}
  */
 export function playTunnel(renderer, onComplete, options = {}) {
   const durationSeconds =
     typeof options.durationSeconds === 'number' ? options.durationSeconds : CONFIG.tunnelGateSeconds;
+  const onBegin = typeof options.onBegin === 'function' ? options.onBegin : null;
 
   return new Promise((resolve, reject) => {
     tunnelBlocksInput = true;
+    dispatchTunnelSession(true);
+    try {
+      onBegin?.();
+    } catch (err) {
+      tunnelBlocksInput = false;
+      dispatchTunnelSession(false);
+      reject(err);
+      return;
+    }
 
     try {
     const scene = new THREE.Scene();
@@ -124,6 +150,7 @@ export function playTunnel(renderer, onComplete, options = {}) {
       cancelAnimationFrame(raf);
       disposeObject3D(scene);
       scene.fog = null;
+      dispatchTunnelSession(false);
       tunnelBlocksInput = false;
       if (typeof onComplete === 'function') onComplete();
       resolve();
@@ -159,6 +186,7 @@ export function playTunnel(renderer, onComplete, options = {}) {
 
     raf = requestAnimationFrame(tick);
     } catch (err) {
+      dispatchTunnelSession(false);
       tunnelBlocksInput = false;
       reject(err);
     }

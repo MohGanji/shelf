@@ -1,4 +1,4 @@
-import { isTunnelBlockingInput } from "./tunnel.js";
+import { isTunnelBlockingInput, TUNNEL_SESSION_EVENT } from "./tunnel.js";
 
 /**
  * @typedef {object} TronCycleKeyState
@@ -60,8 +60,18 @@ export function createTronCycleKeyState() {
     if (e.code === "Space") state.space = false;
   }
 
+  /** Drop held keys when a tunnel session starts or ends (swallowed keyups must not stick). */
+  function clearHeldKeys() {
+    state.w = false;
+    state.a = false;
+    state.s = false;
+    state.d = false;
+    state.space = false;
+  }
+
   window.addEventListener("keydown", onDown, opts);
   window.addEventListener("keyup", onUp, opts);
+  window.addEventListener(TUNNEL_SESSION_EVENT, clearHeldKeys, opts);
 
   return {
     state,
