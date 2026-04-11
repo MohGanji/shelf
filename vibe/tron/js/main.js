@@ -2,8 +2,9 @@ import { World } from "cannon-es";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { CONFIG, mergeRuntimeConfig, TRON_COLORS } from "./config.js";
+import { AUDIO_AUTOPLAY, CONFIG, mergeRuntimeConfig, TRON_COLORS } from "./config.js";
 import { loadOrCreateSave } from "./data/savedata.js";
+import { createAudioEngine } from "./engine/audio.js";
 import { createGameRenderer } from "./engine/renderer.js";
 import { playTunnel, isTunnelBlockingInput } from "./engine/tunnel.js";
 import { createLightCycle } from "./game/cycle.js";
@@ -51,6 +52,16 @@ async function main() {
 
   const save = loadOrCreateSave();
   const runtime = mergeRuntimeConfig(save.devHud ?? {});
+
+  const audio = createAudioEngine({
+    masterVolume: save.settings.masterVolume,
+    musicVolume: save.settings.musicVolume,
+    sfxVolume: save.settings.sfxVolume,
+    ambientVolume: save.settings.ambientVolume,
+    musicCrossfadeSec: runtime.devHud.musicCrossfadeDuration,
+    autoplay: AUDIO_AUTOPLAY,
+  });
+  await audio.unlock();
 
   initPhysicsWorld();
 

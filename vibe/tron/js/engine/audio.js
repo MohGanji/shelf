@@ -1,0 +1,403 @@
+/**
+ * Web Audio API engine: music (loop + crossfade), SFX pool, ambient bus.
+ * Missing assets decode/load failures → silent no-op (graceful degradation).
+ */
+
+/**
+ * @param {AudioContext} ctx
+ * @param {GainNode} destination
+ * @param {number} poolSize
+ */
+function createSfxPool(ctx, destination, poolSize) {
+  /** @type {{ gain: GainNode; source: AudioBufferSourceNode | null }[]} */
+  const voices = [];
+  for (let i = 0; i < poolSize; i++) {
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    g.connect(destination);
+    voices.push({ gain: g, source: null });
+  }
+
+  /**
+   * @param {AudioBuffer} buffer
+   * @param {number} [when]
+   */
+  function play(buffer, when = 0) {
+    const startAt = when;
+    let voice = voices.find((v) => v.source === null);
+    if (!voice) {
+      voice = voices[0];
+      try {
+        voice.source?.stop(0);
+      } catch {
+        /* already stopped */
+      }
+      voice.source = null;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(voice.gain);
+    voice.source = src;
+    const t = Math.max(ctx.currentTime, startAt);
+    voice.gain.gain.cancelScheduledValues(t);
+    voice.gain.gain.setValueAtTime(1, t);
+    src.onended = () => {
+      if (voice.source === src) {
+        voice.source = null;
+      }
+    };
+    try {
+      src.start(t);
+    } catch {
+      voice.source = null;
+    }
+  }
+
+  return { play, _voices: voices };
+}
+
+/**
+ * @param {AudioContext} ctx
+ * @param {GainNode} musicOut
+ */
+function createMusicCrossfader(ctx, musicOut) {
+  const a = ctx.createGain();
+  const b = ctx.createGain();
+  a.gain.value = 0;
+  b.gain.value = 0;
+  a.connect(musicOut);
+  b.connect(musicOut);
+
+  /** @type {[AudioBufferSourceNode | null, AudioBufferSourceNode | null]} */
+  const sources = [null, null];
+  /** @type {0 | 1} */
+  let active = 0;
+  let crossfadeSec = 1;
+
+  /**
+   * @param {0 | 1} idx
+   */
+  function stopSlot(idx) {
+    const s = sources[idx];
+    if (!s) return;
+    try {
+      s.stop(0);
+    } catch {
+      /* already stopped */
+    }
+    sources[idx] = null;
+  }
+
+  /**
+   * @param {AudioBuffer} buffer
+   * @param {number} durationSec
+   */
+  function crossfadeTo(buffer, durationSec) {
+    const t0 = ctx.currentTime;
+    const prevActive = active;
+    const inactive = /** @type {0 | 1} */ (prevActive === 0 ? 1 : 0);
+    stopSlot(inactive);
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const gIn = inactive === 0 ? a : b;
+    const gOut = inactive === 0 ? b : a;
+    src.connect(gIn);
+    sources[inactive] = src;
+    try {
+      src.start(t0);
+    } catch {
+      sources[inactive] = null;
+      return;
+    }
+
+    const dur = Math.max(0.01, durationSec);
+    gOut.gain.cancelScheduledValues(t0);
+    gIn.gain.cancelScheduledValues(t0);
+    gOut.gain.setValueAtTime(gOut.gain.value, t0);
+    gIn.gain.setValueAtTime(0, t0);
+    gOut.gain.linearRampToValueAtTime(0, t0 + dur);
+    gIn.gain.linearRampToValueAtTime(1, t0 + dur);
+
+    active = inactive;
+    window.setTimeout(() => {
+      stopSlot(prevActive);
+      const gDead = prevActive === 0 ? a : b;
+      gDead.gain.cancelScheduledValues(ctx.currentTime);
+      gDead.gain.value = 0;
+    }, dur * 1000 + 50);
+  }
+
+  /**
+   * @param {AudioBuffer} buffer
+   */
+  function startFirst(buffer) {
+    stopSlot(0);
+    stopSlot(1);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    src.connect(a);
+    sources[0] = src;
+    active = 0;
+    b.gain.value = 0;
+    a.gain.value = 0;
+    try {
+      const t = ctx.currentTime;
+      src.start(t);
+      a.gain.setValueAtTime(1, t);
+    } catch {
+      sources[0] = null;
+    }
+  }
+
+  function setCrossfadeDuration(sec) {
+    crossfadeSec = Math.max(0.01, sec);
+  }
+
+  function getCrossfadeDuration() {
+    return crossfadeSec;
+  }
+
+  function stopAll() {
+    const t = ctx.currentTime;
+    a.gain.linearRampToValueAtTime(0, t + 0.05);
+    b.gain.linearRampToValueAtTime(0, t + 0.05);
+    window.setTimeout(() => {
+      stopSlot(0);
+      stopSlot(1);
+      a.gain.value = 0;
+      b.gain.value = 0;
+    }, 60);
+  }
+
+  return {
+    a,
+    b,
+    crossfadeTo,
+    startFirst,
+    stopAll,
+    setCrossfadeDuration,
+    getCrossfadeDuration,
+  };
+}
+
+/**
+ * @typedef {object} AudioEngineOptions
+ * @property {number} [masterVolume]
+ * @property {number} [musicVolume]
+ * @property {number} [sfxVolume]
+ * @property {number} [ambientVolume]
+ * @property {number} [musicCrossfadeSec]
+ * @property {number} [sfxPoolSize]
+ * @property {boolean} [autoplay]
+ */
+
+/**
+ * @param {AudioEngineOptions} options
+ */
+export function createAudioEngine(options = {}) {
+  const masterVolume = options.masterVolume ?? 1;
+  const musicVolume = options.musicVolume ?? 0.7;
+  const sfxVolume = options.sfxVolume ?? 1;
+  const ambientVolume = options.ambientVolume ?? 0.5;
+  let musicCrossfadeSec = options.musicCrossfadeSec ?? 1;
+  const sfxPoolSize = options.sfxPoolSize ?? 16;
+  const autoplay = options.autoplay ?? true;
+
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) {
+    return createNoopEngine();
+  }
+
+  const ctx = new Ctx();
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = masterVolume;
+  masterGain.connect(ctx.destination);
+
+  const musicGain = ctx.createGain();
+  musicGain.gain.value = musicVolume;
+  musicGain.connect(masterGain);
+
+  const sfxGain = ctx.createGain();
+  sfxGain.gain.value = sfxVolume;
+  sfxGain.connect(masterGain);
+
+  const ambientGain = ctx.createGain();
+  ambientGain.gain.value = ambientVolume;
+  ambientGain.connect(masterGain);
+
+  /** Submix for ambient layers (grid hum, etc.) — connect sources here. */
+  const ambientIn = ctx.createGain();
+  ambientIn.gain.value = 1;
+  ambientIn.connect(ambientGain);
+
+  const music = createMusicCrossfader(ctx, musicGain);
+  const sfxPool = createSfxPool(ctx, sfxGain, sfxPoolSize);
+  music.setCrossfadeDuration(musicCrossfadeSec);
+
+  let musicStarted = false;
+
+  /** @type {Map<string, AudioBuffer | null>} */
+  const bufferCache = new Map();
+
+  /**
+   * @param {string} url
+   * @returns {Promise<AudioBuffer | null>}
+   */
+  async function loadBuffer(url) {
+    if (!url || typeof url !== "string") return null;
+    if (bufferCache.has(url)) {
+      const c = bufferCache.get(url);
+      return c === null ? null : c;
+    }
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        bufferCache.set(url, null);
+        return null;
+      }
+      const raw = await res.arrayBuffer();
+      const buf = await ctx.decodeAudioData(raw.slice(0));
+      bufferCache.set(url, buf);
+      return buf;
+    } catch {
+      bufferCache.set(url, null);
+      return null;
+    }
+  }
+
+  let gestureUnlockAttached = false;
+
+  function attachUserGestureUnlock() {
+    if (gestureUnlockAttached) return;
+    gestureUnlockAttached = true;
+    const once = async () => {
+      try {
+        await ctx.resume();
+      } catch {
+        /* ignore */
+      }
+      if (ctx.state === "running") {
+        window.removeEventListener("pointerdown", once);
+        window.removeEventListener("keydown", once);
+      }
+    };
+    window.addEventListener("pointerdown", once, { passive: true });
+    window.addEventListener("keydown", once);
+  }
+
+  async function unlock() {
+    try {
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+    } catch {
+      /* ignore */
+    }
+    if (ctx.state !== "running") {
+      attachUserGestureUnlock();
+    }
+  }
+
+  return {
+    context: ctx,
+    autoplay,
+
+    masterGain,
+    musicGain,
+    sfxGain,
+    ambientGain,
+    /** Input bus for ambient layers (grid hum, crackle, drone — P8.3+). */
+    ambientIn,
+
+    needsUserGesture() {
+      return ctx.state === "suspended";
+    },
+    attachUserGestureUnlock,
+    unlock,
+
+    /**
+     * @param {Partial<{ master: number; music: number; sfx: number; ambient: number }>} v
+     */
+    setVolumes(v) {
+      if (v.master != null) masterGain.gain.value = v.master;
+      if (v.music != null) musicGain.gain.value = v.music;
+      if (v.sfx != null) sfxGain.gain.value = v.sfx;
+      if (v.ambient != null) ambientGain.gain.value = v.ambient;
+    },
+
+    setMusicCrossfadeDuration(sec) {
+      musicCrossfadeSec = Math.max(0.01, sec);
+      music.setCrossfadeDuration(musicCrossfadeSec);
+    },
+    getMusicCrossfadeDuration() {
+      return music.getCrossfadeDuration();
+    },
+
+    /**
+     * Loop music from URL. First successful play uses instant start; later calls crossfade.
+     * @param {string} url
+     */
+    async playMusicLoop(url) {
+      const buf = await loadBuffer(url);
+      if (!buf) return false;
+      if (!musicStarted) {
+        music.startFirst(buf);
+        musicStarted = true;
+        return true;
+      }
+      music.crossfadeTo(buf, music.getCrossfadeDuration());
+      return true;
+    },
+
+    stopMusic() {
+      music.stopAll();
+      musicStarted = false;
+    },
+
+    /**
+     * @param {string} url
+     */
+    async playSfx(url) {
+      const buf = await loadBuffer(url);
+      if (!buf) return false;
+      sfxPool.play(buf);
+      return true;
+    },
+
+    /**
+     * @param {string} url
+     */
+    prefetch(url) {
+      return loadBuffer(url);
+    },
+
+    loadBuffer,
+  };
+}
+
+/** Fallback when AudioContext is missing (very old browsers). */
+function createNoopEngine() {
+  return {
+    context: null,
+    autoplay: false,
+    masterGain: null,
+    musicGain: null,
+    sfxGain: null,
+    ambientGain: null,
+    ambientIn: null,
+    needsUserGesture: () => false,
+    attachUserGestureUnlock: () => {},
+    unlock: async () => {},
+    setVolumes: () => {},
+    setMusicCrossfadeDuration: () => {},
+    getMusicCrossfadeDuration: () => 1,
+    playMusicLoop: async () => false,
+    stopMusic: () => {},
+    playSfx: async () => false,
+    prefetch: async () => null,
+    loadBuffer: async () => null,
+  };
+}
