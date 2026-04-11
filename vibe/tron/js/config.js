@@ -111,6 +111,12 @@ export const DEFAULT_DEV_HUD = {
   cameraLookAhead: 3,
   cameraDamping: 0.08,
   cameraTurnOffset: 1.5,
+  /** Chase cam base vertical FOV (degrees). Nitro widens from here when enabled. */
+  cameraBaseFov: 58,
+  /** Extra FOV during nitro when `nitroFovWiden` is true. */
+  nitroFovAdd: 14,
+  /** Extra camera distance (units) during nitro when `nitroCameraPullBack` is true. */
+  nitroPullBackAdd: 2.5,
 };
 
 /** Power-up palette (plan § Power-up color coding) */
