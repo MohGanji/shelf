@@ -8,6 +8,7 @@ import { mountEditorOrthographicViewport } from "../levels/editorView.js";
 import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
 import { mountEditorPropertiesPanel } from "../levels/editorPropertiesPanel.js";
+import { createEditorHistory } from "../levels/editorHistory.js";
 import { MIN_ARENA_SIZE } from "../levels/schema.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
@@ -126,6 +127,9 @@ export function mountEditorDestinationScreen(opts) {
       paletteCtl = mountEditorPalette(paletteRoot);
     }
 
+    /** P6.6 — undo/redo snapshots (place/move/delete/properties). */
+    const history = createEditorHistory(level);
+
     /** P6.4 — properties panel (synced to workbench selection). */
     const editorUi = { syncProps: () => {} };
     let propsCtl = { sync: () => {}, dispose() {} };
@@ -136,7 +140,15 @@ export function mountEditorDestinationScreen(opts) {
       level,
       onPersist: (L) => upsertWipLevel(L),
       onSelectionChange: () => editorUi.syncProps(),
+      beforeMutation: () => history.beforeMutation(),
     });
+
+    function afterHistoryRestore() {
+      upsertWipLevel(level);
+      workbench.clearSelection();
+      workbench.refresh();
+      propsCtl.sync();
+    }
 
     if (propsRoot) {
       propsRoot.hidden = false;
@@ -145,12 +157,13 @@ export function mountEditorDestinationScreen(opts) {
         level,
         getSelection: () => workbench.getSelection(),
         onApply: () => workbench.refresh(),
+        beforeMutation: () => history.beforeMutation(),
       });
       editorUi.syncProps = () => propsCtl.sync();
       propsCtl.sync();
     }
 
-    return { level, viewport, workbench, paletteCtl, propsCtl };
+    return { level, viewport, workbench, paletteCtl, propsCtl, history, afterHistoryRestore };
   }
 
   /**
@@ -169,6 +182,34 @@ export function mountEditorDestinationScreen(opts) {
   }
 
   let session = mountEditorSession(ensureEditorWipLevel());
+
+  /** Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y redo — skip when typing in form fields. */
+  const onUndoRedoKey = (/** @type {KeyboardEvent} */ e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    const t = e.target;
+    if (
+      t instanceof HTMLInputElement ||
+      t instanceof HTMLTextAreaElement ||
+      t instanceof HTMLSelectElement
+    ) {
+      return;
+    }
+    const k = e.key.toLowerCase();
+    if (k === "z") {
+      e.preventDefault();
+      if (e.shiftKey) {
+        if (session.history.redo()) session.afterHistoryRestore();
+      } else if (session.history.undo()) {
+        session.afterHistoryRestore();
+      }
+      return;
+    }
+    if (k === "y") {
+      e.preventDefault();
+      if (session.history.redo()) session.afterHistoryRestore();
+    }
+  };
+  window.addEventListener("keydown", onUndoRedoKey);
 
   const onReturn = () => opts.onReturnToLobby();
 
@@ -262,6 +303,7 @@ export function mountEditorDestinationScreen(opts) {
         paletteRoot.classList.add("tron-destination--hidden");
       }
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onUndoRedoKey);
       if (btn) btn.removeEventListener("click", onClick);
       if (newLevelBtn) newLevelBtn.removeEventListener("click", onNewLevelClick);
       if (cancelBtn) cancelBtn.removeEventListener("click", onNewLevelCancel);

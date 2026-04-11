@@ -32,10 +32,12 @@ const ENEMY_ATTR_LABELS = {
  *   level: Record<string, unknown>;
  *   getSelection: () => EditorPickLike | null;
  *   onApply: () => void;
+ *   beforeMutation?: () => void;
  * }} opts
  */
 export function mountEditorPropertiesPanel(root, opts) {
   const { level, getSelection, onApply } = opts;
+  const beforeMutation = opts.beforeMutation;
 
   root.classList.add("editor-props");
   root.innerHTML =
@@ -104,6 +106,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         input.value = signText;
         input.maxLength = 64;
         input.addEventListener("change", () => {
+          beforeMutation?.();
           g.signText = input.value;
           onApply();
         });
@@ -166,6 +169,7 @@ export function mountEditorPropertiesPanel(root, opts) {
           shSel.appendChild(op);
         }
         shSel.addEventListener("change", () => {
+          beforeMutation?.();
           o.shape = shSel.value;
           onApply();
         });
@@ -184,6 +188,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         hIn.className = "editor-props__input";
         hIn.value = String(height);
         hIn.addEventListener("change", () => {
+          beforeMutation?.();
           o.height = clampInt(hIn.value, 1, 5);
           hIn.value = String(o.height);
           onApply();
@@ -206,6 +211,7 @@ export function mountEditorPropertiesPanel(root, opts) {
           vSel.appendChild(op);
         }
         vSel.addEventListener("change", () => {
+          beforeMutation?.();
           o.variant = vSel.value;
           onApply();
         });
@@ -252,6 +258,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         rIn.className = "editor-props__input";
         rIn.value = String(rot);
         rIn.addEventListener("change", () => {
+          beforeMutation?.();
           o.rotation = clampFloat(rIn.value, -100, 100);
           onApply();
         });
@@ -309,6 +316,7 @@ export function mountEditorPropertiesPanel(root, opts) {
       cIn.className = "editor-props__input editor-props__input--color";
       const hex = typeof o.color === "string" && /^#/.test(o.color) ? o.color : "#ff6600";
       cIn.value = hex.length === 7 ? hex : "#ff6600";
+      cIn.addEventListener("pointerdown", () => beforeMutation?.(), { capture: true });
       cIn.addEventListener("input", () => {
         o.color = cIn.value;
         onApply();
@@ -354,6 +362,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         const num = document.createElement("span");
         num.className = "editor-props__range-val";
         num.textContent = String(v);
+        range.addEventListener("pointerdown", () => beforeMutation?.(), { capture: true });
         range.addEventListener("input", () => {
           const n = clampInt(range.value, 1, 10);
           attrObj[key] = n;
@@ -376,6 +385,7 @@ export function mountEditorPropertiesPanel(root, opts) {
       const r0 = typeof o.rotation === "number" ? o.rotation : 0;
       rIn.value = String(r0);
       rIn.addEventListener("change", () => {
+        beforeMutation?.();
         o.rotation = clampFloat(rIn.value, -100, 100);
         onApply();
       });

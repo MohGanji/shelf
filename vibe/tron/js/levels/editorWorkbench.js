@@ -85,13 +85,15 @@ function disposeGroupChildren(group) {
  *   level: Record<string, unknown>;
  *   onPersist?: (level: Record<string, unknown>) => void;
  *   onSelectionChange?: (sel: EditorPick | null) => void;
+ *   beforeMutation?: () => void;
  * }} opts
- * @returns {{ dispose(): void; refresh(): void; getSelection: () => EditorPick | null }}
+ * @returns {{ dispose(): void; refresh(): void; getSelection: () => EditorPick | null; clearSelection(): void }}
  */
 export function mountEditorWorkbench(opts) {
   const { viewport, getPaletteSelection, level } = opts;
   const onPersist = opts.onPersist ?? ((L) => upsertWipLevel(L));
   const onSelectionChange = opts.onSelectionChange;
+  const beforeMutation = opts.beforeMutation;
 
   const scene = viewport.scene;
   const canvas = viewport.canvas;
@@ -446,6 +448,7 @@ export function mountEditorWorkbench(opts) {
     const arr = level[selection.list];
     if (!Array.isArray(arr)) return;
     if (selection.index < 0 || selection.index >= arr.length) return;
+    beforeMutation?.();
     arr.splice(selection.index, 1);
     setSelection(null);
     schedulePersist();
@@ -459,6 +462,7 @@ export function mountEditorWorkbench(opts) {
     if (!o || typeof o !== "object") return;
     const rec = /** @type {Record<string, unknown>} */ (o);
     if (selection.list === "enemies" || (selection.list === "gameObjects" && rec.type === "portal")) {
+      beforeMutation?.();
       const r = typeof rec.rotation === "number" ? rec.rotation : 0;
       rec.rotation = r + Math.PI / 2;
       rebuild();
@@ -477,6 +481,7 @@ export function mountEditorWorkbench(opts) {
 
     if (sel.category === "barrier") {
       if (!Array.isArray(level.barriers)) level.barriers = [];
+      beforeMutation?.();
       const kind = sel.kind;
       if (kind === "wall") {
         level.barriers.push({ type: "wall", x: ix, z: iz });
@@ -507,11 +512,13 @@ export function mountEditorWorkbench(opts) {
 
     if (sel.category === "game_object") {
       if (!Array.isArray(level.gameObjects)) level.gameObjects = [];
-        if (sel.kind === "boost_pad") {
+      if (sel.kind === "boost_pad") {
+        beforeMutation?.();
         level.gameObjects.push({ type: "boost_pad", x: ix, z: iz });
       } else if (sel.kind === "portal") {
         const incomplete = findIncompletePortalPairId(level);
         if (incomplete) {
+          beforeMutation?.();
           level.gameObjects.push({
             type: "portal",
             x: ix,
@@ -523,6 +530,7 @@ export function mountEditorWorkbench(opts) {
         } else {
           const n = countDistinctPortalPairs(level);
           if (n >= PORTAL_PAIR_COLORS.length) return;
+          beforeMutation?.();
           const pairId = `p-${Date.now().toString(36)}`;
           const pairColor = PORTAL_PAIR_COLORS[n];
           level.gameObjects.push({
@@ -542,6 +550,7 @@ export function mountEditorWorkbench(opts) {
 
     if (sel.category === "powerup") {
       if (!Array.isArray(level.powerups)) level.powerups = [];
+      beforeMutation?.();
       const cat =
         sel.meta && sel.meta.category === "level_permanent"
           ? "level_permanent"
@@ -565,6 +574,7 @@ export function mountEditorWorkbench(opts) {
 
     if (sel.category === "enemy") {
       if (!Array.isArray(level.enemies)) level.enemies = [];
+      beforeMutation?.();
       level.enemies.push({
         x: ix,
         z: iz,
@@ -619,6 +629,7 @@ export function mountEditorWorkbench(opts) {
           if (Array.isArray(arr) && arr[selection.index]) {
             const o = arr[selection.index];
             if (o && typeof o === "object") {
+              beforeMutation?.();
               /** @type {Record<string, unknown>} */ (o).x = ix;
               /** @type {Record<string, unknown>} */ (o).z = iz;
               rebuild();
@@ -643,6 +654,7 @@ export function mountEditorWorkbench(opts) {
       const edge = o.edge;
       const pos = o.position;
       if (typeof edge !== "string" || typeof pos !== "number") return;
+      beforeMutation?.();
       gateDrag = {
         index: hit.index,
         edge,
@@ -659,6 +671,7 @@ export function mountEditorWorkbench(opts) {
     }
 
     if (hit.type === "floor") {
+      beforeMutation?.();
       dragFloor = hit;
       setSelection(hit);
       try {
@@ -777,9 +790,14 @@ export function mountEditorWorkbench(opts) {
 
   rebuild();
 
+  function clearSelection() {
+    setSelection(null);
+  }
+
   return {
     getSelection,
     refresh,
+    clearSelection,
     dispose() {
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);
