@@ -1194,6 +1194,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.38** | Tron `index.html`: `translate="no"` on `#app-root` so automatic page translation does not rewrite HUD numerals, timer, gate text, or dev HUD strings mid-session | P10.1 | [x] |
 | **P10.39** | Tron `index.html`: `fetchpriority="low"` on the Google Fonts stylesheet link so font CSS competes less with `./css/style.css` preload and Three.js / cannon-es / `./js/main.js` `modulepreload` roots (extends critical-path tuning from P10.16) | P10.15, P10.16 | [x] |
 | **P10.40** | Tron `index.html`: `integrity` (`sha384` SRI) on jsdelivr `modulepreload` links for Three.js and cannon-es (same pinned versions as importmap) so preloaded CDN modules are cryptographically verified | P10.12 | [x] |
+| **P10.41** | Tron `index.html`: `referrerpolicy="strict-origin-when-cross-origin"` on the Google Fonts stylesheet `<link>` so font CSS requests align with the document referrer policy (limits full URL in `Referer` on cross-origin stylesheet discovery) | P10.15, P10.19 | [x] |
 
 ### HUD and progression
 
