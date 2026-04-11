@@ -62,11 +62,13 @@ import {
   extractArenaDimensionsFromLevel,
   findCampaignLevelByCampaignIndex,
   findCampaignLevelById,
+  getWipLevelValidated,
   loadCampaignLevels,
   parseCampaignLevelIndex,
   selectPlaytestCampaignLevel,
 } from "./levels/loader.js";
 import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
+import { peekEditorPlaytestReturn, setEditorPlaytestReturn } from "./sessionEditorPlaytest.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import {
   createPauseMenuController,
@@ -128,9 +130,29 @@ async function main() {
   let activeCampaignLevel = null;
   /** @type {{ arenaWidth: number; arenaDepth: number } | undefined} */
   let arenaSizeFromCampaign;
+  /** P6.9 — current arena JSON came from WIP play-test boot (validated). */
+  let arenaFromWipPlaytest = false;
 
   if (skipArenaForBoot) {
     arenaSizeFromCampaign = undefined;
+  } else if (bootPeek?.mode === "wip_playtest" && typeof bootPeek.levelId === "string") {
+    const w = getWipLevelValidated(bootPeek.levelId.trim());
+    if (w && w.valid) {
+      activeCampaignLevel = /** @type {Record<string, unknown>} */ (
+        JSON.parse(JSON.stringify(w.level))
+      );
+      arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+      arenaFromWipPlaytest = true;
+    } else {
+      console.warn("[main] WIP play-test: missing or invalid level — loading lobby.");
+      const lobbyOrFallback =
+        findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
+        selectPlaytestCampaignLevel(campaign.validLevels, save);
+      let lobbyLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
+      lobbyLevel = withLobbyArenaGateLock(lobbyLevel, campaign.validLevels, save);
+      activeCampaignLevel = lobbyLevel;
+      arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+    }
   } else if (bootPeek?.mode === "campaign" && typeof bootPeek.levelId === "string") {
     const found = findCampaignLevelById(campaign.validLevels, bootPeek.levelId);
     activeCampaignLevel =
@@ -221,8 +243,11 @@ async function main() {
     const ban = document.getElementById("lobby-placeholder");
     if (hud) hud.hidden = true;
     if (ban) ban.hidden = true;
+    const wipOpen =
+      typeof bootConsumed.wipLevelId === "string" ? bootConsumed.wipLevelId : undefined;
     mountEditorDestinationScreen({
       game,
+      initialWipLevelId: wipOpen,
       onReturnToLobby: () => {
         window.location.reload();
       },
@@ -279,6 +304,9 @@ async function main() {
     activeCampaignLevel && typeof activeCampaignLevel.id === "string"
       ? activeCampaignLevel.id === LOBBY_LEVEL_ID
       : false;
+
+  /** P6.9 — editor play-test: normal level rules, backtick returns to Architect. */
+  const isEditorPlaytest = arenaFromWipPlaytest;
 
   gameMode = isLobby ? GameMode.LOBBY : GameMode.LEVEL;
 
@@ -348,6 +376,7 @@ async function main() {
    * @param {Record<string, unknown>} nextBoot
    */
   function beginLobbyGateTunnel(nextBoot) {
+    setEditorPlaytestReturn(null);
     setSessionBootTarget(nextBoot);
     game.stopLoop();
     playTunnel(
@@ -626,7 +655,30 @@ async function main() {
 
   function beginQuitTunnelToLobby() {
     if (pauseMenu) pauseMenu.close();
+    setEditorPlaytestReturn(null);
     setSessionBootTarget(null);
+    game.stopLoop();
+    playTunnel(
+      game.renderer,
+      () => {
+        window.location.reload();
+      },
+      {
+        durationSeconds: CONFIG.tunnelGateSeconds,
+        onBegin: clearTrailAndEquipForTunnel,
+      },
+    ).catch(() => {
+      window.location.reload();
+    });
+  }
+
+  /** P6.9 — quit play-test back to Architect (not pause — ESC opens pause). */
+  function beginEditorPlaytestBacktickToEditor() {
+    if (!isEditorPlaytest || !activeCampaignLevel || typeof activeCampaignLevel.id !== "string") return;
+    const wid = activeCampaignLevel.id;
+    setEditorPlaytestReturn(null);
+    setSessionBootTarget({ mode: "editor", wipLevelId: wid });
+    if (pauseMenu) pauseMenu.close();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -683,6 +735,27 @@ async function main() {
     true,
   );
 
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.code !== "Backquote") return;
+      if (!isEditorPlaytest) return;
+      if (isTunnelBlockingInput()) return;
+      if (isControlsOverlayBlockingInput()) return;
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      beginEditorPlaytestBacktickToEditor();
+    },
+    true,
+  );
+
   function renderNitroHud() {
     if (!hudNitroEl) return;
     const max = Math.max(1, effectivePlayerNitroMax());
@@ -713,11 +786,20 @@ async function main() {
 
   function syncArenaHud() {
     if (hudHintEl) {
-      hudHintEl.textContent = isLobby
-        ? "Lobby — ride freely. X3 spawn: south entrance gate, facing inward."
-        : levelStarted
-          ? "Arena — timer runs after first W (X3). A3 tile map; red trail # = lethal tile preview."
-          : "Press W to start — timer and movement begin together (X3).";
+      if (isLobby) {
+        hudHintEl.textContent =
+          "Lobby — ride freely. X3 spawn: south entrance gate, facing inward.";
+      } else if (isEditorPlaytest) {
+        hudHintEl.textContent = levelStarted
+          ? "Play-test — ` (backtick) returns to Architect. ESC = pause."
+          : "Play-test — Press W to start. ` (backtick) returns to Architect. ESC = pause.";
+      } else if (levelStarted) {
+        hudHintEl.textContent =
+          "Arena — timer runs after first W (X3). A3 tile map; red trail # = lethal tile preview.";
+      } else {
+        hudHintEl.textContent =
+          "Press W to start — timer and movement begin together (X3).";
+      }
     }
     if (hudTimerWrap) {
       hudTimerWrap.hidden = isLobby;
@@ -1142,6 +1224,40 @@ async function main() {
   }
 
   game.startLoop();
+
+  /** P6.9 — after play-test (derez / win / exit), offer quick return to Architect. */
+  const editorReturnWrap = document.getElementById("editor-return-to-editor");
+  if (editorReturnWrap && isLobby) {
+    const pending = peekEditorPlaytestReturn();
+    if (pending) {
+      editorReturnWrap.hidden = false;
+      const openBtn = editorReturnWrap.querySelector("[data-editor-return-open]");
+      const dismissBtn = editorReturnWrap.querySelector("[data-editor-return-dismiss]");
+      const goEditor = () => {
+        setEditorPlaytestReturn(null);
+        setSessionBootTarget({ mode: "editor", wipLevelId: pending.levelId });
+        game.stopLoop();
+        playTunnel(
+          game.renderer,
+          () => {
+            window.location.reload();
+          },
+          {
+            durationSeconds: CONFIG.tunnelGateSeconds,
+            onBegin: clearTrailAndEquipForTunnel,
+          },
+        ).catch(() => {
+          window.location.reload();
+        });
+      };
+      const onDismiss = () => {
+        setEditorPlaytestReturn(null);
+        editorReturnWrap.hidden = true;
+      };
+      if (openBtn) openBtn.addEventListener("click", goEditor);
+      if (dismissBtn) dismissBtn.addEventListener("click", onDismiss);
+    }
+  }
 
   /** P7.5 — first lobby visit: modal controls reference; blocks cycle keys until dismissed. */
   if (isLobby && !save.controlsShown) {

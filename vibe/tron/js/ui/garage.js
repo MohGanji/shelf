@@ -18,6 +18,8 @@ import { mountEditorPropertiesPanel } from "../levels/editorPropertiesPanel.js";
 import { createEditorHistory } from "../levels/editorHistory.js";
 import { LOBBY_LEVEL_ID, MIN_ARENA_SIZE, validateLevel } from "../levels/schema.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
+import { setEditorPlaytestReturn } from "../sessionEditorPlaytest.js";
+import { setSessionBootTarget } from "../sessionBoot.js";
 
 /**
  * @typedef {{ dispose(): void }} GarageController
@@ -87,6 +89,7 @@ export function mountGarageDestinationScreen(opts) {
  * @param {{
  *   game: { renderer: import("three").WebGLRenderer };
  *   onReturnToLobby: () => void;
+ *   initialWipLevelId?: string;
  * }} opts
  * @returns {{ dispose(): void }}
  */
@@ -188,7 +191,7 @@ export function mountEditorDestinationScreen(opts) {
     s.paletteCtl.dispose();
   }
 
-  let session = mountEditorSession(ensureEditorWipLevel());
+  let session = mountEditorSession(ensureEditorWipLevel(opts.initialWipLevelId));
 
   const exportErrEl = document.getElementById("editor-export-error");
 
@@ -252,6 +255,7 @@ export function mountEditorDestinationScreen(opts) {
   const exportLevelBtn = root.querySelector("[data-editor-export-level]");
   const exportManifestBtn = root.querySelector("[data-editor-export-manifest]");
   const importLevelBtn = root.querySelector("[data-editor-import-level]");
+  const playtestBtn = root.querySelector("[data-editor-playtest]");
   const importFileInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById("editor-import-file")
   );
@@ -306,6 +310,27 @@ export function mountEditorDestinationScreen(opts) {
 
   if (importLevelBtn) importLevelBtn.addEventListener("click", onImportLevelClick);
   if (importFileInput) importFileInput.addEventListener("change", onImportFileChange);
+
+  /** P6.9 — validated WIP → session flag + boot target → reload into arena play-test. */
+  const onPlaytestClick = () => {
+    const level = session.level;
+    const lid = level && typeof level.id === "string" ? level.id.trim() : "";
+    if (!lid) {
+      setExportError("Cannot play-test: level has no id.");
+      return;
+    }
+    const v = validateLevel(level);
+    if (!v.valid) {
+      setExportError(`Cannot play-test: ${v.errors[0] ?? "invalid level"}`);
+      return;
+    }
+    upsertWipLevel(level);
+    setExportError("");
+    setEditorPlaytestReturn({ levelId: lid });
+    setSessionBootTarget({ mode: "wip_playtest", levelId: lid });
+    window.location.reload();
+  };
+  if (playtestBtn) playtestBtn.addEventListener("click", onPlaytestClick);
 
   /** Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y redo — skip when typing in form fields. */
   const onUndoRedoKey = (/** @type {KeyboardEvent} */ e) => {
@@ -439,6 +464,7 @@ export function mountEditorDestinationScreen(opts) {
       if (exportManifestBtn) exportManifestBtn.removeEventListener("click", onExportManifestClick);
       if (importLevelBtn) importLevelBtn.removeEventListener("click", onImportLevelClick);
       if (importFileInput) importFileInput.removeEventListener("change", onImportFileChange);
+      if (playtestBtn) playtestBtn.removeEventListener("click", onPlaytestClick);
       setExportError("");
       root.hidden = true;
       root.classList.add("tron-destination--hidden");

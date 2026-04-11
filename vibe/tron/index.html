@@ -120,6 +120,26 @@
         </p>
       </div>
 
+      <div
+        id="editor-return-to-editor"
+        class="editor-return-to-editor"
+        hidden
+        role="region"
+        aria-label="Editor play-test return"
+      >
+        <button type="button" class="editor-return-to-editor__btn" data-editor-return-open>
+          Return to Editor
+        </button>
+        <button
+          type="button"
+          class="editor-return-to-editor__dismiss"
+          data-editor-return-dismiss
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+
       <div id="derez-overlay" class="derez-overlay" hidden aria-live="assertive">
         <p class="derez-overlay__title">DEREZZED</p>
         <p class="derez-overlay__sub">Trail or cycle collision — hold the line.</p>
@@ -179,6 +199,9 @@
           </button>
           <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-import-level>
             Import level JSON
+          </button>
+          <button type="button" class="tron-destination__btn tron-destination__btn--primary" data-editor-playtest>
+            Test
           </button>
           <input
             id="editor-import-file"

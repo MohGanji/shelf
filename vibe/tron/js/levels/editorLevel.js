@@ -64,9 +64,17 @@ export function createBlankWipLevel(arenaWidth = 80, arenaDepth = 80) {
 
 /**
  * Load first WIP or create a blank level and persist.
+ * @param {string} [preferredWipId] — open this WIP when present (e.g. Return to Editor / backtick).
  * @returns {Record<string, unknown>}
  */
-export function ensureEditorWipLevel() {
+export function ensureEditorWipLevel(preferredWipId) {
+  if (typeof preferredWipId === "string" && preferredWipId.trim()) {
+    const id = preferredWipId.trim();
+    const pick = getWipLevel(id);
+    if (pick && typeof pick === "object") {
+      return /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(pick)));
+    }
+  }
   const ids = listWipLevelIds();
   if (ids.length > 0) {
     const first = getWipLevel(ids[0]);

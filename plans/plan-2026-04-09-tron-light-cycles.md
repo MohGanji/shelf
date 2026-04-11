@@ -1115,7 +1115,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P6.6** | WIP save/load localStorage, undo/redo | P6.3 | [x] |
 | **P6.7** | Export level JSON + manifest download | P6.6, P5.1 | [x] |
 | **P6.8** | Import JSON → WIP with validation toast | P5.1 | [x] |
-| **P6.9** | Play-test, backtick to editor, session Return to Editor in lobby | X1, P6.6 | [ ] |
+| **P6.9** | Play-test, backtick to editor, session Return to Editor in lobby | X1, P6.6 | [x] |
 
 ### Phase 7 — Lobby and garage
 

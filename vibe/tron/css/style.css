@@ -832,6 +832,77 @@ body {
   background: rgba(0, 30, 45, 0.6);
 }
 
+.tron-destination__btn--primary {
+  border-color: rgba(0, 255, 200, 0.55);
+  background: rgba(0, 100, 90, 0.45);
+  box-shadow: 0 0 12px rgba(0, 255, 200, 0.12);
+}
+
+.tron-destination__btn--primary:hover {
+  background: rgba(0, 130, 110, 0.5);
+  border-color: rgba(0, 255, 220, 0.75);
+}
+
+/* P6.9 — lobby chip after editor play-test */
+.editor-return-to-editor {
+  position: fixed;
+  z-index: 55;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 200, 0.45);
+  background: linear-gradient(165deg, rgba(6, 18, 28, 0.94), rgba(4, 10, 20, 0.92));
+  box-shadow:
+    0 0 20px rgba(0, 255, 200, 0.12),
+    inset 0 0 18px rgba(0, 80, 100, 0.15);
+  pointer-events: auto;
+}
+
+.editor-return-to-editor[hidden] {
+  display: none !important;
+}
+
+.editor-return-to-editor__btn {
+  margin: 0;
+  padding: 0.45rem 1rem;
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(200, 255, 250, 0.98);
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  background: rgba(0, 90, 85, 0.55);
+  box-shadow: 0 0 14px rgba(0, 255, 200, 0.14);
+}
+
+.editor-return-to-editor__btn:hover {
+  filter: brightness(1.08);
+}
+
+.editor-return-to-editor__dismiss {
+  margin: 0;
+  padding: 0.15rem 0.45rem;
+  line-height: 1;
+  font-size: 1.1rem;
+  color: rgba(180, 220, 230, 0.85);
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+}
+
+.editor-return-to-editor__dismiss:hover {
+  color: #fff;
+  background: rgba(255, 80, 80, 0.2);
+}
+
 /* P6.2 — editor palette (six floor categories + wall-objects edge note) */
 .editor-palette-shell {
   position: fixed;
