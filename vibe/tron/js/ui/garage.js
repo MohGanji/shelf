@@ -16,7 +16,7 @@ import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
 import { mountEditorPropertiesPanel } from "../levels/editorPropertiesPanel.js";
 import { createEditorHistory } from "../levels/editorHistory.js";
-import { MIN_ARENA_SIZE, validateLevel } from "../levels/schema.js";
+import { LOBBY_LEVEL_ID, MIN_ARENA_SIZE, validateLevel } from "../levels/schema.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
 /**
@@ -251,10 +251,61 @@ export function mountEditorDestinationScreen(opts) {
 
   const exportLevelBtn = root.querySelector("[data-editor-export-level]");
   const exportManifestBtn = root.querySelector("[data-editor-export-manifest]");
+  const importLevelBtn = root.querySelector("[data-editor-import-level]");
+  const importFileInput = /** @type {HTMLInputElement | null} */ (
+    document.getElementById("editor-import-file")
+  );
   const onExportLevelClick = () => void runExportLevel();
   const onExportManifestClick = () => void runExportManifest();
   if (exportLevelBtn) exportLevelBtn.addEventListener("click", onExportLevelClick);
   if (exportManifestBtn) exportManifestBtn.addEventListener("click", onExportManifestClick);
+
+  /** P6.8 — file picker → parse JSON → validateLevel → new WIP id → persist → remount editor. */
+  async function runImportLevelFromFile(file) {
+    setExportError("");
+    let text;
+    try {
+      text = await file.text();
+    } catch (e) {
+      setExportError(`Invalid level file: ${String(e)}`);
+      return;
+    }
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      setExportError("Invalid level file: Invalid JSON");
+      return;
+    }
+    const v = validateLevel(json);
+    if (!v.valid) {
+      setExportError(`Invalid level file: ${v.errors[0] ?? "validation failed"}`);
+      return;
+    }
+    if (json.id === LOBBY_LEVEL_ID) {
+      setExportError("Invalid level file: Lobby campaign level cannot be imported as WIP");
+      return;
+    }
+    const wipId = `wip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    const next = /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(json)));
+    next.id = wipId;
+    upsertWipLevel(next);
+    disposeEditorSession(session);
+    session = mountEditorSession(/** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(next))));
+  }
+
+  const onImportLevelClick = () => {
+    if (importFileInput) importFileInput.click();
+  };
+
+  const onImportFileChange = () => {
+    const f = importFileInput?.files?.[0];
+    if (importFileInput) importFileInput.value = "";
+    if (f) void runImportLevelFromFile(f);
+  };
+
+  if (importLevelBtn) importLevelBtn.addEventListener("click", onImportLevelClick);
+  if (importFileInput) importFileInput.addEventListener("change", onImportFileChange);
 
   /** Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y redo — skip when typing in form fields. */
   const onUndoRedoKey = (/** @type {KeyboardEvent} */ e) => {
@@ -386,6 +437,8 @@ export function mountEditorDestinationScreen(opts) {
       }
       if (exportLevelBtn) exportLevelBtn.removeEventListener("click", onExportLevelClick);
       if (exportManifestBtn) exportManifestBtn.removeEventListener("click", onExportManifestClick);
+      if (importLevelBtn) importLevelBtn.removeEventListener("click", onImportLevelClick);
+      if (importFileInput) importFileInput.removeEventListener("change", onImportFileChange);
       setExportError("");
       root.hidden = true;
       root.classList.add("tron-destination--hidden");

@@ -177,6 +177,17 @@
           <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-export-manifest>
             Export manifest
           </button>
+          <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-import-level>
+            Import level JSON
+          </button>
+          <input
+            id="editor-import-file"
+            type="file"
+            accept=".json,application/json"
+            hidden
+            aria-hidden="true"
+            tabindex="-1"
+          />
           <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
         </div>
         <p id="editor-export-error" class="editor-export-error" hidden role="alert"></p>
