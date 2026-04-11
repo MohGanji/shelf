@@ -84,12 +84,14 @@ function disposeGroupChildren(group) {
  *   getPaletteSelection: () => unknown;
  *   level: Record<string, unknown>;
  *   onPersist?: (level: Record<string, unknown>) => void;
+ *   onSelectionChange?: (sel: EditorPick | null) => void;
  * }} opts
- * @returns {{ dispose(): void }}
+ * @returns {{ dispose(): void; refresh(): void; getSelection: () => EditorPick | null }}
  */
 export function mountEditorWorkbench(opts) {
   const { viewport, getPaletteSelection, level } = opts;
   const onPersist = opts.onPersist ?? ((L) => upsertWipLevel(L));
+  const onSelectionChange = opts.onSelectionChange;
 
   const scene = viewport.scene;
   const canvas = viewport.canvas;
@@ -123,6 +125,25 @@ export function mountEditorWorkbench(opts) {
 
   /** @type {EditorPick | null} */
   let selection = null;
+
+  /**
+   * @param {EditorPick | null} next
+   */
+  function setSelection(next) {
+    selection = next;
+    onSelectionChange?.(selection);
+    rebuild();
+  }
+
+  function refresh() {
+    rebuild();
+    schedulePersist();
+    onSelectionChange?.(selection);
+  }
+
+  function getSelection() {
+    return selection;
+  }
 
   /** @type {EditorPick | null} */
   let dragFloor = null;
@@ -426,8 +447,7 @@ export function mountEditorWorkbench(opts) {
     if (!Array.isArray(arr)) return;
     if (selection.index < 0 || selection.index >= arr.length) return;
     arr.splice(selection.index, 1);
-    selection = null;
-    rebuild();
+    setSelection(null);
     schedulePersist();
   }
 
@@ -443,6 +463,7 @@ export function mountEditorWorkbench(opts) {
       rec.rotation = r + Math.PI / 2;
       rebuild();
       schedulePersist();
+      onSelectionChange?.(selection);
     }
   }
 
@@ -602,14 +623,14 @@ export function mountEditorWorkbench(opts) {
               /** @type {Record<string, unknown>} */ (o).z = iz;
               rebuild();
               schedulePersist();
+              onSelectionChange?.(selection);
               return;
             }
           }
         }
         return;
       }
-      selection = null;
-      rebuild();
+      setSelection(null);
       return;
     }
 
@@ -628,8 +649,7 @@ export function mountEditorWorkbench(opts) {
         startPos: pos,
         startClient: edge === "north" || edge === "south" ? e.clientX : e.clientY,
       };
-      selection = { type: "gate", index: hit.index };
-      rebuild();
+      setSelection({ type: "gate", index: hit.index });
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch {
@@ -640,8 +660,7 @@ export function mountEditorWorkbench(opts) {
 
     if (hit.type === "floor") {
       dragFloor = hit;
-      selection = hit;
-      rebuild();
+      setSelection(hit);
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch {
@@ -708,6 +727,7 @@ export function mountEditorWorkbench(opts) {
 
   /** @param {PointerEvent} e */
   function onPointerUp(e) {
+    const hadGateDrag = !!gateDrag;
     if (gateDrag) {
       gateDrag = null;
       try {
@@ -716,6 +736,8 @@ export function mountEditorWorkbench(opts) {
         /* ignore */
       }
     }
+    if (hadGateDrag) onSelectionChange?.(selection);
+    const hadFloorDrag = !!dragFloor;
     if (dragFloor) {
       dragFloor = null;
       schedulePersist();
@@ -725,15 +747,15 @@ export function mountEditorWorkbench(opts) {
         /* ignore */
       }
     }
+    if (hadFloorDrag) onSelectionChange?.(selection);
   }
 
   /** @param {KeyboardEvent} e */
   function onKey(e) {
     if (e.key === "Escape") {
       if (selection || gateDrag) {
-        selection = null;
         gateDrag = null;
-        rebuild();
+        setSelection(null);
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -756,6 +778,8 @@ export function mountEditorWorkbench(opts) {
   rebuild();
 
   return {
+    getSelection,
+    refresh,
     dispose() {
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("pointermove", onPointerMove);

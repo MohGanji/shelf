@@ -7,6 +7,7 @@ import { ensureEditorWipLevel } from "../levels/editorLevel.js";
 import { mountEditorOrthographicViewport } from "../levels/editorView.js";
 import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
+import { mountEditorPropertiesPanel } from "../levels/editorPropertiesPanel.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
 /**
@@ -83,6 +84,7 @@ export function mountGarageDestinationScreen(opts) {
 export function mountEditorDestinationScreen(opts) {
   const root = document.getElementById("editor-destination");
   const paletteRoot = document.getElementById("editor-palette-root");
+  const propsRoot = document.getElementById("editor-properties-root");
   if (!root || !opts.game?.renderer) {
     return { dispose() {} };
   }
@@ -114,12 +116,29 @@ export function mountEditorDestinationScreen(opts) {
     paletteCtl = mountEditorPalette(paletteRoot);
   }
 
+  /** P6.4 — properties panel (synced to workbench selection). */
+  const editorUi = { syncProps: () => {} };
+  let propsCtl = { sync: () => {}, dispose() {} };
+
   const workbench = mountEditorWorkbench({
     viewport,
     getPaletteSelection: () => paletteCtl.getSelection(),
     level,
     onPersist: (L) => upsertWipLevel(L),
+    onSelectionChange: () => editorUi.syncProps(),
   });
+
+  if (propsRoot) {
+    propsRoot.hidden = false;
+    propsRoot.classList.remove("tron-destination--hidden");
+    propsCtl = mountEditorPropertiesPanel(propsRoot, {
+      level,
+      getSelection: () => workbench.getSelection(),
+      onApply: () => workbench.refresh(),
+    });
+    editorUi.syncProps = () => propsCtl.sync();
+    propsCtl.sync();
+  }
 
   const onReturn = () => opts.onReturnToLobby();
 
@@ -134,9 +153,14 @@ export function mountEditorDestinationScreen(opts) {
 
   return {
     dispose() {
+      propsCtl.dispose();
       workbench.dispose();
       viewport.dispose();
       paletteCtl.dispose();
+      if (propsRoot) {
+        propsRoot.hidden = true;
+        propsRoot.classList.add("tron-destination--hidden");
+      }
       if (paletteRoot) {
         paletteRoot.hidden = true;
         paletteRoot.classList.add("tron-destination--hidden");
