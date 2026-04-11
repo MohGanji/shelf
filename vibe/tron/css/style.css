@@ -12,6 +12,31 @@
   --boot-bar-fill: linear-gradient(90deg, #00ffff, #66ffff);
 }
 
+.noscript-fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 2rem;
+  background: var(--tron-bg);
+  color: var(--tron-cyan);
+  font-family: "Rajdhani", system-ui, sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.5;
+  text-align: center;
+  border: 2px solid var(--tron-dim);
+  box-sizing: border-box;
+}
+
+.noscript-fallback strong {
+  font-family: "Orbitron", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 *,
 *::before,
 *::after {
