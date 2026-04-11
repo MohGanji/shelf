@@ -734,6 +734,66 @@
             ]
           },
           {
+            "@type": "Offer",
+            "@id": "./#offer-tlc-free",
+            "category": "Browser-based arcade racing video game (free digital access)",
+            "url": "./",
+            "sku": "TLC-WEB-1.0.0",
+            "price": "0",
+            "priceCurrency": "USD",
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "price": "0",
+              "priceCurrency": "USD",
+              "unitCode": "C62",
+              "unitText": "one digital copy",
+              "valueAddedTaxIncluded": false,
+              "referenceQuantity": {
+                "@type": "QuantitativeValue",
+                "value": 1
+              }
+            },
+            "validFrom": "2026-04-11",
+            "availabilityStarts": "2026-04-11",
+            "availability": "https://schema.org/InStock",
+            "itemOffered": { "@id": "./#game" },
+            "eligibleRegion": {
+              "@type": "Place",
+              "name": "Worldwide"
+            },
+            "eligibleCustomerType": "https://schema.org/Consumer",
+            "offeredBy": { "@id": "./#organization" },
+            "seller": { "@id": "./#organization" },
+            "acceptedPaymentMethod": "https://schema.org/Free",
+            "businessFunction": "http://purl.org/goodrelations/v1#Sell",
+            "itemCondition": "https://schema.org/NewCondition",
+            "deliveryLeadTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "SEC",
+              "unitText": "instant browser load"
+            },
+            "availableChannel": {
+              "@type": "ServiceChannel",
+              "serviceUrl": "./",
+              "availableLanguage": "en"
+            },
+            "availableDeliveryMethod": "https://schema.org/OnlineDelivery",
+            "additionalProperty": [
+              {
+                "@type": "PropertyValue",
+                "name": "Distribution",
+                "value": "Browser-only digital access; no physical media or shipment"
+              },
+              {
+                "@type": "PropertyValue",
+                "name": "Access model",
+                "value": "Instant play in a supported browser; no account required for the base campaign"
+              }
+            ]
+          },
+          {
             "@type": "WebPage",
             "@id": "./#webpage",
             "url": "./",
@@ -972,65 +1032,7 @@
                 ]
               }
             },
-            "offers": {
-              "@type": "Offer",
-              "category": "Browser-based arcade racing video game (free digital access)",
-              "url": "./",
-              "sku": "TLC-WEB-1.0.0",
-              "price": "0",
-              "priceCurrency": "USD",
-              "priceSpecification": {
-                "@type": "UnitPriceSpecification",
-                "price": "0",
-                "priceCurrency": "USD",
-                "unitCode": "C62",
-                "unitText": "one digital copy",
-                "valueAddedTaxIncluded": false,
-                "referenceQuantity": {
-                  "@type": "QuantitativeValue",
-                  "value": 1
-                }
-              },
-              "validFrom": "2026-04-11",
-              "availabilityStarts": "2026-04-11",
-              "availability": "https://schema.org/InStock",
-              "itemOffered": { "@id": "./#game" },
-              "eligibleRegion": {
-                "@type": "Place",
-                "name": "Worldwide"
-              },
-              "eligibleCustomerType": "https://schema.org/Consumer",
-              "offeredBy": { "@id": "./#organization" },
-              "seller": { "@id": "./#organization" },
-              "acceptedPaymentMethod": "https://schema.org/Free",
-              "businessFunction": "http://purl.org/goodrelations/v1#Sell",
-              "itemCondition": "https://schema.org/NewCondition",
-              "deliveryLeadTime": {
-                "@type": "QuantitativeValue",
-                "minValue": 0,
-                "maxValue": 0,
-                "unitCode": "SEC",
-                "unitText": "instant browser load"
-              },
-              "availableChannel": {
-                "@type": "ServiceChannel",
-                "serviceUrl": "./",
-                "availableLanguage": "en"
-              },
-              "availableDeliveryMethod": "https://schema.org/OnlineDelivery",
-              "additionalProperty": [
-                {
-                  "@type": "PropertyValue",
-                  "name": "Distribution",
-                  "value": "Browser-only digital access; no physical media or shipment"
-                },
-                {
-                  "@type": "PropertyValue",
-                  "name": "Access model",
-                  "value": "Instant play in a supported browser; no account required for the base campaign"
-                }
-              ]
-            }
+            "offers": { "@id": "./#offer-tlc-free" }
           }
         ]
       }
