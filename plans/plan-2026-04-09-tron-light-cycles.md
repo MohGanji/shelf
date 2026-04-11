@@ -1021,3 +1021,154 @@ Controls shown on first lobby entry (auto-shows if `controlsShown` is false, dis
 - **Tron Run/r** — Speed feel, trail mechanics, boost pads
 - **Color palette**: Primary cyan `#00FFFF` + orange `#FF6600` on near-black `#0a0a0a` with blue-tinted grid `#1a1a3e`
 - **Power-up colors**: Green `#00FF66` (instant), Blue `#0088FF` (level-permanent), Purple `#CC00FF` (equippable)
+
+---
+
+## Implementation checklist (dependency order + `vibe/tron` status)
+
+This section tracks work derived from this plan. **Legend:** `[x]` = implemented in `vibe/tron` in a meaningful way · `[~]` = partial / stub · `[ ]` = missing or not wired to gameplay. Status reflects the codebase as of the last review appended here.
+
+### Architecture and shared foundations
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **A1** | Tech stack: Three.js r160+ importmap, ES modules, cannon-es, no server | — | [x] |
+| **A2** | Config override chain: `config.js` + save `devHud` merge; gameplay reads merged runtime config only | A1 | [~] |
+| **A3** | Physics split: cannon-es for solids/triggers; custom tile map for trails + AI trail lookahead | A1 | [~] |
+| **A4** | File tree under `vibe/tron/` per plan (engine, game, levels, ui, data, `levels/` campaign, `assets/audio/`) | A1 | [~] |
+
+### Phase 1 — Foundation
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P1.1** | Project scaffold: `index.html`, importmap, `main.js` boot, `style.css`, renderer + post stub, `config.js` + devHud defaults, BOOT tunnel with title + progress bar | A1, A2 | [~] |
+| **P1.2** | Arena foundation: grid floor (1-unit), perimeter walls, emissive panels, lighting; wall collision = slide + angle-based speed reduction | P1.1 | [x] |
+| **P1.3** | Light cycle mesh: procedural low-poly, emissive, cyan/orange, wheel spin, tilt / pitch-on-accel / lean-on-brake | P1.1 | [x] |
+| **P1.4** | Third-person chase cam: smooth follow behind, stationary turning, devHud camera params; nitro FOV, pull-back, speed lines, motion blur | P1.3 | [x] |
+| **P1.5** | Movement: W/S (no reverse), A/D at any speed, speed-dependent turn, coast, brake; nitro overrides brake; handling penalty during nitro; input manager | P1.2, P1.3 | [~] |
+| **P1.6** | Full nitro system: bar battery, Space semantics, recharge, speed return, HUD segments, empty feedback, non-collidable nitro trail visual | P1.5, A2 | [x] |
+
+### Cross-cut: state machine and transitions
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **X1** | State machine in `main.js`: BOOT → LOBBY → (LEVEL / GARAGE / EDITOR) + PAUSE + PLAYER_DEREZ + LEVEL_COMPLETE | P1.1, P5.2, P5.7, P7.x | [ ] |
+| **X2** | Tunnel `playTunnel(onComplete)` for all transitions; input blocked; trails cleared; spawn rules on arrival | P1.1 | [~] |
+| **X3** | Spawn system: entrance gate offset, facing, stationary; timer + enemies start on first W | P5.3, P5.6 | [ ] |
+
+### Phase 2 — Trail + collisions
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P2.1** | Trail rendering: CatmullRom segments, 1 unit traveled spawn, FIFO, emissive walls, color = cycle | P1.3 | [ ] |
+| **P2.2** | Trail limits / fade: max segments from attribute, fade/despawn oldest, no trail at speed 0 | P2.1, P5.8 | [ ] |
+| **P2.3** | Collision: tile map for trails; cycle↔cycle rules (low speed, shield); cannon groups | P1.2, P2.1, P3.4 | [ ] |
+| **P2.4** | Derez sequence: implosion, trail vanish, player slow-mo / overhead / shake / glitch toggles; SFX | P2.1–P2.3 | [ ] |
+| **P2.5** | Near-miss detection + audio; own-trail immunity alignment | P2.3, A3 | [ ] |
+| **P2.6** | Level outcomes: player derez path; all enemies dead → exit gate + coin overlay; zero-enemy rules | X1, P5.6, P5.7, P5.8 | [ ] |
+
+### Phase 3 — Power-ups and game objects
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P3.1** | Power-up core: three categories, colors, sounds, pickup rules | P2.3 | [ ] |
+| **P3.2** | Instant: Nitro Recharge | P3.1 | [ ] |
+| **P3.3** | Level-permanent: Trail Extend, Nitro Capacity+ (player-only) | P3.1 | [ ] |
+| **P3.4** | Shield equippable: E, trail/cycle rules, walls do not consume, expiry | P3.1, P2.3 | [ ] |
+| **P3.5** | Boost pads: 1-bar burst, cooldown, dim | P3.1, P1.6 | [ ] |
+| **P3.6** | Portals: paired, one-sided, invuln + exit immunity, trail break, speed kept, cooldown | P3.1, P2.1 | [ ] |
+| **P3.7** | Power-up visuals: float/bob/rotate, distinct shapes, pickup particles | P3.1 | [ ] |
+
+### Phase 4 — AI
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P4.1** | Enemy spawn from level data; stationary until player W; attributes + color | X3, P5.3 | [ ] |
+| **P4.2** | AI steering: tile trail avoidance + raycast walls | P4.1, A3 | [ ] |
+| **P4.3** | Hunting: seek, trail cuts, flanking, aggression | P4.2 | [ ] |
+| **P4.4** | Self-preservation: avoidance ranges, reaction time | P4.2 | [ ] |
+| **P4.5** | AI uses nitro, boost pads, portals, pickups, shield | P3.x, P4.3 | [ ] |
+
+### Phase 5 — Level system
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P5.1** | `schema.js`: level format + `validateLevel` → `{ valid, errors }`; safe skip invalid campaign | A4 | [x] |
+| **P5.2** | `loader.js`: `manifest.json` + fetch campaign; WIP localStorage | P5.1 | [ ] |
+| **P5.3** | `arena.js`: scene + physics from level data | P5.2, P1.2 | [~] |
+| **P5.4** | `blocks.js`: barriers; slide collision | P5.3 | [ ] |
+| **P5.5** | Block merging: walls; buildings same-shape | P5.4 | [ ] |
+| **P5.6** | `gates.js`: neon arcs, triggers, open vs locked, signage | P5.3 | [ ] |
+| **P5.7** | Transitions: tunnel; coin overlay; coins on exit ride-through; equip cleared | X2, P5.6 | [~] |
+| **P5.8** | `savedata.js`: full schema, progression, cosmetics, settings | A2 | [x] |
+| **P5.9** | Campaign: `level-0-lobby.json` + five starter levels + `manifest.json` | P5.1, P5.2 | [ ] |
+
+### Phase 6 — Level editor
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P6.1** | Orthographic editor camera, pan, zoom, grid | P5.1 | [ ] |
+| **P6.2** | Palette (six floor categories) + edge UI for wall objects | P6.1 | [ ] |
+| **P6.3** | Place/move/delete/rotate; gates along walls; portal pairs; clear zones; hover preview | P6.2, P5.1 | [ ] |
+| **P6.4** | Properties panel per object type | P6.3 | [ ] |
+| **P6.5** | New level dialog (min 40×40, immutable size) | P6.1 | [ ] |
+| **P6.6** | WIP save/load localStorage, undo/redo | P6.3 | [ ] |
+| **P6.7** | Export level JSON + manifest download | P6.6, P5.1 | [ ] |
+| **P6.8** | Import JSON → WIP with validation toast | P5.1 | [ ] |
+| **P6.9** | Play-test, backtick to editor, session Return to Editor in lobby | X1, P6.6 | [ ] |
+
+### Phase 7 — Lobby and garage
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P7.1** | Lobby `level-0` (400×200), four gates, no enemies, timer hidden | P5.9, P5.3 | [ ] |
+| **P7.2** | Gate routing + tunnel | P5.6, P5.7, X2 | [ ] |
+| **P7.3** | Garage environment: showroom plate, bike, trail preview | P1.3 | [ ] |
+| **P7.4** | Garage UI: colors, upgrades, stats, return | P5.8, P7.3 | [ ] |
+| **P7.5** | Controls overlay on first lobby (`controlsShown`) | P7.1 | [ ] |
+| **P7.6** | Pause: ESC, freeze everything, settings overlay, quit = derez | X1, P5.8 | [ ] |
+
+### Phase 8 — Audio
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P8.1** | `audio.js`: Web Audio, music loop + crossfade, SFX pool, ambient, missing-file fallback, autoplay flag | A1 | [~] |
+| **P8.2** | Two music tracks (lobby/editor vs gameplay); ElevenLabs pipeline per plan | P8.1 | [ ] |
+| **P8.3** | Ambient layers: grid hum, crackle, resonance | P8.1 | [ ] |
+| **P8.4** | Engine sounds: idle, accel pitch, gears, top-speed | P8.1, P1.5 | [ ] |
+| **P8.5** | Full SFX table from plan | P8.1 | [ ] |
+| **P8.6** | Audio settings persisted | P5.8, P7.6 | [ ] |
+
+### Phase 9 — Polish
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P9.1** | Post: bloom, chromatic aberration, CRT; devHud-driven | P1.1 | [x] |
+| **P9.2** | Developer HUD (`.`): categories, live persist to save | A2, P5.8 | [ ] |
+| **P9.3** | Particles: nitro, derez, pickups, portal, shield | P2.4, P3.7 | [ ] |
+| **P9.4** | Minimap per HUD spec | P2.1, P4.1 | [ ] |
+| **P9.5** | Tunnel scene: cylinder grid, reusable `playTunnel` durations | P1.1 | [x] |
+| **P9.6** | Final Tron: Legacy visual pass | P9.1 | [~] |
+
+### Phase 10 — Integration
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **P10.1** | `vibe/index.html` link + desktop note | A4 | [x] |
+| **P10.2** | Cross-browser performance pass | (full game) | [ ] |
+| **P10.3** | Mobile / desktop recommendation copy | P10.1 | [ ] |
+
+### HUD and progression
+
+| ID | Task | Depends on | Status |
+|----|------|------------|--------|
+| **H1** | In-game HUD: speed, nitro segments, trail count, timer (hidden in lobby), equip + E hint, minimap | P1.6, P2.1, P9.4 | [ ] |
+| **H2** | Garage-only coins; linear progression; upgrade costs | P5.8, P7.4 | [ ] |
+
+### Status notes (snapshot)
+
+- **Implemented or largely present:** importmap and cannon-es; `config.js` + devHud defaults; boot tunnel with title/progress; arena grid + walls + wall slide; procedural light cycle + chase camera + post (bloom, CA, CRT, nitro blur); core WASD movement with coast/brake; `js/levels/schema.js` with `validateLevel`; `savedata.js`; tunnel helper + input blocking; Tron link on vibe index; partial `audio.js` scaffolding.
+- **Partial:** runtime config merge not driving attribute-based speeds in playtest; no tile trail map yet; `main.js` is boot → arena sandbox only (no full state machine); `arena.js` not driven by level JSON; `levels/manifest.json` empty; no `.` dev HUD UI; nitro is burst demo only.
+- **Missing:** trails, AI, gates, barriers, power-ups, portals, garage, editor, lobby level JSON, full HUD, most SFX/music content, Phase 6–7 UI flows.
+
+Update the **Status** column as features land.

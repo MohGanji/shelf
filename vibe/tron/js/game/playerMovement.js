@@ -4,12 +4,19 @@
  */
 
 /**
+ * @typedef {object} PlayerMoveOptions
+ * @property {number} [nitroHandlingFactor] — multiply turn rate (burst penalty, typically below 1)
+ * @property {null | { remaining: number; duration: number; startSpeed: number }} [speedReturn]
+ */
+
+/**
  * @param {import('cannon-es').Body} body
  * @param {number} dt
  * @param {{ w: boolean; a: boolean; s: boolean; d: boolean }} keys
  * @param {boolean} nitroBurstActive — nitro overrides brake while active
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
  * @param {import('../config.js').DEFAULT_DEV_HUD} devHud
+ * @param {PlayerMoveOptions} [options]
  */
 export function integratePlayerCycleMovement(
   body,
@@ -18,6 +25,7 @@ export function integratePlayerCycleMovement(
   nitroBurstActive,
   playCfg,
   devHud,
+  options = {},
 ) {
   if (dt <= 0) return;
 
@@ -27,7 +35,10 @@ export function integratePlayerCycleMovement(
 
   const steer = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
   const baseTurn = playCfg.baseTurnRate;
-  const effTurn = baseTurn / (1 + Math.abs(speed) * devHud.steeringSpeedFalloff);
+  const handleMul =
+    typeof options.nitroHandlingFactor === "number" ? options.nitroHandlingFactor : 1;
+  const effTurn =
+    (baseTurn / (1 + Math.abs(speed) * devHud.steeringSpeedFalloff)) * handleMul;
   heading += steer * effTurn * dt;
 
   const friction = devHud.cycleFriction;
@@ -50,6 +61,15 @@ export function integratePlayerCycleMovement(
   } else {
     const steps = dt * playCfg.physicsHz;
     speed *= Math.pow(friction, steps);
+  }
+
+  const sr = options.speedReturn;
+  if (sr && sr.duration > 0 && sr.remaining > 0 && keys.w) {
+    const u = 1 - sr.remaining / sr.duration;
+    const t = u < 0 ? 0 : u > 1 ? 1 : u;
+    const top = playCfg.maxMoveSpeed;
+    const cap = sr.startSpeed + (top - sr.startSpeed) * t;
+    speed = Math.min(speed, cap);
   }
 
   body.velocity.x = speed * Math.sin(heading);

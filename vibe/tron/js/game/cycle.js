@@ -117,6 +117,27 @@ export function createLightCycle(options = {}) {
 
   const wheels = [wheelL, wheelR];
 
+  /** Non-collidable nitro burst streak — additive planes behind rear (P1.6). */
+  const nitroVfx = new THREE.Group();
+  nitroVfx.position.set(0, H * 0.02, -L * 0.36);
+  animationRoot.add(nitroVfx);
+  const streakMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const streakGeo = new THREE.PlaneGeometry(W * 0.55, L * 0.22, 1, 1);
+  const streakA = new THREE.Mesh(streakGeo, streakMat);
+  streakA.rotation.x = -Math.PI * 0.42;
+  streakA.position.z = -0.02;
+  const streakB = new THREE.Mesh(streakGeo, streakMat);
+  streakB.rotation.x = -Math.PI * 0.38;
+  streakB.position.y = 0.04;
+  streakB.rotation.z = 0.12;
+  nitroVfx.add(streakA, streakB);
+
   let wheelSpin = 0;
   let tiltCurrent = 0;
   let pitchCurrent = 0;
@@ -150,6 +171,7 @@ export function createLightCycle(options = {}) {
    * @param {number} input.steer — -1..1 turn input (A/D)
    * @param {boolean} [input.accelerating]
    * @param {boolean} [input.braking]
+   * @param {number} [input.nitroBurstStrength] — 0–1 visual only (non-collidable nitro trail)
    */
   function update(dt, input) {
     if (dt <= 0) return;
@@ -180,6 +202,10 @@ export function createLightCycle(options = {}) {
     for (const w of wheels) {
       w.rotation.x = wheelSpin;
     }
+
+    const nitroS = THREE.MathUtils.clamp(input.nitroBurstStrength ?? 0, 0, 1);
+    streakMat.opacity = nitroS * 0.78;
+    nitroVfx.visible = nitroS > 0.02;
   }
 
   function setPrimaryColor(hex) {
@@ -194,6 +220,8 @@ export function createLightCycle(options = {}) {
     railGeo.dispose();
     wheelGeo.dispose();
     glowGeo.dispose();
+    streakGeo.dispose();
+    streakMat.dispose();
     bodyMat.dispose();
     stripMatStrong.dispose();
     stripMatSoft.dispose();

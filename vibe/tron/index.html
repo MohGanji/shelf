@@ -42,7 +42,20 @@
         aria-hidden="true"
       ></div>
 
-      <div id="cycle-hud" class="cycle-hud" aria-live="polite"></div>
+      <div id="cycle-hud" class="cycle-hud" aria-live="polite">
+        <div class="cycle-hud__row cycle-hud__row--speed">
+          <span class="cycle-hud__icon" aria-hidden="true">⚡</span>
+          <span id="hud-speed" class="cycle-hud__speed">0</span>
+          <span class="cycle-hud__unit">u/s</span>
+        </div>
+        <div
+          id="hud-nitro"
+          class="nitro-bar-strip"
+          role="img"
+          aria-label="Nitro charges"
+        ></div>
+        <p id="hud-hint" class="cycle-hud__hint"></p>
+      </div>
 
       <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
         <p>

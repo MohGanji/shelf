@@ -1,3 +1,5 @@
+import { nitroBarsFromAttributeLevel } from "./game/nitroSystem.js";
+
 /**
  * Base gameplay constants and default dev HUD values.
  * Runtime config merges save `devHud` over these defaults (see mergeRuntimeConfig).
@@ -159,12 +161,35 @@ export const CONFIG = {
 };
 
 /**
- * Flattened config for arena foundation + physics playtest (P1.2).
- * @param {ReturnType<typeof mergeRuntimeConfig>} runtime
+ * @param {number} level — attribute level 1–10
+ * @param {number} min
+ * @param {number} max
  */
-export function getArenaPlaytestConfig(runtime) {
+function attrScalar(level, min, max) {
+  const lv = Math.max(1, Math.min(10, Math.floor(level)));
+  return min + ((lv - 1) * (max - min)) / 9;
+}
+
+/**
+ * Flattened config for arena foundation + physics playtest (P1.2 / P1.6 attributes).
+ * @param {ReturnType<typeof mergeRuntimeConfig>} runtime
+ * @param {Partial<{ speed: number; acceleration: number; handling: number; nitroBars: number }>} [attributes] — from save; defaults to level 1
+ */
+export function getArenaPlaytestConfig(runtime, attributes) {
   const { world, devHud } = runtime;
   const wallH = devHud.wallHeight ?? world.arenaWallHeight;
+  const a = attributes ?? {};
+  const maxMoveSpeed = attrScalar(typeof a.speed === "number" ? a.speed : 1, world.defaultTopSpeed, 120);
+  const acceleration = attrScalar(
+    typeof a.acceleration === "number" ? a.acceleration : 1,
+    world.defaultAcceleration,
+    50,
+  );
+  const baseTurnRate = attrScalar(typeof a.handling === "number" ? a.handling : 1, 2.5, 5.0);
+  const nitroBarCount = nitroBarsFromAttributeLevel(
+    typeof a.nitroBars === "number" ? a.nitroBars : 1,
+  );
+
   return {
     arenaWidth: world.defaultArenaWidth,
     arenaDepth: world.defaultArenaDepth,
@@ -172,11 +197,13 @@ export function getArenaPlaytestConfig(runtime) {
     physicsHz: 60,
     playerRadius: 0.35,
     playerMass: 5,
-    /** Handling level 1 — rad/s before speed falloff (plan § Movement). */
-    baseTurnRate: 2.5,
-    /** units/s² toward top speed (plan: default 20). */
-    acceleration: world.defaultAcceleration,
-    maxMoveSpeed: world.defaultTopSpeed,
+    /** rad/s before speed falloff (plan § Movement; scales with Handling attribute). */
+    baseTurnRate,
+    /** units/s² toward top speed (Acceleration attribute). */
+    acceleration,
+    maxMoveSpeed,
+    /** Nitro segments from Nitro Bars attribute (5–12). */
+    nitroBarCount,
     /** Legacy force-based tuning (unused by arcade drive; kept for tooling). */
     moveAcceleration: 120,
     /** Horizontal damping off — coast/brake come from movement integration. */

@@ -25,6 +25,12 @@ import {
   integratePlayerCycleMovement,
   syncHeadingSpeedFromVelocity,
 } from "./game/playerMovement.js";
+import {
+  createNitroState,
+  getSpeedReturnForMovement,
+  isNitroBurstActive,
+  updateNitroBattery,
+} from "./game/nitroSystem.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -97,10 +103,10 @@ async function main() {
   const cycleInputAbort = new AbortController();
   const sig = { signal: cycleInputAbort.signal };
 
-  const hudEl = document.getElementById("cycle-hud");
+  const hudHintBoot = document.getElementById("hud-hint");
   function syncHud() {
-    if (!hudEl) return;
-    hudEl.innerHTML = [
+    if (!hudHintBoot) return;
+    hudHintBoot.innerHTML = [
       "W/S accelerate · brake · A/D steer",
       "T / P / L — toggle tilt · pitch-on-accel · lean-on-brake",
       "1 / 2 — player cyan · enemy orange (player cycle)",
@@ -165,7 +171,7 @@ async function main() {
   game.scene.remove(cycle.root, enemy.root);
   controls.dispose();
 
-  const playCfg = getArenaPlaytestConfig(runtime);
+  const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes);
 
   applyArenaStageEnvironment(game, playCfg);
   buildArenaVisuals(game.scene, playCfg);
@@ -186,23 +192,51 @@ async function main() {
   const chase = createChaseCamera(game.camera, devHud);
   chase.spawnAt(playerCycle.root.position);
 
-  let nitroBurstTimer = 0;
   let nitroVis = 0;
-  let prevSpace = false;
+  const nitroState = createNitroState(playCfg.nitroBarCount);
 
   const speedLineEl = document.getElementById("nitro-speed-lines");
+  const hudSpeedEl = document.getElementById("hud-speed");
+  const hudNitroEl = document.getElementById("hud-nitro");
+  const hudHintEl = document.getElementById("hud-hint");
 
   const arenaHudAbort = new AbortController();
   const asig = { signal: arenaHudAbort.signal };
 
+  function renderNitroHud() {
+    if (!hudNitroEl) return;
+    const max = Math.max(1, playCfg.nitroBarCount);
+    hudNitroEl.classList.toggle("nitro-bar-strip--empty-flash", nitroState.emptyFlash > 0);
+    hudNitroEl.replaceChildren();
+    for (let i = 0; i < max; i++) {
+      const seg = document.createElement("div");
+      if (i < nitroState.bars) {
+        seg.className = "nitro-bar-seg";
+      } else if (i === nitroState.bars && nitroState.bars < max) {
+        seg.className = "nitro-bar-seg nitro-bar-seg--empty";
+        seg.style.position = "relative";
+        seg.style.overflow = "hidden";
+        const fill = document.createElement("div");
+        fill.style.position = "absolute";
+        fill.style.inset = "0";
+        fill.style.width = `${Math.min(100, nitroState.rechargeAccum * 100)}%`;
+        fill.style.background =
+          "linear-gradient(180deg, rgba(0,255,255,0.85), rgba(0,140,200,0.45))";
+        fill.style.pointerEvents = "none";
+        seg.appendChild(fill);
+      } else {
+        seg.className = "nitro-bar-seg nitro-bar-seg--empty";
+      }
+      hudNitroEl.appendChild(seg);
+    }
+  }
+
   function syncArenaHud() {
-    if (!hudEl) return;
-    hudEl.innerHTML = [
-      "P1.5 — W/S accel & brake (no reverse) · A/D steer · coast when off gas",
-      "Turn rate slows at high speed · Space — nitro burst (overrides brake; FX demo)",
-      "5 / 6 / 7 / 8 — nitro FOV · pullback · speed lines · motion blur",
-      `FX: fov ${devHud.nitroFovWiden ? "on" : "off"} · pull ${devHud.nitroCameraPullBack ? "on" : "off"} · lines ${devHud.nitroSpeedLines ? "on" : "off"} · blur ${devHud.nitroMotionBlur ? "on" : "off"}`,
-    ].join("<br/>");
+    if (hudHintEl) {
+      hudHintEl.textContent =
+        "P1.6 nitro — discrete bars, hold Space to chain, recharge over time · 5–8 toggles nitro camera FX";
+    }
+    renderNitroHud();
   }
 
   window.addEventListener(
@@ -238,29 +272,44 @@ async function main() {
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
-    const spaceNow = arenaKeys.space;
-    if (spaceNow && !prevSpace && nitroBurstTimer <= 0) {
-      nitroBurstTimer = devHud.nitroBurstDuration;
-    }
-    prevSpace = spaceNow;
+    const spd0 = typeof playerBody.userData.speed === "number" ? playerBody.userData.speed : 0;
 
-    const nitroOn = nitroBurstTimer > 0;
-
-    integratePlayerCycleMovement(
-      playerBody,
+    updateNitroBattery({
+      state: nitroState,
       dt,
-      arenaKeys,
-      nitroOn,
-      playCfg,
-      devHud,
-    );
+      space: arenaKeys.space,
+      maxBars: playCfg.nitroBarCount,
+      burstDuration: devHud.nitroBurstDuration,
+      rechargeTime: devHud.nitroBarRechargeTime,
+      nitroSpeedReturnTime: devHud.nitroSpeedReturnTime,
+      topSpeed: playCfg.maxMoveSpeed,
+      holdingGas: arenaKeys.w,
+      currentSpeed: spd0,
+      onEmptyPress: () => {
+        audio.playNitroEmptyBuzz();
+      },
+    });
+
+    const nitroOn = isNitroBurstActive(nitroState);
+    const handleFactor = nitroOn ? devHud.nitroHandlingMultiplier : 1;
+    const speedReturn = getSpeedReturnForMovement(nitroState);
+
+    integratePlayerCycleMovement(playerBody, dt, arenaKeys, nitroOn, playCfg, devHud, {
+      nitroHandlingFactor: handleFactor,
+      speedReturn,
+    });
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg);
     syncHeadingSpeedFromVelocity(playerBody);
 
     const raw = nitroOn ? 1 : 0;
     nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));
-    nitroBurstTimer = Math.max(0, nitroBurstTimer - dt);
+
+    if (hudSpeedEl) {
+      const spd = playerBody.userData.speed ?? 0;
+      hudSpeedEl.textContent = String(Math.round(spd));
+    }
+    renderNitroHud();
 
     const h = playerBody.userData.heading ?? 0;
     playerCycle.root.position.set(
@@ -280,6 +329,7 @@ async function main() {
       steer,
       accelerating,
       braking,
+      nitroBurstStrength: nitroVis,
     });
 
     chase.update(dt, {
@@ -302,7 +352,7 @@ async function main() {
   const p = lobbyBanner.querySelector("p");
   if (p) {
     p.textContent =
-      "P1.5 movement — arcade steering, coast/brake, light cycle mesh + chase cam (see HUD).";
+      "P1.6 — full nitro battery (bars, chain, recharge) + attribute-based speed/handling (see HUD).";
   }
 
   game.startLoop();

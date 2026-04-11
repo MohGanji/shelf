@@ -133,6 +133,72 @@ body {
   pointer-events: none;
 }
 
+.cycle-hud__row--speed {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-family: "Orbitron", sans-serif;
+  font-size: 1.05rem;
+}
+
+.cycle-hud__speed {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.cycle-hud__unit {
+  font-size: 0.72rem;
+  opacity: 0.65;
+  font-family: "Rajdhani", sans-serif;
+}
+
+.nitro-bar-strip {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.nitro-bar-strip--empty-flash {
+  filter: drop-shadow(0 0 6px rgba(255, 60, 60, 0.95));
+}
+
+.nitro-bar-seg {
+  width: 14px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 255, 0.35);
+  background: linear-gradient(180deg, rgba(0, 255, 255, 0.92), rgba(0, 120, 180, 0.35));
+  box-shadow:
+    0 0 8px rgba(0, 255, 255, 0.55),
+    inset 0 0 6px rgba(255, 255, 255, 0.35);
+  transition:
+    opacity 0.12s ease,
+    filter 0.12s ease;
+}
+
+.nitro-bar-seg--empty {
+  opacity: 0.28;
+  background: rgba(20, 40, 55, 0.65);
+  box-shadow: none;
+  border-color: rgba(0, 255, 255, 0.12);
+}
+
+.nitro-bar-seg--recharge {
+  opacity: 0.55;
+  filter: saturate(0.65);
+}
+
+.cycle-hud__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  opacity: 0.88;
+  color: rgba(180, 220, 255, 0.92);
+}
+
 .state-banner {
   position: fixed;
   bottom: 24px;
