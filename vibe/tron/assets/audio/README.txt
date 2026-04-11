@@ -1,7 +1,8 @@
 P8.2 music (optional)
 ---------------------
 If present (see js/config.js MUSIC_ASSET_URLS):
-  music-lobby.mp3           — lobby / garage / editor ambience
+  music-lobby-v1.mp3        — lobby / garage / editor ambience stem A (default)
+  music-lobby-v2.mp3        — lobby stem B (Dev HUD: lobby music variant 0|1)
   music-gameplay-v1.mp3     — campaign combat stem A
   music-gameplay-v2.mp3     — campaign combat stem B (Dev HUD: gameplay music variant 0|1)
 

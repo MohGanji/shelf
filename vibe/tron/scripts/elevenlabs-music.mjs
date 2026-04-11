@@ -26,7 +26,7 @@ if (!key || typeof key !== "string") {
 /** @type {{ file: string; text: string; duration_seconds: number; loop: boolean }[]} */
 const TRACKS = [
   {
-    file: "music-lobby.mp3",
+    file: "music-lobby-v1.mp3",
     text:
       "Seamless looping dark ambient electronic soundscape for a video game main menu and idle hub screen. " +
       "Slow atmospheric synth pads, subtle digital shimmer, sparse crystalline high tones, wide stereo space, " +

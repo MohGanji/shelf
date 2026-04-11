@@ -14,12 +14,15 @@ import { nitroBarsFromAttributeLevel } from "./game/nitroSystem.js";
 export const AUDIO_AUTOPLAY = true;
 
 /**
- * P8.2 — Optional loop MP3s. Lobby + two gameplay variants (Dev HUD `gameplayMusicVariant` 0 | 1).
+ * P8.2 — Optional loop MP3s. Lobby + gameplay: two stems each (Dev HUD `lobbyMusicVariant` / `gameplayMusicVariant` 0 | 1).
  * If missing or fetch/decode fails, `audio.js` uses seamless procedural beds.
- * @type {{ lobby: string; gameplayVariants: readonly string[] }}
+ * @type {{ lobbyVariants: readonly string[]; gameplayVariants: readonly string[] }}
  */
 export const MUSIC_ASSET_URLS = {
-  lobby: "./assets/audio/music-lobby.mp3",
+  lobbyVariants: [
+    "./assets/audio/music-lobby-v1.mp3",
+    "./assets/audio/music-lobby-v2.mp3",
+  ],
   gameplayVariants: [
     "./assets/audio/music-gameplay-v1.mp3",
     "./assets/audio/music-gameplay-v2.mp3",
@@ -132,6 +135,8 @@ export const DEFAULT_DEV_HUD = {
   steeringSpeedFalloff: 0.02,
   wallHeight: 3.0,
   musicCrossfadeDuration: 1.0,
+  /** 0 = first lobby stem, 1 = second (`MUSIC_ASSET_URLS.lobbyVariants`). */
+  lobbyMusicVariant: 0,
   /** 0 = first gameplay stem, 1 = second (`MUSIC_ASSET_URLS.gameplayVariants`). */
   gameplayMusicVariant: 0,
   cameraDistance: 8,
@@ -163,6 +168,25 @@ export const PORTAL_PAIR_COLORS = ["#ff00ff", "#ffff00", "#00ff88", "#ff4444", "
  */
 export function mergeDevHud(devHudPatch = {}) {
   return { ...DEFAULT_DEV_HUD, ...devHudPatch };
+}
+
+/**
+ * Active lobby / hub music URL from Dev HUD `lobbyMusicVariant` (0…N-1).
+ * @param {Partial<typeof DEFAULT_DEV_HUD> | null | undefined} devHud
+ * @returns {string}
+ */
+export function getLobbyMusicUrl(devHud) {
+  const list = MUSIC_ASSET_URLS.lobbyVariants;
+  if (!Array.isArray(list) || list.length === 0) return "";
+  let idx = 0;
+  if (
+    devHud &&
+    typeof devHud.lobbyMusicVariant === "number" &&
+    Number.isFinite(devHud.lobbyMusicVariant)
+  ) {
+    idx = Math.max(0, Math.min(list.length - 1, Math.floor(devHud.lobbyMusicVariant)));
+  }
+  return list[idx] ?? "";
 }
 
 /**
