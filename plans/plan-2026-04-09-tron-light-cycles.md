@@ -1307,6 +1307,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.151** | Tron `index.html`: JSON-LD `UnitPriceSpecification` (nested under the free `Offer`) adds `referenceQuantity` (`QuantitativeValue` with `value` 1) so structured data states the zero USD unit price applies per single copy alongside nested `price` / `priceCurrency` | P10.150 | [x] |
 | **P10.152** | Tron `index.html`: JSON-LD `UnitPriceSpecification` (nested under the free `Offer`) adds `unitCode` (`C62`, UN/CEFACT “one”) and `unitText` (`one digital copy`) so structured data states the zero USD price is scoped per standard countable unit alongside `referenceQuantity` | P10.151 | [x] |
 | **P10.153** | Tron `index.html`: JSON-LD free `Offer` adds `acceptedPaymentMethod` (`https://schema.org/Free`) so structured data explicitly states no paid payment rails alongside zero USD `price` / nested `UnitPriceSpecification` | P10.152 | [x] |
+| **P10.154** | Tron `index.html`: JSON-LD free `Offer` adds `businessFunction` (`http://purl.org/goodrelations/v1#Sell`) so structured data marks the zero-price grant as a standard GoodRelations sell offer alongside `itemOffered`, `seller`, and `acceptedPaymentMethod` | P10.153 | [x] |
 
 ### HUD and progression
 
