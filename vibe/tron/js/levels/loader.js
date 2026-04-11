@@ -4,7 +4,7 @@
  * @module levels/loader
  */
 
-import { validateLevel } from "./schema.js";
+import { LOBBY_LEVEL_ID, validateLevel } from "./schema.js";
 
 /** WIP blob version — bump if storage shape changes. */
 export const WIP_STORAGE_VERSION = 1;
@@ -241,4 +241,47 @@ export function removeWipLevel(id) {
  */
 export function findCampaignLevelById(levels, levelId) {
   return levels.find((L) => L && typeof L === "object" && L.id === levelId);
+}
+
+/**
+ * Parse `level-N` index from a validated campaign `id` (`level-3` → 3). Non-matching → NaN.
+ * @param {Record<string, unknown>} level
+ * @returns {number}
+ */
+export function parseCampaignLevelIndex(level) {
+  const id = level && typeof level.id === "string" ? level.id : "";
+  const m = /^level-(\d+)$/.exec(id.trim());
+  return m ? Number(m[1]) : Number.NaN;
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} level
+ * @returns {{ arenaWidth: number; arenaDepth: number } | undefined}
+ */
+export function extractArenaDimensionsFromLevel(level) {
+  if (!level || typeof level !== "object") return undefined;
+  const w = level.arenaWidth;
+  const d = level.arenaDepth;
+  if (typeof w === "number" && Number.isFinite(w) && typeof d === "number" && Number.isFinite(d)) {
+    return { arenaWidth: w, arenaDepth: d };
+  }
+  return undefined;
+}
+
+/**
+ * Which manifest-loaded level should drive the arena sandbox (dimensions + `scene.userData` metadata).
+ * Prefers the entry whose `level-N` index matches `save.progress.currentLevel`, else first non-lobby, else first.
+ *
+ * @param {Record<string, unknown>[]} validLevels
+ * @param {{ progress: { currentLevel: number } }} save
+ * @returns {Record<string, unknown> | null}
+ */
+export function selectPlaytestCampaignLevel(validLevels, save) {
+  if (!validLevels.length) return null;
+  const target = Math.max(0, Math.floor(save.progress.currentLevel));
+  const exact = validLevels.find((L) => parseCampaignLevelIndex(L) === target);
+  if (exact) return exact;
+  const nonLobby = validLevels.find((L) => L && L.id !== LOBBY_LEVEL_ID);
+  if (nonLobby) return nonLobby;
+  return validLevels[0] ?? null;
 }

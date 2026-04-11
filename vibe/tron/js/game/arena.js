@@ -104,6 +104,30 @@ function buildGridGeometry(halfW, halfD) {
   return geo;
 }
 
+/**
+ * Perimeter grid + walls from merged play config (dimensions usually come from campaign level JSON via
+ * `getArenaPlaytestConfig` + `extractArenaDimensionsFromLevel`). Barriers, gates, interior objects — P5.4+.
+ *
+ * @param {import('three').Scene} scene
+ * @param {import('cannon-es').World} world
+ * @param {import('cannon-es').Material} wallMat
+ * @param {import('cannon-es').Material} floorMat
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
+ * @param {Record<string, unknown> | null} [level] — validated campaign level; attached to `scene.userData.campaignLevel`
+ */
+export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, playCfg, level = null) {
+  buildArenaVisuals(scene, playCfg);
+  buildArenaPhysics(world, wallMat, floorMat, playCfg);
+  if (level && typeof level === "object" && typeof level.id === "string") {
+    scene.userData.campaignLevel = {
+      id: level.id,
+      name: typeof level.name === "string" ? level.name : level.id,
+    };
+  } else {
+    delete scene.userData.campaignLevel;
+  }
+}
+
 /** cannon-es static bodies for floor + four perimeter walls (aligned with visuals). */
 export function buildArenaPhysics(world, wallMat, floorMat, cfg) {
   const halfW = cfg.arenaWidth / 2;

@@ -20,7 +20,7 @@ import {
   createPlayerBody,
 } from "./engine/physics.js";
 import { createTronCycleKeyState } from "./engine/input.js";
-import { applyArenaStageEnvironment, buildArenaPhysics, buildArenaVisuals } from "./game/arena.js";
+import { applyArenaStageEnvironment, buildArenaFromCampaignLevel } from "./game/arena.js";
 import { createLightCycle } from "./game/cycle.js";
 import {
   integratePlayerCycleMovement,
@@ -33,7 +33,11 @@ import {
   updateNitroBattery,
 } from "./game/nitroSystem.js";
 import { createTrailWallSystem } from "./game/trail.js";
-import { loadCampaignLevels } from "./levels/loader.js";
+import {
+  extractArenaDimensionsFromLevel,
+  loadCampaignLevels,
+  selectPlaytestCampaignLevel,
+} from "./levels/loader.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -74,16 +78,8 @@ async function main() {
   const runtime = createRuntimeFromPlayerSave(save);
 
   const campaign = await loadCampaignLevels();
-  const firstCampaignLevel = campaign.validLevels[0];
-  const arenaSizeFromCampaign =
-    firstCampaignLevel &&
-    typeof firstCampaignLevel.arenaWidth === "number" &&
-    typeof firstCampaignLevel.arenaDepth === "number"
-      ? {
-          arenaWidth: firstCampaignLevel.arenaWidth,
-          arenaDepth: firstCampaignLevel.arenaDepth,
-        }
-      : undefined;
+  const activeCampaignLevel = selectPlaytestCampaignLevel(campaign.validLevels, save);
+  const arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
 
   const audio = createAudioEngine({
     masterVolume: save.settings.masterVolume,
@@ -199,10 +195,9 @@ async function main() {
   const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
 
   applyArenaStageEnvironment(game, playCfg);
-  buildArenaVisuals(game.scene, playCfg);
 
   const { world, wallMat, floorMat, playerMat } = createPhysicsWorld();
-  buildArenaPhysics(world, wallMat, floorMat, playCfg);
+  buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
 
   const playerBody = createPlayerBody(playCfg, playerMat);
   playerBody.position.set(0, playCfg.playerRadius + 0.06, 0);
@@ -413,8 +408,21 @@ async function main() {
   lobbyBanner.classList.remove("state-banner--hidden");
   const p = lobbyBanner.querySelector("p");
   if (p) {
-    p.textContent =
-      "P2.2 — Trail fades out at the tail (devHud trailFadeSpeed) while respecting max segments. Ride to lay a neon wall.";
+    const lid =
+      activeCampaignLevel && typeof activeCampaignLevel.id === "string"
+        ? activeCampaignLevel.id
+        : "—";
+    const lname =
+      activeCampaignLevel && typeof activeCampaignLevel.name === "string"
+        ? activeCampaignLevel.name
+        : "";
+    const sz = arenaSizeFromCampaign
+      ? `${Math.round(arenaSizeFromCampaign.arenaWidth)}×${Math.round(arenaSizeFromCampaign.arenaDepth)} u`
+      : "default size";
+    p.textContent = [
+      `P5.3 — Arena dimensions and metadata from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
+      "P2.2 — Trail fades at the tail (devHud trailFadeSpeed). Barriers / gates next (P5.4–P5.6).",
+    ].join(" ");
   }
 
   game.startLoop();
