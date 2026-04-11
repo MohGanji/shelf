@@ -28,6 +28,7 @@ import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
 import { createNitroState } from "./game/nitroSystem.js";
+import { createBoostPadField } from "./game/objects.js";
 import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
@@ -234,6 +235,12 @@ async function main() {
     devHud,
   });
 
+  const boostPadField = createBoostPadField({
+    scene: game.scene,
+    gameObjects: activeCampaignLevel && Array.isArray(activeCampaignLevel.gameObjects) ? activeCampaignLevel.gameObjects : [],
+    devHud,
+  });
+
   const speedLineEl = document.getElementById("nitro-speed-lines");
   const hudSpeedEl = document.getElementById("hud-speed");
   const hudTrailEl = document.getElementById("hud-trail");
@@ -407,6 +414,17 @@ async function main() {
     }
 
     playerDriveCfg.nitroBarCount = effectivePlayerNitroMax();
+    boostPadField.tick(dt, {
+      isLobby,
+      levelStarted,
+      playerBody,
+      nitroState,
+      enemies: enemyRoster.list,
+      devHud,
+      onBoost: () => {
+        audio.playBoostPadWhoosh();
+      },
+    });
     const { nitroBurstActive: nitroOn } = tickPlayerArcadeDrive({
       body: playerBody,
       dt,

@@ -153,6 +153,18 @@ export function isNitroBurstActive(state) {
 }
 
 /**
+ * Boost pad: free burst (no bar consumed). If a burst is already active, extends to the longer duration (plan P3.5).
+ * @param {NitroRuntimeState} state
+ * @param {number} burstDurationSec
+ */
+export function applyBoostPadBurst(state, burstDurationSec) {
+  const d = Math.max(0, burstDurationSec);
+  if (d <= 0) return;
+  state.burstRemaining = Math.max(state.burstRemaining, d);
+  state.speedReturnRemaining = 0;
+}
+
+/**
  * @param {NitroRuntimeState} state
  * @returns {null | { remaining: number; duration: number; startSpeed: number }}
  */

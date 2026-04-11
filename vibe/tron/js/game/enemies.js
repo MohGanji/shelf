@@ -8,7 +8,7 @@ import { createPlayerBody, applyContinuousArenaWallSlide, applyContinuousBarrier
 import { computeEnemyCycleKeys } from "./ai.js";
 import { createLightCycle } from "./cycle.js";
 import { createTrailWallSystem } from "./trail.js";
-import { createNitroState } from "./nitroSystem.js";
+import { createNitroState, isNitroBurstActive } from "./nitroSystem.js";
 import { tickPlayerArcadeDrive } from "./playerDrive.js";
 import { syncHeadingSpeedFromVelocity } from "./playerMovement.js";
 import { LOBBY_LEVEL_ID } from "../levels/schema.js";
@@ -286,12 +286,13 @@ export function updateEnemyCycleMeshes(list, dt) {
     e.cycle.root.rotation.y = h;
     const spd = e.body.userData.speed ?? 0;
     const st = typeof e.body.userData.aiSteer === "number" ? e.body.userData.aiSteer : 0;
+    const nitroVis = isNitroBurstActive(e.nitroState) ? 1 : 0;
     e.cycle.update(dt, {
       speed: spd,
       steer: st,
       accelerating: spd > 0.5,
       braking: false,
-      nitroBurstStrength: 0,
+      nitroBurstStrength: nitroVis,
     });
   }
 }

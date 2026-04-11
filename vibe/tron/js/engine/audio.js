@@ -514,6 +514,28 @@ export function createAudioEngine(options = {}) {
       }
     },
 
+    /** Boost pad — lighter whoosh than nitro (plan P3.5; procedural). */
+    playBoostPadWhoosh() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(420, t0);
+      osc.frequency.exponentialRampToValueAtTime(1400, t0 + 0.06);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.07 * sfxVolume, t0 + 0.018);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.14);
+      } catch {
+        /* ignore */
+      }
+    },
+
     /** Near-miss tension zip — procedural (plan P2.5; audio-only feedback). */
     playNearMissWhoosh() {
       if (!ctx) return;
@@ -576,5 +598,6 @@ function createNoopEngine() {
     playPowerupPickupLevelPermanent: () => {},
     playPowerupPickupEquippable: () => {},
     playNearMissWhoosh: () => {},
+    playBoostPadWhoosh: () => {},
   };
 }
