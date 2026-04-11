@@ -707,6 +707,15 @@ body {
   background: rgba(0, 60, 80, 0.35);
 }
 
+/* P6.7 — export validation message */
+.editor-export-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #ff8a8a;
+  max-width: 42rem;
+}
+
 /* P6.5 — new level dialog (arena size at creation; immutable afterward) */
 .editor-new-level-dialog {
   max-width: min(26rem, 92vw);

@@ -2,14 +2,21 @@
  * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
 
-import { upsertWipLevel } from "../levels/loader.js";
+import { loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
+import {
+  appendManifestEntry,
+  buildCampaignExportFilename,
+  buildCampaignLevelJsonForExport,
+  nextCampaignLevelIndex,
+  triggerDownload,
+} from "../levels/editorExport.js";
 import { createBlankWipLevel, ensureEditorWipLevel } from "../levels/editorLevel.js";
 import { mountEditorOrthographicViewport } from "../levels/editorView.js";
 import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
 import { mountEditorPropertiesPanel } from "../levels/editorPropertiesPanel.js";
 import { createEditorHistory } from "../levels/editorHistory.js";
-import { MIN_ARENA_SIZE } from "../levels/schema.js";
+import { MIN_ARENA_SIZE, validateLevel } from "../levels/schema.js";
 import { mountGarageShowroom } from "./garageShowroom.js";
 
 /**
@@ -183,6 +190,72 @@ export function mountEditorDestinationScreen(opts) {
 
   let session = mountEditorSession(ensureEditorWipLevel());
 
+  const exportErrEl = document.getElementById("editor-export-error");
+
+  /** @param {string} msg */
+  function setExportError(msg) {
+    if (!exportErrEl) return;
+    if (!msg) {
+      exportErrEl.hidden = true;
+      exportErrEl.textContent = "";
+      return;
+    }
+    exportErrEl.hidden = false;
+    exportErrEl.textContent = msg;
+  }
+
+  /** P6.7 — validated JSON download; `id` becomes `level-{N}` from manifest ordering. */
+  async function runExportLevel() {
+    setExportError("");
+    const level = session.level;
+    const v = validateLevel(level);
+    if (!v.valid) {
+      setExportError(`Invalid level: ${v.errors[0] ?? "validation failed"}`);
+      return;
+    }
+    let manifest;
+    try {
+      manifest = await loadCampaignManifest();
+    } catch {
+      manifest = [];
+    }
+    const nextN = nextCampaignLevelIndex(manifest);
+    const nameStr = typeof level.name === "string" ? level.name : "Untitled";
+    const filename = buildCampaignExportFilename(nameStr, nextN);
+    const campaignId = `level-${nextN}`;
+    const payload = buildCampaignLevelJsonForExport(level, campaignId);
+    triggerDownload(filename, JSON.stringify(payload, null, 2));
+  }
+
+  /** P6.7 — manifest.json with this export filename appended (no duplicate entries). */
+  async function runExportManifest() {
+    setExportError("");
+    const level = session.level;
+    const v = validateLevel(level);
+    if (!v.valid) {
+      setExportError(`Invalid level: ${v.errors[0] ?? "validation failed"}`);
+      return;
+    }
+    let manifest;
+    try {
+      manifest = await loadCampaignManifest();
+    } catch {
+      manifest = [];
+    }
+    const nextN = nextCampaignLevelIndex(manifest);
+    const nameStr = typeof level.name === "string" ? level.name : "Untitled";
+    const filename = buildCampaignExportFilename(nameStr, nextN);
+    const updated = appendManifestEntry(manifest, filename);
+    triggerDownload("manifest.json", JSON.stringify(updated, null, 2));
+  }
+
+  const exportLevelBtn = root.querySelector("[data-editor-export-level]");
+  const exportManifestBtn = root.querySelector("[data-editor-export-manifest]");
+  const onExportLevelClick = () => void runExportLevel();
+  const onExportManifestClick = () => void runExportManifest();
+  if (exportLevelBtn) exportLevelBtn.addEventListener("click", onExportLevelClick);
+  if (exportManifestBtn) exportManifestBtn.addEventListener("click", onExportManifestClick);
+
   /** Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y redo — skip when typing in form fields. */
   const onUndoRedoKey = (/** @type {KeyboardEvent} */ e) => {
     if (!e.ctrlKey && !e.metaKey) return;
@@ -260,6 +333,7 @@ export function mountEditorDestinationScreen(opts) {
     }
     const next = createBlankWipLevel(w, d);
     upsertWipLevel(next);
+    setExportError("");
     disposeEditorSession(session);
     session = mountEditorSession(/** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(next))));
     if (newLevelDialog) newLevelDialog.close();
@@ -310,6 +384,9 @@ export function mountEditorDestinationScreen(opts) {
       if (newLevelForm instanceof HTMLFormElement) {
         newLevelForm.removeEventListener("submit", onNewLevelSubmit);
       }
+      if (exportLevelBtn) exportLevelBtn.removeEventListener("click", onExportLevelClick);
+      if (exportManifestBtn) exportManifestBtn.removeEventListener("click", onExportManifestClick);
+      setExportError("");
       root.hidden = true;
       root.classList.add("tron-destination--hidden");
       if (canvas) canvas.removeAttribute("aria-hidden");
