@@ -45,5 +45,33 @@
   "scope": "./",
   "launch_handler": {
     "client_mode": "navigate-existing"
-  }
+  },
+  "shortcuts": [
+    {
+      "name": "Play (best quality)",
+      "short_name": "Quality",
+      "description": "Max graphics quality (?perf=high)",
+      "url": "./?perf=high",
+      "icons": [
+        {
+          "src": "../../assets/favicon/android-chrome-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Play (performance mode)",
+      "short_name": "Performance",
+      "description": "Reduced effects for slower devices (?perf=low)",
+      "url": "./?perf=low",
+      "icons": [
+        {
+          "src": "../../assets/favicon/android-chrome-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }
