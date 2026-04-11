@@ -42,5 +42,8 @@
   "display": "standalone",
   "orientation": "any",
   "start_url": "./",
-  "scope": "./"
+  "scope": "./",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
 }
