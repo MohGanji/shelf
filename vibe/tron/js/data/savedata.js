@@ -128,7 +128,8 @@ export function normalizePlayerSave(raw) {
   const vol = (x, fallback) =>
     typeof x === "number" && Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : fallback;
 
-  return {
+  /** @type {PlayerSave} */
+  const out = {
     version,
     player: {
       cycleColor: typeof playerIn.cycleColor === "string" ? playerIn.cycleColor : d.player.cycleColor,
@@ -168,6 +169,8 @@ export function normalizePlayerSave(raw) {
     devHud: mergeDevHud(o.devHud && typeof o.devHud === "object" ? /** @type {Record<string, unknown>} */ (o.devHud) : {}),
     controlsShown: Boolean(o.controlsShown),
   };
+  clampProgressToLinearIntegrity(out);
+  return out;
 }
 
 /** @param {number} n */
@@ -318,4 +321,24 @@ export function isLevelUnlockedLinear(save, levelId) {
   if (!Number.isFinite(id) || id < 0) return false;
   if (id === 0) return true;
   return save.progress.completedLevels.includes(id - 1);
+}
+
+/**
+ * Clamp `progress.currentLevel` so it never points past the next fair arena
+ * (max completed arena index + 1). Repairs corrupted or hand-edited saves (plan § linear progression).
+ * @param {PlayerSave} save
+ */
+export function clampProgressToLinearIntegrity(save) {
+  const p = save.progress;
+  const arenaDone = p.completedLevels.filter((x) => typeof x === "number" && x >= 1);
+  const maxDone = arenaDone.length ? Math.max(...arenaDone) : 0;
+  const expectedNext = maxDone + 1;
+  if (typeof p.currentLevel !== "number" || !Number.isFinite(p.currentLevel)) {
+    p.currentLevel = Math.max(1, expectedNext);
+    return;
+  }
+  if (p.currentLevel > expectedNext) {
+    p.currentLevel = Math.max(1, expectedNext);
+  }
+  if (p.currentLevel < 1) p.currentLevel = 1;
 }

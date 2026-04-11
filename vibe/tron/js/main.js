@@ -9,6 +9,7 @@ import { GameMode, isArenaRideableMode } from "./gameState.js";
 import { createChaseCamera } from "./engine/camera.js";
 import {
   addCoins,
+  isLevelUnlockedLinear,
   loadOrCreateSave,
   persistSave,
   recordLevelComplete,
@@ -157,8 +158,21 @@ async function main() {
     }
   } else if (bootPeek?.mode === "campaign" && typeof bootPeek.levelId === "string") {
     const found = findCampaignLevelById(campaign.validLevels, bootPeek.levelId);
+    /** @type {Record<string, unknown> | null | undefined} */
+    let useCampaign = found;
+    if (
+      useCampaign &&
+      typeof useCampaign.id === "string" &&
+      useCampaign.id !== LOBBY_LEVEL_ID
+    ) {
+      const idx = parseCampaignLevelIndex(useCampaign);
+      if (Number.isFinite(idx) && idx >= 1 && !isLevelUnlockedLinear(save, idx)) {
+        console.warn("[main] Campaign boot: arena not unlocked for save — loading lobby.");
+        useCampaign = null;
+      }
+    }
     activeCampaignLevel =
-      found ??
+      useCampaign ??
       findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
       selectPlaytestCampaignLevel(campaign.validLevels, save);
     arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
@@ -1133,10 +1147,13 @@ async function main() {
       if (inside && !lobbyGateWasInside) {
         const role = gh.gate.role;
         if (role === "arena") {
-          const target = findCampaignLevelByCampaignIndex(campaign.validLevels, save.progress.currentLevel);
-          if (target && typeof target.id === "string") {
-            beginLobbyGateTunnel({ mode: "campaign", levelId: target.id });
-            return;
+          const nextIdx = save.progress.currentLevel;
+          if (isLevelUnlockedLinear(save, nextIdx)) {
+            const target = findCampaignLevelByCampaignIndex(campaign.validLevels, nextIdx);
+            if (target && typeof target.id === "string") {
+              beginLobbyGateTunnel({ mode: "campaign", levelId: target.id });
+              return;
+            }
           }
         } else if (role === "garage") {
           beginLobbyGateTunnel({ mode: "garage" });

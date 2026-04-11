@@ -1163,7 +1163,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
 | **H1** | In-game HUD: speed, nitro segments, trail count, timer (hidden in lobby), equip + E hint, minimap | P1.6, P2.1, P9.4 | [x] |
-| **H2** | Garage-only coins; linear progression; upgrade costs | P5.8, P7.4 | [ ] |
+| **H2** | Garage-only coins; linear progression; upgrade costs | P5.8, P7.4 | [x] |
 
 ### Status notes (snapshot)
 

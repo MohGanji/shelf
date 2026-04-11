@@ -2,7 +2,7 @@
  * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
 
-import { WORLD } from "../config.js";
+import { ATTRIBUTE_UPGRADE_COSTS, WORLD } from "../config.js";
 import { loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
 import { persistSave, spendCoins, unlockCosmeticColor } from "../data/savedata.js";
 import { clampAttributeLevel } from "../game/attributes.js";
@@ -24,9 +24,6 @@ import { LOBBY_LEVEL_ID, MIN_ARENA_SIZE, validateLevel } from "../levels/schema.
 import { mountGarageShowroom } from "./garageShowroom.js";
 import { setEditorPlaytestReturn } from "../sessionEditorPlaytest.js";
 import { setSessionBootTarget } from "../sessionBoot.js";
-
-/** Plan § Progression — same curve for every attribute. */
-const ATTRIBUTE_UPGRADE_COSTS = [10, 20, 35, 50, 75, 100, 150, 200, 300];
 
 /** Plan § Cosmetics — catalog (cost 0 = default owned). */
 const GARAGE_COLOR_CATALOG = [

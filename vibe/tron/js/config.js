@@ -38,6 +38,13 @@ export const WORLD = {
   coinOverlayDuration: 3,
 };
 
+/**
+ * NEON cost per attribute upgrade step (level 1→2 … 9→10). Same curve for all five attributes.
+ * Plan § Progression & Economy — Garage pulls from here (H2).
+ * @type {readonly number[]}
+ */
+export const ATTRIBUTE_UPGRADE_COSTS = Object.freeze([10, 20, 35, 50, 75, 100, 150, 200, 300]);
+
 /** Canonical cycle footprint + palette (plan § Light Cycle model) */
 export const CYCLE_BOUNDS = {
   length: WORLD.cycleMeshLength,
