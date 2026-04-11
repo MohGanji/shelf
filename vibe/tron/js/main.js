@@ -67,6 +67,7 @@ import {
 } from "./levels/loader.js";
 import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
+import { isControlsOverlayBlockingInput, showFirstVisitControlsOverlayIfNeeded } from "./ui/menus.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 
 function $(id) {
@@ -619,7 +620,7 @@ async function main() {
   window.addEventListener(
     "keydown",
     (e) => {
-      if (isTunnelBlockingInput()) return;
+      if (isTunnelBlockingInput() || isControlsOverlayBlockingInput()) return;
       const k = e.key;
       if (k === "5") {
         devHud.nitroFovWiden = !devHud.nitroFovWiden;
@@ -1050,6 +1051,11 @@ async function main() {
   }
 
   game.startLoop();
+
+  /** P7.5 — first lobby visit: modal controls reference; blocks cycle keys until dismissed. */
+  if (isLobby && !save.controlsShown) {
+    showFirstVisitControlsOverlayIfNeeded({ save });
+  }
 
   canvas.addEventListener("click", () => canvas.focus());
   canvas.focus();

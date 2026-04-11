@@ -1125,7 +1125,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P7.2** | Gate routing + tunnel | P5.6, P5.7, X2 | [x] |
 | **P7.3** | Garage environment: showroom plate, bike, trail preview | P1.3 | [ ] |
 | **P7.4** | Garage UI: colors, upgrades, stats, return | P5.8, P7.3 | [ ] |
-| **P7.5** | Controls overlay on first lobby (`controlsShown`) | P7.1 | [ ] |
+| **P7.5** | Controls overlay on first lobby (`controlsShown`) | P7.1 | [x] |
 | **P7.6** | Pause: ESC, freeze everything, settings overlay, quit = derez | X1, P5.8 | [ ] |
 
 ### Phase 8 — Audio
