@@ -2,6 +2,8 @@
 
 Implementation tracks `plans/plan-2026-04-09-tron-light-cycles.md`.
 
+**BOOT tunnel (P9.5):** `js/engine/tunnel.js` — `playTunnel(renderer, onComplete?, { durationSeconds })` runs the full-screen grid tunnel while the HTML BOOT overlay shows progress (`CONFIG.tunnelBootSeconds`). `isTunnelBlockingInput()` is true for the tunnel duration so gameplay keys are not buffered.
+
 ## P1.3 — Light cycle model
 
 - `js/game/cycle.js` — procedural low-poly mesh (~0.8×0.3×0.4), emissive neon materials, side wheels with glow, wheel spin from speed, steer tilt and accel/brake pitch (Dev HUD toggles).

@@ -2,22 +2,16 @@ import { World } from "cannon-es";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-import { mergeRuntimeConfig, TRON_COLORS } from "./config.js";
+import { CONFIG, mergeRuntimeConfig, TRON_COLORS } from "./config.js";
 import { loadOrCreateSave } from "./data/savedata.js";
 import { createGameRenderer } from "./engine/renderer.js";
+import { playTunnel, isTunnelBlockingInput } from "./engine/tunnel.js";
 import { createLightCycle } from "./game/cycle.js";
-
-const BOOT_CAMERA_Z_START = -12;
-const BOOT_CAMERA_Z_END = 10;
 
 function $(id) {
   const el = document.getElementById(id);
   if (!el) throw new Error(`Missing #${id}`);
   return el;
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -30,32 +24,16 @@ function setBootProgress(els, pct) {
   els.label.setAttribute("aria-valuenow", String(Math.round(clamped)));
 }
 
-/**
- * Simulated BOOT tasks — exercises save, physics, renderer, and shader warm-up.
- * @param {ReturnType<typeof createGameRenderer>} game
- * @param {{ fill: HTMLElement; label: HTMLElement }} els
- */
-async function runBootSequence(game, els) {
-  const steps = [
-    { name: "save", weight: 12 },
-    { name: "physics", weight: 18 },
-    { name: "pipeline", weight: 25 },
-    { name: "shaders", weight: 25 },
-    { name: "grid", weight: 20 },
-  ];
-
-  let progress = 0;
-  for (const step of steps) {
-    await delay(95 + Math.random() * 70);
-    progress += step.weight;
-    setBootProgress(els, progress);
-    const t = progress / 100;
-    game.camera.position.z = THREE.MathUtils.lerp(BOOT_CAMERA_Z_START, BOOT_CAMERA_Z_END, t);
-    game.camera.lookAt(0, 0, 40 + t * 24);
-  }
-
-  await delay(160);
-  setBootProgress(els, 100);
+/** Advance BOOT bar while `playTunnel` runs. */
+function runBootLoadingBar(durationMs, els) {
+  const t0 = performance.now();
+  const iv = setInterval(() => {
+    const t = performance.now() - t0;
+    const p = Math.min(100, (t / durationMs) * 100);
+    setBootProgress(els, p);
+    if (p >= 100) clearInterval(iv);
+  }, 40);
+  return () => clearInterval(iv);
 }
 
 function initPhysicsWorld() {
@@ -110,6 +88,7 @@ async function main() {
   }
 
   window.addEventListener("keydown", (e) => {
+    if (isTunnelBlockingInput()) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     keys[k] = true;
     if (!lobbyReady) return;
@@ -130,6 +109,7 @@ async function main() {
   });
 
   window.addEventListener("keyup", (e) => {
+    if (isTunnelBlockingInput()) return;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     keys[k] = false;
   });
@@ -170,16 +150,26 @@ async function main() {
   });
 
   syncHud();
-  game.startLoop();
 
   const bootEls = { fill: bootFill, label: bootLabel };
   setBootProgress(bootEls, 0);
+  const durationMs = CONFIG.tunnelBootSeconds * 1000;
+  const stopBar = runBootLoadingBar(durationMs, bootEls);
 
-  await runBootSequence(game, bootEls);
+  await playTunnel(
+    game.renderer,
+    () => {
+      stopBar();
+      setBootProgress(bootEls, 100);
+    },
+    { durationSeconds: CONFIG.tunnelBootSeconds },
+  );
 
   bootOverlay.classList.add("boot-overlay--hidden");
   lobbyBanner.hidden = false;
   lobbyBanner.classList.remove("state-banner--hidden");
+
+  game.startLoop();
 
   game.camera.position.set(2.2, 1.35, 2.2);
   controls.target.set(0, 0.05, 0);

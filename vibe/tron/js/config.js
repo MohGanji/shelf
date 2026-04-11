@@ -132,3 +132,14 @@ export function mergeRuntimeConfig(devHud = {}) {
     devHud: mergeDevHud(devHud),
   };
 }
+
+/** Full-screen tunnel transition (BOOT / gates) — see `engine/tunnel.js` */
+export const CONFIG = {
+  tunnelGateSeconds: 1,
+  tunnelBootSeconds: 2.8,
+  tunnelRadius: 14,
+  tunnelLength: 240,
+  tunnelRadialSegments: 64,
+  tunnelGridRepeatU: 10,
+  tunnelGridRepeatV: 6,
+};
