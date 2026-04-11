@@ -1347,6 +1347,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.191** | Tron `index.html`: JSON-LD `WebSite` adds `genre` (`["Action", "Racing"]`) and `gamePlatform` (`["Web browser"]`) aligned with `VideoGame` / `WebPage` so the site entity exposes genre and runtime platform classification alongside `keywords` and `mainEntity` | P10.190 | [x] |
 | **P10.192** | Tron `index.html`: JSON-LD `WebSite` adds `datePublished` and `dateModified` (ISO 8601 calendar dates, `2026-04-11`, aligned with `WebPage` / `VideoGame`) so the site entity exposes CreativeWork-style freshness alongside `genre`, `gamePlatform`, and `mainEntity` | P10.191 | [x] |
 | **P10.193** | Tron `index.html`: JSON-LD `WebSite` adds `author` (`{ "@id": "./#organization" }`, aligned with `WebPage.author` and `VideoGame.author`) so the site entity exposes explicit authorship in `@graph` alongside `publisher`, `copyrightHolder`, and `mainEntity` | P10.192 | [x] |
+| **P10.194** | Tron `index.html`: JSON-LD `WebSite` adds `creator` (`{ "@id": "./#organization" }`, aligned with `WebSite.author`) so structured data exposes an explicit creator reference alongside authorship for the site entity in `@graph` | P10.193 | [x] |
 
 ### HUD and progression
 
