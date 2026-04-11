@@ -788,6 +788,33 @@
               "availableLanguage": "en"
             },
             "availableDeliveryMethod": "https://schema.org/OnlineDelivery",
+            "shippingDetails": {
+              "@type": "OfferShippingDetails",
+              "shippingRate": {
+                "@type": "MonetaryAmount",
+                "value": 0,
+                "currency": "USD"
+              },
+              "shippingDestination": {
+                "@type": "DefinedRegion",
+                "name": "Worldwide"
+              },
+              "deliveryTime": {
+                "@type": "ShippingDeliveryTime",
+                "handlingTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": 0,
+                  "maxValue": 0,
+                  "unitCode": "SEC"
+                },
+                "transitTime": {
+                  "@type": "QuantitativeValue",
+                  "minValue": 0,
+                  "maxValue": 0,
+                  "unitCode": "SEC"
+                }
+              }
+            },
             "additionalProperty": [
               {
                 "@type": "PropertyValue",
