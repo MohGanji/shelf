@@ -1282,6 +1282,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.126** | Tron `index.html`: JSON-LD `WebSite` adds `inLanguage` (`en`) for parity with `WebPage` / `VideoGame`; `VideoGame` adds `author` and `copyrightHolder` (each `{ "@id": "./#organization" }`) so CreativeWork authorship and rights reuse the same deduplicated `Organization` as `publisher` / `Offer.seller` | P10.125 | [x] |
 | **P10.127** | Tron `index.html`: JSON-LD `WebPage` adds `name` (`Tron: Light Cycles`) and `description` (same copy as `meta name="description"`) so the page entity exposes explicit title and summary in `@graph` alongside `url` / `inLanguage` | P10.126 | [x] |
 | **P10.128** | Tron `index.html`: JSON-LD `VideoGame` adds `potentialAction` as `PlayAction` with path-prefix–safe `target` (`./`) so structured data exposes an explicit browser play entry point alongside `url` and `offers` | P10.127 | [x] |
+| **P10.129** | Tron `index.html`: JSON-LD `VideoGame` adds `keywords` (array of topical strings: light cycles, neon arena, Tron-inspired, browser game, arcade racing, AI opponents, campaign, level editor, WebGL, keyboard controls) so crawlers get discoverable topic signals alongside `genre` and `gamePlatform` | P10.128 | [x] |
 
 ### HUD and progression
 
