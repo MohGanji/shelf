@@ -46,18 +46,20 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;600&display=swap"
     />
-    <link rel="preload" href="./css/style.css" as="style" />
+    <link rel="preload" href="./css/style.css" as="style" fetchpriority="high" />
     <link
       rel="modulepreload"
       href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
       crossorigin
+      fetchpriority="high"
     />
     <link
       rel="modulepreload"
       href="https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
       crossorigin
+      fetchpriority="high"
     />
-    <link rel="modulepreload" href="./js/main.js" />
+    <link rel="modulepreload" href="./js/main.js" fetchpriority="high" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
