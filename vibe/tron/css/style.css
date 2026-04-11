@@ -247,6 +247,66 @@ body {
   filter: saturate(0.65);
 }
 
+/* H1 — equippable slot: icon + subtle E (plan HUD spec) */
+.cycle-hud__equip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  min-height: 1.5rem;
+}
+
+.cycle-hud__equip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: rgba(200, 230, 255, 0.45);
+  text-shadow: 0 0 6px rgba(0, 200, 255, 0.25);
+  transition:
+    color 0.12s ease,
+    filter 0.12s ease;
+}
+
+.cycle-hud__equip-icon--shield {
+  color: rgba(180, 120, 255, 0.95);
+  text-shadow:
+    0 0 10px rgba(200, 100, 255, 0.75),
+    0 0 18px rgba(120, 40, 200, 0.45);
+  filter: drop-shadow(0 0 4px rgba(204, 0, 255, 0.55));
+}
+
+.cycle-hud__equip-icon--queued {
+  opacity: 0.72;
+  filter: saturate(0.85);
+}
+
+.cycle-hud__equip-e {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 255, 0.22);
+  color: rgba(160, 220, 255, 0.35);
+  background: rgba(0, 30, 45, 0.35);
+  opacity: 0.45;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.cycle-hud__equip-e--active {
+  opacity: 0.92;
+  color: rgba(200, 255, 255, 0.92);
+  border-color: rgba(0, 255, 255, 0.42);
+  background: rgba(0, 50, 70, 0.45);
+}
+
 .cycle-hud__hint {
   margin: 0;
   font-size: 0.75rem;

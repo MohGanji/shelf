@@ -549,6 +549,9 @@ async function main() {
   const hudHintEl = document.getElementById("hud-hint");
   const hudTimerWrap = document.getElementById("hud-timer-wrap");
   const hudTimerEl = document.getElementById("hud-timer");
+  const hudEquipIcon = document.getElementById("hud-equip-icon");
+  const hudEquipE = document.getElementById("hud-equip-e");
+  const hudEquipWrap = document.getElementById("hud-equip-wrap");
 
   const derezOverlay = document.getElementById("derez-overlay");
   /** @type {'alive' | 'imploding' | 'tunnel'} */
@@ -988,6 +991,36 @@ async function main() {
     }
   }
 
+  /** H1 — equip slot icon (shield) + subtle E when E can deploy (plan HUD). */
+  function updateEquipHud() {
+    if (!hudEquipIcon || !hudEquipE || !hudEquipWrap) return;
+    const u = playerBody.userData;
+    const ready = u.equipSlot === "shield" && u.shieldPhase === "none";
+    const queued = u.equipSlotQueued === "shield" && !ready;
+
+    if (ready || queued) {
+      hudEquipIcon.textContent = "\u{1F6E1}";
+      hudEquipIcon.classList.add("cycle-hud__equip-icon--shield");
+      hudEquipIcon.classList.toggle("cycle-hud__equip-icon--queued", queued);
+      const canPressE =
+        ready &&
+        !isLobby &&
+        levelStarted &&
+        playerDerezPhase === "alive" &&
+        gameMode !== GameMode.PAUSE;
+      hudEquipE.classList.toggle("cycle-hud__equip-e--active", canPressE);
+      hudEquipWrap.setAttribute(
+        "aria-label",
+        queued ? "Power-up: shield queued" : "Power-up: shield — press E to deploy",
+      );
+    } else {
+      hudEquipIcon.textContent = "\u25A1";
+      hudEquipIcon.classList.remove("cycle-hud__equip-icon--shield", "cycle-hud__equip-icon--queued");
+      hudEquipE.classList.remove("cycle-hud__equip-e--active");
+      hudEquipWrap.setAttribute("aria-label", "No power-up equipped");
+    }
+  }
+
   function syncArenaHud() {
     if (hudHintEl) {
       if (isLobby) {
@@ -1009,6 +1042,7 @@ async function main() {
       hudTimerWrap.hidden = isLobby;
     }
     renderNitroHud();
+    updateEquipHud();
   }
 
   createDevHudController({
@@ -1409,6 +1443,7 @@ async function main() {
       );
     }
     renderNitroHud();
+    updateEquipHud();
 
     const trailColorHud =
       typeof save.player.trailColor === "string" && save.player.trailColor

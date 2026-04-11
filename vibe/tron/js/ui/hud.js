@@ -180,14 +180,14 @@ export function createArenaMinimapRenderer(canvas) {
       ctx.strokeStyle = "rgba(160, 255, 240, 0.75)";
       ctx.lineWidth = 1;
       for (const p of frame.itemPoints) {
-        const [cx, cy] = toCanvas(p.x, p.z, halfW, halfD);
+        const [cx, cy] = toCanvas(p.x, p.z);
         ctx.beginPath();
         ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       function drawDot(wx, wz, fill, radius = 3) {
-        const [cx, cy] = toCanvas(wx, wz, halfW, halfD);
+        const [cx, cy] = toCanvas(wx, wz);
         ctx.fillStyle = fill;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
