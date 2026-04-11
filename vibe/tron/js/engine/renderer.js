@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { Reflector } from "three/addons/objects/Reflector.js";
 
 import { DEFAULT_DEV_HUD } from "../config.js";
 import { createPostPipeline } from "./post.js";
@@ -87,7 +88,21 @@ export function createGameRenderer(canvas, opts = {}) {
   const ambient = new THREE.AmbientLight(0x223344, 0.4);
   scene.add(ambient);
 
-  const composer = createPostPipeline(renderer, scene, camera);
+  const w0 = canvas.clientWidth || window.innerWidth;
+  const h0 = canvas.clientHeight || window.innerHeight;
+  const dpr0 = Math.min(window.devicePixelRatio || 1, 2);
+  const floorGeom = new THREE.PlaneGeometry(900, 900);
+  const floorReflector = new Reflector(floorGeom, {
+    color: 0x0c0c18,
+    textureWidth: Math.floor(w0 * dpr0),
+    textureHeight: Math.floor(h0 * dpr0),
+    clipBias: 0.003,
+  });
+  floorReflector.rotation.x = -Math.PI / 2;
+  floorReflector.position.set(0, -14, 30);
+  scene.add(floorReflector);
+
+  const post = createPostPipeline(renderer, scene, camera, devHud);
 
   let running = false;
   let rafId = 0;
@@ -105,7 +120,15 @@ export function createGameRenderer(canvas, opts = {}) {
     const h = canvas.clientHeight || window.innerHeight;
     camera.aspect = w / Math.max(h, 1);
     camera.updateProjectionMatrix();
-    composer.setSize(w, h);
+    post.setSize(w, h);
+    const dpr = renderer.getPixelRatio();
+    floorReflector.getRenderTarget().setSize(Math.floor(w * dpr), Math.floor(h * dpr));
+  }
+
+  function applyDevHud(patch) {
+    Object.assign(devHud, patch);
+    tunnelMat.uniforms.uGridBrightness.value = devHud.gridBrightness;
+    post.applyDevHud(patch);
   }
 
   function renderFrame(timeMs) {
@@ -118,7 +141,7 @@ export function createGameRenderer(canvas, opts = {}) {
 
     tunnelMat.uniforms.uTime.value = t;
     if (onFrame) onFrame({ t, dt });
-    composer.render();
+    post.render();
   }
 
   function startLoop() {
@@ -146,7 +169,9 @@ export function createGameRenderer(canvas, opts = {}) {
     camera,
     tunnel,
     tunnelMaterial: tunnelMat,
-    composer,
+    floorReflector,
+    composer: post.composer,
+    applyDevHud,
     startLoop,
     stopLoop,
     resize,
@@ -158,6 +183,9 @@ export function createGameRenderer(canvas, opts = {}) {
       window.removeEventListener("resize", resize);
       tunnelGeom.dispose();
       tunnelMat.dispose();
+      floorGeom.dispose();
+      floorReflector.dispose();
+      post.dispose();
       renderer.dispose();
     },
   };
