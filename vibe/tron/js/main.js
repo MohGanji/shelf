@@ -69,6 +69,7 @@ import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget }
 import { mountEditorOrthographicViewport } from "./levels/editorView.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import { isControlsOverlayBlockingInput, showFirstVisitControlsOverlayIfNeeded } from "./ui/menus.js";
+import { createDevHudController } from "./ui/devhud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 
 function $(id) {
@@ -453,9 +454,6 @@ async function main() {
   const hudTimerWrap = document.getElementById("hud-timer-wrap");
   const hudTimerEl = document.getElementById("hud-timer");
 
-  const arenaHudAbort = new AbortController();
-  const asig = { signal: arenaHudAbort.signal };
-
   const derezOverlay = document.getElementById("derez-overlay");
   /** @type {'alive' | 'imploding' | 'tunnel'} */
   let playerDerezPhase = "alive";
@@ -625,38 +623,15 @@ async function main() {
     renderNitroHud();
   }
 
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      if (isTunnelBlockingInput() || isControlsOverlayBlockingInput()) return;
-      const k = e.key;
-      if (k === "5") {
-        devHud.nitroFovWiden = !devHud.nitroFovWiden;
-        syncArenaHud();
-        game.applyDevHud({ nitroFovWiden: devHud.nitroFovWiden });
-        persistDevHudToSave();
-      }
-      if (k === "6") {
-        devHud.nitroCameraPullBack = !devHud.nitroCameraPullBack;
-        syncArenaHud();
-        game.applyDevHud({ nitroCameraPullBack: devHud.nitroCameraPullBack });
-        persistDevHudToSave();
-      }
-      if (k === "7") {
-        devHud.nitroSpeedLines = !devHud.nitroSpeedLines;
-        syncArenaHud();
-        game.applyDevHud({ nitroSpeedLines: devHud.nitroSpeedLines });
-        persistDevHudToSave();
-      }
-      if (k === "8") {
-        devHud.nitroMotionBlur = !devHud.nitroMotionBlur;
-        syncArenaHud();
-        game.applyDevHud({ nitroMotionBlur: devHud.nitroMotionBlur });
-        persistDevHudToSave();
-      }
+  createDevHudController({
+    devHud,
+    applyDevHud: (patch) => {
+      game.applyDevHud(patch);
     },
-    asig,
-  );
+    persist: persistDevHudToSave,
+    syncHud: syncArenaHud,
+    isInputBlocked: () => isTunnelBlockingInput() || isControlsOverlayBlockingInput(),
+  });
 
   syncArenaHud();
 

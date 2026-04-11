@@ -1144,7 +1144,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
 | **P9.1** | Post: bloom, chromatic aberration, CRT; devHud-driven | P1.1 | [x] |
-| **P9.2** | Developer HUD (`.`): categories, live persist to save | A2, P5.8 | [ ] |
+| **P9.2** | Developer HUD (`.`): categories, live persist to save | A2, P5.8 | [x] |
 | **P9.3** | Particles: nitro, derez, pickups, portal, shield | P2.4, P3.7 | [ ] |
 | **P9.4** | Minimap per HUD spec | P2.1, P4.1 | [ ] |
 | **P9.5** | Tunnel scene: cylinder grid, reusable `playTunnel` durations | P1.1 | [x] |
