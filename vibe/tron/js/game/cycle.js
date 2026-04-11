@@ -212,6 +212,27 @@ export function createLightCycle(options = {}) {
     applyPrimaryColor(hex);
   }
 
+  /**
+   * Player derez implosion (plan P2.4): shrink + spin + emissive spike, then fade.
+   * @param {number} dt
+   * @param {number} u — progress 0–1 through derez sequence
+   */
+  function updateDerezImplosion(dt, u) {
+    if (dt <= 0) return;
+    const clamped = THREE.MathUtils.clamp(u, 0, 1);
+    const shrink = Math.max(0.02, 1 - Math.pow(clamped, 1.35));
+    animationRoot.scale.setScalar(shrink);
+    animationRoot.rotation.y += dt * (6 + clamped * 24);
+    animationRoot.rotation.x += dt * (2 + clamped * 8) * Math.sin(clamped * 20);
+    animationRoot.rotation.z = Math.sin(clamped * 18) * 0.45 * (1 - clamped);
+
+    const emissivePulse = clamped < 0.22 ? 1 + (1 - clamped / 0.22) * 2.2 : (1 - clamped) * 0.9;
+    bodyMat.emissiveIntensity = 0.9 * emissivePulse;
+    stripMatStrong.emissiveIntensity = 2.2 * emissivePulse;
+    stripMatSoft.emissiveIntensity = 1.35 * emissivePulse;
+    wheelGlowMat.emissiveIntensity = 1.6 * emissivePulse;
+  }
+
   function dispose() {
     chassisGeo.dispose();
     fairGeo.dispose();
@@ -242,6 +263,7 @@ export function createLightCycle(options = {}) {
     },
     getDevHud: () => devHud,
     update,
+    updateDerezImplosion,
     dispose,
   };
 }

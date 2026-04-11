@@ -228,14 +228,32 @@ async function main() {
   const asig = { signal: arenaHudAbort.signal };
 
   const derezOverlay = document.getElementById("derez-overlay");
-  /** P2.3 — player trail/cycle lethal; freeze arena until reload (full derez tunnel = P2.4). */
-  let playerArenaFrozen = false;
+  /** @type {'alive' | 'imploding' | 'tunnel'} */
+  let playerDerezPhase = "alive";
+  /** Monotonic ms when player derez implosion began (wall clock). */
+  let playerDerezT0Ms = 0;
 
-  function showPlayerDerezOverlay() {
-    playerArenaFrozen = true;
+  function beginPlayerDerezSequence() {
+    if (playerDerezPhase !== "alive") return;
+    playerDerezPhase = "imploding";
+    playerDerezT0Ms = performance.now();
     playerBody.userData.tronEliminated = true;
+    playerBody.velocity.set(0, 0, 0);
     trailWall.clear();
+    audio.playDerezShatter();
     if (derezOverlay) derezOverlay.hidden = false;
+  }
+
+  function startDerezTunnelToLobby() {
+    if (playerDerezPhase !== "imploding") return;
+    playerDerezPhase = "tunnel";
+    game.postPipeline.setDerezPostFx({ glitch: 0, flash: 0 });
+    game.stopLoop();
+    playTunnel(game.renderer, () => {
+      window.location.reload();
+    }, { durationSeconds: CONFIG.tunnelGateSeconds }).catch(() => {
+      window.location.reload();
+    });
   }
 
   function renderNitroHud() {
@@ -317,14 +335,46 @@ async function main() {
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
-    if (playerArenaFrozen) {
+    if (playerDerezPhase === "imploding") {
+      const durationSec = Math.max(0.4, devHud.derezSequenceSeconds ?? 2);
+      const elapsed = (performance.now() - playerDerezT0Ms) / 1000;
+      const slow = devHud.derezSlowMo !== false ? 1.75 : 1;
+      const u = Math.min(1, elapsed / (durationSec * slow));
+      const visU = devHud.derezSlowMo !== false ? Math.pow(u, 0.72) : u;
+
+      playerCycle.updateDerezImplosion(dt, visU);
+
+      const flashOn = devHud.derezGlitchFlash !== false;
+      let flash = 0;
+      let glitch = 0;
+      if (flashOn) {
+        const t0 = elapsed;
+        flash = t0 < 0.1 ? 0.5 * (1 - t0 / 0.1) : Math.max(0, 0.2 * Math.exp(-(t0 - 0.1) * 8));
+        glitch = Math.max(0, 0.9 * Math.exp(-t0 * 4.2));
+      }
+      game.postPipeline.setDerezPostFx({ glitch, flash });
+
       chase.update(dt, {
         playerPos: playerCycle.root.position,
         playerVel: playerBody.velocity,
         keys: arenaKeys,
         nitroStrength: 0,
+        derez: {
+          active: true,
+          playerPos: playerCycle.root.position,
+          elapsedSec: elapsed,
+          playerHeading: playerBody.userData.heading ?? 0,
+        },
       });
       game.postPipeline.setNitroFx({ strength: 0 });
+
+      if (u >= 1) {
+        startDerezTunnelToLobby();
+      }
+      return;
+    }
+
+    if (playerDerezPhase !== "alive") {
       return;
     }
 
@@ -384,7 +434,7 @@ async function main() {
 
     const playerTrailHit = tryTrailHitOnBody(playerBody, px, pz, "player", trailSources, devHud);
     if (playerTrailHit === "lethal") {
-      showPlayerDerezOverlay();
+      beginPlayerDerezSequence();
     } else {
       for (const e of enemyRoster.list) {
         if (e.eliminated) continue;
@@ -397,7 +447,7 @@ async function main() {
           if (e.eliminated) continue;
           const out = evaluateCyclePairContact(playerBody, e.body, playCfg, devHud);
           if (!out) continue;
-          if (out.derezA) showPlayerDerezOverlay();
+          if (out.derezA) beginPlayerDerezSequence();
           if (out.derezB) eliminateCampaignEnemy(world, e);
         }
       }

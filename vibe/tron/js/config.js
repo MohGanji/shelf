@@ -90,6 +90,10 @@ export const DEFAULT_DEV_HUD = {
   derezCameraOverhead: true,
   derezCameraShake: true,
   derezGlitchFlash: true,
+  /** Wall-clock seconds for player derez implosion before tunnel (plan P2.4). */
+  derezSequenceSeconds: 2.0,
+  /** Overhead camera height above cycle center during player derez. */
+  derezOverheadHeight: 28,
   portalWarpIntensity: 0.5,
   specialObjectCooldown: 5.0,
   shieldDuration: 5.0,

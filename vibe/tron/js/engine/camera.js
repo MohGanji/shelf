@@ -23,9 +23,58 @@ export function createChaseCamera(camera, devHud) {
    * @param {import("cannon-es").Vec3} playerVel
    * @param {{ w?: boolean; a?: boolean; s?: boolean; d?: boolean }} keys
    * @param {number} nitroStrength 0–1 (visual / burst strength)
+   * @param {{ active: true; playerPos: THREE.Vector3; elapsedSec: number; playerHeading: number } | { active?: false }} [derez]
    */
-  function update(dt, { playerPos, playerVel, keys, nitroStrength }) {
+  function update(dt, { playerPos, playerVel, keys, nitroStrength, derez }) {
     if (dt <= 0) return;
+
+    if (derez && derez.active) {
+      const pos = derez.playerPos;
+      const t = Math.max(0, derez.elapsedSec);
+      const overheadOn = devHud.derezCameraOverhead !== false;
+      const shakeOn = devHud.derezCameraShake !== false;
+      const h = typeof derez.playerHeading === "number" ? derez.playerHeading : 0;
+
+      let cx;
+      let cy;
+      let cz;
+      let lx;
+      let ly;
+      let lz;
+      if (overheadOn) {
+        const yLift = devHud.derezOverheadHeight ?? 28;
+        cx = pos.x;
+        cy = pos.y + yLift;
+        cz = pos.z;
+        lx = pos.x;
+        ly = pos.y + 0.15;
+        lz = pos.z;
+      } else {
+        forward.set(Math.sin(h), 0, Math.cos(h));
+        const dist = devHud.cameraDistance + 10;
+        tmp.copy(forward).multiplyScalar(-dist).addScaledVector(up, devHud.cameraHeight + 5);
+        cx = pos.x + tmp.x;
+        cy = pos.y + tmp.y;
+        cz = pos.z + tmp.z;
+        lx = pos.x + forward.x * devHud.cameraLookAhead;
+        ly = pos.y + 0.2;
+        lz = pos.z + forward.z * devHud.cameraLookAhead;
+      }
+      if (shakeOn) {
+        const s = t * 38;
+        cx += Math.sin(s * 1.73) * 0.42 + Math.sin(s * 5.1) * 0.11;
+        cy += Math.sin(s * 2.41) * 0.28;
+        cz += Math.cos(s * 1.91) * 0.42;
+      }
+      camera.position.set(cx, cy, cz);
+      camera.lookAt(lx, ly, lz);
+      const targetFov = devHud.cameraBaseFov;
+      const fk = 1 - Math.exp(-12 * dt);
+      smoothFov += (targetFov - smoothFov) * fk;
+      camera.fov = smoothFov;
+      camera.updateProjectionMatrix();
+      return;
+    }
 
     const vx = playerVel.x;
     const vz = playerVel.z;

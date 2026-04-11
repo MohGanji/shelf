@@ -399,6 +399,53 @@ export function createAudioEngine(options = {}) {
         /* ignore */
       }
     },
+
+    /** Digital shatter — filtered noise + glassy tones (plan P2.4; no asset file). */
+    playDerezShatter() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const dur = 0.55;
+      const n = 4096;
+      const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(2400, t0);
+      bp.frequency.exponentialRampToValueAtTime(400, t0 + dur);
+      bp.Q.value = 0.85;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, t0);
+      ng.gain.exponentialRampToValueAtTime(0.22 * sfxVolume, t0 + 0.02);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      noise.connect(bp);
+      bp.connect(ng);
+      ng.connect(sfxGain);
+
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(880, t0);
+      osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.35);
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0.0001, t0);
+      og.gain.exponentialRampToValueAtTime(0.06 * sfxVolume, t0 + 0.01);
+      og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+      osc.connect(og);
+      og.connect(sfxGain);
+
+      try {
+        noise.start(t0);
+        noise.stop(t0 + dur + 0.05);
+        osc.start(t0);
+        osc.stop(t0 + 0.42);
+      } catch {
+        /* ignore */
+      }
+    },
   };
 }
 
@@ -424,5 +471,6 @@ function createNoopEngine() {
     prefetch: async () => null,
     loadBuffer: async () => null,
     playNitroEmptyBuzz: () => {},
+    playDerezShatter: () => {},
   };
 }

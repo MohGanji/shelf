@@ -15,20 +15,26 @@ const TronGradeShader = {
     tDiffuse: { value: null },
     amount: { value: 0.002 },
     neonIntensity: { value: 1.0 },
+    uDerezGlitch: { value: 0.0 },
+    uDerezFlash: { value: 0.0 },
   },
   vertexShader: CopyShader.vertexShader,
   fragmentShader: /* glsl */ `
     uniform sampler2D tDiffuse;
     uniform float amount;
     uniform float neonIntensity;
+    uniform float uDerezGlitch;
+    uniform float uDerezFlash;
     varying vec2 vUv;
     void main() {
       vec2 dir = vUv - 0.5;
-      float a = amount * 14.0;
+      float aberr = amount + uDerezGlitch;
+      float a = aberr * 14.0;
       float r = texture2D(tDiffuse, vUv + dir * a).r;
       float g = texture2D(tDiffuse, vUv).g;
       float b = texture2D(tDiffuse, vUv - dir * a).b;
       vec3 col = vec3(r, g, b) * neonIntensity;
+      col = mix(col, vec3(1.0), clamp(uDerezFlash, 0.0, 1.0));
       gl_FragColor = vec4(col, 1.0);
     }
   `,
@@ -153,6 +159,17 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
     nitroPass.material.uniforms.uStrength.value = on ? Math.max(0, Math.min(1, s)) : 0;
   }
 
+  /**
+   * Player derez only (plan P2.4): chroma spike + white flash — cleared when zeros.
+   * @param {{ glitch?: number; flash?: number }} [opts] glitch/flash 0–1
+   */
+  function setDerezPostFx(opts = {}) {
+    const g = typeof opts.glitch === "number" ? opts.glitch : 0;
+    const f = typeof opts.flash === "number" ? opts.flash : 0;
+    gradePass.material.uniforms.uDerezGlitch.value = Math.max(0, Math.min(1, g));
+    gradePass.material.uniforms.uDerezFlash.value = Math.max(0, Math.min(1, f));
+  }
+
   syncFog();
 
   return {
@@ -172,6 +189,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}) {
     },
     applyDevHud,
     setNitroFx,
+    setDerezPostFx,
     dispose() {
       composer.dispose();
       bloomPass.dispose();
