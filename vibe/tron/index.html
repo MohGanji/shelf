@@ -742,6 +742,12 @@
             "name": "Worldwide"
           },
           {
+            "@type": "MonetaryAmount",
+            "@id": "./#monetary-amount-zero-usd",
+            "currency": "USD",
+            "value": 0
+          },
+          {
             "@type": "MerchantReturnPolicy",
             "@id": "./#merchant-return-policy-tlc",
             "name": "Free digital access — returns not applicable",
@@ -753,11 +759,7 @@
           {
             "@type": "OfferShippingDetails",
             "@id": "./#offer-shipping-tlc-free",
-            "shippingRate": {
-              "@type": "MonetaryAmount",
-              "value": 0,
-              "currency": "USD"
-            },
+            "shippingRate": { "@id": "./#monetary-amount-zero-usd" },
             "shippingDestination": { "@id": "./#defined-region-worldwide" },
             "deliveryTime": {
               "@type": "ShippingDeliveryTime",
