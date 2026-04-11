@@ -13,6 +13,16 @@ import { nitroBarsFromAttributeLevel } from "./game/nitroSystem.js";
  */
 export const AUDIO_AUTOPLAY = true;
 
+/**
+ * P8.2 — Optional ElevenLabs-generated loop MP3s (`scripts/elevenlabs-music.mjs`).
+ * If missing or fetch/decode fails, `audio.js` uses seamless procedural beds.
+ * @type {{ lobby: string; gameplay: string }}
+ */
+export const MUSIC_ASSET_URLS = {
+  lobby: "./assets/audio/music-lobby.mp3",
+  gameplay: "./assets/audio/music-gameplay.mp3",
+};
+
 /** @type {const} */
 export const TILE_SIZE = 1;
 

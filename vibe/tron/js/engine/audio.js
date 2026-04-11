@@ -192,6 +192,8 @@ function createMusicCrossfader(ctx, musicOut) {
  * @property {number} [musicCrossfadeSec]
  * @property {number} [sfxPoolSize]
  * @property {boolean} [autoplay]
+ * @property {string} [musicLobbyUrl] — P8.2; try fetch/decode before procedural lobby bed
+ * @property {string} [musicGameplayUrl] — P8.2; try fetch/decode before procedural gameplay bed
  */
 
 /**
@@ -297,6 +299,14 @@ export function createAudioEngine(options = {}) {
   let musicCrossfadeSec = options.musicCrossfadeSec ?? 1;
   const sfxPoolSize = options.sfxPoolSize ?? 16;
   const autoplay = options.autoplay ?? true;
+  const musicLobbyUrl =
+    typeof options.musicLobbyUrl === "string" && options.musicLobbyUrl.length > 0
+      ? options.musicLobbyUrl
+      : "";
+  const musicGameplayUrl =
+    typeof options.musicGameplayUrl === "string" && options.musicGameplayUrl.length > 0
+      ? options.musicGameplayUrl
+      : "";
 
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) {
@@ -601,11 +611,16 @@ export function createAudioEngine(options = {}) {
     },
 
     /**
-     * P8.2 — Lobby / garage / editor ambience vs driving combat loop. Uses procedural buffers unless
-     * optional URLs are supplied later (same profile names).
+     * P8.2 — Lobby / garage / editor ambience vs driving combat loop.
+     * Tries `musicLobbyUrl` / `musicGameplayUrl` (MP3 from ElevenLabs pipeline); falls back to procedural beds.
      * @param {'lobby' | 'gameplay'} profile
      */
     async playMusicProfile(profile) {
+      const preferUrl = profile === "gameplay" ? musicGameplayUrl : musicLobbyUrl;
+      if (preferUrl) {
+        const decoded = await loadBuffer(preferUrl);
+        if (decoded) return playMusicLoopBuffer(decoded);
+      }
       const b = ensureProceduralMusicBuffers();
       const buf = profile === "gameplay" ? b.gameplay : b.lobby;
       return playMusicLoopBuffer(buf);

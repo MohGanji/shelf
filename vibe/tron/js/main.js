@@ -1,6 +1,7 @@
 import {
   AUDIO_AUTOPLAY,
   CONFIG,
+  MUSIC_ASSET_URLS,
   createRuntimeFromPlayerSave,
   getArenaPlaytestConfig,
   mergeDevHud,
@@ -193,9 +194,13 @@ async function main() {
     ambientVolume: save.settings.ambientVolume,
     musicCrossfadeSec: runtime.devHud.musicCrossfadeDuration,
     autoplay: AUDIO_AUTOPLAY,
+    musicLobbyUrl: MUSIC_ASSET_URLS.lobby,
+    musicGameplayUrl: MUSIC_ASSET_URLS.gameplay,
   });
   setBootProgress(bootEls, 58);
   await audio.unlock();
+  void audio.prefetch(MUSIC_ASSET_URLS.lobby);
+  void audio.prefetch(MUSIC_ASSET_URLS.gameplay);
   setBootProgress(bootEls, 74);
 
   const game = createGameRenderer(canvas, { devHud: runtime.devHud });

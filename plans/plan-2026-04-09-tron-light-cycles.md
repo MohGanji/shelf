@@ -1133,7 +1133,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | ID | Task | Depends on | Status |
 |----|------|------------|--------|
 | **P8.1** | `audio.js`: Web Audio, music loop + crossfade, SFX pool, ambient, missing-file fallback, autoplay flag | A1 | [x] |
-| **P8.2** | Two music tracks (lobby/editor vs gameplay); ElevenLabs pipeline per plan | P8.1 | [~] |
+| **P8.2** | Two music tracks (lobby/editor vs gameplay); ElevenLabs pipeline per plan | P8.1 | [x] |
 | **P8.3** | Ambient layers: grid hum, crackle, resonance | P8.1 | [x] |
 | **P8.4** | Engine sounds: idle, accel pitch, gears, top-speed | P8.1, P1.5 | [x] |
 | **P8.5** | Full SFX table from plan | P8.1 | [x] |
