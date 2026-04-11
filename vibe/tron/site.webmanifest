@@ -1,7 +1,10 @@
 {
+  "id": "./",
+  "lang": "en",
   "name": "Tron: Light Cycles",
   "short_name": "Light Cycles",
   "description": "Tron: Legacy–inspired light cycle arena — neon trails, AI hunters, garage upgrades, and a level editor.",
+  "categories": ["games", "entertainment"],
   "icons": [
     {
       "src": "../../assets/favicon/android-chrome-144x144.png",
