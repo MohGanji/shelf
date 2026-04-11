@@ -1324,6 +1324,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.168** | Tron `index.html`: JSON-LD `Organization` adds `areaServed` as `Place` with `name` `Worldwide` so structured data marks global digital reach alongside the free `Offer`’s worldwide `eligibleRegion` | P10.167 | [x] |
 | **P10.169** | Tron `index.html`: JSON-LD `WebSite` adds `isFamilyFriendly` (`true`) so the site entity exposes the same audience suitability signal as `VideoGame` in `@graph` | P10.168 | [x] |
 | **P10.170** | Tron `index.html`: JSON-LD `WebSite` adds `copyrightYear` (`2026`, aligned with `VideoGame.copyrightYear`) and `copyrightHolder` (`{ "@id": "./#organization" }`) so the site entity exposes CreativeWork-style rights metadata alongside `publisher` and `isFamilyFriendly` | P10.169 | [x] |
+| **P10.171** | Tron `index.html`: JSON-LD `WebPage` adds `about` (`{ "@id": "./#game" }`) so structured data explicitly marks the page’s primary topic as the same `VideoGame` / `WebApplication` node referenced by `mainEntity` (extends P10.127) | P10.127 | [x] |
 
 ### HUD and progression
 
