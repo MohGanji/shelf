@@ -1086,7 +1086,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P4.1** | Enemy spawn from level data; stationary until player W; attributes + color | X3, P5.3 | [x] |
 | **P4.2** | AI steering: tile trail avoidance + raycast walls | P4.1, A3 | [x] |
 | **P4.3** | Hunting: seek, trail cuts, flanking, aggression | P4.2 | [x] |
-| **P4.4** | Self-preservation: avoidance ranges, reaction time | P4.2 | [ ] |
+| **P4.4** | Self-preservation: avoidance ranges, reaction time | P4.2 | [x] |
 | **P4.5** | AI uses nitro, boost pads, portals, pickups, shield | P3.x, P4.3 | [ ] |
 
 ### Phase 5 — Level system

@@ -427,7 +427,7 @@ async function main() {
       `P5.3 — Arena from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
       "X3 — Spawn at entrance gate (2 u inward), facing inward; lobby: free ride. Arenas: press W to start + timer.",
       "P5.6 — Gates: open cuts wall; locked slides. P2.2 — trail fade.",
-      `P4.1–P4.3 — Enemies: ${enemyRoster.list.length} cycle(s); frozen until first W, then trail/wall avoidance + hunt (intercept, flank, aggression).`,
+      `P4.1–P4.4 — Enemies: ${enemyRoster.list.length} cycle(s); frozen until first W; hunt + trail/wall/peer separation (avoidance range, reaction time).`,
     ].join(" ");
   }
 

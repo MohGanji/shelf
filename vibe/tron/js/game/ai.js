@@ -1,6 +1,7 @@
 /**
  * Enemy AI (plan Phase 4): P4.2 steering — tile-map trail lookahead + solid (arena/barrier) ray checks.
  * P4.3 — hunting: intercept (trail-cut lead), tiered flanking, aggression + reaction-time smoothing.
+ * P4.4 — self-preservation: `aiAvoidanceRange` for wall rays + peer separation; `aiReactionTime` smooths combined hunt + peer steer.
  */
 
 import { Box } from "cannon-es";
@@ -232,6 +233,42 @@ export function raycastSolidClearanceXZ(opts) {
  * @param {number} opts.halfWidth
  * @param {Array<{ map: { hasTrailAhead: Function }; ownerId: string; edgeCount: number }>} opts.sources
  */
+/**
+ * Lateral bias in [-1, 1] to separate from the player and other cycles within avoidance range (P4.4).
+ * Uses cross(forward, toPeer): peer to the left → positive steer (turn right), matching A/D keys in `computeEnemyCycleKeys`.
+ *
+ * @param {object} opts
+ * @param {number} opts.px
+ * @param {number} opts.pz
+ * @param {number} opts.heading
+ * @param {string} opts.selfId
+ * @param {number} opts.avoidRange — `devHud.aiAvoidanceRange` (clamped floor 1.2)
+ * @param {Array<{ id: string; x: number; z: number }>} opts.peers
+ */
+export function computePeerSeparationSteer(opts) {
+  const { px, pz, heading, selfId, peers, avoidRange } = opts;
+  const r = Math.max(1.2, avoidRange);
+  const fx = Math.sin(heading);
+  const fz = Math.cos(heading);
+  let acc = 0;
+
+  for (const p of peers) {
+    if (!p || p.id === selfId) continue;
+    const relX = p.x - px;
+    const relZ = p.z - pz;
+    const dist = Math.hypot(relX, relZ);
+    if (dist < 0.08 || dist > r) continue;
+    const cross = fx * relZ - fz * relX;
+    const sgn = cross === 0 ? 0 : cross > 0 ? 1 : -1;
+    const w = (1 - dist / r) ** 1.35;
+    acc += sgn * w;
+  }
+
+  if (acc === 0) return 0;
+  const norm = Math.max(-1, Math.min(1, acc * 0.82));
+  return norm;
+}
+
 export function hasDangerousTrailAhead(opts) {
   const { x, z, heading, selfId, immunitySegments, steps, halfWidth, sources } = opts;
   for (const s of sources) {
@@ -273,6 +310,7 @@ export function hasDangerousTrailAhead(opts) {
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
  * @param {import('cannon-es').Body[] | undefined} opts.barrierBodies
  * @param {Array<{ map: { hasTrailAhead: Function }; ownerId: string; edgeCount: number }>} opts.trailSources
+ * @param {Array<{ id: string; x: number; z: number }>} [opts.peers] — player + all enemy bodies for P4.4 separation
  * @returns {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean; steer: number }}
  */
 export function computeEnemyCycleKeys(opts) {
@@ -290,6 +328,7 @@ export function computeEnemyCycleKeys(opts) {
     playCfg,
     barrierBodies,
     trailSources,
+    peers = [],
   } = opts;
 
   const heading = typeof body.userData.heading === "number" ? body.userData.heading : 0;
@@ -337,6 +376,20 @@ export function computeEnemyCycleKeys(opts) {
   const errGain = 2.85 * Math.min(1.2, 0.65 + agg * 0.35);
   let steerCmd = Math.max(-1, Math.min(1, dh * errGain));
 
+  const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
+  const peerSep =
+    peers.length > 0
+      ? computePeerSeparationSteer({
+          px,
+          pz,
+          heading,
+          selfId,
+          peers,
+          avoidRange,
+        })
+      : 0;
+  steerCmd = Math.max(-1, Math.min(1, steerCmd + peerSep * 0.95));
+
   const react = Math.max(0.04, devHud.aiReactionTime);
   const alpha = Math.min(1, dt / react);
   let smoothed =
@@ -348,7 +401,8 @@ export function computeEnemyCycleKeys(opts) {
   if (smoothed > 0.12) seekSteer = 1;
   else if (smoothed < -0.12) seekSteer = -1;
 
-  const steps = lookaheadSteps(intelligence);
+  const rangeScale = Math.max(0.88, Math.min(1.38, 0.92 + (avoidRange - 5) * 0.035));
+  const steps = Math.max(3, Math.round(lookaheadSteps(intelligence) * rangeScale));
   const halfWTrail = lookaheadHalfWidth(intelligence);
   const imm = devHud.trailImmunitySegments;
 
@@ -377,7 +431,6 @@ export function computeEnemyCycleKeys(opts) {
   const halfW = playCfg.arenaWidth / 2;
   const halfD = playCfg.arenaDepth / 2;
   const pr = playCfg.playerRadius;
-  const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
 
   const clearF = raycastSolidClearanceXZ({
     px,

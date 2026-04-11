@@ -1,6 +1,6 @@
 /**
- * Campaign enemy cycles (plan P4.1 + P4.2 + P4.3): spawn from level JSON; stationary until first W,
- * then tile-trail + solid-ray steering + hunting (intercept, flank, aggression smoothing).
+ * Campaign enemy cycles (plan P4.1–P4.4): spawn from level JSON; stationary until first W,
+ * then tile-trail + solid-ray steering + hunting + peer separation (avoidance range, reaction time).
  */
 
 import { getArenaPlaytestConfig } from "../config.js";
@@ -157,6 +157,12 @@ export function createCampaignEnemyEntities(opts) {
     const pspd =
       typeof playerBody.userData.speed === "number" ? playerBody.userData.speed : 0;
 
+    /** P4.4 — player + every enemy position for separation steering within `aiAvoidanceRange`. */
+    const peers = [
+      { id: "player", x: playerBody.position.x, z: playerBody.position.z },
+      ...list.map((en) => ({ id: en.id, x: en.body.position.x, z: en.body.position.z })),
+    ];
+
     for (let ei = 0; ei < list.length; ei++) {
       const e = list[ei];
       /** @type {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean }} */
@@ -182,6 +188,7 @@ export function createCampaignEnemyEntities(opts) {
           playCfg: e.playCfg,
           barrierBodies: barriers,
           trailSources,
+          peers,
         });
         keys = {
           w: ai.w,
