@@ -332,6 +332,23 @@ async function main() {
   let levelStarted = isLobby;
   /** @type {number} */
   let levelStartMonotonicMs = 0;
+  /** P7.6 — wall-clock ms spent paused after level timer started (excluded from HUD + time bonus). */
+  let levelTimerPausedAccumMs = 0;
+  /** P7.6 — monotonic ms when current pause began (for timer adjustment). */
+  let levelPauseWallClockStartMs = 0;
+
+  /**
+   * P7.6 — elapsed level seconds excluding pause intervals (HUD + exit time bonus).
+   * @returns {number}
+   */
+  function getLevelElapsedSecExcludingPauses() {
+    if (!levelStarted || levelStartMonotonicMs <= 0) return 0;
+    let pauseExtra = levelTimerPausedAccumMs;
+    if (levelPauseWallClockStartMs > 0) {
+      pauseExtra += performance.now() - levelPauseWallClockStartMs;
+    }
+    return Math.max(0, (performance.now() - levelStartMonotonicMs - pauseExtra) / 1000);
+  }
 
   const playerBody = createPlayerBody(playCfg, playerMat);
   playerBody.position.set(spawnX, playCfg.playerSpawnY, spawnZ);
@@ -541,8 +558,26 @@ async function main() {
   const levelCompleteOverlay = document.getElementById("level-complete-overlay");
   /** @type {number} */
   let combatVictoryOverlayTimeoutId = 0;
+  /** Wall-clock time when auto-dismiss should fire (P7.6 — defer with pause). */
+  let combatVictoryOverlayDismissAtMs = 0;
+  /** Remaining auto-dismiss ms deferred while pause cleared the timeout. */
+  let combatVictoryOverlayDeferRemainingMs = 0;
   /** @type {boolean} */
   let winTunnelStarted = false;
+
+  function dismissCombatVictoryOverlay() {
+    if (levelCompleteOverlay) levelCompleteOverlay.hidden = true;
+    combatVictoryOverlayTimeoutId = 0;
+    combatVictoryOverlayDeferRemainingMs = 0;
+    if (
+      playerDerezPhase === "alive" &&
+      !winTunnelStarted &&
+      !isLobby &&
+      gameMode === GameMode.LEVEL_COMPLETE
+    ) {
+      gameMode = GameMode.LEVEL;
+    }
+  }
 
   function showCombatVictoryOverlay() {
     if (!levelCompleteOverlay) return;
@@ -565,18 +600,12 @@ async function main() {
     levelCompleteOverlay.hidden = false;
     if (combatVictoryOverlayTimeoutId) window.clearTimeout(combatVictoryOverlayTimeoutId);
     const sec = typeof devHud.coinOverlayDuration === "number" ? devHud.coinOverlayDuration : 3;
+    const durMs = Math.max(0.5, sec) * 1000;
+    combatVictoryOverlayDismissAtMs = performance.now() + durMs;
+    combatVictoryOverlayDeferRemainingMs = 0;
     combatVictoryOverlayTimeoutId = window.setTimeout(() => {
-      levelCompleteOverlay.hidden = true;
-      combatVictoryOverlayTimeoutId = 0;
-      if (
-        playerDerezPhase === "alive" &&
-        !winTunnelStarted &&
-        !isLobby &&
-        gameMode === GameMode.LEVEL_COMPLETE
-      ) {
-        gameMode = GameMode.LEVEL;
-      }
-    }, Math.max(0.5, sec) * 1000);
+      dismissCombatVictoryOverlay();
+    }, durMs);
   }
 
   function beginWinTunnelToLobby() {
@@ -604,7 +633,7 @@ async function main() {
         levelStarted &&
         levelStartMonotonicMs > 0
       ) {
-        const elapsed = (performance.now() - levelStartMonotonicMs) / 1000;
+        const elapsed = getLevelElapsedSecExcludingPauses();
         if (elapsed <= th) add += tb;
       }
       addCoins(save, add);
@@ -637,19 +666,131 @@ async function main() {
   /** @type {ReturnType<typeof createPauseMenuController> | null} */
   let pauseMenu = null;
 
-  function resumeFromPause() {
+  const pauseOverlayEl = document.getElementById("pause-overlay");
+
+  function syncPauseSettingsUiFromSave() {
+    if (!pauseOverlayEl) return;
+    const m = pauseOverlayEl.querySelector('[data-pause-set="masterVolume"]');
+    const mu = pauseOverlayEl.querySelector('[data-pause-set="musicVolume"]');
+    const sx = pauseOverlayEl.querySelector('[data-pause-set="sfxVolume"]');
+    const am = pauseOverlayEl.querySelector('[data-pause-set="ambientVolume"]');
+    const crt = pauseOverlayEl.querySelector('[data-pause-set="crtScanlines"]');
+    const bl = pauseOverlayEl.querySelector('[data-pause-set="bloomIntensity"]');
+    if (m instanceof HTMLInputElement) m.value = String(save.settings.masterVolume);
+    if (mu instanceof HTMLInputElement) mu.value = String(save.settings.musicVolume);
+    if (sx instanceof HTMLInputElement) sx.value = String(save.settings.sfxVolume);
+    if (am instanceof HTMLInputElement) am.value = String(save.settings.ambientVolume);
+    if (crt instanceof HTMLInputElement) crt.checked = !!devHud.crtScanlines;
+    if (bl instanceof HTMLInputElement) {
+      bl.value = String(
+        typeof devHud.bloomIntensity === "number" && Number.isFinite(devHud.bloomIntensity)
+          ? devHud.bloomIntensity
+          : 1.5,
+      );
+    }
+  }
+
+  /**
+   * P7.6 — settings sliders persist to save; visual toggles persist via devHud merge.
+   * @param {Event} e
+   */
+  function onPauseSettingsInput(e) {
+    const t = e.target;
+    if (!(t instanceof HTMLInputElement)) return;
+    const key = t.getAttribute("data-pause-set");
+    if (!key) return;
+
+    if (key === "crtScanlines") {
+      const on = t.checked;
+      devHud.crtScanlines = on;
+      game.applyDevHud({ crtScanlines: on });
+      persistDevHudToSave();
+      return;
+    }
+
+    if (key === "bloomIntensity") {
+      const v = Number.parseFloat(t.value);
+      if (!Number.isFinite(v)) return;
+      devHud.bloomIntensity = v;
+      game.applyDevHud({ bloomIntensity: v });
+      persistDevHudToSave();
+      return;
+    }
+
+    const v = Number.parseFloat(t.value);
+    if (!Number.isFinite(v)) return;
+    if (key === "masterVolume") save.settings.masterVolume = v;
+    else if (key === "musicVolume") save.settings.musicVolume = v;
+    else if (key === "sfxVolume") save.settings.sfxVolume = v;
+    else if (key === "ambientVolume") save.settings.ambientVolume = v;
+    else return;
+
+    audio.setVolumes({
+      master: save.settings.masterVolume,
+      music: save.settings.musicVolume,
+      sfx: save.settings.sfxVolume,
+      ambient: save.settings.ambientVolume,
+    });
+    persistSave(save);
+  }
+
+  if (pauseOverlayEl) {
+    pauseOverlayEl.addEventListener("input", onPauseSettingsInput);
+    pauseOverlayEl.addEventListener("change", onPauseSettingsInput);
+  }
+
+  async function resumeFromPause() {
     if (!pauseMenu) return;
+    if (levelPauseWallClockStartMs > 0) {
+      levelTimerPausedAccumMs += performance.now() - levelPauseWallClockStartMs;
+      levelPauseWallClockStartMs = 0;
+    }
+    if (
+      combatVictoryOverlayDeferRemainingMs > 0 &&
+      modeBeforePause === GameMode.LEVEL_COMPLETE &&
+      levelCompleteOverlay &&
+      !levelCompleteOverlay.hidden
+    ) {
+      combatVictoryOverlayTimeoutId = window.setTimeout(() => {
+        dismissCombatVictoryOverlay();
+      }, combatVictoryOverlayDeferRemainingMs);
+      combatVictoryOverlayDismissAtMs = performance.now() + combatVictoryOverlayDeferRemainingMs;
+      combatVictoryOverlayDeferRemainingMs = 0;
+    }
     pauseMenu.close();
     gameMode = modeBeforePause;
+    if (audio.context && audio.context.state === "suspended") {
+      try {
+        await audio.context.resume();
+      } catch {
+        /* ignore */
+      }
+    }
     game.startLoop();
   }
 
-  function enterPause() {
+  async function enterPause() {
     if (!pauseMenu) return;
     if (!isArenaRideableMode(gameMode)) return;
     modeBeforePause = gameMode;
     gameMode = GameMode.PAUSE;
     game.stopLoop();
+    if (levelStarted && levelStartMonotonicMs > 0) {
+      levelPauseWallClockStartMs = performance.now();
+    }
+    if (combatVictoryOverlayTimeoutId) {
+      window.clearTimeout(combatVictoryOverlayTimeoutId);
+      combatVictoryOverlayTimeoutId = 0;
+      combatVictoryOverlayDeferRemainingMs = Math.max(0, combatVictoryOverlayDismissAtMs - performance.now());
+    }
+    syncPauseSettingsUiFromSave();
+    if (audio.context && audio.context.state === "running") {
+      try {
+        await audio.context.suspend();
+      } catch {
+        /* ignore */
+      }
+    }
     pauseMenu.open();
   }
 
@@ -1131,10 +1272,7 @@ async function main() {
       hudSpeedEl.textContent = String(Math.round(spd));
     }
     if (hudTimerEl && !isLobby) {
-      const elapsedSec =
-        levelStarted && levelStartMonotonicMs > 0
-          ? (performance.now() - levelStartMonotonicMs) / 1000
-          : 0;
+      const elapsedSec = getLevelElapsedSecExcludingPauses();
       hudTimerEl.textContent = formatHudMmSs(elapsedSec);
     }
     if (hudTrailEl) {
