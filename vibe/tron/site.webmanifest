@@ -45,6 +45,7 @@
   "orientation": "any",
   "start_url": "./",
   "scope": "./",
+  "prefer_related_applications": false,
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
