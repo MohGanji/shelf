@@ -1340,6 +1340,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.184** | Tron `index.html`: JSON-LD `WebSite` and `VideoGame`/`WebApplication` add `alternateName` (`Light Cycles`, aligned with `site.webmanifest` `short_name` and Apple web-app title) so structured data exposes the short branded title alongside full `name` | P10.183 | [x] |
 | **P10.185** | Tron `index.html`: JSON-LD `WebPage` adds `alternateName` (`Light Cycles`, aligned with `WebSite` / `VideoGame` / `site.webmanifest` `short_name`) so the page entity exposes the short branded title alongside `name` in `@graph` | P10.184 | [x] |
 | **P10.186** | Tron `index.html`: JSON-LD `WebSite` adds `isAccessibleForFree` (`true`, aligned with `VideoGame` / `WebPage`) so the site entity exposes the same free-access CreativeWork signal as the main entities in `@graph` | P10.185 | [x] |
+| **P10.187** | Tron `index.html`: JSON-LD `WebSite` adds `copyrightNotice` (plain text: © year + `Organization` name; aligned with `copyrightYear` and `copyrightHolder` → `./#organization`) so the site entity exposes an explicit rights notice in `@graph` alongside existing copyright metadata | P10.186 | [x] |
 
 ### HUD and progression
 
