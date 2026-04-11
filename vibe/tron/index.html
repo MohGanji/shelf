@@ -79,7 +79,7 @@
       crossorigin="anonymous"
     />
     <link
-      rel="preload"
+      rel="prefetch"
       href="./levels/manifest.json"
       as="fetch"
       crossorigin="anonymous"
@@ -123,20 +123,6 @@
     <link
       rel="prefetch"
       href="./levels/level-5-the-gauntlet.json"
-      as="fetch"
-      crossorigin="anonymous"
-      fetchpriority="low"
-    />
-    <link
-      rel="prefetch"
-      href="./assets/audio/music-lobby.mp3"
-      as="fetch"
-      crossorigin="anonymous"
-      fetchpriority="low"
-    />
-    <link
-      rel="prefetch"
-      href="./assets/audio/music-gameplay.mp3"
       as="fetch"
       crossorigin="anonymous"
       fetchpriority="low"
@@ -610,7 +596,6 @@
       rel="modulepreload"
       href="./js/main.js"
       crossorigin="anonymous"
-      integrity="sha384-RrlxzuesgaNhGj70MB6GwxwWdad15IDGKzkgesnwprnLFcAUKd/GlMqlsBukbUBY"
       fetchpriority="high"
     />
     <script type="application/ld+json">
@@ -631,12 +616,7 @@
               "Single-player arcade experiences"
             ],
             "areaServed": { "@id": "./#place-worldwide" },
-            "logo": {
-              "@type": "ImageObject",
-              "url": "../../assets/favicon/apple-touch-icon.png",
-              "width": 152,
-              "height": 152
-            },
+            "logo": { "@id": "./#image-apple-touch-152" },
             "makesOffer": { "@id": "./#offer-tlc-free" }
           },
           {
@@ -647,12 +627,7 @@
             "alternateName": "Light Cycles",
             "inLanguage": "en",
             "description": "Tron: Legacy–inspired light cycle arena — neon trails, AI hunters, garage upgrades, and a level editor. Desktop browser; keyboard controls.",
-            "image": {
-              "@type": "ImageObject",
-              "url": "../../assets/favicon/apple-touch-icon.png",
-              "width": 152,
-              "height": 152
-            },
+            "image": { "@id": "./#image-apple-touch-152" },
             "isFamilyFriendly": true,
             "contentRating": "Everyone",
             "copyrightYear": 2026,
@@ -701,12 +676,7 @@
                 "operatingSystem": "Any"
               },
               "url": "./",
-              "image": {
-                "@type": "ImageObject",
-                "url": "../../assets/favicon/apple-touch-icon.png",
-                "width": 152,
-                "height": 152
-              },
+              "image": { "@id": "./#image-apple-touch-152" },
               "target": {
                 "@type": "EntryPoint",
                 "urlTemplate": "./",
@@ -740,6 +710,13 @@
             "@type": "DefinedRegion",
             "@id": "./#defined-region-worldwide",
             "name": "Worldwide"
+          },
+          {
+            "@type": "ImageObject",
+            "@id": "./#image-apple-touch-152",
+            "url": "../../assets/favicon/apple-touch-icon.png",
+            "width": 152,
+            "height": 152
           },
           {
             "@type": "MonetaryAmount",
@@ -780,12 +757,7 @@
             "name": "Tron: Light Cycles — free browser access",
             "inLanguage": "en",
             "description": "Zero-price digital access to the client-side Tron: Light Cycles browser game at this URL; no payment rails; instant load in a supported browser.",
-            "image": {
-              "@type": "ImageObject",
-              "url": "../../assets/favicon/apple-touch-icon.png",
-              "width": 152,
-              "height": 152
-            },
+            "image": { "@id": "./#image-apple-touch-152" },
             "brand": { "@id": "./#organization" },
             "category": "Browser-based arcade racing video game (free digital access)",
             "url": "./",
@@ -865,12 +837,7 @@
             "breadcrumb": { "@id": "./#breadcrumb" },
             "mainEntity": { "@id": "./#game" },
             "about": { "@id": "./#game" },
-            "primaryImageOfPage": {
-              "@type": "ImageObject",
-              "url": "../../assets/favicon/apple-touch-icon.png",
-              "width": 152,
-              "height": 152
-            },
+            "primaryImageOfPage": { "@id": "./#image-apple-touch-152" },
             "datePublished": "2026-04-11",
             "dateModified": "2026-04-11",
             "isFamilyFriendly": true,
@@ -915,12 +882,7 @@
                 "operatingSystem": "Any"
               },
               "url": "./",
-              "image": {
-                "@type": "ImageObject",
-                "url": "../../assets/favicon/apple-touch-icon.png",
-                "width": 152,
-                "height": 152
-              },
+              "image": { "@id": "./#image-apple-touch-152" },
               "target": {
                 "@type": "EntryPoint",
                 "urlTemplate": "./",
@@ -949,7 +911,7 @@
             "conditionsOfAccess": "Free instant play in a supported web browser; no account required for the base campaign; keyboard input required (desktop form factor recommended).",
             "url": "./",
             "installUrl": "./",
-            "image": "../../assets/favicon/apple-touch-icon.png",
+            "image": { "@id": "./#image-apple-touch-152" },
             "thumbnailUrl": "../../assets/favicon/apple-touch-icon.png",
             "screenshot": [
               {
@@ -1072,12 +1034,7 @@
                 "operatingSystem": "Any"
               },
               "url": "./",
-              "image": {
-                "@type": "ImageObject",
-                "url": "../../assets/favicon/apple-touch-icon.png",
-                "width": 152,
-                "height": 152
-              },
+              "image": { "@id": "./#image-apple-touch-152" },
               "target": {
                 "@type": "EntryPoint",
                 "urlTemplate": "./",
@@ -1470,11 +1427,6 @@
       ></aside>
     </div>
 
-    <script
-      type="module"
-      src="./js/main.js"
-      crossorigin="anonymous"
-      integrity="sha384-RrlxzuesgaNhGj70MB6GwxwWdad15IDGKzkgesnwprnLFcAUKd/GlMqlsBukbUBY"
-    ></script>
+    <script type="module" src="./js/main.js" crossorigin="anonymous"></script>
   </body>
 </html>

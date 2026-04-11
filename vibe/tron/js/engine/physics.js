@@ -69,6 +69,7 @@ export function createPlayerBody(cfg, playerMat) {
     angularDamping: 0.99,
     fixedRotation: true,
   });
+  body.userData = {};
   body.addShape(shape);
   const spawnY =
     typeof cfg.playerSpawnY === "number" && Number.isFinite(cfg.playerSpawnY)
@@ -97,6 +98,7 @@ export function createFloorBody(cfg, floorMat) {
 export function createWallPhysicsBody({ halfExtents, center, wallMatRef }) {
   const shape = new Box(halfExtents);
   const body = new Body({ mass: 0, material: wallMatRef });
+  body.userData = {};
   body.addShape(shape);
   body.position.copy(center);
   body.userData.kind = "arenaWall";

@@ -3,6 +3,8 @@
  * P8.2 — Generate two loopable MP3 beds via ElevenLabs Sound Generation API and write to assets/audio/.
  * Requires: Node 18+, env ELEVENLABS_API_KEY (see plan § API Keys).
  *
+ * Prompts describe mood and genre only (hub menu + arcade combat) — avoid naming films, games, artists, or IPs (provider ToS).
+ *
  * Usage (from repo root or this directory):
  *   ELEVENLABS_API_KEY=... node vibe/tron/scripts/elevenlabs-music.mjs
  */
@@ -26,17 +28,17 @@ const TRACKS = [
   {
     file: "music-lobby.mp3",
     text:
-      "Seamless looping dark ambient electronic soundscape for a Tron sci-fi game lobby and menu. " +
-      "Slow atmospheric synth pads, subtle digital shimmer, sparse grid-like tones, no percussion, " +
-      "instrumental only, Daft Punk inspired minimalism.",
+      "Seamless looping dark ambient electronic soundscape for a video game main menu and idle hub screen. " +
+      "Slow atmospheric synth pads, subtle digital shimmer, sparse crystalline high tones, wide stereo space, " +
+      "no drums and no percussion, instrumental only, minimal and spacious, calm abstract science-fiction mood.",
     duration_seconds: 24,
     loop: true,
   },
   {
-    file: "music-gameplay.mp3",
+    file: "music-gameplay-v1.mp3",
     text:
-      "Seamless looping high-energy driving electronic combat music for a light cycle arcade game. " +
-      "Heavy pulsing synth bass around 128 BPM, urgent sequenced leads, Tron Legacy style energy, " +
+      "Seamless looping high-energy driving electronic combat music for a neon science-fiction arcade racing game. " +
+      "Heavy pulsing synth bass around 128 BPM, urgent sequenced leads, upbeat electronic dance energy, " +
       "no vocals, instrumental only.",
     duration_seconds: 28,
     loop: true,

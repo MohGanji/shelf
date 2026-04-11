@@ -1,10 +1,14 @@
 P8.2 music (optional)
 ---------------------
-The game expects two loop MP3s if present (see js/config.js MUSIC_ASSET_URLS):
-  music-lobby.mp3      — lobby / garage / editor ambience
-  music-gameplay.mp3   — campaign arena combat
+If present (see js/config.js MUSIC_ASSET_URLS):
+  music-lobby.mp3           — lobby / garage / editor ambience
+  music-gameplay-v1.mp3     — campaign combat stem A
+  music-gameplay-v2.mp3     — campaign combat stem B (Dev HUD: gameplay music variant 0|1)
 
-Generate with ElevenLabs (requires ELEVENLABS_API_KEY):
+Generate lobby + one gameplay file with ElevenLabs (requires ELEVENLABS_API_KEY):
   node scripts/elevenlabs-music.mjs
+  (copy/rename a second gameplay stem to music-gameplay-v2.mp3 if you want variant B)
+
+Prompts in that script describe mood and genre only (menu/hub ambience + arcade combat), and avoid names of films, games, or artists, so they stay within the provider’s terms. Use the same idea if you type prompts manually in the ElevenLabs UI.
 
 If these files are missing or fail to load, js/engine/audio.js uses built-in procedural beds.

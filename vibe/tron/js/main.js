@@ -2,6 +2,7 @@ import {
   AUDIO_AUTOPLAY,
   CONFIG,
   MUSIC_ASSET_URLS,
+  getGameplayMusicUrl,
   createRuntimeFromPlayerSave,
   getArenaPlaytestConfig,
   mergeDevHud,
@@ -197,12 +198,14 @@ async function main() {
     musicCrossfadeSec: runtime.devHud.musicCrossfadeDuration,
     autoplay: AUDIO_AUTOPLAY,
     musicLobbyUrl: MUSIC_ASSET_URLS.lobby,
-    musicGameplayUrl: MUSIC_ASSET_URLS.gameplay,
+    musicGameplayUrl: getGameplayMusicUrl(runtime.devHud),
   });
   setBootProgress(bootEls, 58);
   await audio.unlock();
   void audio.prefetch(MUSIC_ASSET_URLS.lobby);
-  void audio.prefetch(MUSIC_ASSET_URLS.gameplay);
+  for (const url of MUSIC_ASSET_URLS.gameplayVariants) {
+    void audio.prefetch(url);
+  }
   setBootProgress(bootEls, 74);
 
   const graphicsProfile = getGraphicsProfile();
@@ -1075,6 +1078,12 @@ async function main() {
     devHud,
     applyDevHud: (patch) => {
       game.applyDevHud(patch);
+      if (Object.prototype.hasOwnProperty.call(patch, "gameplayMusicVariant")) {
+        audio.setMusicGameplayUrl(getGameplayMusicUrl(devHud));
+        if (!isLobby) {
+          void audio.playMusicProfile("gameplay");
+        }
+      }
     },
     persist: persistDevHudToSave,
     syncHud: syncArenaHud,

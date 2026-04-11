@@ -378,6 +378,7 @@ export function createPortalField(opts) {
       const bx = ep.x - fwd.x * 0.55;
       const bz = ep.z - fwd.z * 0.55;
       const body = new Body({ mass: 0, material: wallMat });
+      body.userData = {};
       body.addShape(new Box(new Vec3(1.15, 0.72, 0.08)));
       body.position.set(bx, spawnY, bz);
       body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), ep.rotation);

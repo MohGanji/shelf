@@ -234,6 +234,13 @@ export function createDevHudController(opts) {
 
   section("Audio", [
     { key: "musicCrossfadeDuration", label: "Music crossfade (s)", min: 0, max: 6, step: 0.1 },
+    {
+      key: "gameplayMusicVariant",
+      label: "Gameplay music (0=A · 1=B)",
+      min: 0,
+      max: 1,
+      step: 1,
+    },
   ]);
 
   section("AI", [

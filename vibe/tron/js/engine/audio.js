@@ -303,7 +303,7 @@ export function createAudioEngine(options = {}) {
     typeof options.musicLobbyUrl === "string" && options.musicLobbyUrl.length > 0
       ? options.musicLobbyUrl
       : "";
-  const musicGameplayUrl =
+  let musicGameplayUrl =
     typeof options.musicGameplayUrl === "string" && options.musicGameplayUrl.length > 0
       ? options.musicGameplayUrl
       : "";
@@ -598,6 +598,17 @@ export function createAudioEngine(options = {}) {
     },
     getMusicCrossfadeDuration() {
       return music.getCrossfadeDuration();
+    },
+
+    /**
+     * Switch gameplay bed URL (e.g. Dev HUD variant). Does not change output until {@link playMusicProfile}("gameplay").
+     * @param {string} url
+     */
+    setMusicGameplayUrl(url) {
+      musicGameplayUrl = typeof url === "string" && url.length > 0 ? url : "";
+    },
+    getMusicGameplayUrl() {
+      return musicGameplayUrl;
     },
 
     /**
@@ -1278,6 +1289,8 @@ function createNoopEngine() {
     setVolumes: () => {},
     setMusicCrossfadeDuration: () => {},
     getMusicCrossfadeDuration: () => 1,
+    setMusicGameplayUrl: () => {},
+    getMusicGameplayUrl: () => "",
     playMusicLoop: async () => false,
     playMusicProfile: async () => false,
     stopMusic: () => {},
