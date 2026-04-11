@@ -57,9 +57,9 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
   const floorGeo = new THREE.PlaneGeometry(cfg.arenaWidth, cfg.arenaDepth);
   const floorMat = new THREE.MeshStandardMaterial({
     color: cfg.colors.gridFloor,
-    emissive: new THREE.Color(cfg.colors.gridLine).multiplyScalar(0.04),
-    metalness: 0.15,
-    roughness: 0.85,
+    emissive: new THREE.Color(cfg.colors.gridLine).multiplyScalar(0.055),
+    metalness: 0.12,
+    roughness: 0.82,
   });
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
@@ -70,7 +70,7 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
     new THREE.LineBasicMaterial({
       color: cfg.colors.gridLine,
       transparent: true,
-      opacity: Math.min(1, gridBoost),
+      opacity: Math.min(1, gridBoost * 1.08),
     }),
   );
   grid.position.y = 0.02;
@@ -533,18 +533,27 @@ export function applyArenaStageEnvironment(game, cfg) {
   const { scene, camera, tunnel, floorReflector } = game;
   tunnel.visible = false;
   if (floorReflector) floorReflector.visible = false;
-  scene.background = new THREE.Color(0x02050a);
-  scene.fog = new THREE.Fog(0x02050a, 80, 520);
+  /** Deep blue-black — plan palette (#0a0a0a family) with slight ISO depth. */
+  scene.background = new THREE.Color(0x06080f);
+  /** Same exponential fog as BOOT/renderer so `fogDensity` in Dev HUD applies during play. */
+  const fogDensity =
+    typeof cfg.devHud?.fogDensity === "number" && Number.isFinite(cfg.devHud.fogDensity)
+      ? cfg.devHud.fogDensity
+      : 0.01;
+  scene.fog = new THREE.FogExp2(0x050510, fogDensity);
   camera.near = 0.1;
   camera.far = 2000;
   camera.position.set(0, 120, 180);
   camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
 
-  const hemi = new THREE.HemisphereLight(cfg.colors.ambient, 0x020208, 0.55);
-  const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+  const hemi = new THREE.HemisphereLight(cfg.colors.ambient, 0x03060c, 0.62);
+  const sun = new THREE.DirectionalLight(0xffffff, 0.95);
   sun.position.set(60, 120, 40);
-  const fill = new THREE.DirectionalLight(0x00aaff, 0.35);
+  const fill = new THREE.DirectionalLight(0x00ccff, 0.42);
   fill.position.set(-80, 40, -60);
-  scene.add(hemi, sun, fill);
+  /** Soft overhead cyan wash — extra read on emissive walls (distance 0 = no falloff cap). */
+  const gridWash = new THREE.PointLight(0x66ddff, 0.42, 0, 2);
+  gridWash.position.set(0, 110, 0);
+  scene.add(hemi, sun, fill, gridWash);
 }
