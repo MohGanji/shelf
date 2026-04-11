@@ -1355,6 +1355,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.199** | Tron `index.html`: JSON-LD `WebPage` adds `potentialAction` as `PlayAction` with path-prefix–safe `target` (`./`, aligned with `VideoGame.potentialAction` from P10.128) so the page entity exposes an explicit browser play entry point in `@graph` alongside `mainEntity`, `about`, and `publisher` | P10.198 | [x] |
 | **P10.200** | Tron `index.html`: JSON-LD `WebSite` adds `potentialAction` as `PlayAction` with path-prefix–safe `target` (`./`, aligned with `VideoGame.potentialAction` from P10.128 and `WebPage.potentialAction` from P10.199) so the site entity exposes an explicit browser play entry point in `@graph` alongside `url`, `mainEntity`, and `about` | P10.199 | [x] |
 | **P10.201** | Tron `index.html`: JSON-LD `PlayAction` nodes on `VideoGame`/`WebApplication`, `WebPage`, and `WebSite` add `name` (`Play Tron: Light Cycles`) and `description` (plain-text launch hint) aligned across all three so structured data exposes human-readable action labels alongside path-prefix–safe `target` (`./`) | P10.200 | [x] |
+| **P10.202** | Tron `index.html`: JSON-LD each `PlayAction`’s `target` is an `EntryPoint` (`urlTemplate` `./`, `httpMethod` `GET`, `actionPlatform` desktop + mobile web) so structured data exposes explicit entry-point metadata alongside shared `name` / `description` on `VideoGame`/`WebApplication`, `WebPage`, and `WebSite` | P10.201 | [x] |
 
 ### HUD and progression
 
