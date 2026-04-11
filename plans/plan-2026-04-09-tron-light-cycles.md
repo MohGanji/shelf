@@ -1394,6 +1394,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.238** | Tron `index.html`: JSON-LD `@graph` promotes the free `Offer` to a dedicated node with `@id` `./#offer-tlc-free` (same fields as the prior inline `Offer` on `VideoGame`); `VideoGame` / `WebApplication` `offers` becomes `{ "@id": "./#offer-tlc-free" }` so the zero-price grant is a deduplicated graph entity like `Organization`, while `itemOffered` still points at `./#game` | P10.237 | [x] |
 | **P10.239** | Tron `index.html`: JSON-LD `Organization` adds `makesOffer` (`{ "@id": "./#offer-tlc-free" }`) so structured data exposes explicit publisher→offer linkage alongside `Offer.offeredBy` / `seller` and the deduplicated free-offer node from P10.238 | P10.238 | [x] |
 | **P10.240** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `name` (`Tron: Light Cycles — free browser access`) and `description` (plain-text zero-price digital access summary aligned with `meta name="description"`) so the deduplicated offer node exposes human-readable CreativeWork-style labels in `@graph` alongside `sku`, `url`, and `itemOffered` | P10.238, P10.239 | [x] |
+| **P10.241** | Tron `index.html`: JSON-LD standalone `Offer` `./#offer-tlc-free` adds `eligibleQuantity` as `QuantitativeValue` (`minValue` 1, plain-text `unitText` for unlimited free digital access / no purchase cap) so structured data states ordering-quantity eligibility alongside `eligibleCustomerType` and worldwide `eligibleRegion` | P10.240 | [x] |
 
 ### HUD and progression
 
