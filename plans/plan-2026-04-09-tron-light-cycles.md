@@ -1265,6 +1265,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.109** | Tron `index.html`: `link rel="prefetch"` with `as="image"` for `../../assets/favicon/mstile-150x150.png` (`fetchpriority="low"`) so the Windows tile image referenced by `browserconfig.xml` may warm the HTTP cache alongside other favicon/PWA image prefetches | P10.108, P10.29 | [x] |
 | **P10.110** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `../../assets/favicon/safari-pinned-tab.svg` (`fetchpriority="low"`) so the Safari pinned-tab / `mask-icon` vector asset may warm the HTTP cache alongside other favicon prefetches | P10.109, P10.7 | [x] |
 | **P10.111** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `./site.webmanifest` (`fetchpriority="low"`) so the Web App Manifest JSON may warm the HTTP cache alongside other low-priority fetches (complements `<link rel="manifest">` and install/detail surfaces under path-prefix deploys) | P10.8, P10.110 | [x] |
+| **P10.112** | Tron `index.html`: `link rel="prefetch"` with `as="fetch"` for `./browserconfig.xml` (`fetchpriority="low"`) so the Windows tile XML referenced by `meta name="msapplication-config"` may warm the HTTP cache alongside `site.webmanifest` and other low-priority fetches (path-prefix–safe) | P10.111, P10.29 | [x] |
 
 ### HUD and progression
 
