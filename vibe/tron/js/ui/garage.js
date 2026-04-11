@@ -1,6 +1,8 @@
 /**
- * Garage showroom UI (plan Phase 7). P7.3–P7.4 replace placeholder with showroom + upgrades.
+ * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
+
+import { mountGarageShowroom } from "./garageShowroom.js";
 
 /**
  * @typedef {{ dispose(): void }} GarageController
@@ -16,22 +18,33 @@ export function createGarageController() {
 }
 
 /**
- * P7.2 routing destination — full-screen placeholder until P7.3–P7.4 showroom ships.
+ * P7.2 routing destination — P7.3 Three.js showroom on canvas + top chrome.
  *
- * @param {{ onReturnToLobby: () => void }} opts
+ * @param {{
+ *   game: { renderer: import("three").WebGLRenderer };
+ *   save: import("../data/savedata.js").PlayerSave;
+ *   canvas: HTMLCanvasElement;
+ *   onReturnToLobby: () => void;
+ * }} opts
  * @returns {{ dispose(): void }}
  */
 export function mountGarageDestinationScreen(opts) {
+  const { game, save, canvas, onReturnToLobby } = opts;
   const root = document.getElementById("garage-destination");
   if (!root) {
     return { dispose() {} };
   }
   root.hidden = false;
   root.classList.remove("tron-destination--hidden");
-  const canvas = document.getElementById("game-canvas");
-  if (canvas) canvas.setAttribute("aria-hidden", "true");
+  if (canvas) canvas.removeAttribute("aria-hidden");
 
-  const onReturn = () => opts.onReturnToLobby();
+  const showroom = mountGarageShowroom({
+    renderer: game.renderer,
+    canvas,
+    save,
+  });
+
+  const onReturn = () => onReturnToLobby();
 
   const btn = root.querySelector("[data-return-lobby]");
   const onClick = () => onReturn();
@@ -44,11 +57,11 @@ export function mountGarageDestinationScreen(opts) {
 
   return {
     dispose() {
+      showroom.dispose();
       window.removeEventListener("keydown", onKey);
       if (btn) btn.removeEventListener("click", onClick);
       root.hidden = true;
       root.classList.add("tron-destination--hidden");
-      if (canvas) canvas.removeAttribute("aria-hidden");
     },
   };
 }

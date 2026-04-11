@@ -197,6 +197,9 @@ async function main() {
     if (hud) hud.hidden = true;
     if (ban) ban.hidden = true;
     mountGarageDestinationScreen({
+      game,
+      save,
+      canvas,
       onReturnToLobby: () => {
         window.location.reload();
       },
