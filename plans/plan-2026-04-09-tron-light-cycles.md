@@ -1244,6 +1244,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.88** | Tron `index.html`: `modulepreload` for `./js/game/trailTileMap.js` (`crossorigin="anonymous"`, `fetchpriority="high"`) so the trail collision tile map module (first transitive static import from `trail.js`) begins loading in parallel with the explicit `main.js` import chain and other module preloads | P10.73 | [x] |
 | **P10.89** | Tron `index.html`: `modulepreload` for `./js/game/ai.js` (`crossorigin="anonymous"`, `fetchpriority="high"`) so the enemy steering / intelligence helper (static import only from `enemies.js`) begins loading in parallel with the explicit `main.js` import chain and other module preloads | P10.74 | [x] |
 | **P10.90** | Tron `index.html`: `modulepreload` for `./js/game/attributes.js` (`crossorigin="anonymous"`, `fetchpriority="high"`) so the upgrade attribute helper (static import only from `ui/garage.js`) begins loading in parallel with the explicit `main.js` import chain and other module preloads | P10.80 | [x] |
+| **P10.91** | Tron `index.html`: `modulepreload` for `./js/ui/garageShowroom.js` (`crossorigin="anonymous"`, `fetchpriority="high"`) so the garage showroom / turntable preview module (static import only from `ui/garage.js`) begins loading in parallel with the explicit `main.js` import chain and other module preloads | P10.90 | [x] |
 
 ### HUD and progression
 
