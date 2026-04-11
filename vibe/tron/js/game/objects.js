@@ -261,10 +261,12 @@ function portalRightXZ(rotY) {
  * @param {unknown[] | null | undefined} opts.gameObjects
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
+ * @param {(from: PortalEndpoint, to: PortalEndpoint) => void} [opts.onPortalWarp] — P9.3 warp particles
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PortalFieldTickContext) => void; dispose: () => void }}
  */
 export function createPortalField(opts) {
   const { scene, world, wallMat, playCfg, devHud } = opts;
+  const onPortalWarp = opts.onPortalWarp;
   const raw = opts.gameObjects;
   const root = new THREE.Group();
   root.name = "portals";
@@ -395,7 +397,8 @@ export function createPortalField(opts) {
    * @param {PortalEndpoint} to
    * @param {number} nowMs
    */
-  function warpBody(body, _from, to, nowMs) {
+  function warpBody(body, from, to, nowMs) {
+    onPortalWarp?.(from, to);
     const tf = portalForwardXZ(to.rotation);
     const vx = body.velocity.x;
     const vz = body.velocity.z;

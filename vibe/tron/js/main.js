@@ -40,7 +40,8 @@ import {
 import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
-import { createNitroState } from "./game/nitroSystem.js";
+import { createNitroState, isNitroBurstActive } from "./game/nitroSystem.js";
+import { createGameplayParticles, hexColorToInt } from "./game/particles.js";
 import { createBoostPadField, createPortalField } from "./game/objects.js";
 import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
 import { createTrailWallSystem } from "./game/trail.js";
@@ -287,6 +288,8 @@ async function main() {
   const { world, wallMat, floorMat, playerMat } = createPhysicsWorld();
   buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
 
+  const gameplayParticles = createGameplayParticles({ scene: game.scene, devHud });
+
   const enemyRoster = createCampaignEnemyEntities({
     scene: game.scene,
     world,
@@ -513,6 +516,7 @@ async function main() {
     scene: game.scene,
     powerups: activeCampaignLevel && Array.isArray(activeCampaignLevel.powerups) ? activeCampaignLevel.powerups : [],
     devHud,
+    spawnPickupBurst: gameplayParticles.spawnPickupBurst,
   });
 
   const boostPadField = createBoostPadField({
@@ -528,6 +532,9 @@ async function main() {
     gameObjects: activeCampaignLevel && Array.isArray(activeCampaignLevel.gameObjects) ? activeCampaignLevel.gameObjects : [],
     playCfg,
     devHud,
+    onPortalWarp: (from, to) => {
+      gameplayParticles.spawnPortalWarp(from, to);
+    },
   });
 
   const minimapEl = document.getElementById("hud-minimap");
@@ -555,6 +562,12 @@ async function main() {
 
   function beginPlayerDerezSequence() {
     if (playerDerezPhase !== "alive") return;
+    gameplayParticles.spawnDerezBurst(
+      playerBody.position.x,
+      playCfg.playerSpawnY,
+      playerBody.position.z,
+      save.player.cycleColor ?? "#00FFFF",
+    );
     gameMode = GameMode.PLAYER_DEREZ;
     playerDerezPhase = "imploding";
     playerDerezT0Ms = performance.now();
@@ -1011,6 +1024,23 @@ async function main() {
 
   syncArenaHud();
 
+  /**
+   * P9.3 — particle burst at enemy elimination (trail / cycle contact).
+   * @param {import('cannon-es').World} w
+   * @param {import('./game/enemies.js').CampaignEnemyEntity} e
+   */
+  function eliminateEnemyWithParticles(w, e) {
+    if (!e.eliminated) {
+      gameplayParticles.spawnDerezBurst(
+        e.body.position.x,
+        playCfg.playerSpawnY,
+        e.body.position.z,
+        e.color,
+      );
+    }
+    eliminateCampaignEnemy(w, e);
+  }
+
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
     if (playerDerezPhase === "imploding") {
@@ -1049,10 +1079,12 @@ async function main() {
       if (u >= 1) {
         startDerezTunnelToLobby();
       }
+      gameplayParticles.tick(dt, {});
       return;
     }
 
     if (playerDerezPhase !== "alive") {
+      gameplayParticles.tick(dt, {});
       return;
     }
 
@@ -1244,6 +1276,11 @@ async function main() {
     if (playerTrailHit === "lethal") {
       beginPlayerDerezSequence();
     } else if (playerTrailHit === "absorbed") {
+      gameplayParticles.spawnShieldShatter(
+        playerBody.position.x,
+        playCfg.playerSpawnY,
+        playerBody.position.z,
+      );
       playerBody.userData.shieldPhase = "none";
       playerBody.userData.shieldDeployRemain = 0;
       playerBody.userData.shieldActiveRemain = 0;
@@ -1254,7 +1291,7 @@ async function main() {
       for (const e of enemyRoster.list) {
         if (e.eliminated) continue;
         const ht = tryTrailHitOnBody(e.body, e.body.position.x, e.body.position.z, e.id, trailSources, devHud);
-        if (ht === "lethal") eliminateCampaignEnemy(world, e);
+        if (ht === "lethal") eliminateEnemyWithParticles(world, e);
       }
 
       if (!playerBody.userData.tronEliminated) {
@@ -1263,7 +1300,7 @@ async function main() {
           const out = evaluateCyclePairContact(playerBody, e.body, playCfg, devHud);
           if (!out) continue;
           if (out.derezA) beginPlayerDerezSequence();
-          if (out.derezB) eliminateCampaignEnemy(world, e);
+          if (out.derezB) eliminateEnemyWithParticles(world, e);
         }
       }
 
@@ -1277,8 +1314,8 @@ async function main() {
             if (b.eliminated) continue;
             const out = evaluateCyclePairContact(a.body, b.body, playCfg, devHud);
             if (!out) continue;
-            if (out.derezA) eliminateCampaignEnemy(world, a);
-            if (out.derezB) eliminateCampaignEnemy(world, b);
+            if (out.derezA) eliminateEnemyWithParticles(world, a);
+            if (out.derezB) eliminateEnemyWithParticles(world, b);
           }
         }
       }
@@ -1457,6 +1494,41 @@ async function main() {
         devHud.nitroSpeedLines ? nitroVis * 0.78 : 0,
       );
     }
+
+    /** P9.3 — nitro exhaust, shield shimmer, pickup/portal burst sim (shared system). */
+    const nitroEmitters = [
+      {
+        x: playerBody.position.x,
+        y: playCfg.playerSpawnY,
+        z: playerBody.position.z,
+        heading: playerBody.userData.heading ?? 0,
+        strength: nitroVis,
+        colorHex: hexColorToInt(save.player.cycleColor ?? "#00FFFF"),
+      },
+    ];
+    for (const e of enemyRoster.list) {
+      if (e.eliminated) continue;
+      nitroEmitters.push({
+        x: e.body.position.x,
+        y: playCfg.playerSpawnY,
+        z: e.body.position.z,
+        heading: e.body.userData.heading ?? 0,
+        strength: isNitroBurstActive(e.nitroState) ? 1 : 0,
+        colorHex: hexColorToInt(e.color),
+      });
+    }
+    const spActive = playerBody.userData.shieldPhase === "active";
+    gameplayParticles.tick(dt, {
+      nitroEmitters,
+      shieldShimmer: spActive,
+      shieldShimmerPos: spActive
+        ? {
+            x: playerBody.position.x,
+            y: playCfg.playerSpawnY,
+            z: playerBody.position.z,
+          }
+        : null,
+    });
   });
 
   lobbyBanner.hidden = false;

@@ -76,10 +76,12 @@ function createPowerupGeometryForType(type) {
  * @param {import('three').Scene} opts.scene
  * @param {unknown[] | null | undefined} opts.powerups — `level.powerups` from validated JSON
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
+ * @param {(wx: number, wy: number, wz: number, em: number, neon: number) => void} [opts.spawnPickupBurst] — P9.3 shared particles
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PowerupFieldTickContext) => void; dispose: () => void }}
  */
 export function createCampaignPowerupField(opts) {
   const { scene, devHud } = opts;
+  const externalPickupBurst = opts.spawnPickupBurst;
   const raw = opts.powerups;
   const root = new THREE.Group();
   root.name = "campaign-powerups";
@@ -115,7 +117,7 @@ export function createCampaignPowerupField(opts) {
    * @param {number} em
    * @param {number} neon
    */
-  function spawnPickupBurst(wx, wy, wz, em, neon) {
+  function spawnPickupBurstLocal(wx, wy, wz, em, neon) {
     const n = 40;
     const positions = new Float32Array(n * 3);
     const velocities = new Float32Array(n * 3);
@@ -146,6 +148,21 @@ export function createCampaignPowerupField(opts) {
     group.add(pts);
     scene.add(group);
     pickupBursts.push({ t: 0, group, geo, vel: velocities, mat });
+  }
+
+  /**
+   * @param {number} wx
+   * @param {number} wy
+   * @param {number} wz
+   * @param {number} em
+   * @param {number} neon
+   */
+  function spawnPickupBurst(wx, wy, wz, em, neon) {
+    if (typeof externalPickupBurst === "function") {
+      externalPickupBurst(wx, wy, wz, em, neon);
+      return;
+    }
+    spawnPickupBurstLocal(wx, wy, wz, em, neon);
   }
 
   /**
@@ -181,7 +198,9 @@ export function createCampaignPowerupField(opts) {
     return {
       root,
       tick(dt) {
-        tickPickupBursts(typeof dt === "number" ? dt : 0);
+        if (!externalPickupBurst) {
+          tickPickupBursts(typeof dt === "number" ? dt : 0);
+        }
       },
       dispose() {
         for (const b of pickupBursts) {
@@ -277,7 +296,9 @@ export function createCampaignPowerupField(opts) {
    * @param {PowerupFieldTickContext} ctx
    */
   function tick(dt, ctx) {
-    tickPickupBursts(dt);
+    if (!externalPickupBurst) {
+      tickPickupBursts(dt);
+    }
 
     const { isLobby, levelStarted, playerBody, enemies, onPickupSound, apply } = ctx;
     const neon = typeof devHud.neonIntensity === "number" ? devHud.neonIntensity : 1;
