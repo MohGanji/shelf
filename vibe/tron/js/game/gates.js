@@ -59,6 +59,27 @@ export function isLobbyLevelId(levelId) {
 }
 
 /**
+ * After BOOT the session should use the fixed lobby JSON; the north-wall arena gate sign shows which
+ * campaign arena is next (`save.progress.currentLevel`, plan § Lobby / Gate List).
+ *
+ * @param {Record<string, unknown> | null | undefined} level
+ * @param {number} nextArenaLevelIndex — e.g. `save.progress.currentLevel` (1 = first arena)
+ * @returns {Record<string, unknown> | null | undefined}
+ */
+export function withLobbyRuntimeGateOverrides(level, nextArenaLevelIndex) {
+  if (!level || typeof level !== "object" || level.id !== LOBBY_LEVEL_ID) return level;
+  if (!Array.isArray(level.wallObjects)) return level;
+  const n = Math.max(1, Math.floor(nextArenaLevelIndex));
+  const wallObjects = level.wallObjects.map((wo) => {
+    if (!wo || typeof wo !== "object" || wo.type !== "gate") return wo;
+    const g = /** @type {Record<string, unknown>} */ (wo);
+    if (g.role !== "arena") return wo;
+    return { ...g, signText: `ENTER ARENA ${n}` };
+  });
+  return { ...level, wallObjects };
+}
+
+/**
  * @typedef {{ start: number; end: number }} Interval
  * @typedef {{ edge: WallEdge; position: number; width: number; role: GateRole; signText: string; locked: boolean; destination: unknown }} ParsedGate
  */

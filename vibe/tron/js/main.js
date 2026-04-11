@@ -22,6 +22,7 @@ import {
   computePlayerSpawnFromEntranceGate,
   extractGatesFromWallObjects,
   updateGateAnimations,
+  withLobbyRuntimeGateOverrides,
 } from "./game/gates.js";
 import { createLightCycle } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
@@ -37,6 +38,7 @@ import {
 } from "./game/enemies.js";
 import {
   extractArenaDimensionsFromLevel,
+  findCampaignLevelById,
   loadCampaignLevels,
   selectPlaytestCampaignLevel,
 } from "./levels/loader.js";
@@ -80,7 +82,11 @@ async function main() {
 
   const campaign = await loadCampaignLevels();
   setBootProgress(bootEls, 44);
-  const activeCampaignLevel = selectPlaytestCampaignLevel(campaign.validLevels, save);
+  /** P7.1 — BOOT → lobby (`level-0`) when present; else fall back to legacy playtest picker. */
+  const lobbyOrFallback =
+    findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
+    selectPlaytestCampaignLevel(campaign.validLevels, save);
+  const activeCampaignLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
   const arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
 
   const audio = createAudioEngine({
@@ -425,7 +431,9 @@ async function main() {
       : "default size";
     p.textContent = [
       `P5.3 — Arena from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
-      "X3 — Spawn at entrance gate (2 u inward), facing inward; lobby: free ride. Arenas: press W to start + timer.",
+      isLobby
+        ? `P7.1 — Lobby: 400×200, four gates, no enemies; timer hidden. Arena gate sign → ENTER ARENA ${save.progress.currentLevel}.`
+        : "X3 — Spawn at entrance gate (2 u inward), facing inward. Press W to start + timer.",
       "P5.6 — Gates: open cuts wall; locked slides. P2.2 — trail fade.",
       `P4.1–P4.4 — Enemies: ${enemyRoster.list.length} cycle(s); frozen until first W; hunt + trail/wall/peer separation (avoidance range, reaction time).`,
     ].join(" ");
