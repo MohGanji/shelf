@@ -1,5 +1,10 @@
 import { Body, Box, ContactMaterial, Material, Sphere, Vec3, World } from "cannon-es";
 
+/** cannon-es groups — cycles do not collide with each other here (plan P2.3; resolved in game code). */
+export const COLLISION_GROUP_ARENA_SOLID = 1;
+export const COLLISION_GROUP_FLOOR = 2;
+export const COLLISION_GROUP_CYCLE = 4;
+
 /** @param {number} v
  * @param {number} lo
  * @param {number} hi
@@ -71,6 +76,8 @@ export function createPlayerBody(cfg, playerMat) {
       : radius + 0.06;
   body.position.set(0, spawnY, 0);
   body.type = Body.DYNAMIC;
+  body.collisionFilterGroup = COLLISION_GROUP_CYCLE;
+  body.collisionFilterMask = COLLISION_GROUP_ARENA_SOLID | COLLISION_GROUP_FLOOR;
   return body;
 }
 
@@ -81,6 +88,8 @@ export function createFloorBody(cfg, floorMat) {
   const body = new Body({ mass: 0, material: floorMat });
   body.addShape(shape);
   body.position.set(0, -0.05, 0);
+  body.collisionFilterGroup = COLLISION_GROUP_FLOOR;
+  body.collisionFilterMask = COLLISION_GROUP_CYCLE;
   return body;
 }
 
@@ -91,6 +100,8 @@ export function createWallPhysicsBody({ halfExtents, center, wallMatRef }) {
   body.addShape(shape);
   body.position.copy(center);
   body.userData.kind = "arenaWall";
+  body.collisionFilterGroup = COLLISION_GROUP_ARENA_SOLID;
+  body.collisionFilterMask = COLLISION_GROUP_CYCLE;
   return body;
 }
 

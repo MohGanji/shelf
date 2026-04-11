@@ -251,3 +251,43 @@ body {
 .state-banner--hidden {
   display: none;
 }
+
+.derez-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(80, 0, 20, 0.45), rgba(5, 5, 12, 0.92));
+}
+
+.derez-overlay[hidden] {
+  display: none !important;
+}
+
+.derez-overlay__title {
+  margin: 0;
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  color: #ff4466;
+  text-shadow:
+    0 0 20px rgba(255, 60, 90, 0.95),
+    0 0 48px rgba(180, 0, 40, 0.55);
+}
+
+.derez-overlay__sub {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: rgba(220, 200, 210, 0.88);
+}

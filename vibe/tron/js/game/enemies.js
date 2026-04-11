@@ -22,6 +22,7 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @property {import('./nitroSystem.js').NitroRuntimeState} nitroState
  * @property {ReturnType<typeof getArenaPlaytestConfig>} playCfg
  * @property {number} intelligence — 1–10 (plan enemy attributes)
+ * @property {boolean} [eliminated] — P2.3 combat: trail or cycle derez
  */
 
 /**
@@ -122,6 +123,7 @@ export function createCampaignEnemyEntities(opts) {
       nitroState: createNitroState(playCfg.nitroBarCount),
       playCfg,
       intelligence,
+      eliminated: false,
     });
   }
 
@@ -145,6 +147,7 @@ export function createCampaignEnemyEntities(opts) {
       },
     ];
     for (const e of list) {
+      if (e.eliminated) continue;
       trailSources.push({
         map: e.trail.getTrailTileMap(),
         ownerId: e.id,
@@ -160,11 +163,12 @@ export function createCampaignEnemyEntities(opts) {
     /** P4.4 — player + every enemy position for separation steering within `aiAvoidanceRange`. */
     const peers = [
       { id: "player", x: playerBody.position.x, z: playerBody.position.z },
-      ...list.map((en) => ({ id: en.id, x: en.body.position.x, z: en.body.position.z })),
+      ...list.filter((en) => !en.eliminated).map((en) => ({ id: en.id, x: en.body.position.x, z: en.body.position.z })),
     ];
 
     for (let ei = 0; ei < list.length; ei++) {
       const e = list[ei];
+      if (e.eliminated) continue;
       /** @type {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean }} */
       let keys = { w: false, a: false, s: false, d: false, space: false };
 
@@ -216,6 +220,20 @@ export function createCampaignEnemyEntities(opts) {
 }
 
 /**
+ * P2.3 — remove enemy from physics; hide mesh; clear trail tile map.
+ * @param {import('cannon-es').World} world
+ * @param {CampaignEnemyEntity} e
+ */
+export function eliminateCampaignEnemy(world, e) {
+  if (e.eliminated) return;
+  e.eliminated = true;
+  e.body.userData.tronEliminated = true;
+  e.trail.clear();
+  world.removeBody(e.body);
+  e.cycle.root.visible = false;
+}
+
+/**
  * After `world.step`, apply arena + barrier slide to each enemy (same as player).
  * @param {CampaignEnemyEntity[]} list
  * @param {import('three').Scene} scene
@@ -224,6 +242,7 @@ export function applyEnemyWallAndBarrierSlide(list, scene) {
   const fp = scene.userData.openGateFootprints;
   const barriers = scene.userData.barrierBodies;
   for (const e of list) {
+    if (e.eliminated) continue;
     applyContinuousArenaWallSlide(e.body, e.playCfg, fp);
     applyContinuousBarrierSlide(e.body, barriers, e.playCfg);
   }
@@ -234,6 +253,7 @@ export function applyEnemyWallAndBarrierSlide(list, scene) {
  */
 export function syncEnemyHeadingSpeed(list) {
   for (const e of list) {
+    if (e.eliminated) continue;
     syncHeadingSpeedFromVelocity(e.body);
   }
 }
@@ -244,6 +264,7 @@ export function syncEnemyHeadingSpeed(list) {
  */
 export function updateEnemyTrails(list, dt) {
   for (const e of list) {
+    if (e.eliminated) continue;
     e.trail.update(dt, {
       x: e.body.position.x,
       z: e.body.position.z,
@@ -259,6 +280,7 @@ export function updateEnemyTrails(list, dt) {
  */
 export function updateEnemyCycleMeshes(list, dt) {
   for (const e of list) {
+    if (e.eliminated) continue;
     const h = e.body.userData.heading ?? 0;
     e.cycle.root.position.set(e.body.position.x, e.body.position.y, e.body.position.z);
     e.cycle.root.rotation.y = h;

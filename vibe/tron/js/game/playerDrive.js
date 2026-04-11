@@ -23,6 +23,12 @@ import { integratePlayerCycleMovement } from "./playerMovement.js";
  */
 export function tickPlayerArcadeDrive(opts) {
   const { body, dt, keys, nitroState, playCfg, devHud, onNitroEmptyPress } = opts;
+  if (body.userData?.tronEliminated) {
+    body.velocity.x = 0;
+    body.velocity.z = 0;
+    body.userData.speed = 0;
+    return { nitroBurstActive: false };
+  }
   const levelStarted = opts.levelStarted !== false;
 
   const keysDrive = levelStarted

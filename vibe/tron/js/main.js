@@ -32,10 +32,16 @@ import { createTrailWallSystem } from "./game/trail.js";
 import {
   applyEnemyWallAndBarrierSlide,
   createCampaignEnemyEntities,
+  eliminateCampaignEnemy,
   syncEnemyHeadingSpeed,
   updateEnemyCycleMeshes,
   updateEnemyTrails,
 } from "./game/enemies.js";
+import {
+  buildTrailSources,
+  evaluateCyclePairContact,
+  tryTrailHitOnBody,
+} from "./game/collisionResolve.js";
 import {
   extractArenaDimensionsFromLevel,
   findCampaignLevelById,
@@ -221,6 +227,17 @@ async function main() {
   const arenaHudAbort = new AbortController();
   const asig = { signal: arenaHudAbort.signal };
 
+  const derezOverlay = document.getElementById("derez-overlay");
+  /** P2.3 — player trail/cycle lethal; freeze arena until reload (full derez tunnel = P2.4). */
+  let playerArenaFrozen = false;
+
+  function showPlayerDerezOverlay() {
+    playerArenaFrozen = true;
+    playerBody.userData.tronEliminated = true;
+    trailWall.clear();
+    if (derezOverlay) derezOverlay.hidden = false;
+  }
+
   function renderNitroHud() {
     if (!hudNitroEl) return;
     const max = Math.max(1, playCfg.nitroBarCount);
@@ -300,6 +317,17 @@ async function main() {
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
+    if (playerArenaFrozen) {
+      chase.update(dt, {
+        playerPos: playerCycle.root.position,
+        playerVel: playerBody.velocity,
+        keys: arenaKeys,
+        nitroStrength: 0,
+      });
+      game.postPipeline.setNitroFx({ strength: 0 });
+      return;
+    }
+
     if (!levelStarted && !isLobby && arenaKeys.w) {
       levelStarted = true;
       levelStartMonotonicMs = performance.now();
@@ -350,6 +378,47 @@ async function main() {
     });
     updateEnemyTrails(enemyRoster.list, dt);
 
+    const trailSources = buildTrailSources(trailWall, enemyRoster.list);
+    const px = playerBody.position.x;
+    const pz = playerBody.position.z;
+
+    const playerTrailHit = tryTrailHitOnBody(playerBody, px, pz, "player", trailSources, devHud);
+    if (playerTrailHit === "lethal") {
+      showPlayerDerezOverlay();
+    } else {
+      for (const e of enemyRoster.list) {
+        if (e.eliminated) continue;
+        const ht = tryTrailHitOnBody(e.body, e.body.position.x, e.body.position.z, e.id, trailSources, devHud);
+        if (ht === "lethal") eliminateCampaignEnemy(world, e);
+      }
+
+      if (!playerBody.userData.tronEliminated) {
+        for (const e of enemyRoster.list) {
+          if (e.eliminated) continue;
+          const out = evaluateCyclePairContact(playerBody, e.body, playCfg, devHud);
+          if (!out) continue;
+          if (out.derezA) showPlayerDerezOverlay();
+          if (out.derezB) eliminateCampaignEnemy(world, e);
+        }
+      }
+
+      if (!playerBody.userData.tronEliminated) {
+        const list = enemyRoster.list;
+        for (let i = 0; i < list.length; i++) {
+          const a = list[i];
+          if (a.eliminated) continue;
+          for (let j = i + 1; j < list.length; j++) {
+            const b = list[j];
+            if (b.eliminated) continue;
+            const out = evaluateCyclePairContact(a.body, b.body, playCfg, devHud);
+            if (!out) continue;
+            if (out.derezA) eliminateCampaignEnemy(world, a);
+            if (out.derezB) eliminateCampaignEnemy(world, b);
+          }
+        }
+      }
+    }
+
     if (hudSpeedEl) {
       const spd = playerBody.userData.speed ?? 0;
       hudSpeedEl.textContent = String(Math.round(spd));
@@ -363,16 +432,17 @@ async function main() {
     }
     if (hudTrailEl) {
       hudTrailEl.textContent = String(trailWall.getActiveSegmentCount());
-      const tileHit = trailWall.getTrailTileMap().evaluateCollision(
+      const previewHit = tryTrailHitOnBody(
+        { userData: {} },
         playerBody.position.x,
         playerBody.position.z,
         "player",
-        trailWall.getLogicalEdgeCount(),
-        devHud.trailImmunitySegments,
+        trailSources,
+        devHud,
       );
       hudTrailEl.classList.toggle(
         "cycle-hud__trail--tile-hit",
-        tileHit === "own-lethal" || tileHit === "other-trail",
+        previewHit === "lethal",
       );
     }
     renderNitroHud();

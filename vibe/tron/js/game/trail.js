@@ -9,7 +9,7 @@ import { createTrailTileMap } from "./trailTileMap.js";
  * Fading trail wall rendering (plan P2.1 + P2.2): piecewise ribbon of thin emissive boxes along anchor chords.
  * Distance-based anchor spawn (1 unit), FIFO cap from Trail Length attribute, oldest segment
  * fades (opacity → 0) before removal using `trailFadeSpeed`. No new anchors at near-zero speed.
- * Tile occupancy for trails is maintained in `trailTileMap` (plan A3); lethal collision wiring is P2.3.
+ * Tile occupancy for trails is maintained in `trailTileMap` (plan A3); lethal hits handled in `collisionResolve.js` (P2.3).
  *
  * @param {object} options
  * @param {import('three').ColorRepresentation} options.color
