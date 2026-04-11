@@ -1366,6 +1366,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.210** | Tron `index.html`: JSON-LD each `PlayAction` (`WebSite`, `WebPage`, `VideoGame`/`WebApplication`) adds `url` (`./`, path-prefix–safe) so structured data exposes a canonical `Thing.url` for the play affordance alongside `instrument`, `location`, and `EntryPoint` `target` | P10.209 | [x] |
 | **P10.211** | Tron `index.html`: JSON-LD each `PlayAction` (`WebSite`, `WebPage`, `VideoGame`/`WebApplication`) adds `image` as `ImageObject` (path-prefix–safe relative `url`, `152×152`, same asset as `WebPage.primaryImageOfPage` / `VideoGame.image`) so structured data exposes preview imagery for the browser play affordance alongside `url`, `instrument`, and `EntryPoint` `target` | P10.210 | [x] |
 | **P10.212** | Tron `index.html`: JSON-LD each `potentialAction` uses `@type` `["PlayAction", "PlayGameAction"]` so structured data classifies the browser play affordance as schema.org **PlayGameAction** (video-game play) while retaining `PlayAction` for consumers that only index the broader type | P10.211 | [x] |
+| **P10.213** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `audience` as `Audience` with `audienceType` (`Everyone`, aligned with `contentRating`) so structured data exposes explicit audience classification alongside `isFamilyFriendly` and `keywords` | P10.212 | [x] |
 
 ### HUD and progression
 
