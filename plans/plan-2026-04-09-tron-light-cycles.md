@@ -1097,7 +1097,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P5.2** | `loader.js`: `manifest.json` + fetch campaign; WIP localStorage | P5.1 | [x] |
 | **P5.3** | `arena.js`: scene + physics from level data | P5.2, P1.2 | [x] |
 | **P5.4** | `blocks.js`: barriers; slide collision | P5.3 | [x] |
-| **P5.5** | Block merging: walls; buildings same-shape | P5.4 | [ ] |
+| **P5.5** | Block merging: walls; buildings same-shape | P5.4 | [x] |
 | **P5.6** | `gates.js`: neon arcs, triggers, open vs locked, signage | P5.3 | [ ] |
 | **P5.7** | Transitions: tunnel; coin overlay; coins on exit ride-through; equip cleared | X2, P5.6 | [~] |
 | **P5.8** | `savedata.js`: full schema, progression, cosmetics, settings | A2 | [x] |
