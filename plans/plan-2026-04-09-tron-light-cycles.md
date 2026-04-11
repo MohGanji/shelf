@@ -1316,6 +1316,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.160** | Tron `index.html`: JSON-LD free `Offer` extends `additionalProperty` with a second `PropertyValue` (`Access model` → instant browser play; no account required for the base campaign) so structured data states onboarding and access friction next to `Distribution` | P10.159 | [x] |
 | **P10.161** | Tron `index.html`: JSON-LD free `Offer` adds `eligibleCustomerType` (`https://schema.org/Consumer`) so structured data marks the zero-price grant as intended for end-user consumers alongside worldwide `eligibleRegion` | P10.160 | [x] |
 | **P10.162** | Tron `index.html`: JSON-LD free `Offer` adds `availabilityStarts` (`2026-04-11`, aligned with `validFrom` / `datePublished`) so structured data exposes when catalog availability begins for clients that distinguish `availabilityStarts` from `validFrom` | P10.161 | [x] |
+| **P10.163** | Tron `index.html`: JSON-LD free `Offer` adds `category` (plain text: browser-based arcade racing video game, free digital access) so structured data exposes a product category alongside `sku` and `itemOffered` | P10.162 | [x] |
 
 ### HUD and progression
 
