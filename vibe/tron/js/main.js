@@ -314,7 +314,13 @@ async function main() {
         audio.playNitroEmptyBuzz();
       },
     });
-    enemyRoster.tick(dt, { levelStarted, isLobby });
+    enemyRoster.tick(dt, {
+      levelStarted,
+      isLobby,
+      playerBody,
+      playerTrail: trailWall,
+      devHud,
+    });
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
@@ -421,7 +427,7 @@ async function main() {
       `P5.3 — Arena from campaign JSON (${lid}${lname ? ` — ${lname}` : ""}, ${sz}).`,
       "X3 — Spawn at entrance gate (2 u inward), facing inward; lobby: free ride. Arenas: press W to start + timer.",
       "P5.6 — Gates: open cuts wall; locked slides. P2.2 — trail fade.",
-      `P4.1 — Enemies from JSON: ${enemyRoster.list.length} cycle(s); frozen until first W, then forward drive (AI in P4.2).`,
+      `P4.1–P4.2 — Enemies: ${enemyRoster.list.length} cycle(s); frozen until first W, then tile-trail + solid-ray steering.`,
     ].join(" ");
   }
 

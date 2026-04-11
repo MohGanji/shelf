@@ -1,11 +1,11 @@
 /**
- * Campaign enemy cycles (plan P4.1): spawn from level JSON, same mesh/physics as player,
- * per-enemy attributes → `getArenaPlaytestConfig`, trail + tile owner ids. Stationary until
- * the player's first W (non-lobby); then forward-only drive placeholder until P4.2 AI steering.
+ * Campaign enemy cycles (plan P4.1 + P4.2): spawn from level JSON; stationary until first W,
+ * then tile-trail + solid-ray steering (`computeEnemyCycleKeys`).
  */
 
 import { getArenaPlaytestConfig } from "../config.js";
 import { createPlayerBody, applyContinuousArenaWallSlide, applyContinuousBarrierSlide } from "../engine/physics.js";
+import { computeEnemyCycleKeys } from "./ai.js";
 import { createLightCycle } from "./cycle.js";
 import { createTrailWallSystem } from "./trail.js";
 import { createNitroState } from "./nitroSystem.js";
@@ -21,6 +21,16 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @property {ReturnType<typeof createTrailWallSystem>} trail
  * @property {import('./nitroSystem.js').NitroRuntimeState} nitroState
  * @property {ReturnType<typeof getArenaPlaytestConfig>} playCfg
+ * @property {number} intelligence — 1–10 (plan enemy attributes)
+ */
+
+/**
+ * @typedef {object} EnemyTickContext
+ * @property {boolean} levelStarted
+ * @property {boolean} isLobby
+ * @property {import('cannon-es').Body} playerBody
+ * @property {ReturnType<typeof createTrailWallSystem>} playerTrail
+ * @property {import('../config.js').DEFAULT_DEV_HUD} devHud
  */
 
 /**
@@ -32,7 +42,7 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {Record<string, unknown> | null} opts.campaignLevel
  * @param {{ arenaWidth: number; arenaDepth: number } | null} opts.arenaSize
- * @returns {{ list: CampaignEnemyEntity[]; tick: (dt: number, ctx: { levelStarted: boolean; isLobby: boolean }) => void }}
+ * @returns {{ list: CampaignEnemyEntity[]; tick: (dt: number, ctx: EnemyTickContext) => void }}
  */
 export function createCampaignEnemyEntities(opts) {
   const { scene, world, playerMat, runtime, devHud, campaignLevel, arenaSize } = opts;
@@ -65,6 +75,10 @@ export function createCampaignEnemyEntities(opts) {
 
     const attrs = /** @type {Record<string, number>} */ (raw.attributes ?? {});
     const playCfg = getArenaPlaytestConfig(runtime, attrs, size);
+    const intelligence =
+      typeof attrs.intelligence === "number" && Number.isFinite(attrs.intelligence)
+        ? Math.max(1, Math.min(10, Math.floor(attrs.intelligence)))
+        : 3;
 
     const body = createPlayerBody(playCfg, playerMat);
     const x = typeof raw.x === "number" ? raw.x : 0;
@@ -107,6 +121,7 @@ export function createCampaignEnemyEntities(opts) {
       trail,
       nitroState: createNitroState(playCfg.nitroBarCount),
       playCfg,
+      intelligence,
     });
   }
 
@@ -114,20 +129,56 @@ export function createCampaignEnemyEntities(opts) {
 
   /**
    * @param {number} dt
-   * @param {{ levelStarted: boolean; isLobby: boolean }} ctx
+   * @param {EnemyTickContext} ctx
    */
   function tick(dt, ctx) {
-    const { levelStarted, isLobby } = ctx;
+    const { levelStarted, isLobby, playerBody, playerTrail, devHud: hud } = ctx;
     const canMove = isLobby || levelStarted;
 
+    const barriers = scene.userData.barrierBodies;
+    /** @type {Array<{ map: { hasTrailAhead: Function }; ownerId: string; edgeCount: number }>} */
+    const trailSources = [
+      {
+        map: playerTrail.getTrailTileMap(),
+        ownerId: "player",
+        edgeCount: playerTrail.getLogicalEdgeCount(),
+      },
+    ];
     for (const e of list) {
-      const keys = canMove
-        ? { w: true, a: false, s: false, d: false, space: false }
-        : { w: false, a: false, s: false, d: false, space: false };
+      trailSources.push({
+        map: e.trail.getTrailTileMap(),
+        ownerId: e.id,
+        edgeCount: e.trail.getLogicalEdgeCount(),
+      });
+    }
+
+    for (const e of list) {
+      /** @type {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean }} */
+      let keys = { w: false, a: false, s: false, d: false, space: false };
 
       if (!canMove) {
         e.body.velocity.set(0, e.body.velocity.y, 0);
         e.body.userData.speed = 0;
+        e.body.userData.aiSteer = 0;
+      } else {
+        const ai = computeEnemyCycleKeys({
+          body: e.body,
+          intelligence: e.intelligence,
+          playerPos: { x: playerBody.position.x, z: playerBody.position.z },
+          selfId: e.id,
+          devHud: hud,
+          playCfg: e.playCfg,
+          barrierBodies: barriers,
+          trailSources,
+        });
+        keys = {
+          w: ai.w,
+          a: ai.a,
+          s: ai.s,
+          d: ai.d,
+          space: ai.space,
+        };
+        e.body.userData.aiSteer = ai.steer;
       }
 
       tickPlayerArcadeDrive({
@@ -136,7 +187,7 @@ export function createCampaignEnemyEntities(opts) {
         keys,
         nitroState: e.nitroState,
         playCfg: e.playCfg,
-        devHud,
+        devHud: hud,
         levelStarted: true,
       });
     }
@@ -193,9 +244,10 @@ export function updateEnemyCycleMeshes(list, dt) {
     e.cycle.root.position.set(e.body.position.x, e.body.position.y, e.body.position.z);
     e.cycle.root.rotation.y = h;
     const spd = e.body.userData.speed ?? 0;
+    const st = typeof e.body.userData.aiSteer === "number" ? e.body.userData.aiSteer : 0;
     e.cycle.update(dt, {
       speed: spd,
-      steer: 0,
+      steer: st,
       accelerating: spd > 0.5,
       braking: false,
       nitroBurstStrength: 0,
