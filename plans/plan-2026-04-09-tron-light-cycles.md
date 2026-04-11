@@ -1363,6 +1363,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.207** | Tron `index.html`: JSON-LD each `PlayAction` (`WebSite`, `WebPage`, `VideoGame`/`WebApplication`) adds `location` as `VirtualLocation` with path-prefix–safe `url` (`./`, aligned with `VideoGame.gameLocation` from P10.133) so structured data marks where the play action occurs alongside `object`, `agent`, and `EntryPoint` metadata | P10.206, P10.133 | [x] |
 | **P10.208** | Tron `index.html`: JSON-LD each `PlayAction` (`WebSite`, `WebPage`, `VideoGame`/`WebApplication`) adds `provider` (`{ "@id": "./#organization" }`) so structured data identifies the supplying party for the browser play affordance alongside `agent` and `object` (extends P10.206 service-provision signals) | P10.207 | [x] |
 | **P10.209** | Tron `index.html`: JSON-LD each `PlayAction` (`WebSite`, `WebPage`, `VideoGame`/`WebApplication`) adds `instrument` as `SoftwareApplication` (`name` standards-compliant web browser, `applicationCategory` Browser, `operatingSystem` Any) so structured data marks the client runtime used to perform the play action alongside `location`, `provider`, and `EntryPoint` `target` | P10.208 | [x] |
+| **P10.210** | Tron `index.html`: JSON-LD each `PlayAction` (`WebSite`, `WebPage`, `VideoGame`/`WebApplication`) adds `url` (`./`, path-prefix–safe) so structured data exposes a canonical `Thing.url` for the play affordance alongside `instrument`, `location`, and `EntryPoint` `target` | P10.209 | [x] |
 
 ### HUD and progression
 
