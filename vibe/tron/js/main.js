@@ -32,6 +32,7 @@ import {
   updateNitroBattery,
 } from "./game/nitroSystem.js";
 import { createTrailWallSystem } from "./game/trail.js";
+import { loadCampaignLevels } from "./levels/loader.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -70,6 +71,18 @@ async function main() {
 
   const save = loadOrCreateSave();
   const runtime = mergeRuntimeConfig(save.devHud ?? {});
+
+  const campaign = await loadCampaignLevels();
+  const firstCampaignLevel = campaign.validLevels[0];
+  const arenaSizeFromCampaign =
+    firstCampaignLevel &&
+    typeof firstCampaignLevel.arenaWidth === "number" &&
+    typeof firstCampaignLevel.arenaDepth === "number"
+      ? {
+          arenaWidth: firstCampaignLevel.arenaWidth,
+          arenaDepth: firstCampaignLevel.arenaDepth,
+        }
+      : undefined;
 
   const audio = createAudioEngine({
     masterVolume: save.settings.masterVolume,
@@ -172,7 +185,7 @@ async function main() {
   game.scene.remove(cycle.root, enemy.root);
   controls.dispose();
 
-  const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes);
+  const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
 
   applyArenaStageEnvironment(game, playCfg);
   buildArenaVisuals(game.scene, playCfg);

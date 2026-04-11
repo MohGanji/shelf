@@ -174,8 +174,9 @@ function attrScalar(level, min, max) {
  * Flattened config for arena foundation + physics playtest (P1.2 / P1.6 attributes).
  * @param {ReturnType<typeof mergeRuntimeConfig>} runtime
  * @param {Partial<{ speed: number; acceleration: number; handling: number; nitroBars: number }>} [attributes] — from save; defaults to level 1
+ * @param {{ arenaWidth?: number; arenaDepth?: number }} [arenaSize] — from loaded level JSON; defaults to `WORLD` defaults
  */
-export function getArenaPlaytestConfig(runtime, attributes) {
+export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
   const { world, devHud } = runtime;
   const wallH = devHud.wallHeight ?? world.arenaWallHeight;
   const a = attributes ?? {};
@@ -194,9 +195,18 @@ export function getArenaPlaytestConfig(runtime, attributes) {
     attrScalar(typeof a.trailLength === "number" ? a.trailLength : 1, 40, 100),
   );
 
+  const arenaWidth =
+    arenaSize && typeof arenaSize.arenaWidth === "number" && Number.isFinite(arenaSize.arenaWidth)
+      ? arenaSize.arenaWidth
+      : world.defaultArenaWidth;
+  const arenaDepth =
+    arenaSize && typeof arenaSize.arenaDepth === "number" && Number.isFinite(arenaSize.arenaDepth)
+      ? arenaSize.arenaDepth
+      : world.defaultArenaDepth;
+
   return {
-    arenaWidth: world.defaultArenaWidth,
-    arenaDepth: world.defaultArenaDepth,
+    arenaWidth,
+    arenaDepth,
     arenaWallHeight: wallH,
     physicsHz: 60,
     playerRadius: 0.35,
