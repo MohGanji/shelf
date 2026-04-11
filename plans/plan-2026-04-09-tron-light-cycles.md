@@ -1368,6 +1368,7 @@ This section tracks work derived from this plan. **Legend:** `[x]` = implemented
 | **P10.212** | Tron `index.html`: JSON-LD each `potentialAction` uses `@type` `["PlayAction", "PlayGameAction"]` so structured data classifies the browser play affordance as schema.org **PlayGameAction** (video-game play) while retaining `PlayAction` for consumers that only index the broader type | P10.211 | [x] |
 | **P10.213** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `audience` as `Audience` with `audienceType` (`Everyone`, aligned with `contentRating`) so structured data exposes explicit audience classification alongside `isFamilyFriendly` and `keywords` | P10.212 | [x] |
 | **P10.214** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `copyrightNotice` (same plain-text notice as `WebSite` / `WebPage` from P10.187–P10.188, aligned with `copyrightYear` / `copyrightHolder` → `./#organization`) so the game entity exposes explicit rights language in `@graph` alongside `WebSite` and `WebPage` | P10.213, P10.188 | [x] |
+| **P10.215** | Tron `index.html`: JSON-LD `VideoGame` / `WebApplication` adds `typicalAgeRange` (`0-`, aligned with `contentRating` `Everyone` and `audience.audienceType`) so structured data exposes schema.org CreativeWork age-band hints alongside `isFamilyFriendly` and `Audience` | P10.214 | [x] |
 
 ### HUD and progression
 
