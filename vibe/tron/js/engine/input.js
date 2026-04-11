@@ -1,12 +1,82 @@
-import { isTunnelBlockingInput } from './tunnel.js';
+import { isTunnelBlockingInput } from "./tunnel.js";
 
 /**
- * Keyboard routing — tunnel must not buffer keys (spec: clean input on arrival).
+ * @typedef {object} TronCycleKeyState
+ * @property {boolean} w
+ * @property {boolean} a
+ * @property {boolean} s
+ * @property {boolean} d
+ * @property {boolean} space
+ */
+
+/**
+ * Keyboard input for the light cycle (WASD + arrows, Space).
+ * Tunnel blocks input — no buffering (plan § Level Transitions).
+ *
+ * @returns {{ state: TronCycleKeyState; dispose: () => void }}
+ */
+export function createTronCycleKeyState() {
+  /** @type {TronCycleKeyState} */
+  const state = {
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+    space: false,
+  };
+
+  const controller = new AbortController();
+  const opts = { signal: controller.signal };
+
+  function mapKey(e) {
+    const k = e.key.toLowerCase();
+    if (k === "arrowup") return "w";
+    if (k === "arrowdown") return "s";
+    if (k === "arrowleft") return "a";
+    if (k === "arrowright") return "d";
+    return k;
+  }
+
+  function onDown(e) {
+    if (isTunnelBlockingInput()) return;
+    const k = mapKey(e);
+    if (k === "w") state.w = true;
+    if (k === "s") state.s = true;
+    if (k === "a") state.a = true;
+    if (k === "d") state.d = true;
+    if (e.code === "Space") {
+      state.space = true;
+      e.preventDefault();
+    }
+  }
+
+  function onUp(e) {
+    if (isTunnelBlockingInput()) return;
+    const k = mapKey(e);
+    if (k === "w") state.w = false;
+    if (k === "s") state.s = false;
+    if (k === "a") state.a = false;
+    if (k === "d") state.d = false;
+    if (e.code === "Space") state.space = false;
+  }
+
+  window.addEventListener("keydown", onDown, opts);
+  window.addEventListener("keyup", onUp, opts);
+
+  return {
+    state,
+    dispose() {
+      controller.abort();
+    },
+  };
+}
+
+/**
  * @param {(ev: KeyboardEvent) => void} onKeyDown
  */
 export function attachKeyDown(onKeyDown) {
   window.addEventListener(
-    'keydown',
+    "keydown",
     (ev) => {
       if (isTunnelBlockingInput()) {
         ev.preventDefault();
@@ -15,6 +85,6 @@ export function attachKeyDown(onKeyDown) {
       }
       onKeyDown(ev);
     },
-    true
+    true,
   );
 }

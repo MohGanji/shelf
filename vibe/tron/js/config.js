@@ -172,8 +172,15 @@ export function getArenaPlaytestConfig(runtime) {
     physicsHz: 60,
     playerRadius: 0.35,
     playerMass: 5,
+    /** Handling level 1 — rad/s before speed falloff (plan § Movement). */
+    baseTurnRate: 2.5,
+    /** units/s² toward top speed (plan: default 20). */
+    acceleration: world.defaultAcceleration,
     maxMoveSpeed: world.defaultTopSpeed,
+    /** Legacy force-based tuning (unused by arcade drive; kept for tooling). */
     moveAcceleration: 120,
+    /** Horizontal damping off — coast/brake come from movement integration. */
+    playerLinearDamping: 0,
     wallSlideDamping: 1,
     colors: {
       gridLine: 0x00d4ff,

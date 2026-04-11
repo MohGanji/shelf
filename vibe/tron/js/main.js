@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { Vec3 } from "cannon-es";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import {
@@ -19,8 +18,13 @@ import {
   createPhysicsWorld,
   createPlayerBody,
 } from "./engine/physics.js";
+import { createTronCycleKeyState } from "./engine/input.js";
 import { applyArenaStageEnvironment, buildArenaPhysics, buildArenaVisuals } from "./game/arena.js";
 import { createLightCycle } from "./game/cycle.js";
+import {
+  integratePlayerCycleMovement,
+  syncHeadingSpeedFromVelocity,
+} from "./game/playerMovement.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -48,65 +52,6 @@ function runBootLoadingBar(durationMs, els) {
     if (p >= 100) clearInterval(iv);
   }, 40);
   return () => clearInterval(iv);
-}
-
-/**
- * @param {{ w: boolean; a: boolean; s: boolean; d: boolean; space: boolean }} keys
- * @param {AbortSignal} [signal]
- */
-function bindArenaMovementKeys(keys, signal) {
-  const opts = signal ? { signal } : undefined;
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      const k = e.key.toLowerCase();
-      if (k === "w" || k === "arrowup") keys.w = true;
-      if (k === "s" || k === "arrowdown") keys.s = true;
-      if (k === "a" || k === "arrowleft") keys.a = true;
-      if (k === "d" || k === "arrowright") keys.d = true;
-      if (e.code === "Space") {
-        keys.space = true;
-        e.preventDefault();
-      }
-    },
-    opts,
-  );
-  window.addEventListener(
-    "keyup",
-    (e) => {
-      const k = e.key.toLowerCase();
-      if (k === "w" || k === "arrowup") keys.w = false;
-      if (k === "s" || k === "arrowdown") keys.s = false;
-      if (k === "a" || k === "arrowleft") keys.a = false;
-      if (k === "d" || k === "arrowright") keys.d = false;
-      if (e.code === "Space") keys.space = false;
-    },
-    opts,
-  );
-}
-
-function applyMovement(playerBody, cfg, keys) {
-  const accel = cfg.moveAcceleration;
-  const f = new Vec3(0, 0, 0);
-  if (keys.w) f.z -= 1;
-  if (keys.s) f.z += 1;
-  if (keys.a) f.x -= 1;
-  if (keys.d) f.x += 1;
-  if (f.lengthSquared() < 1e-6) return;
-  f.normalize();
-  f.scale(accel, f);
-  playerBody.applyForce(f, playerBody.position);
-}
-
-function clampHorizontalSpeed(playerBody, cfg) {
-  const max = cfg.maxMoveSpeed;
-  const v = playerBody.velocity;
-  const h = Math.hypot(v.x, v.z);
-  if (h > max) {
-    const s = max / h;
-    v.x *= s;
-    v.z *= s;
-  }
 }
 
 async function main() {
@@ -233,22 +178,13 @@ async function main() {
   playerBody.allowSleep = false;
   world.addBody(playerBody);
 
-  const playerMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(playCfg.playerRadius, 24, 16),
-    new THREE.MeshStandardMaterial({
-      color: 0x00ffff,
-      emissive: 0x004444,
-      metalness: 0.3,
-      roughness: 0.35,
-    }),
-  );
-  game.scene.add(playerMesh);
+  const playerCycle = createLightCycle({ devHud });
+  game.scene.add(playerCycle.root);
 
-  const arenaKeys = { w: false, a: false, s: false, d: false, space: false };
-  bindArenaMovementKeys(arenaKeys);
+  const { state: arenaKeys } = createTronCycleKeyState();
 
   const chase = createChaseCamera(game.camera, devHud);
-  chase.spawnAt(playerMesh.position);
+  chase.spawnAt(playerCycle.root.position);
 
   let nitroBurstTimer = 0;
   let nitroVis = 0;
@@ -262,8 +198,9 @@ async function main() {
   function syncArenaHud() {
     if (!hudEl) return;
     hudEl.innerHTML = [
-      "W/A/S/D — move · Space — nitro burst (camera + FX demo)",
-      "5 / 6 / 7 / 8 — toggle nitro FOV · pullback · speed lines · motion blur",
+      "P1.5 — W/S accel & brake (no reverse) · A/D steer · coast when off gas",
+      "Turn rate slows at high speed · Space — nitro burst (overrides brake; FX demo)",
+      "5 / 6 / 7 / 8 — nitro FOV · pullback · speed lines · motion blur",
       `FX: fov ${devHud.nitroFovWiden ? "on" : "off"} · pull ${devHud.nitroCameraPullBack ? "on" : "off"} · lines ${devHud.nitroSpeedLines ? "on" : "off"} · blur ${devHud.nitroMotionBlur ? "on" : "off"}`,
     ].join("<br/>");
   }
@@ -301,23 +238,52 @@ async function main() {
 
   const step = 1 / playCfg.physicsHz;
   game.setOnFrame(({ dt }) => {
-    applyMovement(playerBody, playCfg, arenaKeys);
-    world.step(step, dt, 10);
-    applyContinuousArenaWallSlide(playerBody, playCfg);
-    clampHorizontalSpeed(playerBody, playCfg);
-    playerMesh.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z);
-
     const spaceNow = arenaKeys.space;
     if (spaceNow && !prevSpace && nitroBurstTimer <= 0) {
       nitroBurstTimer = devHud.nitroBurstDuration;
     }
     prevSpace = spaceNow;
-    nitroBurstTimer = Math.max(0, nitroBurstTimer - dt);
-    const raw = nitroBurstTimer > 0 ? 1 : 0;
+
+    const nitroOn = nitroBurstTimer > 0;
+
+    integratePlayerCycleMovement(
+      playerBody,
+      dt,
+      arenaKeys,
+      nitroOn,
+      playCfg,
+      devHud,
+    );
+    world.step(step, dt, 10);
+    applyContinuousArenaWallSlide(playerBody, playCfg);
+    syncHeadingSpeedFromVelocity(playerBody);
+
+    const raw = nitroOn ? 1 : 0;
     nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));
+    nitroBurstTimer = Math.max(0, nitroBurstTimer - dt);
+
+    const h = playerBody.userData.heading ?? 0;
+    playerCycle.root.position.set(
+      playerBody.position.x,
+      playerBody.position.y,
+      playerBody.position.z,
+    );
+    playerCycle.root.rotation.y = h;
+
+    const steer =
+      (arenaKeys.d ? 1 : 0) - (arenaKeys.a ? 1 : 0);
+    const spd = playerBody.userData.speed ?? 0;
+    const braking = arenaKeys.s && !nitroOn;
+    const accelerating = arenaKeys.w && !braking;
+    playerCycle.update(dt, {
+      speed: spd,
+      steer,
+      accelerating,
+      braking,
+    });
 
     chase.update(dt, {
-      playerPos: playerMesh.position,
+      playerPos: playerCycle.root.position,
       playerVel: playerBody.velocity,
       keys: arenaKeys,
       nitroStrength: nitroVis,
@@ -336,7 +302,7 @@ async function main() {
   const p = lobbyBanner.querySelector("p");
   if (p) {
     p.textContent =
-      "P1.4 chase camera — third-person follow + nitro FOV / pullback / speed lines / motion blur (see HUD).";
+      "P1.5 movement — arcade steering, coast/brake, light cycle mesh + chase cam (see HUD).";
   }
 
   game.startLoop();

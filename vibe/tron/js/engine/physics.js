@@ -37,7 +37,8 @@ export function createPhysicsWorld() {
   );
   world.addContactMaterial(
     new ContactMaterial(playerMat, floorMat, {
-      friction: 0.35,
+      /** Arcade drive sets horizontal velocity each tick — floor friction would fight coast/brake. */
+      friction: 0,
       restitution: 0,
     }),
   );
@@ -51,7 +52,7 @@ export function createPlayerBody(cfg, playerMat) {
   const body = new Body({
     mass: cfg.playerMass,
     material: playerMat,
-    linearDamping: 0.05,
+    linearDamping: cfg.playerLinearDamping ?? 0.05,
     angularDamping: 0.99,
     fixedRotation: true,
   });
