@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #0a0a0a; font-family: 'Orbitron', monospace; }
+canvas { display: block; }
+
+/* Header */
+.header {
+    position: fixed; top: 16px; left: 20px; z-index: 10;
+    display: flex; align-items: baseline; gap: 14px;
+}
+.header h1 {
+    color: #00FFFF; font-size: 0.9rem; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(0,255,255,0.6), 0 0 30px rgba(0,255,255,0.2);
+}
+.header a {
+    color: #556; font-size: 0.65rem; text-decoration: none;
+    letter-spacing: 0.05em; text-transform: uppercase;
+}
+.header a:hover { color: #00FFFF; }
+
+/* HUD */
+#hud {
+    position: fixed; bottom: 24px; left: 24px; z-index: 10;
+    display: flex; align-items: center; gap: 20px;
+    pointer-events: none;
+}
+
+.hud-speed {
+    display: flex; align-items: baseline; gap: 4px;
+}
+.hud-speed-icon {
+    color: #00FFFF; font-size: 0.7rem; opacity: 0.7;
+}
+#hud-speed {
+    color: #00FFFF; font-size: 1.6rem; font-weight: 700;
+    text-shadow: 0 0 10px rgba(0,255,255,0.5);
+    min-width: 48px; text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.hud-nitro {
+    display: flex; align-items: center; gap: 4px;
+}
+#hud-nitro-bars {
+    display: flex; gap: 3px;
+}
+.nitro-bar {
+    width: 20px; height: 8px;
+    border: 1px solid rgba(0,255,255,0.3);
+    border-radius: 2px;
+    background: transparent;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.nitro-bar.filled {
+    background: rgba(0,255,255,0.7);
+    box-shadow: 0 0 6px rgba(0,255,255,0.4);
+}
+.nitro-bar.active {
+    background: #ffffff;
+    box-shadow: 0 0 12px rgba(0,255,255,0.8);
+}
+
+/* Controls hint */
+.controls-hint {
+    position: fixed; bottom: 24px; right: 24px; z-index: 10;
+    color: #445; font-size: 0.55rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: right;
+    line-height: 1.6;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+.controls-hint:hover { opacity: 1; }

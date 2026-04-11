@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tron: Light Cycles</title>
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="stylesheet" href="css/style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>Tron: Light Cycles</h1>
+    <a href="/vibe/">&#8592; back</a>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+    <div class="hud-speed">
+        <span class="hud-speed-icon">&#9889;</span>
+        <span id="hud-speed">0</span>
+    </div>
+    <div class="hud-nitro">
+        <div id="hud-nitro-bars"></div>
+    </div>
+</div>
+
+<!-- Controls hint -->
+<div class="controls-hint">
+    W/&#8593; accelerate &middot; S/&#8595; brake<br>
+    A/&#8592; left &middot; D/&#8594; right<br>
+    Space nitro
+</div>
+
+<!-- Canvas -->
+<canvas id="game-canvas"></canvas>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
