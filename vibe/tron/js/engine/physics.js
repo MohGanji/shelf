@@ -1,5 +1,13 @@
 import { Body, Box, ContactMaterial, Material, Sphere, Vec3, World } from "cannon-es";
 
+/** @param {number} v
+ * @param {number} lo
+ * @param {number} hi
+ */
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
 const wallMat = new Material("arenaWall");
 const floorMat = new Material("arenaFloor");
 const playerMat = new Material("player");
@@ -104,5 +112,74 @@ export function applyContinuousArenaWallSlide(playerBody, cfg) {
   }
   if (p.z + r >= halfD - pad) {
     applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+  }
+}
+
+/**
+ * Arcade drive overwrites velocity each tick — interior barrier boxes need the same slide response as arena walls.
+ * @param {import('cannon-es').Body} playerBody
+ * @param {import('cannon-es').Body[] | undefined} barrierBodies
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} cfg
+ */
+export function applyContinuousBarrierSlide(playerBody, barrierBodies, cfg) {
+  if (!barrierBodies || barrierBodies.length === 0) return;
+  const r = cfg.playerRadius;
+  const p = playerBody.position;
+
+  for (const boxBody of barrierBodies) {
+    if (!boxBody || boxBody.mass !== 0) continue;
+    const shape = boxBody.shapes[0];
+    if (!(shape instanceof Box)) continue;
+
+    const he = shape.halfExtents;
+    const c = boxBody.position;
+
+    const qx = clamp(p.x, c.x - he.x, c.x + he.x);
+    const qy = clamp(p.y, c.y - he.y, c.y + he.y);
+    const qz = clamp(p.z, c.z - he.z, c.z + he.z);
+
+    let dx = p.x - qx;
+    let dy = p.y - qy;
+    let dz = p.z - qz;
+    let dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    if (dist < 1e-7) {
+      const px = p.x - c.x;
+      const py = p.y - c.y;
+      const pz = p.z - c.z;
+      const ax = he.x - Math.abs(px);
+      const ay = he.y - Math.abs(py);
+      const az = he.z - Math.abs(pz);
+      const m = Math.min(ax, ay, az);
+      if (m === ax) {
+        dx = px > 0 ? 1 : -1;
+        dy = 0;
+        dz = 0;
+      } else if (m === ay) {
+        dx = 0;
+        dy = py > 0 ? 1 : -1;
+        dz = 0;
+      } else {
+        dx = 0;
+        dy = 0;
+        dz = pz > 0 ? 1 : -1;
+      }
+      dist = 1;
+    }
+
+    if (dist > r + 0.02) continue;
+
+    const nx = dx / dist;
+    const ny = dy / dist;
+    const nz = dz / dist;
+
+    if (dist < r - 1e-5) {
+      const push = r - dist + 0.012;
+      p.x += nx * push;
+      p.y += ny * push;
+      p.z += nz * push;
+    }
+
+    applyWallSlideVelocity(playerBody, new Vec3(-nx, -ny, -nz), cfg);
   }
 }

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { Vec3 } from "cannon-es";
 import { createFloorBody, createWallPhysicsBody } from "../engine/physics.js";
+import { buildBarriersFromLevel } from "./blocks.js";
 
 function makePanelMaterial(colorHex, emissive, neon) {
   return new THREE.MeshStandardMaterial({
@@ -106,7 +107,7 @@ function buildGridGeometry(halfW, halfD) {
 
 /**
  * Perimeter grid + walls from merged play config (dimensions usually come from campaign level JSON via
- * `getArenaPlaytestConfig` + `extractArenaDimensionsFromLevel`). Barriers, gates, interior objects — P5.4+.
+ * `getArenaPlaytestConfig` + `extractArenaDimensionsFromLevel`). Barriers from JSON (P5.4); gates — P5.6+.
  *
  * @param {import('three').Scene} scene
  * @param {import('cannon-es').World} world
@@ -118,6 +119,18 @@ function buildGridGeometry(halfW, halfD) {
 export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, playCfg, level = null) {
   buildArenaVisuals(scene, playCfg);
   buildArenaPhysics(world, wallMat, floorMat, playCfg);
+
+  /** @type {import('cannon-es').Body[]} */
+  let barrierBodies = [];
+  if (level && Array.isArray(level.barriers) && level.barriers.length > 0) {
+    const built = buildBarriersFromLevel(scene, world, wallMat, playCfg, level.barriers);
+    barrierBodies = built.bodies;
+    scene.userData.barriersGroup = built.group;
+  } else {
+    delete scene.userData.barriersGroup;
+  }
+  scene.userData.barrierBodies = barrierBodies;
+
   if (level && typeof level === "object" && typeof level.id === "string") {
     scene.userData.campaignLevel = {
       id: level.id,

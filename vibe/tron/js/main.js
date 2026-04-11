@@ -16,6 +16,7 @@ import { createGameRenderer } from "./engine/renderer.js";
 import { isTunnelBlockingInput, playTunnel } from "./engine/tunnel.js";
 import {
   applyContinuousArenaWallSlide,
+  applyContinuousBarrierSlide,
   createPhysicsWorld,
   createPlayerBody,
 } from "./engine/physics.js";
@@ -336,6 +337,7 @@ async function main() {
     });
     world.step(step, dt, 10);
     applyContinuousArenaWallSlide(playerBody, playCfg);
+    applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
     syncHeadingSpeedFromVelocity(playerBody);
 
     const raw = nitroOn ? 1 : 0;
