@@ -352,6 +352,35 @@ export function createTrailWallSystem(options) {
   }
 
   /**
+   * Top-down minimap polylines (P9.4) — one segment per visible edge; opacity <= 0.02 skipped.
+   * @returns {{ ax: number; az: number; bx: number; bz: number }[]}
+   */
+  function getMinimapSegments() {
+    /** @type {{ ax: number; az: number; bx: number; bz: number }[]} */
+    const out = [];
+    const pushChain = (
+      /** @type {THREE.Vector3[]} */ anch,
+      /** @type {number[]} */ opac,
+    ) => {
+      for (let i = 0; i < anch.length - 1; i++) {
+        const o = opac[i] ?? 1;
+        if (o <= 0.02) continue;
+        out.push({
+          ax: anch[i].x,
+          az: anch[i].z,
+          bx: anch[i + 1].x,
+          bz: anch[i + 1].z,
+        });
+      }
+    };
+    for (const fc of frozenChains) {
+      pushChain(fc.anchors, fc.segmentOpacities);
+    }
+    pushChain(anchors, segmentOpacities);
+    return out;
+  }
+
+  /**
    * Raise or lower FIFO cap (plan P3.3 Trail Extend). Trims excess anchors from the tail if shrinking.
    * @param {number} nextMaxSegments — max logical segments (edges), same units as constructor `maxSegments`
    */
@@ -379,6 +408,7 @@ export function createTrailWallSystem(options) {
     setMaxSegments,
     getActiveSegmentCount,
     getLogicalEdgeCount,
+    getMinimapSegments,
     getTrailTileMap() {
       return trailTileMap;
     },

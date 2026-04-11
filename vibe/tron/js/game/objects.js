@@ -70,6 +70,9 @@ export function createBoostPadField(opts) {
     return {
       root,
       tick() {},
+      getMinimapBoostPads() {
+        return [];
+      },
       dispose() {
         scene.remove(root);
       },
@@ -204,7 +207,12 @@ export function createBoostPadField(opts) {
     instances.length = 0;
   }
 
-  return { root, tick, dispose };
+  /** P9.4 — boost pad centers for minimap. */
+  function getMinimapBoostPads() {
+    return instances.map((i) => ({ x: i.x, z: i.z }));
+  }
+
+  return { root, tick, dispose, getMinimapBoostPads };
 }
 
 /**
@@ -286,6 +294,9 @@ export function createPortalField(opts) {
     return {
       root,
       tick() {},
+      getMinimapPortals() {
+        return [];
+      },
       dispose() {
         scene.remove(root);
       },
@@ -512,5 +523,15 @@ export function createPortalField(opts) {
     }
   }
 
-  return { root, tick, dispose };
+  /** P9.4 — portal endpoint positions for minimap. */
+  function getMinimapPortals() {
+    /** @type {{ x: number; z: number }[]} */
+    const out = [];
+    for (const pair of pairs) {
+      out.push({ x: pair.a.x, z: pair.a.z }, { x: pair.b.x, z: pair.b.z });
+    }
+    return out;
+  }
+
+  return { root, tick, dispose, getMinimapPortals };
 }

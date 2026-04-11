@@ -407,7 +407,14 @@ export function createCampaignPowerupField(opts) {
     instances.length = 0;
   }
 
-  return { root, tick, dispose };
+  /** P9.4 — active pickup tiles for minimap (hollow circles). */
+  function getMinimapPickups() {
+    return instances
+      .filter((i) => !i.gone && !i.hidden)
+      .map((i) => ({ x: i.x, z: i.z }));
+  }
+
+  return { root, tick, dispose, getMinimapPickups };
 }
 
 /**

@@ -22,6 +22,7 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @property {import('./nitroSystem.js').NitroRuntimeState} nitroState
  * @property {ReturnType<typeof getArenaPlaytestConfig>} playCfg
  * @property {number} intelligence — 1–10 (plan enemy attributes)
+ * @property {string} color — cycle / trail hex (minimap, UI)
  * @property {boolean} [eliminated] — P2.3 combat: trail or cycle derez
  */
 
@@ -129,6 +130,7 @@ export function createCampaignEnemyEntities(opts) {
       nitroState: createNitroState(playCfg.nitroBarCount),
       playCfg,
       intelligence,
+      color: colorStr,
       eliminated: false,
     });
   }

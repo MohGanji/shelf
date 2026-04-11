@@ -235,6 +235,24 @@ body {
   color: rgba(180, 220, 255, 0.92);
 }
 
+/* P9.4 — corner minimap (arena aspect ratio, tile trails + obstacles + pickups) */
+.hud-minimap-wrap {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 18;
+  padding: 6px;
+  pointer-events: none;
+  background: rgba(4, 12, 22, 0.45);
+  border: 1px solid rgba(0, 255, 255, 0.16);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+}
+
+.hud-minimap-wrap canvas {
+  display: block;
+}
+
 /* P7.5 — first-visit controls overlay (lobby) */
 .controls-overlay {
   position: fixed;

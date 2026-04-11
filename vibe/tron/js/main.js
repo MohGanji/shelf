@@ -77,6 +77,7 @@ import {
   showFirstVisitControlsOverlayIfNeeded,
 } from "./ui/menus.js";
 import { createDevHudController } from "./ui/devhud.js";
+import { createArenaMinimapRenderer } from "./ui/hud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 
 function $(id) {
@@ -225,7 +226,9 @@ async function main() {
     gameMode = GameMode.GARAGE;
     const hud = document.getElementById("cycle-hud");
     const ban = document.getElementById("lobby-placeholder");
+    const mm = document.getElementById("hud-minimap-wrap");
     if (hud) hud.hidden = true;
+    if (mm) mm.hidden = true;
     if (ban) ban.hidden = true;
     mountGarageDestinationScreen({
       game,
@@ -241,7 +244,9 @@ async function main() {
     gameMode = GameMode.EDITOR;
     const hud = document.getElementById("cycle-hud");
     const ban = document.getElementById("lobby-placeholder");
+    const mm = document.getElementById("hud-minimap-wrap");
     if (hud) hud.hidden = true;
+    if (mm) mm.hidden = true;
     if (ban) ban.hidden = true;
     const wipOpen =
       typeof bootConsumed.wipLevelId === "string" ? bootConsumed.wipLevelId : undefined;
@@ -500,6 +505,11 @@ async function main() {
     playCfg,
     devHud,
   });
+
+  const minimapEl = document.getElementById("hud-minimap");
+  const minimapRenderer = createArenaMinimapRenderer(
+    minimapEl instanceof HTMLCanvasElement ? minimapEl : null,
+  );
 
   const speedLineEl = document.getElementById("nitro-speed-lines");
   const hudSpeedEl = document.getElementById("hud-speed");
@@ -1291,6 +1301,48 @@ async function main() {
       );
     }
     renderNitroHud();
+
+    const trailColorHud =
+      typeof save.player.trailColor === "string" && save.player.trailColor
+        ? save.player.trailColor
+        : save.player.cycleColor ?? "#00FFFF";
+    /** P9.4 — minimap: trails, barriers, pickups / pads / portals, player + enemy dots. */
+    const minimapTrailSources = [
+      {
+        color: trailColorHud,
+        getSegments: () => trailWall.getMinimapSegments(),
+      },
+    ];
+    for (const e of enemyRoster.list) {
+      if (e.eliminated) continue;
+      minimapTrailSources.push({
+        color: e.color,
+        getSegments: () => e.trail.getMinimapSegments(),
+      });
+    }
+    const minimapEnemies = enemyRoster.list
+      .filter((e) => !e.eliminated)
+      .map((e) => ({
+        x: e.body.position.x,
+        z: e.body.position.z,
+        color: e.color,
+      }));
+    const itemPts = [
+      ...powerupField.getMinimapPickups(),
+      ...boostPadField.getMinimapBoostPads(),
+      ...portalField.getMinimapPortals(),
+    ];
+    minimapRenderer.draw({
+      arenaWidth: playCfg.arenaWidth,
+      arenaDepth: playCfg.arenaDepth,
+      playerX: playerBody.position.x,
+      playerZ: playerBody.position.z,
+      playerColor: save.player.cycleColor ?? "#00FFFF",
+      enemies: minimapEnemies,
+      trailSources: minimapTrailSources,
+      barrierBodies: game.scene.userData.barrierBodies,
+      itemPoints: itemPts,
+    });
 
     const h = playerBody.userData.heading ?? 0;
     playerCycle.root.position.set(
