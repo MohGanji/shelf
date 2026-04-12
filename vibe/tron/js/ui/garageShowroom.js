@@ -3,9 +3,9 @@
  * short trail preview, slow turntable rotation (plan Phase 7).
  */
 
-import * as THREE from "three";
+import * as THREE from "../vendor/three-module.js";
 
-import { mergeDevHud } from "../config.js";
+import { getFloorGridLineStep, mergeDevHud } from "../config.js";
 import { createLightCycle } from "../game/cycle.js";
 
 const VOID_BG = 0x050508;
@@ -13,13 +13,18 @@ const GRID_MAIN = 0x1a2a44;
 const GRID_SEC = 0x0c1424;
 
 /**
- * @param {{ renderer: THREE.WebGLRenderer; canvas: HTMLCanvasElement; save: import("../data/savedata.js").PlayerSave }} opts
+ * @param {{
+ *   renderer: THREE.WebGLRenderer;
+ *   canvas: HTMLCanvasElement;
+ *   save: import("../data/savedata.js").PlayerSave;
+ *   devHud?: Partial<import("../config.js").DEFAULT_DEV_HUD>;
+ * }} opts
  * @returns {{ dispose(): void }}
  */
 export function mountGarageShowroom(opts) {
   const { renderer, canvas, save } = opts;
-
-  const devHud = mergeDevHud({ ...save.devHud });
+  const devHud = mergeDevHud({ ...save.devHud, ...(opts.devHud ?? {}) });
+  const floorStep = getFloorGridLineStep(devHud);
   const cycleHex = typeof save.player.cycleColor === "string" ? save.player.cycleColor : "#00FFFF";
   const trailHex = typeof save.player.trailColor === "string" ? save.player.trailColor : "#00FFFF";
 
@@ -39,7 +44,8 @@ export function mountGarageShowroom(opts) {
   scene.add(rim);
 
   const extent = 96;
-  const grid = new THREE.GridHelper(extent, extent, GRID_MAIN, GRID_SEC);
+  const gridDivs = Math.max(1, Math.round(extent / floorStep));
+  const grid = new THREE.GridHelper(extent, gridDivs, GRID_MAIN, GRID_SEC);
   grid.position.y = 0;
   const gm = grid.material;
   if (Array.isArray(gm)) {

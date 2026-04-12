@@ -2,7 +2,7 @@
  * Gate wall objects — neon arcs, trigger volumes, open vs locked signage (plan P5.6).
  */
 
-import * as THREE from "three";
+import * as THREE from "../vendor/three-module.js";
 import { parseCampaignLevelIndex } from "../levels/loader.js";
 import { GATE_WIDTH, LOBBY_LEVEL_ID } from "../levels/schema.js";
 
@@ -437,18 +437,20 @@ export function queryOpenGateAtPosition(gates, arenaWidth, arenaDepth, worldPos)
 /**
  * @param {string} text
  * @param {number} maxWidth
- * @param {string} color
+ * @param {string} fillColor
+ * @param {{ shadowBlur?: number; shadowColor?: string }} [glow]
  */
-function makeSignTexture(text, maxWidth, color) {
+function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
   const canvas = document.createElement("canvas");
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
   if (!ctx) return new THREE.CanvasTexture(canvas);
-  const pad = 24;
-  const lineH = 34;
+  const pad = 28;
+  const fontPx = 64;
+  const lineH = Math.round(fontPx * 1.12);
   const lines = text ? text.split("\n") : [" "];
   canvas.width = 2048;
   canvas.height = 512;
-  ctx.font = 'bold 28px "Segoe UI", system-ui, sans-serif';
+  ctx.font = `bold ${fontPx}px "Segoe UI", system-ui, sans-serif`;
   let w = 120;
   for (const line of lines) {
     w = Math.max(w, Math.min(maxWidth, ctx.measureText(line).width + pad * 2));
@@ -457,18 +459,19 @@ function makeSignTexture(text, maxWidth, color) {
   const th = Math.ceil(lines.length * lineH + pad);
   canvas.width = Math.max(64, tw);
   canvas.height = Math.max(64, th);
-  ctx.font = 'bold 28px "Segoe UI", system-ui, sans-serif';
+  ctx.font = `bold ${fontPx}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = "rgba(0,0,0,0.55)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-  ctx.fillStyle = color;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const blur = typeof glow.shadowBlur === "number" ? glow.shadowBlur : 7;
+  const shCol = glow.shadowColor ?? "rgba(0, 200, 175, 0.38)";
+  ctx.shadowColor = shCol;
+  ctx.shadowBlur = blur;
+  ctx.fillStyle = fillColor;
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], canvas.width / 2, pad + lineH * (i + 0.5));
   }
+  ctx.shadowBlur = 0;
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
@@ -476,54 +479,58 @@ function makeSignTexture(text, maxWidth, color) {
 }
 
 /**
- * Neon arch + optional sign for one gate. Y-up; group positioned at wall anchor.
+ * Gate = one neon arc on the ground (half-torus) + optional floating sign — no pillar box / wall slab.
+ * Y-up; group origin on floor at wall anchor.
  * @param {ParsedGate} g
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
  */
 function buildSingleGateGroup(g, playCfg) {
   const group = new THREE.Group();
-  const h = playCfg.arenaWallHeight;
   const w = g.width;
-  const neon = 0.35 + playCfg.devHud.neonIntensity * 0.55;
   const open = !g.locked;
-  const colorHex = open ? 0x00fff0 : 0x335566;
-  const emissive = open ? 0x00ddff : 0x112233;
-  const pulse = open ? 1 : 0.35;
+  /** Dark metal body + saturated teal emissive (not white) — intensity drives “neon” read. */
+  const colorHex = open ? 0x061018 : 0x0a1018;
+  const emissiveHex = open ? 0x00997a : 0x1a3044;
+  const pulse = open ? 1 : 0.42;
+  const arcNeonBase =
+    (open ? 1.25 : 0.32) + playCfg.devHud.neonIntensity * (open ? 0.75 : 0.12);
 
-  const pillarGeo = new THREE.BoxGeometry(0.22, h * 0.92, 0.22);
-  const pillarMat = new THREE.MeshStandardMaterial({
-    color: colorHex,
-    emissive,
-    emissiveIntensity: neon * pulse,
-    metalness: 0.35,
-    roughness: 0.35,
-    transparent: true,
-    opacity: open ? 0.96 : 0.72,
-  });
-  const left = new THREE.Mesh(pillarGeo, pillarMat);
-  left.position.set(-w / 2 + 0.15, h * 0.46, 0);
-  const right = new THREE.Mesh(pillarGeo, pillarMat);
-  right.position.set(w / 2 - 0.15, h * 0.46, 0);
-  group.add(left, right);
-
+  const majorR = Math.max(0.65, w / 2 - 0.18);
+  const tubeR = 0.11;
+  /**
+   * Half-torus in XY: feet on chord y≈0, peak toward +Y. Sit mesh so lowest vertex rests on floor.
+   */
   const torus = new THREE.Mesh(
-    new THREE.TorusGeometry(w / 2 - 0.2, 0.09, 10, 24, Math.PI),
+    new THREE.TorusGeometry(majorR, tubeR, 12, 40, Math.PI),
     new THREE.MeshStandardMaterial({
       color: colorHex,
-      emissive,
-      emissiveIntensity: neon * pulse * 1.1,
-      metalness: 0.4,
-      roughness: 0.3,
+      emissive: emissiveHex,
+      emissiveIntensity: arcNeonBase * pulse,
+      metalness: 0.35,
+      roughness: 0.45,
+      transparent: true,
+      opacity: open ? 1 : 0.55,
     }),
   );
-  torus.rotation.z = Math.PI;
-  torus.position.y = h * 0.88;
+  torus.geometry.computeBoundingBox();
+  const bb = torus.geometry.boundingBox;
+  if (bb) torus.position.y = -bb.min.y + 0.02;
   group.add(torus);
 
+  const archTopY =
+    bb != null ? torus.position.y + bb.max.y : torus.position.y + majorR + tubeR;
+
   if (g.signText && g.signText.trim() !== "") {
-    const tex = makeSignTexture(g.signText, 720, open ? "#9fffff" : "#88aabb");
+    const tex = makeSignTexture(
+      g.signText,
+      720,
+      open ? "#5effd4" : "#7a9aaa",
+      open
+        ? { shadowBlur: 6, shadowColor: "rgba(0, 190, 160, 0.45)" }
+        : { shadowBlur: 4, shadowColor: "rgba(80, 120, 140, 0.35)" },
+    );
     const aspect = tex.image.width / tex.image.height;
-    const sh = 1.1;
+    const sh = 1.75;
     const sw = sh * aspect;
     const sign = new THREE.Mesh(
       new THREE.PlaneGeometry(sw, sh),
@@ -534,14 +541,16 @@ function buildSingleGateGroup(g, playCfg) {
         toneMapped: false,
       }),
     );
-    sign.position.set(0, h * 0.55, 0.18);
+    const signY = Math.max(0.55, archTopY * 0.42);
+    sign.position.set(0, signY, 0.14);
     group.add(sign);
   }
 
   group.userData.gateRole = g.role;
   group.userData.gateLocked = g.locked;
-  group.userData.pillarMaterials = [pillarMat];
+  group.userData.pillarMaterials = [];
   group.userData.torusMaterial = torus.material;
+  group.userData.frameEmissiveBase = arcNeonBase;
   group.userData.pulse = open;
 
   return group;
@@ -607,15 +616,17 @@ export function buildGateMeshes(scene, playCfg, gates, arenaWidth, arenaDepth) {
 
     const mats = /** @type {THREE.MeshStandardMaterial[]} */ (grp.userData.pillarMaterials || []);
     const torMat = grp.userData.torusMaterial;
+    const frameBase =
+      typeof grp.userData.frameEmissiveBase === "number" ? grp.userData.frameEmissiveBase : 0.1;
     if (grp.userData.pulse) {
       animatables.push({
         update: (t) => {
-          const pulse = 0.75 + 0.25 * Math.sin(t * 2.6);
+          const pulse = 0.92 + 0.08 * Math.sin(t * 2.6);
           for (const m of mats) {
-            m.emissiveIntensity = (0.35 + playCfg.devHud.neonIntensity * 0.55) * pulse;
+            m.emissiveIntensity = frameBase * pulse;
           }
           if (torMat && "emissiveIntensity" in torMat) {
-            torMat.emissiveIntensity = (0.35 + playCfg.devHud.neonIntensity * 0.55) * pulse * 1.15;
+            torMat.emissiveIntensity = frameBase * pulse * 1.05;
           }
         },
       });
@@ -650,15 +661,15 @@ export function applyExitGateRuntimeOpenVisual(gatesRoot, playCfg, animatables) 
     if (!(obj instanceof THREE.Group)) continue;
     if (obj.userData.gateRole !== "exit") continue;
 
-    const neon = 0.35 + playCfg.devHud.neonIntensity * 0.55;
-    const colorHex = 0x00fff0;
-    const emissive = 0x00ddff;
+    const frameBase = 1.25 + playCfg.devHud.neonIntensity * 0.75;
+    const colorHex = 0x061018;
+    const emissive = 0x00997a;
     const mats = /** @type {THREE.MeshStandardMaterial[]} */ (obj.userData.pillarMaterials || []);
     for (const m of mats) {
       if (!m || !("color" in m)) continue;
       m.color.setHex(colorHex);
       m.emissive.setHex(emissive);
-      m.emissiveIntensity = neon;
+      m.emissiveIntensity = frameBase;
       m.opacity = 0.96;
       m.transparent = true;
     }
@@ -666,20 +677,21 @@ export function applyExitGateRuntimeOpenVisual(gatesRoot, playCfg, animatables) 
     if (torMat && "color" in torMat && "emissive" in torMat) {
       torMat.color.setHex(colorHex);
       torMat.emissive.setHex(emissive);
-      torMat.emissiveIntensity = neon * 1.1;
+      torMat.emissiveIntensity = frameBase * 1.05;
     }
     obj.userData.pulse = true;
+    obj.userData.frameEmissiveBase = frameBase;
     obj.userData.gateLocked = false;
 
     const pillarMats = mats;
     animatables.push({
       update: (t) => {
-        const pulse = 0.75 + 0.25 * Math.sin(t * 2.6);
+        const pulse = 0.92 + 0.08 * Math.sin(t * 2.6);
         for (const m of pillarMats) {
-          m.emissiveIntensity = (0.35 + playCfg.devHud.neonIntensity * 0.55) * pulse;
+          m.emissiveIntensity = frameBase * pulse;
         }
         if (torMat && "emissiveIntensity" in torMat) {
-          torMat.emissiveIntensity = (0.35 + playCfg.devHud.neonIntensity * 0.55) * pulse * 1.15;
+          torMat.emissiveIntensity = frameBase * pulse * 1.05;
         }
       },
     });

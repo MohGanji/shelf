@@ -1,4 +1,5 @@
-import { Box } from "cannon-es";
+import { Box } from "../vendor/cannon-es-module.js";
+import { physicalTrailImmunitySegments } from "../config.js";
 
 /**
  * P2.5 — Near-miss: distance to lethal trail tiles (immunity-aligned), arena walls (gate-aware),
@@ -154,7 +155,7 @@ export function computePlayerNearMissDistance(
 
   for (const s of trailSources) {
     const n = selfId === s.ownerId ? s.getEdgeCount() : 0;
-    const imm = selfId === s.ownerId ? devHud.trailImmunitySegments : 0;
+    const imm = selfId === s.ownerId ? physicalTrailImmunitySegments(devHud, playCfg.world) : 0;
     const d = s.map.nearestHazardDistance(px, pz, selfId, n, imm, cap);
     best = Math.min(best, d);
   }

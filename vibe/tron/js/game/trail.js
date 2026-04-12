@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import * as THREE from "../vendor/three-module.js";
+import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js";
 import { CYCLE_BOUNDS, WORLD } from "../config.js";
 import { createTrailTileMap } from "./trailTileMap.js";
 
@@ -13,7 +13,8 @@ import { createTrailTileMap } from "./trailTileMap.js";
 
 /**
  * Fading trail wall rendering (plan P2.1 + P2.2): piecewise ribbon of thin emissive boxes along anchor chords.
- * Distance-based anchor spawn (1 unit), FIFO cap from Trail Length attribute, oldest segment
+ * Distance-based anchor spawn (`WORLD.segmentSpawnDistance`), FIFO cap from Trail Length attribute (scaled so
+ * total path length matches legacy 1-unit spacing), oldest segment
  * fades (opacity → 0) before removal using `trailFadeSpeed`. No new anchors at near-zero speed.
  * Tile occupancy for trails is maintained in `trailTileMap` (plan A3); lethal hits handled in `collisionResolve.js` (P2.3).
  *
@@ -28,14 +29,20 @@ import { createTrailTileMap } from "./trailTileMap.js";
  * @param {number} options.arenaWidth — world units (for tile grid)
  * @param {number} options.arenaDepth — world units
  * @param {string} [options.ownerId='player'] — occupancy owner id for collision map
- * @param {() => void} [options.onNewSegment] — plan P8.5: soft tink when a new trail segment is created
+ * @param {() => void} [options.onNewSegment] — plan P8.5: soft tink (~once per legacy world unit of new wall)
  */
 export function createTrailWallSystem(options) {
   const color = new THREE.Color(options.color);
   const devHud = options.devHud;
   const onNewSegment = typeof options.onNewSegment === "function" ? options.onNewSegment : null;
   const w = options.world ?? WORLD;
-  let maxSeg = Math.max(4, Math.floor(options.maxSegments ?? devHud.defaultTrailLength));
+  const segDist = w.segmentSpawnDistance;
+  /** Legacy design: one logical edge ≈ 1 world unit of path; denser `segDist` uses more physical edges for the same length. */
+  const anchorBudgetScale = Math.max(1, Math.round(1 / segDist));
+  let maxSeg = Math.max(
+    4,
+    Math.floor((options.maxSegments ?? devHud.defaultTrailLength) * anchorBudgetScale),
+  );
   const ownerId = typeof options.ownerId === "string" && options.ownerId.length ? options.ownerId : "player";
   const arenaWidth = typeof options.arenaWidth === "number" ? options.arenaWidth : w.defaultArenaWidth;
   const arenaDepth = typeof options.arenaDepth === "number" ? options.arenaDepth : w.defaultArenaDepth;
@@ -71,7 +78,15 @@ export function createTrailWallSystem(options) {
   const tmpRear = new THREE.Vector3();
   const thick = w.trailWallThickness;
   const wallH = w.trailWallHeight;
-  const segDist = w.segmentSpawnDistance;
+
+  /** Fire `onNewSegment` once per legacy 1-unit spacing so SFX stays continuous when anchors are denser. */
+  let segmentsSinceAudio = 0;
+  function maybeNotifyNewSegment() {
+    segmentsSinceAudio += 1;
+    if (segmentsSinceAudio < anchorBudgetScale) return;
+    segmentsSinceAudio = 0;
+    onNewSegment?.();
+  }
 
   let pulseT = 0;
 
@@ -260,7 +275,7 @@ export function createTrailWallSystem(options) {
         anchors.push(tmpRear.clone());
         if (anchors.length >= 2) {
           segmentOpacities.push(1);
-          onNewSegment?.();
+          maybeNotifyNewSegment();
         }
         distSinceAnchor -= segDist;
         anchorsDirty = true;
@@ -279,7 +294,7 @@ export function createTrailWallSystem(options) {
       if (liveRecycle) {
         anchors.push(tmpRear.clone());
         segmentOpacities.push(1);
-        onNewSegment?.();
+        maybeNotifyNewSegment();
         distSinceAnchor -= segDist;
       }
       anchorsDirty = true;
@@ -315,6 +330,7 @@ export function createTrailWallSystem(options) {
     anchors.length = 0;
     segmentOpacities.length = 0;
     distSinceAnchor = 0;
+    segmentsSinceAudio = 0;
     anchorsDirty = true;
     rebuildGeometry();
     anchorsDirty = false;
@@ -360,9 +376,10 @@ export function createTrailWallSystem(options) {
     for (let i = 0; i < segmentOpacities.length; i++) {
       if ((segmentOpacities[i] ?? 0) > 0.02) n++;
     }
-    return n;
+    return Math.max(0, Math.round(n / anchorBudgetScale));
   }
 
+  /** Physical edge count (tile `segmentIndex` space); matches `trailTileMap` + immunity cutoffs. */
   function getLogicalEdgeCount() {
     return totalEdgeCount();
   }
@@ -401,7 +418,7 @@ export function createTrailWallSystem(options) {
    * @param {number} nextMaxSegments — max logical segments (edges), same units as constructor `maxSegments`
    */
   function setMaxSegments(nextMaxSegments) {
-    const cap = Math.max(4, Math.floor(nextMaxSegments));
+    const cap = Math.max(4, Math.floor(nextMaxSegments * anchorBudgetScale));
     maxSeg = cap;
     while (totalEdgeCount() > maxSeg) {
       trimOldestEdgeInstant();

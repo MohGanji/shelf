@@ -152,10 +152,13 @@ export function createDevHudController(opts) {
 
   section("Post-processing", [
     { key: "bloomIntensity", label: "Bloom intensity", min: 0, max: 5, step: 0.05 },
+    { key: "bloomRadius", label: "Bloom radius", min: 0, max: 1.5, step: 0.02 },
     { key: "bloomThreshold", label: "Bloom threshold", min: 0, max: 1, step: 0.02 },
     { key: "chromaticAberration", label: "Chromatic aberration", min: 0, max: 0.02, step: 0.0005 },
     { key: "crtScanlines", label: "CRT scanlines", kind: "bool" },
     { key: "gridBrightness", label: "Grid brightness", min: 0, max: 1, step: 0.02 },
+    { key: "floorGridLineStep", label: "Floor grid step (world units)", min: 1, max: 16, step: 1 },
+    { key: "tunnelGridLineStep", label: "Tunnel grid step (×32px texture)", min: 1, max: 16, step: 1 },
     { key: "neonIntensity", label: "Neon intensity", min: 0.5, max: 3, step: 0.05 },
     { key: "fogDensity", label: "Fog density", min: 0, max: 0.06, step: 0.001 },
   ]);
@@ -172,6 +175,8 @@ export function createDevHudController(opts) {
   ]);
 
   section("Cycle feel", [
+    { key: "cycleFresnelRim", label: "Cycle fresnel rim", kind: "bool" },
+    { key: "cycleFresnelRimIntensity", label: "Fresnel rim intensity", min: 0, max: 2, step: 0.05 },
     { key: "cycleTiltMax", label: "Tilt max (rad)", min: 0, max: 0.8, step: 0.02 },
     { key: "cycleTiltOnSteer", label: "Tilt on steer", kind: "bool" },
     { key: "cyclePitchOnAccel", label: "Pitch on accel", kind: "bool" },

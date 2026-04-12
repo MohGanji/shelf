@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { Reflector } from "three/addons/objects/Reflector.js";
+import * as THREE from "../vendor/three-module.js";
+import { Reflector } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/objects/Reflector.js";
 
 import { DEFAULT_DEV_HUD } from "../config.js";
 import { getGraphicsProfile } from "./graphicsProfile.js";

@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { Vec3 } from "cannon-es";
+import * as THREE from "../vendor/three-module.js";
+import { Vec3 } from "../vendor/cannon-es-module.js";
 import { createWallPhysicsBody } from "../engine/physics.js";
 
 /**

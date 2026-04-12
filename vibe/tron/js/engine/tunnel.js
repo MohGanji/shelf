@@ -1,5 +1,5 @@
-import * as THREE from 'three';
-import { CONFIG } from '../config.js';
+import * as THREE from "../vendor/three-module.js";
+import { CONFIG, getTunnelGridLineStep } from "../config.js";
 
 let tunnelBlocksInput = false;
 
@@ -19,7 +19,10 @@ function dispatchTunnelSession(active) {
   );
 }
 
-function createGridTextures() {
+/**
+ * @param {Partial<import("../config.js").DEFAULT_DEV_HUD> | null | undefined} devHud
+ */
+function createGridTextures(devHud) {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -29,7 +32,8 @@ function createGridTextures() {
   ctx.fillRect(0, 0, size, size);
   ctx.strokeStyle = '#00ffff';
   ctx.lineWidth = 2;
-  const step = 32;
+  /** Base 32px × `tunnelGridLineStep` from dev HUD (default matches floor spacing). */
+  const step = 32 * getTunnelGridLineStep(devHud);
   for (let i = 0; i <= size; i += step) {
     ctx.beginPath();
     ctx.moveTo(i, 0);
@@ -74,7 +78,7 @@ function disposeObject3D(root) {
  *
  * @param {THREE.WebGLRenderer} renderer
  * @param {() => void} [onComplete]
- * @param {{ durationSeconds?: number; onBegin?: () => void }} [options]
+ * @param {{ durationSeconds?: number; onBegin?: () => void; devHud?: Partial<import("../config.js").DEFAULT_DEV_HUD> }} [options]
  * @returns {Promise<void>}
  */
 export function playTunnel(renderer, onComplete, options = {}) {
@@ -107,7 +111,7 @@ export function playTunnel(renderer, onComplete, options = {}) {
 
     const radius = CONFIG.tunnelRadius;
     const length = CONFIG.tunnelLength;
-    const gridMap = createGridTextures();
+    const gridMap = createGridTextures(options.devHud);
 
     const mat = new THREE.MeshStandardMaterial({
       emissiveMap: gridMap,

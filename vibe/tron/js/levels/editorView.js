@@ -1,18 +1,18 @@
 /**
  * P6.1 — Level editor viewport: orthographic birds-eye camera, pan (middle-drag), zoom (wheel),
- * 1-unit grid on the XZ plane (plan Phase 6).
+ * Grid on the XZ plane — spacing from dev HUD `floorGridLineStep` (plan Phase 6).
  */
 
-import * as THREE from "three";
+import * as THREE from "../vendor/three-module.js";
 
-import { WORLD } from "../config.js";
+import { WORLD, getFloorGridLineStep } from "../config.js";
 
 const GRID_MAIN = 0x00a8c8;
 const GRID_SEC = 0x1a2a44;
 const FLOOR_COLOR = 0x0c1018;
 
 /**
- * @param {{ renderer: THREE.WebGLRenderer; canvas: HTMLCanvasElement; arenaWidth?: number; arenaDepth?: number }} opts
+ * @param {{ renderer: THREE.WebGLRenderer; canvas: HTMLCanvasElement; arenaWidth?: number; arenaDepth?: number; devHud?: Partial<import("../config.js").DEFAULT_DEV_HUD> }} opts
  * @returns {{
  *   dispose(): void;
  *   scene: THREE.Scene;
@@ -57,7 +57,8 @@ export function mountEditorOrthographicViewport(opts) {
   floor.position.set(0, -0.001, 0);
   scene.add(floor);
 
-  const grid = new THREE.GridHelper(extent, extent, GRID_MAIN, GRID_SEC);
+  const gridDivs = Math.max(1, Math.round(extent / getFloorGridLineStep(opts.devHud)));
+  const grid = new THREE.GridHelper(extent, gridDivs, GRID_MAIN, GRID_SEC);
   grid.position.y = 0;
   const gridMat = grid.material;
   if (Array.isArray(gridMat)) {

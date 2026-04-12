@@ -1,5 +1,6 @@
-import * as THREE from "three";
-import { Vec3 } from "cannon-es";
+import * as THREE from "../vendor/three-module.js";
+import { Vec3 } from "../vendor/cannon-es-module.js";
+import { getFloorGridLineStep } from "../config.js";
 import { createFloorBody, createWallPhysicsBody } from "../engine/physics.js";
 import { buildBarriersFromLevel } from "./blocks.js";
 import {
@@ -66,11 +67,12 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
   group.add(floor);
 
   const grid = new THREE.LineSegments(
-    buildGridGeometry(halfW, halfD),
+    buildGridGeometry(halfW, halfD, getFloorGridLineStep(cfg.devHud)),
     new THREE.LineBasicMaterial({
       color: cfg.colors.gridLine,
       transparent: true,
-      opacity: Math.min(1, gridBoost * 1.08),
+      /** Fewer lines at high `floorGridLineStep` — bump opacity so the grid stays legible. */
+      opacity: Math.min(1, gridBoost * 1.08 * 1.18),
     }),
   );
   grid.position.y = 0.02;
@@ -168,16 +170,17 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
   return { group, materials: [floorMat, wallPanelMat], wallMaterials: { wallPanel: wallPanelMat }, edgeVisualGroups };
 }
 
-function buildGridGeometry(halfW, halfD) {
+function buildGridGeometry(halfW, halfD, lineStep) {
   const positions = [];
+  const step = lineStep;
   const z0 = -halfD;
   const z1 = halfD;
-  for (let x = -halfW; x <= halfW; x += 1) {
+  for (let x = -halfW; x <= halfW + 1e-6; x += step) {
     positions.push(x, 0, z0, x, 0, z1);
   }
   const x0 = -halfW;
   const x1 = halfW;
-  for (let z = -halfD; z <= halfD; z += 1) {
+  for (let z = -halfD; z <= halfD + 1e-6; z += step) {
     positions.push(x0, 0, z, x1, 0, z);
   }
   const geo = new THREE.BufferGeometry();

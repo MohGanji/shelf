@@ -4,8 +4,8 @@
  * Portals — P3.6: paired warp, one-sided back wall, trail detach + exit immunity, shared pair cooldown.
  */
 
-import * as THREE from "three";
-import { Body, Box, Vec3 } from "cannon-es";
+import * as THREE from "../vendor/three-module.js";
+import { Body, Box, Vec3 } from "../vendor/cannon-es-module.js";
 import { COLLISION_GROUP_ARENA_SOLID, COLLISION_GROUP_CYCLE } from "../engine/physics.js";
 import { applyBoostPadBurst } from "./nitroSystem.js";
 

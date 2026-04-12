@@ -3,7 +3,7 @@
  * Three categories — instant / level_permanent / equippable — with color coding, pickup rules, and SFX hooks.
  */
 
-import * as THREE from "three";
+import * as THREE from "../vendor/three-module.js";
 import { POWERUP_COLORS } from "../config.js";
 import { clampNitroCapacity } from "./nitroSystem.js";
 

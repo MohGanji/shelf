@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 72" width="240" height="72">
+  <!-- Side-profile silhouette: nose right (+X), extrusion gives bike width; replace with your own path or use a .glb -->
+  <path
+    fill="#1a1a22"
+    d="M 8 48
+       C 8 32 28 18 72 14
+       L 168 12
+       C 210 12 232 22 232 36
+       C 232 50 208 58 168 60
+       L 78 62
+       C 36 62 8 58 8 48 Z"
+  />
+</svg>

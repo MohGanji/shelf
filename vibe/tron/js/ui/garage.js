@@ -2,7 +2,7 @@
  * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
 
-import { ATTRIBUTE_UPGRADE_COSTS, WORLD } from "../config.js";
+import { ATTRIBUTE_UPGRADE_COSTS, WORLD, mergeDevHud } from "../config.js";
 import { loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
 import { persistSave, spendCoins, unlockCosmeticColor } from "../data/savedata.js";
 import { clampAttributeLevel } from "../game/attributes.js";
@@ -253,15 +253,16 @@ export function createGarageController() {
  * P7.2 routing destination — P7.3 Three.js showroom on canvas + top chrome.
  *
  * @param {{
- *   game: { renderer: import("three").WebGLRenderer };
+ *   game: { renderer: import("../vendor/three-module.js").WebGLRenderer };
  *   save: import("../data/savedata.js").PlayerSave;
  *   canvas: HTMLCanvasElement;
  *   onReturnToLobby: () => void;
+ *   devHud?: Partial<import("../config.js").DEFAULT_DEV_HUD>;
  * }} opts
  * @returns {{ dispose(): void }}
  */
 export function mountGarageDestinationScreen(opts) {
-  const { game, save, canvas, onReturnToLobby } = opts;
+  const { game, save, canvas, onReturnToLobby, devHud } = opts;
   const root = document.getElementById("garage-destination");
   if (!root) {
     return { dispose() {} };
@@ -274,6 +275,7 @@ export function mountGarageDestinationScreen(opts) {
     renderer: game.renderer,
     canvas,
     save,
+    devHud: devHud ?? mergeDevHud(save.devHud),
   });
 
   const statsEl = document.getElementById("garage-stats");
@@ -317,9 +319,10 @@ export function mountGarageDestinationScreen(opts) {
  * P7.2 Architect / level editor entry — P6.2 palette + P6.1 viewport + P6.3 workbench.
  *
  * @param {{
- *   game: { renderer: import("three").WebGLRenderer };
+ *   game: { renderer: import("../vendor/three-module.js").WebGLRenderer };
  *   onReturnToLobby: () => void;
  *   initialWipLevelId?: string;
+ *   devHud?: Partial<import("../config.js").DEFAULT_DEV_HUD>;
  * }} opts
  * @returns {{ dispose(): void }}
  */
@@ -357,6 +360,7 @@ export function mountEditorDestinationScreen(opts) {
       canvas,
       arenaWidth: aw,
       arenaDepth: ad,
+      devHud: opts.devHud,
     });
 
     /** P6.2 — floor-object palette (selection feeds P6.3 placement). */

@@ -3,7 +3,7 @@
  * gate drag along walls, portal pair flow, gate clear-zone blocking, hover preview.
  */
 
-import * as THREE from "three";
+import * as THREE from "../vendor/three-module.js";
 
 import { GATE_WIDTH } from "./schema.js";
 import { upsertWipLevel } from "./loader.js";

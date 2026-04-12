@@ -3,6 +3,8 @@
  * `body.userData.shieldActive` absorbs one trail hit when true (P3.4 equips this).
  */
 
+import { WORLD, physicalTrailImmunitySegments } from "../config.js";
+
 /**
  * @param {ReturnType<import('./trail.js').createTrailWallSystem>} playerTrail
  * @param {import('./enemies.js').CampaignEnemyEntity[]} enemies
@@ -34,17 +36,19 @@ export function buildTrailSources(playerTrail, enemies) {
  * @param {string} selfId
  * @param {ReturnType<typeof buildTrailSources>} sources
  * @param {import('../config.js').DEFAULT_DEV_HUD} devHud
+ * @param {import('../config.js').WORLD} [world] — defaults to base `WORLD`; use `playCfg.world` in arena
  * @returns {'clear' | 'lethal' | 'absorbed'}
  */
-export function tryTrailHitOnBody(body, x, z, selfId, sources, devHud) {
+export function tryTrailHitOnBody(body, x, z, selfId, sources, devHud, world = WORLD) {
   const immuneUntil = body.userData?.portalTrailImmuneUntilMs;
   if (typeof immuneUntil === "number" && performance.now() < immuneUntil) {
     return "clear";
   }
+  const immSelf = physicalTrailImmunitySegments(devHud, world);
   let hitKind = "clear";
   for (const s of sources) {
     const n = selfId === s.ownerId ? s.getEdgeCount() : 0;
-    const imm = selfId === s.ownerId ? devHud.trailImmunitySegments : 0;
+    const imm = selfId === s.ownerId ? immSelf : 0;
     const kind = s.map.evaluateCollision(x, z, selfId, n, imm);
     if (kind === "clear") continue;
     hitKind = kind === "own-lethal" || kind === "other-trail" ? "lethal" : "clear";

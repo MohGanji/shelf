@@ -2,7 +2,7 @@
  * In-game HUD (plan `ui/hud.js`) — speed, nitro, trail, timer, equip, minimap. Wired in H1.
  */
 
-import { Box, Vec3 } from "cannon-es";
+import { Box, Vec3 } from "../vendor/cannon-es-module.js";
 
 /**
  * @typedef {{ dispose(): void }} HudController
@@ -125,11 +125,13 @@ export function createArenaMinimapRenderer(canvas) {
       const ch = cssH;
 
       /**
+       * World XZ → canvas; +Z is top (north-up). Mirror horizontal so east/west match the chase camera
+       * (otherwise left/right on the minimap feel inverted vs the 3D view).
        * @param {number} wx
        * @param {number} wz
        */
       function toCanvas(wx, wz) {
-        const u = ((wx + halfW) / arenaWidth) * cw;
+        const u = cw - ((wx + halfW) / arenaWidth) * cw;
         const v = ch - ((wz + halfD) / arenaDepth) * ch;
         return [u, v];
       }

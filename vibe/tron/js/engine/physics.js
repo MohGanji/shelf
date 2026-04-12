@@ -1,4 +1,14 @@
-import { Body, Box, ContactMaterial, Material, Sphere, Vec3, World } from "cannon-es";
+import {
+  Body,
+  Box,
+  ContactMaterial,
+  Material,
+  Sphere,
+  Vec3,
+  World,
+} from "../vendor/cannon-es-module.js";
+
+const YAW_AXIS = new Vec3(0, 1, 0);
 
 /** cannon-es groups — cycles do not collide with each other here (plan P2.3; resolved in game code). */
 export const COLLISION_GROUP_ARENA_SOLID = 1;
@@ -59,23 +69,88 @@ export function createPhysicsWorld() {
   return { world, wallMat, floorMat, playerMat };
 }
 
+/**
+ * World-space XZ bounds of an oriented cycle footprint (center px,pz; local +Z = forward).
+ * @param {number} px
+ * @param {number} pz
+ * @param {number} heading
+ * @param {number} halfW — half width (local X)
+ * @param {number} halfL — half length (local Z)
+ */
+export function cycleWorldAabbXZ(px, pz, heading, halfW, halfL) {
+  const c = Math.cos(heading);
+  const s = Math.sin(heading);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const lx = sx * halfW;
+      const lz = sz * halfL;
+      const wx = px + lx * c + lz * s;
+      const wz = pz - lx * s + lz * c;
+      if (wx < minX) minX = wx;
+      if (wx > maxX) maxX = wx;
+      if (wz < minZ) minZ = wz;
+      if (wz > maxZ) maxZ = wz;
+    }
+  }
+  return { minX, maxX, minZ, maxZ };
+}
+
+/**
+ * Keep cannon body yaw aligned with arcade `userData.heading` (local +Z forward).
+ * Call before and after `world.step` so contacts do not accumulate spin.
+ * @param {import('cannon-es').Body} body
+ */
+export function syncCyclePhysicsYaw(body) {
+  const h = typeof body.userData?.heading === "number" ? body.userData.heading : 0;
+  body.quaternion.setFromAxisAngle(YAW_AXIS, h);
+  body.angularVelocity.set(0, 0, 0);
+}
+
+/**
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} cfg
+ * @param {import('cannon-es').Material} playerMat
+ */
 export function createPlayerBody(cfg, playerMat) {
-  const radius = cfg.playerRadius;
-  const shape = new Sphere(radius);
+  const hx = cfg.cycleHalfWidth;
+  const hy = cfg.cycleHalfHeight;
+  const hz = cfg.cycleHalfLength;
+  const useBox =
+    typeof hx === "number" &&
+    Number.isFinite(hx) &&
+    hx > 0 &&
+    typeof hy === "number" &&
+    Number.isFinite(hy) &&
+    hy > 0 &&
+    typeof hz === "number" &&
+    Number.isFinite(hz) &&
+    hz > 0;
+
+  /** @type {import('cannon-es').Box | import('cannon-es').Sphere} */
+  const shape = useBox
+    ? new Box(new Vec3(hx, hy, hz))
+    : new Sphere(typeof cfg.playerRadius === "number" && cfg.playerRadius > 0 ? cfg.playerRadius : 0.35);
+
   const body = new Body({
     mass: cfg.playerMass,
     material: playerMat,
     linearDamping: cfg.playerLinearDamping ?? 0.05,
     angularDamping: 0.99,
-    fixedRotation: true,
+    fixedRotation: !useBox,
   });
   body.userData = {};
   body.addShape(shape);
+  const fallbackY =
+    typeof cfg.playerRadius === "number" && cfg.playerRadius > 0 ? cfg.playerRadius : 0.35;
   const spawnY =
     typeof cfg.playerSpawnY === "number" && Number.isFinite(cfg.playerSpawnY)
       ? cfg.playerSpawnY
-      : radius + 0.06;
+      : (useBox ? hy : fallbackY) + 0.06;
   body.position.set(0, spawnY, 0);
+  if (useBox) syncCyclePhysicsYaw(body);
   body.type = Body.DYNAMIC;
   body.collisionFilterGroup = COLLISION_GROUP_CYCLE;
   body.collisionFilterMask = COLLISION_GROUP_ARENA_SOLID | COLLISION_GROUP_FLOOR;
@@ -118,13 +193,75 @@ export function createWallPhysicsBody({ halfExtents, center, wallMatRef }) {
  */
 export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
   const p = playerBody.position;
-  const r = cfg.playerRadius;
-  const halfW = cfg.arenaWidth / 2;
-  const halfD = cfg.arenaDepth / 2;
+  const heading = typeof playerBody.userData?.heading === "number" ? playerBody.userData.heading : 0;
+  const halfWx = cfg.cycleHalfWidth;
+  const halfLz = cfg.cycleHalfLength;
+  const arenaHalfW = cfg.arenaWidth / 2;
+  const arenaHalfD = cfg.arenaDepth / 2;
   const pad = 0.12;
   const fp = openFootprints;
+  const r = cfg.playerRadius;
 
-  if (p.x - r <= -halfW + pad) {
+  const useOriented =
+    typeof halfWx === "number" &&
+    Number.isFinite(halfWx) &&
+    typeof halfLz === "number" &&
+    Number.isFinite(halfLz);
+
+  if (useOriented) {
+    const { minX, maxX, minZ, maxZ } = cycleWorldAabbXZ(p.x, p.z, heading, halfWx, halfLz);
+    if (minX <= -arenaHalfW + pad) {
+      let skip = false;
+      if (fp?.west) {
+        for (const { z0, z1 } of fp.west) {
+          if (p.z >= z0 - r - 0.02 && p.z <= z1 + r + 0.02) {
+            skip = true;
+            break;
+          }
+        }
+      }
+      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
+    }
+    if (maxX >= arenaHalfW - pad) {
+      let skip = false;
+      if (fp?.east) {
+        for (const { z0, z1 } of fp.east) {
+          if (p.z >= z0 - r - 0.02 && p.z <= z1 + r + 0.02) {
+            skip = true;
+            break;
+          }
+        }
+      }
+      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
+    }
+    if (minZ <= -arenaHalfD + pad) {
+      let skip = false;
+      if (fp?.south) {
+        for (const { x0, x1 } of fp.south) {
+          if (p.x >= x0 - r - 0.02 && p.x <= x1 + r + 0.02) {
+            skip = true;
+            break;
+          }
+        }
+      }
+      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
+    }
+    if (maxZ >= arenaHalfD - pad) {
+      let skip = false;
+      if (fp?.north) {
+        for (const { x0, x1 } of fp.north) {
+          if (p.x >= x0 - r - 0.02 && p.x <= x1 + r + 0.02) {
+            skip = true;
+            break;
+          }
+        }
+      }
+      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+    }
+    return;
+  }
+
+  if (p.x - r <= -arenaHalfW + pad) {
     let skip = false;
     if (fp?.west) {
       for (const { z0, z1 } of fp.west) {
@@ -136,7 +273,7 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
     }
     if (!skip) applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
   }
-  if (p.x + r >= halfW - pad) {
+  if (p.x + r >= arenaHalfW - pad) {
     let skip = false;
     if (fp?.east) {
       for (const { z0, z1 } of fp.east) {
@@ -148,7 +285,7 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
     }
     if (!skip) applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
   }
-  if (p.z - r <= -halfD + pad) {
+  if (p.z - r <= -arenaHalfD + pad) {
     let skip = false;
     if (fp?.south) {
       for (const { x0, x1 } of fp.south) {
@@ -160,7 +297,7 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
     }
     if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
   }
-  if (p.z + r >= halfD - pad) {
+  if (p.z + r >= arenaHalfD - pad) {
     let skip = false;
     if (fp?.north) {
       for (const { x0, x1 } of fp.north) {

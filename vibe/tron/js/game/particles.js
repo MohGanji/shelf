@@ -3,7 +3,7 @@
  * power-up collection burst (shared with `powerups.js`).
  */
 
-import * as THREE from "three";
+import * as THREE from "../vendor/three-module.js";
 
 /**
  * @param {string} h

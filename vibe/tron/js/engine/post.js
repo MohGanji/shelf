@@ -1,10 +1,10 @@
-import * as THREE from "three";
-import { CopyShader } from "three/addons/shaders/CopyShader.js";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import * as THREE from "../vendor/three-module.js";
+import { CopyShader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/CopyShader.js";
+import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js";
+import { OutputPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js";
+import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 import { DEFAULT_DEV_HUD } from "../config.js";
 
@@ -114,12 +114,9 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   const pr = renderer.getPixelRatio();
   const drawablePx = new THREE.Vector2(size.x * pr, size.y * pr);
   const bloomRes = new THREE.Vector2(drawablePx.x * bloomScale, drawablePx.y * bloomScale);
-  const bloomPass = new UnrealBloomPass(
-    bloomRes,
-    hud.bloomIntensity,
-    0.35,
-    hud.bloomThreshold,
-  );
+  const bloomRadius =
+    typeof hud.bloomRadius === "number" && Number.isFinite(hud.bloomRadius) ? hud.bloomRadius : 0.4;
+  const bloomPass = new UnrealBloomPass(bloomRes, hud.bloomIntensity, bloomRadius, hud.bloomThreshold);
 
   const gradePass = new ShaderPass(TronGradeShader);
   gradePass.material.uniforms.amount.value = hud.chromaticAberration;
@@ -152,6 +149,8 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
     Object.assign(hud, patch);
     syncFog();
     bloomPass.strength = hud.bloomIntensity;
+    bloomPass.radius =
+      typeof hud.bloomRadius === "number" && Number.isFinite(hud.bloomRadius) ? hud.bloomRadius : 0.4;
     bloomPass.threshold = hud.bloomThreshold;
     gradePass.material.uniforms.amount.value = hud.chromaticAberration;
     gradePass.material.uniforms.neonIntensity.value = hud.neonIntensity;

@@ -41,16 +41,26 @@ export const WORLD = {
   lobbyArenaDepth: 200,
   defaultTopSpeed: 60,
   defaultAcceleration: 20,
-  cycleMeshLength: 0.8,
-  cycleMeshWidth: 0.3,
-  cycleMeshHeight: 0.4,
+  /**
+   * Mesh + physics footprint (local Z = forward). Procedural cycle targets a **true** 3×1×1 AABB:
+   * length `cycleMeshLength`, width/height `cycleMeshWidth`×`cycleMeshHeight`; wheels use full width as axle thickness (no side shrink from uniform scaling).
+   */
+  cycleMeshLength: 3,
+  cycleMeshWidth: 1,
+  cycleMeshHeight: 1,
+  /**
+   * Optional visual mesh URL — `.glb` / `.gltf` (recommended) or `.svg` (extruded side profile).
+   * Empty string uses procedural geometry. Scale your model to roughly match {@link CYCLE_BOUNDS}; Y-up, +Z forward.
+   */
+  lightCycleModelUrl: "",
   trailWallHeight: 0.6,
   trailWallThickness: 0.1,
   gateWidth: 5,
   arenaWallHeight: 3,
   lowSpeedThreshold: 10,
   minimumArenaSize: 40,
-  segmentSpawnDistance: 1,
+  /** World units between rear-contact anchors. Smaller = smoother curves at speed (edge budget scales in trail.js). */
+  segmentSpawnDistance: 0.25,
   coinOverlayDuration: 3,
 };
 
@@ -76,10 +86,16 @@ export const TRON_COLORS = {
 /** Default dev HUD keys — override chain: config defaults ← save devHud (plan save schema) */
 export const DEFAULT_DEV_HUD = {
   bloomIntensity: 1.5,
+  /** UnrealBloomPass radius — reference-style “selective bloom” often pairs with higher threshold. */
+  bloomRadius: 0.4,
   bloomThreshold: 0.3,
   chromaticAberration: 0.002,
   crtScanlines: false,
   gridBrightness: 0.4,
+  /** Arena / editor / garage floor: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
+  floorGridLineStep: 4,
+  /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
+  tunnelGridLineStep: 4,
   neonIntensity: 1.0,
   fogDensity: 0.01,
   trailOpacity: 0.8,
@@ -92,6 +108,7 @@ export const DEFAULT_DEV_HUD = {
   shieldDeployTime: 0.15,
   coinOverlayDuration: 3.0,
   minimumArenaSize: 40,
+  /** Logical trail-length units immune at rear (~1 world unit per unit when anchor spacing is 1); scaled in collision. */
   trailImmunitySegments: 4,
   portalExitImmunityDuration: 0.15,
   nitroMaxSpeedMultiplier: 1.2,
@@ -104,6 +121,9 @@ export const DEFAULT_DEV_HUD = {
   cycleLeanBrakeAngle: 0.1,
   cycleTiltSmoothing: 14,
   cycleWheelSpinScale: 3.2,
+  /** View-space fresnel rim on procedural cycle (film-style edge glow before bloom). */
+  cycleFresnelRim: true,
+  cycleFresnelRimIntensity: 1.0,
   nitroFovWiden: true,
   nitroCameraPullBack: true,
   nitroSpeedLines: true,
@@ -170,6 +190,59 @@ export const PORTAL_PAIR_COLORS = ["#ff00ff", "#ffff00", "#00ff88", "#ff4444", "
  */
 export function mergeDevHud(devHudPatch = {}) {
   return { ...DEFAULT_DEV_HUD, ...devHudPatch };
+}
+
+/**
+ * Physical trail edges per ~1 world unit of path (one tile-map segment index per anchor spacing).
+ * Must match the budget used in `game/trail.js` for `anchorBudgetScale`.
+ * @param {Partial<typeof WORLD>} [world]
+ * @returns {number} integer >= 1
+ */
+export function trailAnchorBudgetScale(world = WORLD) {
+  const sd =
+    typeof world?.segmentSpawnDistance === "number" && Number.isFinite(world.segmentSpawnDistance)
+      ? world.segmentSpawnDistance
+      : WORLD.segmentSpawnDistance;
+  return Math.max(1, Math.round(1 / sd));
+}
+
+/**
+ * Convert Dev HUD **logical** self-immunity (steps of ~1 world unit when spacing was 1) to **physical**
+ * edge count for `trailTileMap` / collision (one index per anchor segment).
+ * @param {Partial<typeof DEFAULT_DEV_HUD>} devHud
+ * @param {Partial<typeof WORLD>} [world]
+ */
+export function physicalTrailImmunitySegments(devHud, world = WORLD) {
+  const raw = devHud?.trailImmunitySegments;
+  const logical = Math.max(
+    0,
+    Math.floor(
+      typeof raw === "number" && Number.isFinite(raw) ? raw : DEFAULT_DEV_HUD.trailImmunitySegments,
+    ),
+  );
+  return logical * trailAnchorBudgetScale(world);
+}
+
+/**
+ * @param {Partial<typeof DEFAULT_DEV_HUD> | null | undefined} [devHud]
+ * @returns {number} integer in [1, 32]
+ */
+export function getFloorGridLineStep(devHud) {
+  const m = mergeDevHud(devHud ?? {});
+  const r = m.floorGridLineStep;
+  const n = typeof r === "number" && Number.isFinite(r) ? Math.round(r) : DEFAULT_DEV_HUD.floorGridLineStep;
+  return Math.max(1, Math.min(32, n));
+}
+
+/**
+ * @param {Partial<typeof DEFAULT_DEV_HUD> | null | undefined} [devHud]
+ * @returns {number} integer in [1, 32]
+ */
+export function getTunnelGridLineStep(devHud) {
+  const m = mergeDevHud(devHud ?? {});
+  const r = m.tunnelGridLineStep;
+  const n = typeof r === "number" && Number.isFinite(r) ? Math.round(r) : DEFAULT_DEV_HUD.tunnelGridLineStep;
+  return Math.max(1, Math.min(32, n));
 }
 
 /**
@@ -293,7 +366,11 @@ export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
       ? arenaSize.arenaDepth
       : world.defaultArenaDepth;
 
-  const playerRadius = 0.35;
+  const cycleHalfWidth = world.cycleMeshWidth * 0.5;
+  const cycleHalfLength = world.cycleMeshLength * 0.5;
+  const cycleHalfHeight = world.cycleMeshHeight * 0.5;
+  /** XZ enclosing radius for cycle↔cycle, barriers, AI rays (oriented box uses half extents in physics). */
+  const playerRadius = Math.hypot(cycleHalfWidth, cycleHalfLength);
 
   return {
     arenaWidth,
@@ -302,9 +379,12 @@ export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
     world,
     arenaWallHeight: wallH,
     physicsHz: 60,
+    cycleHalfWidth,
+    cycleHalfLength,
+    cycleHalfHeight,
     playerRadius,
-    /** Sphere center Y so the cycle sits slightly above the grid (matches `main.js` spawn). */
-    playerSpawnY: playerRadius + 0.06,
+    /** Body center Y — cycle box bottom near floor (matches `createPlayerBody` / spawn). */
+    playerSpawnY: cycleHalfHeight + 0.06,
     playerMass: 5,
     /** rad/s before speed falloff (plan § Movement; scales with Handling attribute). */
     baseTurnRate,

@@ -113,7 +113,7 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
    * @param {number} z
    * @param {string} selfId
    * @param {number} numEdges — current logical edge count for `selfId` (anchors.length - 1)
-   * @param {number} immunitySegments — devHud trailImmunitySegments (N newest edges safe for self)
+   * @param {number} immunitySegments — physical newest segment indices safe for self (use `physicalTrailImmunitySegments` from config)
    * @returns {TrailCollisionKind}
    */
   function evaluateCollision(x, z, selfId, numEdges, immunitySegments) {

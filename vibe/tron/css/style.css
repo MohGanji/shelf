@@ -86,7 +86,7 @@ body {
   user-select: none;
 }
 
-/* BOOT tunnel HTML overlay — title + progress on top of tunnel canvas */
+/* BOOT tunnel HTML overlay — warp layers + title + progress on top of tunnel canvas */
 .boot-overlay {
   position: fixed;
   inset: 0;
@@ -107,11 +107,69 @@ body {
   visibility: hidden;
 }
 
+.boot-overlay__warp {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.boot-overlay__warp-radial {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 88% 70% at 50% 36%, rgba(0, 210, 255, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 130% 85% at 50% 115%, rgba(0, 25, 55, 0.65) 0%, transparent 48%);
+  animation: boot-warp-radial 2.6s ease-in-out infinite;
+}
+
+.boot-overlay__warp-streaks {
+  position: absolute;
+  left: -15%;
+  right: -15%;
+  top: -30%;
+  bottom: -25%;
+  transform-origin: 50% 100%;
+  transform: perspective(420px) rotateX(56deg) scale(1.02);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 26px,
+    rgba(0, 240, 255, 0.065) 26px,
+    rgba(0, 240, 255, 0.065) 28px
+  );
+  animation: boot-warp-streaks 0.95s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 78%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 78%, transparent 100%);
+}
+
+@keyframes boot-warp-radial {
+  0%,
+  100% {
+    opacity: 0.88;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes boot-warp-streaks {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 112px;
+  }
+}
+
 .boot-overlay__title {
   position: absolute;
   top: 12vh;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 2;
   font-family: "Orbitron", sans-serif;
   font-weight: 700;
   font-size: clamp(1.25rem, 4vw, 2.75rem);
@@ -122,9 +180,24 @@ body {
     0 0 12px rgba(0, 255, 255, 0.9),
     0 0 32px rgba(0, 180, 255, 0.5);
   white-space: nowrap;
+  animation: boot-title-warp 2.4s ease-in-out infinite;
+}
+
+@keyframes boot-title-warp {
+  0%,
+  100% {
+    filter: brightness(1);
+    letter-spacing: 0.35em;
+  }
+  50% {
+    filter: brightness(1.12);
+    letter-spacing: 0.38em;
+  }
 }
 
 .boot-overlay__bar-wrap {
+  position: relative;
+  z-index: 2;
   width: min(520px, 88vw);
   height: 10px;
   border-radius: 999px;
@@ -141,6 +214,14 @@ body {
   background: var(--boot-bar-fill);
   box-shadow: 0 0 14px rgba(102, 255, 255, 0.85);
   transition: width 0.12s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-overlay__warp-radial,
+  .boot-overlay__warp-streaks,
+  .boot-overlay__title {
+    animation: none;
+  }
 }
 
 .nitro-speed-lines {
@@ -330,14 +411,6 @@ body {
   color: rgba(200, 255, 255, 0.92);
   border-color: rgba(0, 255, 255, 0.42);
   background: rgba(0, 50, 70, 0.45);
-}
-
-.cycle-hud__hint {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.35;
-  opacity: 0.88;
-  color: rgba(180, 220, 255, 0.92);
 }
 
 /* P9.4 — corner minimap (arena aspect ratio, tile trails + obstacles + pickups) */

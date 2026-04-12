@@ -4,7 +4,8 @@
  * P4.4 — self-preservation: `aiAvoidanceRange` for wall rays + peer separation; `aiReactionTime` smooths combined hunt + peer steer.
  */
 
-import { Box } from "cannon-es";
+import { Box } from "../vendor/cannon-es-module.js";
+import { physicalTrailImmunitySegments } from "../config.js";
 
 /** Intelligence 1–3 → Easy tier (plan § AI Difficulty Tiers). */
 export const INTELLIGENCE_EASY_MAX = 3;
@@ -500,7 +501,7 @@ export function computeEnemyCycleKeys(opts) {
   const rangeScale = Math.max(0.88, Math.min(1.38, 0.92 + (avoidRange - 5) * 0.035));
   const steps = Math.max(3, Math.round(lookaheadSteps(intelligence) * rangeScale));
   const halfWTrail = lookaheadHalfWidth(intelligence);
-  const imm = devHud.trailImmunitySegments;
+  const imm = physicalTrailImmunitySegments(devHud, playCfg.world);
 
   /**
    * @param {number} ang

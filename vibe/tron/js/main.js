@@ -26,6 +26,7 @@ import {
   applyContinuousBarrierSlide,
   createPhysicsWorld,
   createPlayerBody,
+  syncCyclePhysicsYaw,
 } from "./engine/physics.js";
 import { createTronCycleKeyState } from "./engine/input.js";
 import {
@@ -43,7 +44,7 @@ import {
   withLobbyArenaGateLock,
   withLobbyRuntimeGateOverrides,
 } from "./game/gates.js";
-import { createLightCycle } from "./game/cycle.js";
+import { createLightCycle, preloadLightCycleAsset } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
 import { createNitroState, isNitroBurstActive } from "./game/nitroSystem.js";
@@ -125,6 +126,12 @@ async function main() {
   const save = loadOrCreateSave();
   setBootProgress(bootEls, 18);
   const runtime = createRuntimeFromPlayerSave(save);
+
+  try {
+    await preloadLightCycleAsset();
+  } catch {
+    /* procedural cycle mesh */
+  }
 
   const campaign = await loadCampaignLevels();
   setBootProgress(bootEls, 44);
@@ -246,6 +253,7 @@ async function main() {
         onBegin: () => {
           audio.playTunnelTransitionWind();
         },
+        devHud,
       },
     );
   } finally {
@@ -268,6 +276,7 @@ async function main() {
       game,
       save,
       canvas,
+      devHud,
       onReturnToLobby: () => {
         window.location.reload();
       },
@@ -286,6 +295,7 @@ async function main() {
       typeof bootConsumed.wipLevelId === "string" ? bootConsumed.wipLevelId : undefined;
     mountEditorDestinationScreen({
       game,
+      devHud,
       initialWipLevelId: wipOpen,
       onReturnToLobby: () => {
         window.location.reload();
@@ -428,7 +438,7 @@ async function main() {
   playerCycle.root.rotation.y = spawnHeading;
   game.scene.add(playerCycle.root);
 
-  /** P8.5 — throttle trail segment tinks (distance-based spawn can be very dense at high speed). */
+  /** P8.5 — throttle trail tinks (spawn is dense; callback is also strided in trail.js). */
   let lastTrailTinkMs = 0;
   const trailWall = createTrailWallSystem({
     color: save.player.trailColor ?? "#00FFFF",
@@ -440,7 +450,7 @@ async function main() {
     ownerId: "player",
     onNewSegment: () => {
       const now = performance.now();
-      if (now - lastTrailTinkMs < 72) return;
+      if (now - lastTrailTinkMs < 120) return;
       lastTrailTinkMs = now;
       audio.playTrailSegmentTink();
     },
@@ -476,6 +486,7 @@ async function main() {
           audio.playTunnelTransitionWind();
           clearTrailAndEquipForTunnel();
         },
+        devHud,
       },
     ).catch(() => {
       window.location.reload();
@@ -587,7 +598,6 @@ async function main() {
   const hudSpeedEl = document.getElementById("hud-speed");
   const hudTrailEl = document.getElementById("hud-trail");
   const hudNitroEl = document.getElementById("hud-nitro");
-  const hudHintEl = document.getElementById("hud-hint");
   const hudTimerWrap = document.getElementById("hud-timer-wrap");
   const hudTimerEl = document.getElementById("hud-timer");
   const hudEquipIcon = document.getElementById("hud-equip-icon");
@@ -649,6 +659,7 @@ async function main() {
       onBegin: () => {
         audio.playTunnelTransitionWind();
       },
+      devHud,
     }).catch(() => {
       window.location.reload();
     });
@@ -755,6 +766,7 @@ async function main() {
           u.equipSlot = undefined;
           u.equipSlotQueued = undefined;
         },
+        devHud,
       },
     ).catch(() => {
       window.location.reload();
@@ -911,6 +923,7 @@ async function main() {
           audio.playTunnelTransitionWind();
           clearTrailAndEquipForTunnel();
         },
+        devHud,
       },
     ).catch(() => {
       window.location.reload();
@@ -936,6 +949,7 @@ async function main() {
           audio.playTunnelTransitionWind();
           clearTrailAndEquipForTunnel();
         },
+        devHud,
       },
     ).catch(() => {
       window.location.reload();
@@ -1063,22 +1077,6 @@ async function main() {
   }
 
   function syncArenaHud() {
-    if (hudHintEl) {
-      if (isLobby) {
-        hudHintEl.textContent =
-          "Hub — you spawn by the south gate. Ride north to the wall gates: Arena, Garage, Architect.";
-      } else if (isEditorPlaytest) {
-        hudHintEl.textContent = levelStarted
-          ? "Play-test — ` (backtick) returns to Architect. ESC pauses."
-          : "Play-test — Press W to start. ` (backtick) returns to Architect. ESC pauses.";
-      } else if (levelStarted) {
-        hudHintEl.textContent =
-          "Arena — timer is running. Dodge trails and walls; reach the exit gate.";
-      } else {
-        hudHintEl.textContent =
-          "Press W to start — the run timer begins with your first throttle.";
-      }
-    }
     if (hudTimerWrap) {
       hudTimerWrap.hidden = isLobby;
     }
@@ -1254,7 +1252,17 @@ async function main() {
       devHud,
     });
 
+    syncCyclePhysicsYaw(playerBody);
+    for (const e of enemyRoster.list) {
+      if (!e.eliminated) syncCyclePhysicsYaw(e.body);
+    }
+
     world.step(step, dt, 10);
+
+    syncCyclePhysicsYaw(playerBody);
+    for (const e of enemyRoster.list) {
+      if (!e.eliminated) syncCyclePhysicsYaw(e.body);
+    }
     const spWall0 = Math.hypot(playerBody.velocity.x, playerBody.velocity.z);
     applyContinuousArenaWallSlide(playerBody, playCfg, game.scene.userData.openGateFootprints);
     applyContinuousBarrierSlide(playerBody, game.scene.userData.barrierBodies, playCfg);
@@ -1373,7 +1381,7 @@ async function main() {
     const px = playerBody.position.x;
     const pz = playerBody.position.z;
 
-    const playerTrailHit = tryTrailHitOnBody(playerBody, px, pz, "player", trailSources, devHud);
+    const playerTrailHit = tryTrailHitOnBody(playerBody, px, pz, "player", trailSources, devHud, playCfg.world);
     if (playerTrailHit === "lethal") {
       beginPlayerDerezSequence();
     } else if (playerTrailHit === "absorbed") {
@@ -1391,7 +1399,7 @@ async function main() {
     } else {
       for (const e of enemyRoster.list) {
         if (e.eliminated) continue;
-        const ht = tryTrailHitOnBody(e.body, e.body.position.x, e.body.position.z, e.id, trailSources, devHud);
+        const ht = tryTrailHitOnBody(e.body, e.body.position.x, e.body.position.z, e.id, trailSources, devHud, playCfg.world);
         if (ht === "lethal") eliminateEnemyWithParticles(world, e);
       }
 
@@ -1503,6 +1511,7 @@ async function main() {
         "player",
         trailSources,
         devHud,
+        playCfg.world,
       );
       hudTrailEl.classList.toggle(
         "cycle-hud__trail--tile-hit",
@@ -1692,6 +1701,7 @@ async function main() {
               audio.playTunnelTransitionWind();
               clearTrailAndEquipForTunnel();
             },
+            devHud,
           },
         ).catch(() => {
           window.location.reload();

@@ -2,6 +2,16 @@
 <html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
+    <!-- Import map must precede modulepreload / any module graph so nested three/examples/jsm imports resolve. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+        }
+      }
+    </script>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
@@ -75,7 +85,7 @@
       href="./css/style.css"
       as="style"
       fetchpriority="high"
-      integrity="sha384-K9FJcno4k53ookn0cuahebPDML58LJNMznYOWZ09yPBPjGtJfIGUHmH7u32zAC0T"
+      integrity="sha384-+ZaYSAEeQqtt/GCCPAqjUNG1lepww/kV8sh2+DM/ZysXD11/lFBMc8WeLrZTdq/G"
       crossorigin="anonymous"
     />
     <link
@@ -1055,18 +1065,9 @@
       rel="stylesheet"
       href="./css/style.css"
       fetchpriority="high"
-      integrity="sha384-K9FJcno4k53ookn0cuahebPDML58LJNMznYOWZ09yPBPjGtJfIGUHmH7u32zAC0T"
+      integrity="sha384-+ZaYSAEeQqtt/GCCPAqjUNG1lepww/kV8sh2+DM/ZysXD11/lFBMc8WeLrZTdq/G"
       crossorigin="anonymous"
     />
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
-        }
-      }
-    </script>
   </head>
   <body>
     <noscript>
@@ -1084,6 +1085,10 @@
       </p>
 
       <div id="boot-overlay" class="boot-overlay" aria-live="polite">
+        <div class="boot-overlay__warp" aria-hidden="true">
+          <div class="boot-overlay__warp-radial"></div>
+          <div class="boot-overlay__warp-streaks"></div>
+        </div>
         <div class="boot-overlay__title">TRON: LIGHT CYCLES</div>
         <div
           class="boot-overlay__bar-wrap"
@@ -1133,7 +1138,6 @@
           <span id="hud-equip-icon" class="cycle-hud__equip-icon" aria-hidden="true">□</span>
           <span id="hud-equip-e" class="cycle-hud__equip-e" aria-hidden="true">E</span>
         </div>
-        <p id="hud-hint" class="cycle-hud__hint"></p>
       </div>
 
       <div id="hud-minimap-wrap" class="hud-minimap-wrap" hidden>
