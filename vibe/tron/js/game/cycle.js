@@ -258,10 +258,10 @@ export function createProceduralLightCycle(options = {}) {
   const wheelDZ = W;
   const WHEEL = wheelDZ;
   const ringSeg = 72;
-  const whRInner = Math.min(0.22, W * 0.2);
-  const whROuter = W * 0.5;
-  const whDepth = W;
-  const whLineW = W * 0.014;
+  const whROuter = H * 0.5;
+  const whRInner = whROuter * 0.52;
+  const whDepth = W * 0.44;
+  const whLineW = W * 0.022;
 
   /**
    * Flat annulus in XY, extruded along Z → rotate so thickness is along X (axle); hole is hubless.
@@ -312,19 +312,39 @@ export function createProceduralLightCycle(options = {}) {
     const grp = new THREE.Group();
 
     const gBody = createWasherGeometry(whRInner, whROuter, whDepth);
-    const body = new THREE.Mesh(gBody, wheelDarkMat);
-    grp.add(body);
+    grp.add(new THREE.Mesh(gBody, wheelDarkMat));
 
+    // Outer + inner edge neon rings (both sides)
     addSideNeonLines(grp, 1, whRInner, whROuter, whLineW);
     addSideNeonLines(grp, -1, whRInner, whROuter, whLineW);
 
-    // Mid-radius neon ring for extra Tron detail
-    const midR = (whRInner + whROuter) * 0.52;
-    addSideNeonLines(grp, 1, midR - whLineW * 0.4, midR + whLineW * 0.4, whLineW * 0.5);
-    addSideNeonLines(grp, -1, midR - whLineW * 0.4, midR + whLineW * 0.4, whLineW * 0.5);
+    // Concentric intermediate rings evenly spaced between inner and outer
+    const span = whROuter - whRInner;
+    const ringFracs = [0.28, 0.52, 0.76];
+    for (const frac of ringFracs) {
+      const r = whRInner + span * frac;
+      const w = frac === 0.52 ? whLineW * 0.7 : whLineW * 0.45;
+      for (const side of [-1, 1]) {
+        const geo = new THREE.RingGeometry(r - w * 0.5, r + w * 0.5, ringSeg);
+        disposableGeoms.push(geo);
+        const ring = new THREE.Mesh(geo, wheelGlowMat);
+        ring.rotation.y = side * (Math.PI / 2);
+        ring.position.x = side * (whDepth * 0.5 - 0.0004);
+        ring.renderOrder = 2;
+        grp.add(ring);
 
-    // Inner hub glow disc
-    const hubGeo = new THREE.CircleGeometry(whRInner * 0.88, ringSeg);
+        const bloomGeo = new THREE.RingGeometry(r - w, r + w, ringSeg);
+        disposableGeoms.push(bloomGeo);
+        const bloom = new THREE.Mesh(bloomGeo, rimBloomMat);
+        bloom.rotation.y = side * (Math.PI / 2);
+        bloom.position.x = side * (whDepth * 0.5 - 0.0004);
+        bloom.renderOrder = 1;
+        grp.add(bloom);
+      }
+    }
+
+    // Hub glow disc
+    const hubGeo = new THREE.CircleGeometry(whRInner * 0.82, ringSeg);
     disposableGeoms.push(hubGeo);
     for (const side of [-1, 1]) {
       const hub = new THREE.Mesh(hubGeo, hubGlowMat);
@@ -332,6 +352,23 @@ export function createProceduralLightCycle(options = {}) {
       hub.position.x = side * whDepth * 0.49;
       grp.add(hub);
     }
+
+    // Tread glow strip around the outer circumference
+    const treadGeo = new THREE.CylinderGeometry(
+      whROuter + 0.001, whROuter + 0.001,
+      whLineW * 2.5, ringSeg, 1, true,
+    );
+    treadGeo.rotateZ(Math.PI / 2);
+    disposableGeoms.push(treadGeo);
+    grp.add(new THREE.Mesh(treadGeo, wheelGlowMat));
+
+    const treadBloomGeo = new THREE.CylinderGeometry(
+      whROuter + 0.002, whROuter + 0.002,
+      whLineW * 5, ringSeg, 1, true,
+    );
+    treadBloomGeo.rotateZ(Math.PI / 2);
+    disposableGeoms.push(treadBloomGeo);
+    grp.add(new THREE.Mesh(treadBloomGeo, rimBloomMat));
 
     return grp;
   }
@@ -478,9 +515,9 @@ export function createProceduralLightCycle(options = {}) {
       new THREE.Vector3(0, H * 0.42, bodyExt * 0.92),
     ], stripMatStrong, nR, bR);
 
-    // Side accent strips
+    // Side accent strips (aligned with wheel face width)
     for (const side of [-1, 1]) {
-      const sx = side * (bodyWidth * 0.5 + bodyWidth * 0.14);
+      const sx = side * (whDepth * 0.5 + 0.006);
       addNeonStrip([
         new THREE.Vector3(sx, H * 0.28, -bodyExt * 0.8),
         new THREE.Vector3(sx, H * 0.38, -bodyExt * 0.1),
