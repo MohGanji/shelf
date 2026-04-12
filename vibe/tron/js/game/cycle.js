@@ -5,24 +5,79 @@ import { getCycleAssetTemplate, hasLoadedCycleAsset } from "./cycleAssetLoader.j
 export { preloadLightCycleAsset } from "./cycleAssetLoader.js";
 
 /**
- * View-space fresnel rim on MeshStandardMaterial (Tron-style edge glow before bloom; inspired by texture+fresnel references).
+ * Enhanced Tron hull shader: multi-layer fresnel rim, procedural panel lines,
+ * animated energy pulse scan. Injected via onBeforeCompile to preserve PBR lighting.
  * @param {THREE.MeshStandardMaterial} material
  * @param {{ value: THREE.Color }} rimColorUniform
  * @param {{ value: number }} rimStrengthUniform
+ * @param {{ value: number }} timeUniform
+ * @param {{ panelLines?: boolean; energyPulse?: boolean }} [opts]
  */
-function installTronFresnelRim(material, rimColorUniform, rimStrengthUniform) {
+function installTronShader(material, rimColorUniform, rimStrengthUniform, timeUniform, opts = {}) {
+  const { panelLines = false, energyPulse = false } = opts;
+
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTronRimColor = rimColorUniform;
     shader.uniforms.uTronRimStrength = rimStrengthUniform;
+    shader.uniforms.uTronTime = timeUniform;
+
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <common>",
+      "#include <common>\nvarying vec3 vTronWorldPos;",
+    );
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <fog_vertex>",
+      "vTronWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#include <fog_vertex>",
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <common>",
+      [
+        "#include <common>",
+        "varying vec3 vTronWorldPos;",
+        "uniform vec3 uTronRimColor;",
+        "uniform float uTronRimStrength;",
+        "uniform float uTronTime;",
+      ].join("\n"),
+    );
+
+    const lines = [
+      "vec3 tronVD = normalize(vViewPosition);",
+      "vec3 tronN  = normalize(normal);",
+      "float tronDot = abs(dot(tronN, tronVD));",
+      "",
+      "float fresnelSoft  = pow(clamp(1.0 - tronDot, 0.0, 1.0), 2.0);",
+      "float fresnelMid   = pow(clamp(1.0 - tronDot, 0.0, 1.0), 3.5);",
+      "float fresnelSharp = pow(clamp(1.0 - tronDot, 0.0, 1.0), 6.0);",
+      "float tronFresnel  = fresnelSoft * 0.25 + fresnelMid * 0.45 + fresnelSharp * 0.65;",
+      "outgoingLight += uTronRimColor * tronFresnel * uTronRimStrength;",
+    ];
+
+    if (panelLines) {
+      lines.push(
+        "",
+        "float plX = abs(fract(vTronWorldPos.x * 4.0 + 0.5) - 0.5);",
+        "float plZ = abs(fract(vTronWorldPos.z * 1.5 + 0.5) - 0.5);",
+        "float panelLine = smoothstep(0.47, 0.5, max(plX, plZ));",
+        "outgoingLight += uTronRimColor * panelLine * 0.10 * uTronRimStrength;",
+      );
+    }
+
+    if (energyPulse) {
+      lines.push(
+        "",
+        "float scanPos  = fract(-vTronWorldPos.z * 0.35 + uTronTime * 0.6);",
+        "float scanLine = smoothstep(0.0, 0.012, scanPos) * (1.0 - smoothstep(0.012, 0.07, scanPos));",
+        "float scanGlow = smoothstep(0.0, 0.03, scanPos) * (1.0 - smoothstep(0.03, 0.16, scanPos));",
+        "outgoingLight += uTronRimColor * (scanLine * 0.7 + scanGlow * 0.15) * uTronRimStrength;",
+      );
+    }
+
+    lines.push("#include <opaque_fragment>");
+
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <opaque_fragment>",
-      [
-        "vec3 tronVD = normalize( vViewPosition );",
-        "vec3 tronN = normalize( normal );",
-        "float tronF = pow( clamp( 1.0 - abs( dot( tronN, tronVD ) ), 0.0, 1.0 ), 3.0 );",
-        "outgoingLight += uTronRimColor * tronF * uTronRimStrength;",
-        "#include <opaque_fragment>",
-      ].join("\n\t"),
+      lines.join("\n\t"),
     );
   };
   material.needsUpdate = true;
@@ -69,13 +124,13 @@ export function createProceduralLightCycle(options = {}) {
 
   /** Base emissive intensities — body mostly “normal”; thin wheel rim lines are the neon read. */
   const EMISSIVE = {
-    hull: 0.12,
-    stripStrong: 0.35,
-    stripSoft: 0.22,
-    wheelNeon: 1.75,
-    glass: 0.12,
-    underglow: 0.18,
-    rearSlot: 0.28,
+    hull: 0.18,
+    stripStrong: 0.45,
+    stripSoft: 0.28,
+    wheelNeon: 2.0,
+    glass: 0.14,
+    underglow: 0.24,
+    rearSlot: 0.35,
   };
 
   function neonScale() {
@@ -89,11 +144,12 @@ export function createProceduralLightCycle(options = {}) {
 
   function makeHullMaterial() {
     return new THREE.MeshStandardMaterial({
-      color: 0x0a0c10,
-      metalness: 0.92,
-      roughness: 0.42,
+      color: 0x040608,
+      metalness: 0.97,
+      roughness: 0.22,
       emissive: emissiveDim,
       emissiveIntensity: EMISSIVE.hull * ns,
+      envMapIntensity: 1.4,
     });
   }
 
@@ -145,15 +201,24 @@ export function createProceduralLightCycle(options = {}) {
   const hullEdgeMat = new THREE.LineBasicMaterial({
     color: primary,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.62,
     depthWrite: false,
   });
   const underglowMat = makeStripMaterial(EMISSIVE.underglow);
   underglowMat.transparent = true;
   underglowMat.opacity = 0.85;
   const rearAccentMat = makeStripMaterial(EMISSIVE.rearSlot);
+  const hubGlowMat = new THREE.MeshBasicMaterial({
+    color: primary.clone().multiplyScalar(0.25),
+    transparent: true,
+    opacity: 0.12,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
 
   const tronRimColorUniform = { value: primary.clone() };
+  const tronTimeUniform = { value: 0 };
   /** @type {{ strength: { value: number }; k: number }[]} */
   const tronRimRows = [];
 
@@ -172,19 +237,19 @@ export function createProceduralLightCycle(options = {}) {
     }
   }
 
-  function registerTronRim(material, k) {
+  function registerTronRim(material, k, shaderOpts = {}) {
     const strength = { value: 0 };
-    installTronFresnelRim(material, tronRimColorUniform, strength);
+    installTronShader(material, tronRimColorUniform, strength, tronTimeUniform, shaderOpts);
     tronRimRows.push({ strength, k });
   }
 
-  registerTronRim(bodyMat, 0.14);
-  registerTronRim(stripMatStrong, 0.18);
-  registerTronRim(stripMatSoft, 0.12);
-  registerTronRim(wheelGlowMat, 0.42);
-  registerTronRim(glassMat, 0.06);
-  registerTronRim(underglowMat, 0.12);
-  registerTronRim(rearAccentMat, 0.16);
+  registerTronRim(bodyMat, 0.18, { panelLines: true, energyPulse: true });
+  registerTronRim(stripMatStrong, 0.22, { energyPulse: true });
+  registerTronRim(stripMatSoft, 0.15, { energyPulse: true });
+  registerTronRim(wheelGlowMat, 0.48);
+  registerTronRim(glassMat, 0.08);
+  registerTronRim(underglowMat, 0.15, { energyPulse: true });
+  registerTronRim(rearAccentMat, 0.20, { energyPulse: true });
 
   /**
    * Wheels occupy a true **1×1×1** cell each (no uniform “fit max” shrink on X): diameter Y/Z = 1, axle thickness X = {@link CYCLE_BOUNDS}.width.
@@ -253,6 +318,21 @@ export function createProceduralLightCycle(options = {}) {
     addSideNeonLines(grp, 1, whRInner, whROuter, whLineW);
     addSideNeonLines(grp, -1, whRInner, whROuter, whLineW);
 
+    // Mid-radius neon ring for extra Tron detail
+    const midR = (whRInner + whROuter) * 0.52;
+    addSideNeonLines(grp, 1, midR - whLineW * 0.4, midR + whLineW * 0.4, whLineW * 0.5);
+    addSideNeonLines(grp, -1, midR - whLineW * 0.4, midR + whLineW * 0.4, whLineW * 0.5);
+
+    // Inner hub glow disc
+    const hubGeo = new THREE.CircleGeometry(whRInner * 0.88, ringSeg);
+    disposableGeoms.push(hubGeo);
+    for (const side of [-1, 1]) {
+      const hub = new THREE.Mesh(hubGeo, hubGlowMat);
+      hub.rotation.y = side * (Math.PI / 2);
+      hub.position.x = side * whDepth * 0.49;
+      grp.add(hub);
+    }
+
     return grp;
   }
 
@@ -280,50 +360,142 @@ export function createProceduralLightCycle(options = {}) {
   /** @type {THREE.Object3D[]} */
   const wheels = [wheelFront, wheelRear];
 
-  // --- Central bridge: spans **gapZ** (not `L - WHEEL`); cross-section uses full width **W** where possible (3×1×1 AABB)
-  const bridgeRad = Math.min(W * 0.24, H * 0.26);
-  /** Capsule extent along its axis = `cylLen + 2*bridgeRad` (three.js); keep within `gapZ`. */
-  const bridgeCylLen = Math.max(0.05, gapZ - 2 * bridgeRad);
-  const bridgeY = H - bridgeRad;
-  const bridgeGeo = new THREE.CapsuleGeometry(bridgeRad, bridgeCylLen, 8, 16);
-  disposableGeoms.push(bridgeGeo);
-  const bridge = new THREE.Mesh(bridgeGeo, bodyMat);
-  bridge.rotation.x = Math.PI / 2;
-  bridge.position.set(0, bridgeY, 0);
-  animationRoot.add(bridge);
-  const bridgeEdgeGeo = new THREE.EdgesGeometry(bridgeGeo, 22);
-  disposableGeoms.push(bridgeEdgeGeo);
-  bridge.add(new THREE.LineSegments(bridgeEdgeGeo, hullEdgeMat));
+  // --- Streamlined fuselage: angular Tron-style profile connecting front and rear wheels
+  const bodyWidth = W * 0.44;
+  const bodyExt = gapZ * 0.5 + wheelDZ * 0.25;
 
-  const deckGeo = new THREE.BoxGeometry(W * 0.98, H * 0.06, gapZ * 0.96);
-  disposableGeoms.push(deckGeo);
-  const deckGlow = new THREE.Mesh(deckGeo, stripMatSoft);
-  deckGlow.position.set(0, H - 0.04, 0);
-  animationRoot.add(deckGlow);
+  {
+    const profile = new THREE.Shape();
+    const bY = H * 0.13;
+    const mY = H * 0.40;
+    const tY = H * 0.52;
+    const cY = H * 0.70;
 
-  const underGeo = new THREE.BoxGeometry(W * 0.98, H * 0.035, gapZ * 0.96);
-  disposableGeoms.push(underGeo);
-  const underglow = new THREE.Mesh(underGeo, underglowMat);
-  underglow.position.set(0, H * 0.52, 0);
-  animationRoot.add(underglow);
+    profile.moveTo(-bodyExt, bY);
+    profile.lineTo(bodyExt * 0.92, bY);
+    profile.lineTo(bodyExt, bY + H * 0.06);
+    profile.lineTo(bodyExt, mY);
+    profile.lineTo(bodyExt * 0.72, tY);
+    profile.lineTo(bodyExt * 0.30, cY - H * 0.04);
+    profile.lineTo(bodyExt * 0.06, cY);
+    profile.lineTo(-bodyExt * 0.18, cY - H * 0.03);
+    profile.lineTo(-bodyExt * 0.48, tY + H * 0.02);
+    profile.lineTo(-bodyExt * 0.78, mY + H * 0.04);
+    profile.lineTo(-bodyExt, mY - H * 0.04);
+    profile.closePath();
 
-  const rearSlotGeo = new THREE.BoxGeometry(W * 0.24, H * 0.08, WHEEL * 0.12);
-  disposableGeoms.push(rearSlotGeo);
-  const rearAccent = new THREE.Mesh(rearSlotGeo, rearAccentMat);
-  rearAccent.position.set(0, H * 0.55, zRear + WHEEL * 0.38);
-  animationRoot.add(rearAccent);
+    const fuselageGeo = new THREE.ExtrudeGeometry(profile, {
+      depth: bodyWidth,
+      bevelEnabled: true,
+      bevelThickness: bodyWidth * 0.18,
+      bevelSize: bodyWidth * 0.12,
+      bevelSegments: 2,
+      curveSegments: 1,
+    });
+    fuselageGeo.translate(0, 0, -bodyWidth * 0.5);
+    fuselageGeo.rotateY(-Math.PI / 2);
+    disposableGeoms.push(fuselageGeo);
 
-  const spineGeo = new THREE.BoxGeometry(W * 0.14, H * 0.05, gapZ * 0.9);
-  disposableGeoms.push(spineGeo);
-  const spine = new THREE.Mesh(spineGeo, stripMatStrong);
-  spine.position.set(0, H - 0.055, 0);
-  animationRoot.add(spine);
+    const fuselage = new THREE.Mesh(fuselageGeo, bodyMat);
+    animationRoot.add(fuselage);
 
-  const canopyGeo = new THREE.BoxGeometry(W * 0.58, H * 0.12, WHEEL * 0.5);
-  disposableGeoms.push(canopyGeo);
-  const canopy = new THREE.Mesh(canopyGeo, glassMat);
-  canopy.position.set(0, H - 0.08, WHEEL * 0.32);
-  animationRoot.add(canopy);
+    const fuselageEdgeGeo = new THREE.EdgesGeometry(fuselageGeo, 22);
+    disposableGeoms.push(fuselageEdgeGeo);
+    fuselage.add(new THREE.LineSegments(fuselageEdgeGeo, hullEdgeMat));
+  }
+
+  // Cockpit canopy
+  {
+    const canopyProfile = new THREE.Shape();
+    const cx0 = bodyExt * 0.32;
+    const cx1 = -bodyExt * 0.15;
+    const cBot = H * 0.66;
+    const cTop = H * 0.74;
+
+    canopyProfile.moveTo(cx1, cBot);
+    canopyProfile.lineTo(cx0, cBot);
+    canopyProfile.lineTo(cx0 - bodyExt * 0.06, cTop);
+    canopyProfile.lineTo(cx1 + bodyExt * 0.04, cTop - H * 0.01);
+    canopyProfile.closePath();
+
+    const canopyW = bodyWidth * 0.7;
+    const canopyGeo = new THREE.ExtrudeGeometry(canopyProfile, {
+      depth: canopyW,
+      bevelEnabled: true,
+      bevelThickness: canopyW * 0.12,
+      bevelSize: canopyW * 0.08,
+      bevelSegments: 1,
+      curveSegments: 1,
+    });
+    canopyGeo.translate(0, 0, -canopyW * 0.5);
+    canopyGeo.rotateY(-Math.PI / 2);
+    disposableGeoms.push(canopyGeo);
+
+    const canopy = new THREE.Mesh(canopyGeo, glassMat);
+    animationRoot.add(canopy);
+  }
+
+  // Underglow strip
+  {
+    const underGeo = new THREE.BoxGeometry(bodyWidth * 1.1, H * 0.025, gapZ * 0.85);
+    disposableGeoms.push(underGeo);
+    const underglow = new THREE.Mesh(underGeo, underglowMat);
+    underglow.position.set(0, H * 0.115, 0);
+    animationRoot.add(underglow);
+  }
+
+  // Rear exhaust accent
+  {
+    const rearSlotGeo = new THREE.BoxGeometry(bodyWidth * 0.6, H * 0.06, WHEEL * 0.08);
+    disposableGeoms.push(rearSlotGeo);
+    const rearAccent = new THREE.Mesh(rearSlotGeo, rearAccentMat);
+    rearAccent.position.set(0, H * 0.36, zRear + WHEEL * 0.42);
+    animationRoot.add(rearAccent);
+  }
+
+  // --- Neon accent strips (TubeGeometry along body edges)
+  {
+    function addNeonStrip(points, mat, radius, bloomRadius) {
+      const curve = new THREE.CatmullRomCurve3(points);
+      const tubeGeo = new THREE.TubeGeometry(curve, 20, radius, 4, false);
+      disposableGeoms.push(tubeGeo);
+      animationRoot.add(new THREE.Mesh(tubeGeo, mat));
+
+      const bloomGeo = new THREE.TubeGeometry(curve, 20, bloomRadius, 4, false);
+      disposableGeoms.push(bloomGeo);
+      animationRoot.add(new THREE.Mesh(bloomGeo, rimBloomMat));
+    }
+
+    const nR = W * 0.016;
+    const bR = W * 0.035;
+
+    // Top spine strip
+    addNeonStrip([
+      new THREE.Vector3(0, H * 0.38, -bodyExt * 0.75),
+      new THREE.Vector3(0, H * 0.54, -bodyExt * 0.15),
+      new THREE.Vector3(0, H * 0.70, bodyExt * 0.06),
+      new THREE.Vector3(0, H * 0.52, bodyExt * 0.72),
+      new THREE.Vector3(0, H * 0.42, bodyExt * 0.92),
+    ], stripMatStrong, nR, bR);
+
+    // Side accent strips
+    for (const side of [-1, 1]) {
+      const sx = side * (bodyWidth * 0.5 + bodyWidth * 0.14);
+      addNeonStrip([
+        new THREE.Vector3(sx, H * 0.28, -bodyExt * 0.8),
+        new THREE.Vector3(sx, H * 0.38, -bodyExt * 0.1),
+        new THREE.Vector3(sx, H * 0.36, bodyExt * 0.3),
+        new THREE.Vector3(sx, H * 0.28, bodyExt * 0.8),
+      ], stripMatSoft, nR * 0.8, bR * 0.8);
+    }
+
+    // Under-body neon strip
+    addNeonStrip([
+      new THREE.Vector3(0, H * 0.10, -bodyExt * 0.65),
+      new THREE.Vector3(0, H * 0.12, 0),
+      new THREE.Vector3(0, H * 0.10, bodyExt * 0.65),
+    ], underglowMat, nR * 0.7, bR * 0.7);
+  }
 
   /** Equippable shield dome — neon wire + translucent shell (plan P3.4). */
   const shieldBubble = new THREE.Group();
@@ -409,6 +581,7 @@ export function createProceduralLightCycle(options = {}) {
 
     glassMat.emissive.copy(primary).multiplyScalar(0.35);
     glassMat.emissiveIntensity = EMISSIVE.glass * ns;
+    hubGlowMat.color.copy(primary).multiplyScalar(0.25);
     syncTronRim(1);
   }
 
@@ -426,6 +599,8 @@ export function createProceduralLightCycle(options = {}) {
    */
   function update(dt, input) {
     if (dt <= 0) return;
+
+    tronTimeUniform.value += dt;
 
     ns = neonScale();
     bodyMat.emissiveIntensity = EMISSIVE.hull * ns;
@@ -528,6 +703,7 @@ export function createProceduralLightCycle(options = {}) {
     hullEdgeMat.dispose();
     underglowMat.dispose();
     rearAccentMat.dispose();
+    hubGlowMat.dispose();
   }
 
   return {
