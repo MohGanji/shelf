@@ -258,10 +258,10 @@ export function createProceduralLightCycle(options = {}) {
   const wheelDZ = W;
   const WHEEL = wheelDZ;
   const ringSeg = 72;
-  const whRInner = Math.min(0.22, W * 0.2);
-  const whROuter = W * 0.5;
+  const whROuter = H * 0.5;
+  const whRInner = whROuter * 0.56;
   const whDepth = W;
-  const whLineW = W * 0.014;
+  const whLineW = W * 0.035;
 
   /**
    * Flat annulus in XY, extruded along Z → rotate so thickness is along X (axle); hole is hubless.
@@ -312,24 +312,38 @@ export function createProceduralLightCycle(options = {}) {
     const grp = new THREE.Group();
 
     const gBody = createWasherGeometry(whRInner, whROuter, whDepth);
-    const body = new THREE.Mesh(gBody, wheelDarkMat);
-    grp.add(body);
+    grp.add(new THREE.Mesh(gBody, wheelDarkMat));
 
-    addSideNeonLines(grp, 1, whRInner, whROuter, whLineW);
-    addSideNeonLines(grp, -1, whRInner, whROuter, whLineW);
+    const neonInset = whDepth * 0.12;
+    const neonR = whRInner + (whROuter - whRInner) * 0.68;
 
-    // Mid-radius neon ring for extra Tron detail
-    const midR = (whRInner + whROuter) * 0.52;
-    addSideNeonLines(grp, 1, midR - whLineW * 0.4, midR + whLineW * 0.4, whLineW * 0.5);
-    addSideNeonLines(grp, -1, midR - whLineW * 0.4, midR + whLineW * 0.4, whLineW * 0.5);
-
-    // Inner hub glow disc
-    const hubGeo = new THREE.CircleGeometry(whRInner * 0.88, ringSeg);
-    disposableGeoms.push(hubGeo);
     for (const side of [-1, 1]) {
+      const xPos = side * (whDepth * 0.5 - neonInset);
+
+      // Bold primary neon ring (single dominant circle like the Tron reference)
+      const ringGeo = new THREE.RingGeometry(neonR - whLineW, neonR + whLineW, ringSeg);
+      disposableGeoms.push(ringGeo);
+      const ring = new THREE.Mesh(ringGeo, wheelGlowMat);
+      ring.rotation.y = side * (Math.PI / 2);
+      ring.position.x = xPos;
+      ring.renderOrder = 2;
+      grp.add(ring);
+
+      // Wide bloom glow around the ring
+      const bloomGeo = new THREE.RingGeometry(neonR - whLineW * 2.5, neonR + whLineW * 2.5, ringSeg);
+      disposableGeoms.push(bloomGeo);
+      const bloom = new THREE.Mesh(bloomGeo, rimBloomMat);
+      bloom.rotation.y = side * (Math.PI / 2);
+      bloom.position.x = xPos;
+      bloom.renderOrder = 1;
+      grp.add(bloom);
+
+      // Subtle hub glow disc
+      const hubGeo = new THREE.CircleGeometry(whRInner * 0.82, ringSeg);
+      disposableGeoms.push(hubGeo);
       const hub = new THREE.Mesh(hubGeo, hubGlowMat);
       hub.rotation.y = side * (Math.PI / 2);
-      hub.position.x = side * whDepth * 0.49;
+      hub.position.x = xPos;
       grp.add(hub);
     }
 
@@ -360,35 +374,45 @@ export function createProceduralLightCycle(options = {}) {
   /** @type {THREE.Object3D[]} */
   const wheels = [wheelFront, wheelRear];
 
-  // --- Streamlined fuselage: angular Tron-style profile connecting front and rear wheels
-  const bodyWidth = W * 0.44;
-  const bodyExt = gapZ * 0.5 + wheelDZ * 0.25;
+  // --- Full-length fuselage covering both wheels from above.
+  //     Fairings ride above wheel tops; fender side-panels clamp down around each wheel.
+  const bodyWidth = W * 0.92;
+  const bodyExt = L * 0.5 - 0.04;
+  const fairingY = H * 0.80;
+  const gapBotY = H * 0.16;
+  const rwi = -(gapZ * 0.5);
+  const fwi = gapZ * 0.5;
 
   {
     const profile = new THREE.Shape();
-    const bY = H * 0.13;
-    const mY = H * 0.40;
-    const tY = H * 0.52;
-    const cY = H * 0.70;
 
-    profile.moveTo(-bodyExt, bY);
-    profile.lineTo(bodyExt * 0.92, bY);
-    profile.lineTo(bodyExt, bY + H * 0.06);
-    profile.lineTo(bodyExt, mY);
-    profile.lineTo(bodyExt * 0.72, tY);
-    profile.lineTo(bodyExt * 0.30, cY - H * 0.04);
-    profile.lineTo(bodyExt * 0.06, cY);
-    profile.lineTo(-bodyExt * 0.18, cY - H * 0.03);
-    profile.lineTo(-bodyExt * 0.48, tY + H * 0.02);
-    profile.lineTo(-bodyExt * 0.78, mY + H * 0.04);
-    profile.lineTo(-bodyExt, mY - H * 0.04);
+    // Bottom edge: rear tip → over rear wheel → dip into gap → over front wheel → nose tip
+    profile.moveTo(-bodyExt, fairingY + H * 0.08);
+    profile.lineTo(-bodyExt * 0.68, fairingY);
+    profile.lineTo(rwi + 0.05, fairingY - H * 0.10);
+    profile.lineTo(rwi + 0.28, gapBotY);
+    profile.lineTo(fwi - 0.28, gapBotY);
+    profile.lineTo(fwi - 0.05, fairingY - H * 0.10);
+    profile.lineTo(bodyExt * 0.68, fairingY);
+    profile.lineTo(bodyExt, fairingY + H * 0.08);
+
+    // Top edge: nose → cockpit peak → tail (traces back)
+    profile.lineTo(bodyExt * 0.92, fairingY + H * 0.18);
+    profile.lineTo(bodyExt * 0.72, H * 0.88);
+    profile.lineTo(bodyExt * 0.30, H * 0.94);
+    profile.lineTo(bodyExt * 0.06, H * 0.98);
+    profile.lineTo(-bodyExt * 0.18, H * 0.96);
+    profile.lineTo(-bodyExt * 0.48, H * 0.90);
+    profile.lineTo(-bodyExt * 0.78, H * 0.88);
+    profile.lineTo(-bodyExt * 0.92, fairingY + H * 0.14);
+
     profile.closePath();
 
     const fuselageGeo = new THREE.ExtrudeGeometry(profile, {
       depth: bodyWidth,
       bevelEnabled: true,
-      bevelThickness: bodyWidth * 0.18,
-      bevelSize: bodyWidth * 0.12,
+      bevelThickness: bodyWidth * 0.06,
+      bevelSize: bodyWidth * 0.05,
       bevelSegments: 2,
       curveSegments: 1,
     });
@@ -404,26 +428,26 @@ export function createProceduralLightCycle(options = {}) {
     fuselage.add(new THREE.LineSegments(fuselageEdgeGeo, hullEdgeMat));
   }
 
-  // Cockpit canopy
+  // Cockpit canopy (sits on the peak of the central body)
   {
     const canopyProfile = new THREE.Shape();
-    const cx0 = bodyExt * 0.32;
+    const cx0 = bodyExt * 0.30;
     const cx1 = -bodyExt * 0.15;
-    const cBot = H * 0.66;
-    const cTop = H * 0.74;
+    const cBot = H * 0.93;
+    const cTop = H * 1.02;
 
     canopyProfile.moveTo(cx1, cBot);
     canopyProfile.lineTo(cx0, cBot);
-    canopyProfile.lineTo(cx0 - bodyExt * 0.06, cTop);
-    canopyProfile.lineTo(cx1 + bodyExt * 0.04, cTop - H * 0.01);
+    canopyProfile.lineTo(cx0 - bodyExt * 0.04, cTop);
+    canopyProfile.lineTo(cx1 + bodyExt * 0.03, cTop - H * 0.01);
     canopyProfile.closePath();
 
-    const canopyW = bodyWidth * 0.7;
+    const canopyW = bodyWidth * 0.58;
     const canopyGeo = new THREE.ExtrudeGeometry(canopyProfile, {
       depth: canopyW,
       bevelEnabled: true,
-      bevelThickness: canopyW * 0.12,
-      bevelSize: canopyW * 0.08,
+      bevelThickness: canopyW * 0.08,
+      bevelSize: canopyW * 0.05,
       bevelSegments: 1,
       curveSegments: 1,
     });
@@ -431,69 +455,71 @@ export function createProceduralLightCycle(options = {}) {
     canopyGeo.rotateY(-Math.PI / 2);
     disposableGeoms.push(canopyGeo);
 
-    const canopy = new THREE.Mesh(canopyGeo, glassMat);
-    animationRoot.add(canopy);
+    animationRoot.add(new THREE.Mesh(canopyGeo, glassMat));
   }
 
-  // Underglow strip
+  // Underglow strip (in the gap between wheels)
   {
-    const underGeo = new THREE.BoxGeometry(bodyWidth * 1.1, H * 0.025, gapZ * 0.85);
+    const underGeo = new THREE.BoxGeometry(bodyWidth * 0.85, H * 0.03, gapZ * 0.70);
     disposableGeoms.push(underGeo);
     const underglow = new THREE.Mesh(underGeo, underglowMat);
-    underglow.position.set(0, H * 0.115, 0);
+    underglow.position.set(0, H * 0.14, 0);
     animationRoot.add(underglow);
   }
 
-  // Rear exhaust accent
+  // Rear exhaust accent (at tail)
   {
-    const rearSlotGeo = new THREE.BoxGeometry(bodyWidth * 0.6, H * 0.06, WHEEL * 0.08);
+    const rearSlotGeo = new THREE.BoxGeometry(bodyWidth * 0.40, H * 0.06, WHEEL * 0.06);
     disposableGeoms.push(rearSlotGeo);
     const rearAccent = new THREE.Mesh(rearSlotGeo, rearAccentMat);
-    rearAccent.position.set(0, H * 0.36, zRear + WHEEL * 0.42);
+    rearAccent.position.set(0, fairingY + H * 0.04, -bodyExt + 0.04);
     animationRoot.add(rearAccent);
   }
 
-  // --- Neon accent strips (TubeGeometry along body edges)
+  // --- Neon accent strips following full-length body contour
   {
     function addNeonStrip(points, mat, radius, bloomRadius) {
       const curve = new THREE.CatmullRomCurve3(points);
-      const tubeGeo = new THREE.TubeGeometry(curve, 20, radius, 4, false);
+      const tubeGeo = new THREE.TubeGeometry(curve, 24, radius, 4, false);
       disposableGeoms.push(tubeGeo);
       animationRoot.add(new THREE.Mesh(tubeGeo, mat));
 
-      const bloomGeo = new THREE.TubeGeometry(curve, 20, bloomRadius, 4, false);
+      const bloomGeo = new THREE.TubeGeometry(curve, 24, bloomRadius, 4, false);
       disposableGeoms.push(bloomGeo);
       animationRoot.add(new THREE.Mesh(bloomGeo, rimBloomMat));
     }
 
-    const nR = W * 0.016;
-    const bR = W * 0.035;
+    const nR = W * 0.018;
+    const bR = W * 0.040;
 
-    // Top spine strip
+    // Top spine strip (follows cockpit ridge end-to-end)
     addNeonStrip([
-      new THREE.Vector3(0, H * 0.38, -bodyExt * 0.75),
-      new THREE.Vector3(0, H * 0.54, -bodyExt * 0.15),
-      new THREE.Vector3(0, H * 0.70, bodyExt * 0.06),
-      new THREE.Vector3(0, H * 0.52, bodyExt * 0.72),
-      new THREE.Vector3(0, H * 0.42, bodyExt * 0.92),
+      new THREE.Vector3(0, fairingY + H * 0.12, -bodyExt * 0.90),
+      new THREE.Vector3(0, H * 0.88, -bodyExt * 0.48),
+      new THREE.Vector3(0, H * 0.96, -bodyExt * 0.18),
+      new THREE.Vector3(0, H * 0.98, bodyExt * 0.06),
+      new THREE.Vector3(0, H * 0.88, bodyExt * 0.72),
+      new THREE.Vector3(0, fairingY + H * 0.16, bodyExt * 0.90),
     ], stripMatStrong, nR, bR);
 
-    // Side accent strips
+    // Side accent strips (follow fender contour: high over wheels, dip through gap)
     for (const side of [-1, 1]) {
-      const sx = side * (bodyWidth * 0.5 + bodyWidth * 0.14);
+      const sx = side * (bodyWidth * 0.5 + bodyWidth * 0.04);
       addNeonStrip([
-        new THREE.Vector3(sx, H * 0.28, -bodyExt * 0.8),
-        new THREE.Vector3(sx, H * 0.38, -bodyExt * 0.1),
-        new THREE.Vector3(sx, H * 0.36, bodyExt * 0.3),
-        new THREE.Vector3(sx, H * 0.28, bodyExt * 0.8),
+        new THREE.Vector3(sx, fairingY + H * 0.02, -bodyExt * 0.70),
+        new THREE.Vector3(sx, fairingY - H * 0.06, rwi + 0.05),
+        new THREE.Vector3(sx, H * 0.38, rwi + 0.30),
+        new THREE.Vector3(sx, H * 0.38, fwi - 0.30),
+        new THREE.Vector3(sx, fairingY - H * 0.06, fwi - 0.05),
+        new THREE.Vector3(sx, fairingY + H * 0.02, bodyExt * 0.70),
       ], stripMatSoft, nR * 0.8, bR * 0.8);
     }
 
-    // Under-body neon strip
+    // Under-body neon strip (in gap zone)
     addNeonStrip([
-      new THREE.Vector3(0, H * 0.10, -bodyExt * 0.65),
-      new THREE.Vector3(0, H * 0.12, 0),
-      new THREE.Vector3(0, H * 0.10, bodyExt * 0.65),
+      new THREE.Vector3(0, H * 0.14, -gapZ * 0.30),
+      new THREE.Vector3(0, H * 0.15, 0),
+      new THREE.Vector3(0, H * 0.14, gapZ * 0.30),
     ], underglowMat, nR * 0.7, bR * 0.7);
   }
 
