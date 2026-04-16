@@ -487,7 +487,10 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
 function buildSingleGateGroup(g, playCfg) {
   const group = new THREE.Group();
   const w = g.width;
+  const h = playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight || 3.0;
+  const wallT = 1.0;
   const open = !g.locked || g.role === "entrance";
+
   /** Dark metal body + saturated teal emissive (not white) — intensity drives “neon” read. */
   const colorHex = open ? 0x061018 : 0x0a1018;
   const emissiveHex = open ? 0x00997a : 0x1a3044;
@@ -495,30 +498,80 @@ function buildSingleGateGroup(g, playCfg) {
   const arcNeonBase =
     (open ? 1.25 : 0.32) + playCfg.devHud.neonIntensity * (open ? 0.75 : 0.12);
 
-  const majorR = Math.max(0.65, w / 2 - 0.18);
-  const tubeR = 0.11;
-  /**
-   * Half-torus in XY: feet on chord y≈0, peak toward +Y. Sit mesh so lowest vertex rests on floor.
-   */
-  const torus = new THREE.Mesh(
-    new THREE.TorusGeometry(majorR, tubeR, 12, 40, Math.PI),
-    new THREE.MeshStandardMaterial({
-      color: colorHex,
-      emissive: emissiveHex,
-      emissiveIntensity: arcNeonBase * pulse,
-      metalness: 0.35,
-      roughness: 0.45,
-      transparent: true,
-      opacity: open ? 1 : 0.55,
-    }),
-  );
-  torus.geometry.computeBoundingBox();
-  const bb = torus.geometry.boundingBox;
-  if (bb) torus.position.y = -bb.min.y + 0.02;
-  group.add(torus);
+  const frameMat = new THREE.MeshStandardMaterial({
+    color: 0x04080c,
+    metalness: 0.9,
+    roughness: 0.2,
+  });
 
-  const archTopY =
-    bb != null ? torus.position.y + bb.max.y : torus.position.y + majorR + tubeR;
+  const neonMat = new THREE.MeshStandardMaterial({
+    color: colorHex,
+    emissive: emissiveHex,
+    emissiveIntensity: arcNeonBase * pulse,
+    metalness: 0.2,
+    roughness: 0.5,
+    transparent: true,
+    opacity: open ? 1 : 0.55,
+  });
+
+  const pillarW = 0.8;
+  const pillarD = wallT + 0.6; // 1.6, protrudes 0.3 on each side
+  const lintelH = 0.8;
+
+  // Frame Archway
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, 0);
+  shape.lineTo(-w / 2, h);
+  shape.lineTo(w / 2, h);
+  shape.lineTo(w / 2, 0);
+
+  const hole = new THREE.Path();
+  hole.moveTo(-w / 2 + pillarW, 0);
+  hole.lineTo(-w / 2 + pillarW, h - lintelH);
+  hole.lineTo(w / 2 - pillarW, h - lintelH);
+  hole.lineTo(w / 2 - pillarW, 0);
+  shape.holes.push(hole);
+
+  const frameGeo = new THREE.ExtrudeGeometry(shape, {
+    depth: pillarD,
+    bevelEnabled: true,
+    bevelSegments: 2,
+    steps: 1,
+    bevelSize: 0.05,
+    bevelThickness: 0.05,
+  });
+  frameGeo.translate(0, 0, -pillarD / 2);
+  const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+  group.add(frameMesh);
+
+  // Neon Inner Trim
+  const neonW = 0.15;
+  const neonD = pillarD + 0.1; // Protrude slightly from the frame
+
+  const neonShape = new THREE.Shape();
+  neonShape.moveTo(-w / 2 + pillarW, 0);
+  neonShape.lineTo(-w / 2 + pillarW, h - lintelH);
+  neonShape.lineTo(w / 2 - pillarW, h - lintelH);
+  neonShape.lineTo(w / 2 - pillarW, 0);
+
+  const neonHole = new THREE.Path();
+  neonHole.moveTo(-w / 2 + pillarW + neonW, 0);
+  neonHole.lineTo(-w / 2 + pillarW + neonW, h - lintelH - neonW);
+  neonHole.lineTo(w / 2 - pillarW - neonW, h - lintelH - neonW);
+  neonHole.lineTo(w / 2 - pillarW - neonW, 0);
+  neonShape.holes.push(neonHole);
+
+  const neonGeo = new THREE.ExtrudeGeometry(neonShape, {
+    depth: neonD,
+    bevelEnabled: true,
+    bevelSegments: 2,
+    steps: 1,
+    bevelSize: 0.02,
+    bevelThickness: 0.02,
+  });
+  neonGeo.translate(0, 0, -neonD / 2);
+  const neonMesh = new THREE.Mesh(neonGeo, neonMat);
+  group.add(neonMesh);
 
   if (g.signText && g.signText.trim() !== "") {
     const tex = makeSignTexture(
@@ -541,15 +594,14 @@ function buildSingleGateGroup(g, playCfg) {
         toneMapped: false,
       }),
     );
-    const signY = Math.max(0.55, archTopY * 0.42);
-    sign.position.set(0, signY, 0.14);
+    sign.position.set(0, h - lintelH / 2, pillarD / 2 + 0.06);
     group.add(sign);
   }
 
   group.userData.gateRole = g.role;
   group.userData.gateLocked = g.locked;
   group.userData.pillarMaterials = [];
-  group.userData.torusMaterial = torus.material;
+  group.userData.torusMaterial = neonMat;
   group.userData.frameEmissiveBase = arcNeonBase;
   group.userData.pulse = open;
 
@@ -570,21 +622,21 @@ export function placeGateGroupOnWall(g, arenaWidth, arenaDepth) {
   switch (g.edge) {
     case "south": {
       const x = -halfW + p;
-      const z = -halfD - t * 0.35;
+      const z = -halfD - t * 0.5;
       return { position: new THREE.Vector3(x, 0, z), rotationY: 0 };
     }
     case "north": {
       const x = -halfW + p;
-      const z = halfD + t * 0.35;
+      const z = halfD + t * 0.5;
       return { position: new THREE.Vector3(x, 0, z), rotationY: Math.PI };
     }
     case "west": {
-      const x = -halfW - t * 0.35;
+      const x = -halfW - t * 0.5;
       const z = -halfD + p;
       return { position: new THREE.Vector3(x, 0, z), rotationY: -Math.PI / 2 };
     }
     case "east": {
-      const x = halfW + t * 0.35;
+      const x = halfW + t * 0.5;
       const z = -halfD + p;
       return { position: new THREE.Vector3(x, 0, z), rotationY: Math.PI / 2 };
     }
