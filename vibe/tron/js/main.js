@@ -1088,6 +1088,11 @@ async function main() {
     devHud,
     applyDevHud: (patch) => {
       game.applyDevHud(patch);
+      if (Object.prototype.hasOwnProperty.call(patch, "defaultTrailLength")) {
+        const newCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
+        playCfg.trailMaxSegments = newCfg.trailMaxSegments;
+        trailWall.setMaxSegments(playCfg.trailMaxSegments + levelTrailExtendBonus);
+      }
       if (Object.prototype.hasOwnProperty.call(patch, "lobbyMusicVariant")) {
         audio.setMusicLobbyUrl(getLobbyMusicUrl(devHud));
         if (isLobby) {
