@@ -85,23 +85,23 @@ export const TRON_COLORS = {
 
 /** Default dev HUD keys — override chain: config defaults ← save devHud (plan save schema) */
 export const DEFAULT_DEV_HUD = {
-  bloomIntensity: 1.5,
+  bloomIntensity: 0.95,
   /** UnrealBloomPass radius — reference-style “selective bloom” often pairs with higher threshold. */
-  bloomRadius: 0.4,
+  bloomRadius: 0.3,
   bloomThreshold: 0.3,
   chromaticAberration: 0.002,
   crtScanlines: false,
-  gridBrightness: 0.4,
+  gridBrightness: 0.2,
   /** Arena / editor / garage floor: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
   floorGridLineStep: 4,
   /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
   tunnelGridLineStep: 4,
-  neonIntensity: 1.0,
-  cycleNeonIntensity: 1.0,
-  fogDensity: 0.01,
+  neonIntensity: 0.95,
+  cycleNeonIntensity: 0.5,
+  fogDensity: 0.009,
   trailOpacity: 0.8,
   trailFadeSpeed: 1.0,
-  defaultTrailLength: 100,
+  defaultTrailLength: 200,
   trailExtendAmount: 10,
   nitroCapacityPlusAmount: 1,
   nitroBurstDuration: 0.5,
@@ -110,7 +110,7 @@ export const DEFAULT_DEV_HUD = {
   coinOverlayDuration: 3.0,
   minimumArenaSize: 40,
   /** Logical trail-length units immune at rear (~1 world unit per unit when anchor spacing is 1); scaled in collision. */
-  trailImmunitySegments: 4,
+  trailImmunitySegments: 7,
   portalExitImmunityDuration: 0.15,
   nitroMaxSpeedMultiplier: 1.2,
   shieldSlowdownPercent: 0.3,
@@ -161,18 +161,18 @@ export const DEFAULT_DEV_HUD = {
   /** 0 = first gameplay stem, 1 = second (`MUSIC_ASSET_URLS.gameplayVariants`). */
   gameplayMusicVariant: 0,
   /** Tighter chase cam so the cycle reads at a glance on large arenas (was 8 / 58°). */
-  cameraDistance: 5.75,
+  cameraDistance: 6.5,
   /** Raised so the bike and trail stay in frame near tall perimeter walls. */
-  cameraHeight: 4.65,
-  cameraLookAhead: 2.65,
-  cameraDamping: 0.08,
+  cameraHeight: 4.5,
+  cameraLookAhead: 3.5,
+  cameraDamping: 0.09,
   cameraTurnOffset: 1.5,
   /** Chase cam base vertical FOV (degrees). Nitro widens from here when enabled. */
   cameraBaseFov: 52,
   /** Extra FOV during nitro when `nitroFovWiden` is true. */
-  nitroFovAdd: 14,
+  nitroFovAdd: 12,
   /** Extra camera distance (units) during nitro when `nitroCameraPullBack` is true. */
-  nitroPullBackAdd: 2.5,
+  nitroPullBackAdd: 2.0,
 };
 
 /** Power-up palette (plan § Power-up color coding) */
