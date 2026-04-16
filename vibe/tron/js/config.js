@@ -101,7 +101,7 @@ export const DEFAULT_DEV_HUD = {
   fogDensity: 0.01,
   trailOpacity: 0.8,
   trailFadeSpeed: 1.0,
-  defaultTrailLength: 40,
+  defaultTrailLength: 100,
   trailExtendAmount: 10,
   nitroCapacityPlusAmount: 1,
   nitroBurstDuration: 0.5,
@@ -353,7 +353,7 @@ export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
   const nitroBarCount = nitroBarsFromAttributeLevel(
     typeof a.nitroBars === "number" ? a.nitroBars : 1,
   );
-  const baseTrailLen = typeof devHud.defaultTrailLength === "number" ? devHud.defaultTrailLength : 40;
+  const baseTrailLen = typeof devHud.defaultTrailLength === "number" ? devHud.defaultTrailLength : 100;
   /** Trail Length attribute 1–10 → max segment count scales from baseTrailLen to 2.5x baseTrailLen. */
   const trailMaxSegments = Math.round(
     attrScalar(typeof a.trailLength === "number" ? a.trailLength : 1, baseTrailLen, baseTrailLen * 2.5),
