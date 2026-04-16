@@ -75,14 +75,14 @@ export function withLobbyRuntimeGateOverrides(level, nextArenaLevelIndex) {
     if (!wo || typeof wo !== "object" || wo.type !== "gate") return wo;
     const g = /** @type {Record<string, unknown>} */ (wo);
     if (g.role !== "arena") return wo;
-    return { ...g, signText: `ENTER ARENA ${n}` };
+    return { ...g, signText: `ARENA ${n}` };
   });
   return { ...level, wallObjects };
 }
 
 /**
  * Lobby START gate: lock + sign when no arenas, all levels cleared, or missing level JSON (plan § Lobby / P7.2).
- * Run after {@link withLobbyRuntimeGateOverrides} so `ENTER ARENA N` remains when unlocked.
+ * Run after {@link withLobbyRuntimeGateOverrides} so `ARENA N` remains when unlocked.
  *
  * @param {Record<string, unknown> | null | undefined} level
  * @param {Record<string, unknown>[]} validLevels
