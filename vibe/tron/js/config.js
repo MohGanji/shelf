@@ -52,7 +52,7 @@ export const WORLD = {
    * Optional visual mesh URL — `.glb` / `.gltf` (recommended) or `.svg` (extruded side profile).
    * Empty string uses procedural geometry. Scale your model to roughly match {@link CYCLE_BOUNDS}; Y-up, +Z forward.
    */
-  lightCycleModelUrl: "",
+  lightCycleModelUrl: "./assets/models/light-cycle-asset-gemini-3.1.gltf",
   trailWallHeight: 0.6,
   trailWallThickness: 0.1,
   gateWidth: 5,
@@ -97,6 +97,7 @@ export const DEFAULT_DEV_HUD = {
   /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
   tunnelGridLineStep: 4,
   neonIntensity: 1.0,
+  cycleNeonIntensity: 1.0,
   fogDensity: 0.01,
   trailOpacity: 0.8,
   trailFadeSpeed: 1.0,

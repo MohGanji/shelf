@@ -134,7 +134,7 @@ export function createProceduralLightCycle(options = {}) {
   };
 
   function neonScale() {
-    const n = devHud.neonIntensity;
+    const n = devHud.cycleNeonIntensity ?? devHud.neonIntensity;
     return typeof n === "number" && Number.isFinite(n) ? Math.max(0.2, Math.min(2.5, n)) : 1;
   }
   let ns = neonScale();
@@ -778,13 +778,32 @@ function createAssetBasedLightCycle(options = {}) {
   const wheelMeshes = [];
   /** @type {THREE.MeshStandardMaterial[]} */
   const tintMaterials = [];
+  /** @type {THREE.MeshStandardMaterial[]} */
+  const darkMaterials = [];
 
   model.traverse((o) => {
     if (!o.isMesh) return;
     if (o.name && /wheel/i.test(o.name)) wheelMeshes.push(o);
+    
+    if (o.material) {
+      if (Array.isArray(o.material)) {
+        o.material = o.material.map(m => m.clone());
+      } else {
+        o.material = o.material.clone();
+      }
+    }
+
     const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const isNeon = o.name && /neon/i.test(o.name);
+
     for (const m of mats) {
-      if (m && m.isMeshStandardMaterial && !tintMaterials.includes(m)) tintMaterials.push(m);
+      if (m && m.isMeshStandardMaterial) {
+        if (isNeon) {
+          if (!tintMaterials.includes(m)) tintMaterials.push(m);
+        } else {
+          if (!darkMaterials.includes(m)) darkMaterials.push(m);
+        }
+      }
     }
   });
 
@@ -844,10 +863,21 @@ function createAssetBasedLightCycle(options = {}) {
   function applyPrimaryColor(hex) {
     primaryHex = hex;
     primary.set(hex);
+    const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
     for (const m of tintMaterials) {
+      if (m._baseEmissiveIntensity === undefined) {
+        m._baseEmissiveIntensity = Math.max(1.1, m.emissiveIntensity ?? 0.8);
+      }
       m.emissive.copy(primary);
-      m.emissiveIntensity = Math.max(1.1, m.emissiveIntensity ?? 0.8);
+      m.emissiveIntensity = m._baseEmissiveIntensity * nScale;
       m.color.copy(primary).multiplyScalar(0.18);
+    }
+    for (const m of darkMaterials) {
+      m.emissive.setHex(0x000000);
+      m.emissiveIntensity = 0;
+      m.color.setHex(0x1a1f28); // Dark grey/blue body
+      m.metalness = 0.8;
+      m.roughness = 0.3;
     }
   }
 
@@ -855,6 +885,13 @@ function createAssetBasedLightCycle(options = {}) {
 
   function update(dt, input) {
     if (dt <= 0) return;
+
+    const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
+    for (const m of tintMaterials) {
+      if (m._baseEmissiveIntensity !== undefined) {
+        m.emissiveIntensity = m._baseEmissiveIntensity * nScale;
+      }
+    }
 
     const speed = input.speed ?? 0;
     const steer = THREE.MathUtils.clamp(input.steer ?? 0, -1, 1);
@@ -913,9 +950,12 @@ function createAssetBasedLightCycle(options = {}) {
     animationRoot.rotation.x += dt * (2 + clamped * 8) * Math.sin(clamped * 20);
     animationRoot.rotation.z = Math.sin(clamped * 18) * 0.45 * (1 - clamped);
 
+    const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
     const emissivePulse = clamped < 0.22 ? 1 + (1 - clamped / 0.22) * 2.2 : (1 - clamped) * 0.9;
     for (const m of tintMaterials) {
-      m.emissiveIntensity = (m.emissiveIntensity ?? 1) * emissivePulse * 1.2;
+      if (m._baseEmissiveIntensity !== undefined) {
+        m.emissiveIntensity = m._baseEmissiveIntensity * nScale * emissivePulse * 1.2;
+      }
     }
   }
 
