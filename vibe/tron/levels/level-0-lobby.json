@@ -17,17 +17,17 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 80,
+      "position": 200,
       "width": 5,
       "role": "arena",
-      "signText": "ENTER ARENA 1",
+      "signText": "ARENA 1",
       "locked": false,
       "destination": "level"
     },
     {
       "type": "gate",
       "edge": "north",
-      "position": 200,
+      "position": 80,
       "width": 5,
       "role": "garage",
       "signText": "GARAGE",

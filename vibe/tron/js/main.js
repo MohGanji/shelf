@@ -1686,7 +1686,7 @@ async function main() {
     const stage = Math.max(1, Math.floor(save.progress.currentLevel));
     if (isLobby) {
       p.textContent = [
-        "Welcome to the hub. Ride north toward the wall — gates lead to the campaign arena, garage, and level editor.",
+        "Welcome to the lobby. Ride north toward the wall — gates lead to the campaign arena and garage.",
         `Your next numbered arena stage is ${stage}; earlier stages must be cleared before later gates unlock.`,
       ].join(" ");
     } else {
