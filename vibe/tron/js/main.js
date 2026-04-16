@@ -1685,10 +1685,7 @@ async function main() {
         : "";
     const stage = Math.max(1, Math.floor(save.progress.currentLevel));
     if (isLobby) {
-      p.textContent = [
-        "Welcome to the lobby. Ride north toward the wall — gates lead to the campaign arena and garage.",
-        `Your next numbered arena stage is ${stage}; earlier stages must be cleared before later gates unlock.`,
-      ].join(" ");
+      p.textContent = "Welcome to the lobby. Ride north toward the gates. Clear the arenas to win the game. You can upgrade your motorcycle in the garage.";
     } else {
       const title = lname || "Arena";
       const enemyN = enemyRoster.list.length;
