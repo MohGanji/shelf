@@ -33,12 +33,26 @@ export function integratePlayerCycleMovement(
     typeof body.userData.heading === "number" ? body.userData.heading : 0;
   let speed = typeof body.userData.speed === "number" ? body.userData.speed : 0;
 
+  const braking = keys.s && !nitroBurstActive;
+  const accelerating = keys.w && !braking;
+
   const steer = (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
   const baseTurn = playCfg.baseTurnRate;
   const handleMul =
     typeof options.nitroHandlingFactor === "number" ? options.nitroHandlingFactor : 1;
+  
+  // Add drift/drag feel when braking vs speeding
+  let speedFalloff = devHud.steeringSpeedFalloff;
+  if (braking) {
+    // When braking, turning is much easier (less speed falloff, or even a boost)
+    speedFalloff *= 0.2; 
+  } else if (accelerating) {
+    // When accelerating, turning is harder (more speed falloff)
+    speedFalloff *= 1.5;
+  }
+
   const effTurn =
-    (baseTurn / (1 + Math.abs(speed) * devHud.steeringSpeedFalloff)) * handleMul;
+    (baseTurn / (1 + Math.abs(speed) * speedFalloff)) * handleMul * (braking ? 1.3 : 1.0);
   heading += steer * effTurn * dt;
 
   const friction = devHud.cycleFriction;
@@ -46,9 +60,6 @@ export function integratePlayerCycleMovement(
   const accel = playCfg.acceleration;
   const top = playCfg.maxMoveSpeed;
   const nitroCap = top * devHud.nitroMaxSpeedMultiplier;
-
-  const braking = keys.s && !nitroBurstActive;
-  const accelerating = keys.w && !braking;
 
   if (nitroBurstActive) {
     /** Stronger than normal accel while burst is active (full nitro system in P1.6). */
