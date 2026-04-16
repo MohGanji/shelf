@@ -108,6 +108,38 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
     cells.clear();
   }
 
+  function evaluateCollisionLine(x0, z0, x1, z1, selfId, numEdges, immunitySegments) {
+    const t0 = worldToTile(x0, z0);
+    const t1 = worldToTile(x1, z1);
+    let hitKind = "clear";
+    bresenham(t0.ix, t0.iz, t1.ix, t1.iz, (ix, iz) => {
+      if (hitKind !== "clear") return;
+      const k = key(ix, iz);
+      const cell = cells.get(k);
+      if (!cell || cell.size === 0) return;
+
+      for (const [oid] of cell) {
+        if (oid !== selfId) {
+          hitKind = "other-trail";
+          return;
+        }
+      }
+
+      const minSeg = cell.get(selfId);
+      if (minSeg === undefined) return;
+
+      const n = Math.max(0, Math.floor(numEdges));
+      const imm = Math.max(0, Math.floor(immunitySegments));
+      if (n === 0) return;
+
+      const cutoff = n - imm;
+      if (minSeg < cutoff) {
+        hitKind = "own-lethal";
+      }
+    });
+    return hitKind;
+  }
+
   /**
    * @param {number} x
    * @param {number} z
@@ -241,6 +273,7 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
     stampEdge,
     clear,
     evaluateCollision,
+    evaluateCollisionLine,
     hasTrailAhead,
     nearestHazardDistance,
     /** Read-only stats for debugging */

@@ -1386,7 +1386,17 @@ async function main() {
     const px = playerBody.position.x;
     const pz = playerBody.position.z;
 
-    const playerTrailHit = tryTrailHitOnBody(playerBody, px, pz, "player", trailSources, devHud, playCfg.world);
+    const playerTrailHit = tryTrailHitOnBody(
+      playerBody,
+      playerBody.previousPosition.x,
+      playerBody.previousPosition.z,
+      px,
+      pz,
+      "player",
+      trailSources,
+      devHud,
+      playCfg.world
+    );
     if (playerTrailHit === "lethal") {
       beginPlayerDerezSequence();
     } else if (playerTrailHit === "absorbed") {
@@ -1404,7 +1414,17 @@ async function main() {
     } else {
       for (const e of enemyRoster.list) {
         if (e.eliminated) continue;
-        const ht = tryTrailHitOnBody(e.body, e.body.position.x, e.body.position.z, e.id, trailSources, devHud, playCfg.world);
+        const ht = tryTrailHitOnBody(
+          e.body,
+          e.body.previousPosition.x,
+          e.body.previousPosition.z,
+          e.body.position.x,
+          e.body.position.z,
+          e.id,
+          trailSources,
+          devHud,
+          playCfg.world
+        );
         if (ht === "lethal") eliminateEnemyWithParticles(world, e);
       }
 
@@ -1513,10 +1533,12 @@ async function main() {
         { userData: {} },
         playerBody.position.x,
         playerBody.position.z,
+        playerBody.position.x,
+        playerBody.position.z,
         "player",
         trailSources,
         devHud,
-        playCfg.world,
+        playCfg.world
       );
       hudTrailEl.classList.toggle(
         "cycle-hud__trail--tile-hit",

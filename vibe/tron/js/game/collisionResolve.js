@@ -39,7 +39,7 @@ export function buildTrailSources(playerTrail, enemies) {
  * @param {import('../config.js').WORLD} [world] — defaults to base `WORLD`; use `playCfg.world` in arena
  * @returns {'clear' | 'lethal' | 'absorbed'}
  */
-export function tryTrailHitOnBody(body, x, z, selfId, sources, devHud, world = WORLD) {
+export function tryTrailHitOnBody(body, x0, z0, x1, z1, selfId, sources, devHud, world = WORLD) {
   const immuneUntil = body.userData?.portalTrailImmuneUntilMs;
   if (typeof immuneUntil === "number" && performance.now() < immuneUntil) {
     return "clear";
@@ -49,7 +49,7 @@ export function tryTrailHitOnBody(body, x, z, selfId, sources, devHud, world = W
   for (const s of sources) {
     const n = selfId === s.ownerId ? s.getEdgeCount() : 0;
     const imm = selfId === s.ownerId ? immSelf : 0;
-    const kind = s.map.evaluateCollision(x, z, selfId, n, imm);
+    const kind = s.map.evaluateCollisionLine(x0, z0, x1, z1, selfId, n, imm);
     if (kind === "clear") continue;
     hitKind = kind === "own-lethal" || kind === "other-trail" ? "lethal" : "clear";
     break;
