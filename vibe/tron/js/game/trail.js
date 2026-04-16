@@ -265,6 +265,13 @@ export function createTrailWallSystem(options) {
 
     const fadeSpeed = Math.max(0.001, devHud.trailFadeSpeed);
 
+    if (anchors.length === 0) {
+      anchors.push(tmpRear.clone());
+      anchors.push(tmpRear.clone());
+      segmentOpacities.push(1);
+      anchorsDirty = true;
+    }
+
     if (spd > 0.12) {
       distSinceAnchor += spd * dt;
     }
@@ -273,10 +280,8 @@ export function createTrailWallSystem(options) {
       if (spd <= 0.12) break;
       if (totalEdgeCount() < maxSeg) {
         anchors.push(tmpRear.clone());
-        if (anchors.length >= 2) {
-          segmentOpacities.push(1);
-          maybeNotifyNewSegment();
-        }
+        segmentOpacities.push(1);
+        maybeNotifyNewSegment();
         distSinceAnchor -= segDist;
         anchorsDirty = true;
         continue;
@@ -301,12 +306,9 @@ export function createTrailWallSystem(options) {
       break;
     }
 
-    /**
-     * Keep the newest anchor on the rear axle every frame while the chain is at the FIFO cap.
-     * Otherwise the last point stays fixed until the tail opacity hits zero — the gap to the bike
-     * grows and the wall appears to jump on each recycle instead of sliding smoothly.
-     */
-    if (anchors.length >= 1 && totalEdgeCount() >= maxSeg) {
+    // Always keep the newest anchor on the rear axle every frame.
+    // This ensures the trail is continuous and collision is accurate up to the cycle.
+    if (anchors.length >= 1) {
       anchors[anchors.length - 1].copy(tmpRear);
       anchorsDirty = true;
     }
