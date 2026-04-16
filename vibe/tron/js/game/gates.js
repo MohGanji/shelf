@@ -487,7 +487,7 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
 function buildSingleGateGroup(g, playCfg) {
   const group = new THREE.Group();
   const w = g.width;
-  const h = playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight || 3.0;
+  const h = (playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight) || 3.0;
   const wallT = 1.0;
   const open = !g.locked || g.role === "entrance";
 
