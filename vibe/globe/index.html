@@ -207,10 +207,212 @@
             cursor: pointer; border: none;
         }
 
+        /* Parallels mode: rail above minimap, fixed size (bottom-left) */
+        .parallel-panel {
+            position: fixed; bottom: 24px; left: 16px; z-index: 250;
+            font-family: 'Inter', sans-serif;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .parallel-panel.visible { opacity: 1; pointer-events: auto; }
+        .parallel-stack {
+            width: 96px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            border-radius: 12px;
+            padding: 6px;
+            border: 1px solid transparent;
+            background: transparent;
+            box-sizing: content-box;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+        .parallel-stack.has-active-filter {
+            border-color: rgba(75, 174, 164, 0.5);
+            background: rgba(18, 28, 26, 0.88);
+            box-shadow:
+                0 0 0 1px rgba(75, 174, 164, 0.12),
+                0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .parallel-minimap-wrap {
+            position: relative;
+            width: 96px;
+            height: 96px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background: rgba(12,12,14,0.92);
+            border: 1px solid #2a2a2a;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+            cursor: crosshair;
+            box-sizing: border-box;
+        }
+        .parallel-stack.has-active-filter .parallel-minimap-wrap {
+            border-color: rgba(75, 174, 164, 0.35);
+        }
+        #parallel-minimap {
+            display: block;
+            width: 96px; height: 96px;
+            border-radius: 50%;
+            vertical-align: top;
+        }
+        .parallel-rail {
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            background: rgba(18,18,20,0.95);
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 4px 5px;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        }
+        .parallel-stack.has-active-filter .parallel-rail {
+            border-color: rgba(75, 174, 164, 0.25);
+        }
+        .parallel-rail label {
+            color: #666; font-size: 0.52rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            line-height: 1.2;
+        }
+        .parallel-rail-row {
+            display: flex; align-items: stretch;
+            gap: 3px;
+        }
+        /* Slot-machine style value (reel window + inset + side nudge buttons) */
+        .parallel-slot-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+            border-radius: 5px;
+            background: linear-gradient(180deg, #060608 0%, #12141a 42%, #12141a 58%, #060608 100%);
+            box-shadow:
+                inset 0 4px 8px rgba(0, 0, 0, 0.92),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.92),
+                inset 0 0 0 1px rgba(55, 62, 58, 0.65);
+        }
+        .parallel-slot-wrap::before,
+        .parallel-slot-wrap::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            right: 14px;
+            height: 5px;
+            pointer-events: none;
+            z-index: 2;
+            border-radius: 2px;
+        }
+        .parallel-slot-wrap::before {
+            top: 2px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent);
+        }
+        .parallel-slot-wrap::after {
+            bottom: 2px;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0.75), transparent);
+        }
+        .parallel-slot-input {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 6px 15px 6px 5px;
+            border: none;
+            border-radius: 5px;
+            background: transparent;
+            color: #5ee6d4;
+            font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            outline: none;
+            caret-color: #7ff5e8;
+            user-select: text;
+            -webkit-user-select: text;
+            min-height: 28px;
+        }
+        .parallel-slot-input::placeholder {
+            color: #3d5a52;
+            font-weight: 600;
+        }
+        .parallel-slot-wrap:focus-within {
+            box-shadow:
+                inset 0 4px 8px rgba(0, 0, 0, 0.92),
+                inset 0 -4px 8px rgba(0, 0, 0, 0.92),
+                inset 0 0 0 1px rgba(75, 174, 164, 0.55),
+                0 0 0 1px rgba(75, 174, 164, 0.2);
+        }
+        .parallel-slot-spinners {
+            position: absolute;
+            right: 1px;
+            top: 1px;
+            bottom: 1px;
+            width: 12px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            border-radius: 0 4px 4px 0;
+            overflow: hidden;
+            border-left: 1px solid rgba(0, 0, 0, 0.55);
+            box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.04);
+        }
+        .parallel-spin-btn {
+            flex: 1;
+            min-height: 0;
+            padding: 0;
+            margin: 0;
+            border: none;
+            cursor: pointer;
+            font-size: 9px;
+            line-height: 1;
+            color: #5a7a72;
+            background: linear-gradient(180deg, #22262c 0%, #1a1d22 100%);
+            transition: background 0.12s, color 0.12s;
+        }
+        .parallel-spin-btn:hover {
+            background: #2a3230;
+            color: #4baea4;
+        }
+        .parallel-spin-btn:active {
+            background: #141816;
+        }
+        .parallel-spin-btn + .parallel-spin-btn {
+            border-top: 1px solid rgba(0, 0, 0, 0.5);
+        }
+        .parallel-rail .parallel-unit {
+            color: #777; font-size: 0.62rem; font-weight: 600;
+            flex-shrink: 0;
+        }
+        .parallel-clear-btn {
+            background: #2a2a2a; border: 1px solid #3a3a3a;
+            color: #aaa; width: 22px; height: 22px;
+            border-radius: 4px; cursor: pointer;
+            font-size: 0.85rem; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .parallel-clear-btn:hover {
+            background: #3a3a3a; color: #fff;
+        }
+        .parallel-rail-sr {
+            position: absolute;
+            width: 1px; height: 1px;
+            padding: 0; margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         @media (max-width: 768px) {
             .timeline-slider { width: 100px; }
             .timeline-panel { right: 8px; bottom: 16px; padding: 8px 12px; gap: 8px; }
             .legend-panel { left: 8px; bottom: 16px; }
+            .parallel-panel { left: 8px; bottom: 16px; flex-wrap: wrap; max-width: calc(100vw - 24px); z-index: 250; }
         }
     </style>
 </head>
@@ -227,6 +429,7 @@
         <option value="countries">Countries</option>
         <option value="density">Population Density</option>
         <option value="income">Per Capita Income</option>
+        <option value="parallel">Parallels</option>
     </select>
 
     <!-- Legend (density mode) -->
@@ -252,6 +455,36 @@
         <div class="legend-nodata">
             <div class="legend-nodata-swatch"></div>
             <span>No data</span>
+        </div>
+    </div>
+
+    <!-- Parallels mode: rail above minimap (fixed layout, no resize on filter) -->
+    <div class="parallel-panel" id="parallel-panel">
+        <div class="parallel-stack" id="parallel-stack" title="Filter active: stack is highlighted. Click minimap again to clear.">
+            <div class="parallel-rail" id="parallel-rail">
+                <label for="parallel-input">Parallel °</label>
+                <span class="parallel-rail-sr" id="parallel-input-desc">
+                    Integer latitude from negative 90 to 90. Scroll, arrow keys, or side buttons change by one degree. Escape clears.
+                </span>
+                <div class="parallel-rail-row">
+                    <div class="parallel-slot-wrap">
+                        <input type="text" id="parallel-input" class="parallel-slot-input"
+                               autocomplete="off" spellcheck="false"
+                               placeholder="—" inputmode="numeric"
+                               aria-describedby="parallel-input-desc"
+                               aria-label="Latitude in degrees" />
+                        <div class="parallel-slot-spinners" role="group" aria-label="Adjust one degree">
+                            <button type="button" class="parallel-spin-btn" id="parallel-spin-up" title="Add 1°">▲</button>
+                            <button type="button" class="parallel-spin-btn" id="parallel-spin-down" title="Subtract 1°">▼</button>
+                        </div>
+                    </div>
+                    <span class="parallel-unit">°</span>
+                    <button type="button" class="parallel-clear-btn" id="parallel-clear" title="Clear filter (Esc)">×</button>
+                </div>
+            </div>
+            <div class="parallel-minimap-wrap" id="parallel-minimap-wrap" title="Click to set latitude; same click again clears.">
+                <canvas id="parallel-minimap" width="192" height="192"></canvas>
+            </div>
         </div>
     </div>
 
@@ -337,9 +570,11 @@
 
         // App state
         // legendFilter: null (show all) or { min, max } or 'nodata'
-        const state = { mode: 'countries', year: 2023, incomeSub: 'nominal', legendFilter: null };
+        const state = { mode: 'countries', year: 2023, incomeSub: 'nominal', legendFilter: null, parallelLat: null };
         const DENSITY_START_YEAR = 1960;
         const FILTER_GRAY = '#222';
+        const PARALLEL_DIM = '#1a2822';
+        const ANTARCTICA_ISO = '010';
 
         // Density color ramp (log scale, 5 stops)
         // 1/km² → 10 → 100 → 1000 → 10000
@@ -460,7 +695,9 @@
         labelRenderer.setSize(window.innerWidth, window.innerHeight);
         labelRenderer.domElement.style.position = 'absolute';
         labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
         labelRenderer.domElement.style.pointerEvents = 'none';
+        labelRenderer.domElement.style.zIndex = '20';
         document.body.appendChild(labelRenderer.domElement);
 
         // Controls
@@ -581,8 +818,11 @@
         landTexture.minFilter = THREE.LinearFilter;
         landTexture.magFilter = THREE.LinearFilter;
 
+        /** Land mesh radius — parallel belts render above this so they stay visible */
+        const LAND_MESH_RADIUS = RADIUS + 0.3;
+
         const landSphere = new THREE.Mesh(
-            new THREE.SphereGeometry(RADIUS + 0.3, 256, 128),
+            new THREE.SphereGeometry(LAND_MESH_RADIUS, 256, 128),
             new THREE.MeshStandardMaterial({
                 map: landTexture,
                 transparent: true,
@@ -594,9 +834,16 @@
         );
         scene.add(landSphere);
 
+        const parallelBeltGroup = new THREE.Group();
+        parallelBeltGroup.name = 'parallelBelts';
+        scene.add(parallelBeltGroup);
+
         let features = [];
         let hoveredIdx = -1;
         const labels = [];
+        let countryLatBounds = [];
+        /** @type {Uint8Array[]} one row per whole-degree latitude φ+90 */
+        let parallelRows = [];
 
         // === Canvas drawing helpers ===
 
@@ -670,6 +917,303 @@
             }
         }
 
+        function isoStr(featureOrId) {
+            const id = featureOrId && featureOrId.id !== undefined ? featureOrId.id : featureOrId;
+            return String(id).padStart(3, '0');
+        }
+
+        function pointInRing(lon, lat, ring, crosses) {
+            let x = lon;
+            if (crosses && x < 0) x += 360;
+            let inside = false;
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                let xi = ring[i][0], yi = ring[i][1];
+                let xj = ring[j][0], yj = ring[j][1];
+                if (crosses) { if (xi < 0) xi += 360; if (xj < 0) xj += 360; }
+                const denom = (yj - yi) || 1e-12;
+                const intersect = ((yi > lat) !== (yj > lat)) &&
+                    (x < ((xj - xi) * (lat - yi)) / denom + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function pointInPolygonWithHoles(lon, lat, polygon, crosses) {
+            if (!pointInRing(lon, lat, polygon[0], crosses)) return false;
+            for (let h = 1; h < polygon.length; h++) {
+                if (pointInRing(lon, lat, polygon[h], crosses)) return false;
+            }
+            return true;
+        }
+
+        function pointInFeature(lon, lat, feature) {
+            const polys = getPolygons(feature);
+            for (const polygon of polys) {
+                const crosses = doesCross(polygon);
+                if (pointInPolygonWithHoles(lon, lat, polygon, crosses)) return true;
+            }
+            return false;
+        }
+
+        function computeCountryLatBounds(feature) {
+            let min = 90, max = -90;
+            const polys = getPolygons(feature);
+            for (const polygon of polys) {
+                for (const ring of polygon) {
+                    for (let k = 0; k < ring.length; k++) {
+                        const lat = ring[k][1];
+                        if (lat < min) min = lat;
+                        if (lat > max) max = lat;
+                    }
+                }
+            }
+            return { min, max };
+        }
+
+        function countryIntersectsParallel(phi, feature, b) {
+            if (phi < b.min || phi > b.max) return false;
+            for (let lon = -180; lon < 180; lon += 2) {
+                if (pointInFeature(lon, phi, feature)) return true;
+            }
+            return false;
+        }
+
+        function buildParallelIndex() {
+            const n = features.length;
+            countryLatBounds = new Array(n);
+            parallelRows = [];
+            for (let p = 0; p < 181; p++) parallelRows.push(new Uint8Array(n));
+
+            for (let i = 0; i < n; i++) {
+                const f = features[i];
+                const b = computeCountryLatBounds(f);
+                countryLatBounds[i] = b;
+                if (isoStr(f) === ANTARCTICA_ISO) continue;
+
+                const lo = Math.ceil(b.min);
+                const hi = Math.floor(b.max);
+                for (let phi = lo; phi <= hi; phi++) {
+                    if (countryIntersectsParallel(phi, f, b)) parallelRows[phi + 90][i] = 1;
+                }
+            }
+        }
+
+        function integerParallelRangeForIdx(idx) {
+            if (idx < 0 || idx >= features.length) return [];
+            if (isoStr(features[idx]) === ANTARCTICA_ISO) return [];
+            const b = countryLatBounds[idx];
+            if (!b) return [];
+            const lo = Math.ceil(b.min);
+            const hi = Math.floor(b.max);
+            const out = [];
+            for (let d = lo; d <= hi; d++) out.push(d);
+            return out;
+        }
+
+        /**
+         * Ribbon on the sphere between two geographic latitudes (full 360°).
+         * Integer parallel n is drawn as the one-degree cell [n - 0.5°, n + 0.5°].
+         */
+        function createLatitudeBandGeometry(latMinDeg, latMaxDeg, radius, lonSegs) {
+            let lo = Math.max(-89.995, Math.min(89.995, latMinDeg));
+            let hi = Math.max(-89.995, Math.min(89.995, latMaxDeg));
+            if (hi <= lo) return null;
+
+            const vertices = [];
+            const normals = [];
+            const indices = [];
+
+            function pt(latDeg, lonFrac) {
+                const lonRad = lonFrac * Math.PI * 2;
+                const colat = (90 - latDeg) * Math.PI / 180;
+                const y = radius * Math.cos(colat);
+                const ringR = radius * Math.sin(colat);
+                const x = ringR * Math.cos(lonRad);
+                const z = ringR * Math.sin(lonRad);
+                return new THREE.Vector3(x, y, z);
+            }
+
+            for (let i = 0; i <= lonSegs; i++) {
+                const f = i / lonSegs;
+                const v0 = pt(lo, f);
+                const v1 = pt(hi, f);
+                vertices.push(v0.x, v0.y, v0.z, v1.x, v1.y, v1.z);
+                const n0 = v0.clone().normalize();
+                const n1 = v1.clone().normalize();
+                normals.push(n0.x, n0.y, n0.z, n1.x, n1.y, n1.z);
+            }
+            for (let i = 0; i < lonSegs; i++) {
+                const base = 2 * i;
+                indices.push(base, base + 1, base + 2);
+                indices.push(base + 1, base + 3, base + 2);
+            }
+
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geom.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+            geom.setIndex(indices);
+            return geom;
+        }
+
+        function addLatitudeBandMesh(latMinDeg, latMaxDeg, radius, materialOpts) {
+            const geom = createLatitudeBandGeometry(latMinDeg, latMaxDeg, radius, 160);
+            if (!geom) return;
+            const mat = new THREE.MeshBasicMaterial({
+                color: materialOpts.color,
+                transparent: true,
+                opacity: materialOpts.opacity,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                depthTest: true,
+                blending: materialOpts.additive ? THREE.AdditiveBlending : THREE.NormalBlending
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.renderOrder = 15;
+            parallelBeltGroup.add(mesh);
+        }
+
+        /**
+         * One integer degree of latitude = band from (n - ½)° to (n + ½)°, hovering above land.
+         */
+        function addParallelBeltVisual(centerDeg, style) {
+            const isFilter = style === 'filter';
+            const half = 0.5;
+            let latMin = centerDeg - half;
+            let latMax = centerDeg + half;
+            latMin = Math.max(-90, latMin);
+            latMax = Math.min(90, latMax);
+
+            const lift = isFilter ? 2.0 : 1.35;
+            const R = LAND_MESH_RADIUS + lift;
+
+            const mainColor = isFilter ? 0x5effe4 : 0x3d9e8a;
+            const mainOp = isFilter ? 0.38 : 0.18;
+            addLatitudeBandMesh(latMin, latMax, R, { color: mainColor, opacity: mainOp, additive: false });
+
+            const glowR = R + 0.9;
+            const glowOp = isFilter ? 0.14 : 0.07;
+            addLatitudeBandMesh(latMin, latMax, glowR, {
+                color: isFilter ? 0x66ffd8 : 0x2a8068,
+                opacity: glowOp,
+                additive: true
+            });
+
+            if (isFilter) {
+                addLatitudeBandMesh(latMin, latMax, R + 0.25, {
+                    color: 0xa8fff4,
+                    opacity: 0.12,
+                    additive: true
+                });
+            }
+        }
+
+        function clearParallelBelts() {
+            while (parallelBeltGroup.children.length) {
+                const o = parallelBeltGroup.children[0];
+                parallelBeltGroup.remove(o);
+                if (o.geometry) o.geometry.dispose();
+                if (o.material) o.material.dispose();
+            }
+        }
+
+        function updateParallelBelts() {
+            clearParallelBelts();
+            if (state.mode !== 'parallel') return;
+
+            const pl = state.parallelLat;
+            const spanSet = new Set();
+            if (hoveredIdx >= 0 && hoveredIdx < features.length) {
+                for (const d of integerParallelRangeForIdx(hoveredIdx)) spanSet.add(d);
+            }
+            if (pl !== null) spanSet.delete(pl);
+
+            for (const d of spanSet) {
+                if (d > -90 && d < 90) addParallelBeltVisual(d, 'span');
+            }
+            if (pl !== null && pl > -90 && pl < 90) {
+                addParallelBeltVisual(pl, 'filter');
+            }
+        }
+
+        function clampIntLat(v) {
+            const n = Math.round(typeof v === 'string' ? parseFloat(v) : Number(v));
+            if (!Number.isFinite(n)) return null;
+            return Math.max(-90, Math.min(90, n));
+        }
+
+        function setParallelLat(next) {
+            state.parallelLat = next;
+            const inp = document.getElementById('parallel-input');
+            const stack = document.getElementById('parallel-stack');
+            if (inp) inp.value = next === null ? '' : String(next);
+            if (stack) stack.classList.toggle('has-active-filter', next !== null);
+            redrawColorCanvas(hoveredIdx);
+        }
+
+        function drawParallelMinimap() {
+            const canvas = document.getElementById('parallel-minimap');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const cx = w / 2, cy = h / 2, rad = Math.min(w, h) / 2 - 3;
+            ctx.clearRect(0, 0, w, h);
+            ctx.beginPath();
+            ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+            ctx.fillStyle = '#0c0c10';
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            const yForLat = (lat) => cy - (lat / 90) * rad * 0.92;
+
+            ctx.strokeStyle = 'rgba(80,90,85,0.35)';
+            ctx.lineWidth = 1;
+            for (let lat = -60; lat <= 60; lat += 30) {
+                if (lat === 0) continue;
+                const yy = yForLat(lat);
+                ctx.beginPath();
+                ctx.moveTo(cx - rad * 0.92, yy);
+                ctx.lineTo(cx + rad * 0.92, yy);
+                ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(120,140,130,0.5)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(cx - rad * 0.92, yForLat(0));
+            ctx.lineTo(cx + rad * 0.92, yForLat(0));
+            ctx.stroke();
+
+            const drawChordLat = (lat, bold) => {
+                if (lat <= -90 || lat >= 90) return;
+                const yy = yForLat(lat);
+                const dy = yy - cy;
+                if (Math.abs(dy) > rad * 1.02) return;
+                const dx = Math.sqrt(Math.max(0, rad * rad - dy * dy));
+                ctx.strokeStyle = bold ? 'rgba(94,230,212,0.95)' : 'rgba(75,174,164,0.55)';
+                ctx.lineWidth = bold ? 3.2 : 1.4;
+                ctx.beginPath();
+                ctx.moveTo(cx - dx * 0.97, yy);
+                ctx.lineTo(cx + dx * 0.97, yy);
+                ctx.stroke();
+            };
+
+            const pl = state.parallelLat;
+            const span = hoveredIdx >= 0 ? integerParallelRangeForIdx(hoveredIdx) : [];
+
+            for (const d of span) {
+                if (pl !== null && d === pl) continue;
+                drawChordLat(d, false);
+            }
+            if (pl !== null) drawChordLat(pl, true);
+
+            ctx.fillStyle = '#555';
+            ctx.font = '600 11px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', cx, cy - rad + 12);
+            ctx.fillText('S', cx, cy + rad - 4);
+        }
+
         function redrawColorCanvas(hoverIdx) {
             colorCtx.clearRect(0, 0, TEX_W, TEX_H);
             const yearIdx = state.year - DENSITY_START_YEAR;
@@ -706,6 +1250,26 @@
                 for (let i = 0; i < features.length; i++) {
                     drawFeature(colorCtx, features[i], null, 'rgba(0,0,0,0.3)', 0.8);
                 }
+            } else if (state.mode === 'parallel') {
+                const pl = state.parallelLat;
+                for (let i = 0; i < features.length; i++) {
+                    const iso = isoStr(features[i]);
+                    let fill;
+                    if (iso === ANTARCTICA_ISO) {
+                        fill = PARALLEL_DIM;
+                    } else if (i === hoverIdx) {
+                        fill = LAND_HOVER;
+                    } else if (pl !== null) {
+                        const row = parallelRows[pl + 90];
+                        fill = row && row[i] ? LAND_FILL : FILTER_GRAY;
+                    } else {
+                        fill = LAND_FILL;
+                    }
+                    drawFeature(colorCtx, features[i], fill, null);
+                }
+                for (let i = 0; i < features.length; i++) {
+                    drawFeature(colorCtx, features[i], null, BORDER_STROKE, BORDER_WIDTH);
+                }
             } else {
                 // Countries mode: original green
                 for (let i = 0; i < features.length; i++) {
@@ -733,6 +1297,11 @@
             colorCtx.restore();
 
             landTexture.needsUpdate = true;
+
+            if (state.mode === 'parallel') {
+                drawParallelMinimap();
+                updateParallelBelts();
+            }
         }
 
         function drawIdCanvas() {
@@ -771,6 +1340,7 @@
             .then(topo => {
                 const geo = topoFn.feature(topo, topo.objects.countries);
                 features = geo.features;
+                buildParallelIndex();
 
                 for (const feature of features) {
                     const name = NAMES[feature.id] || '';
@@ -823,7 +1393,7 @@
 
             if (idx >= 0 && idx < features.length) {
                 const isoNum = features[idx].id;
-                const name = NAMES[isoNum] || '';
+                const name = NAMES[isoStr({ id: isoNum })] || NAMES[isoNum] || '';
 
                 if (state.mode === 'density') {
                     const yearIdx = state.year - DENSITY_START_YEAR;
@@ -852,6 +1422,16 @@
                             `<span style="color:#4baea4;font-weight:600">${name}</span><br>` +
                             `<span class="no-data">No data</span>`;
                     }
+                } else if (state.mode === 'parallel') {
+                    const span = integerParallelRangeForIdx(idx);
+                    let spanStr = '';
+                    if (span.length === 1) spanStr = `${span[0]}° (1 parallel)`;
+                    else if (span.length > 1) {
+                        spanStr = `${span[0]}° – ${span[span.length - 1]}° (${span.length} parallels)`;
+                    }
+                    nameTag.innerHTML = spanStr
+                        ? `<span style="color:#4baea4;font-weight:600">${name}</span><br><span class="density-info">Spans ${spanStr}</span>`
+                        : `<span style="color:#4baea4;font-weight:600">${name}</span>`;
                 } else {
                     nameTag.innerHTML = `<span style="color:#4baea4;font-weight:600">${name}</span>`;
                 }
@@ -934,26 +1514,36 @@
         // === Mode switching ===
         const legendPanel = document.getElementById('legend-panel');
         const incomeLegendPanel = document.getElementById('income-legend-panel');
+        const parallelPanel = document.getElementById('parallel-panel');
         const timelinePanel = document.getElementById('timeline-panel');
         const viewSelect = document.getElementById('view-select');
         const timelineSlider = document.getElementById('timeline-slider');
         const timelineYear = document.getElementById('timeline-year');
         const hasTimeline = mode => mode === 'density' || mode === 'income';
+        const pppToggle = document.getElementById('ppp-toggle');
 
         function setMode(mode) {
+            if (mode !== 'parallel') state.parallelLat = null;
             state.mode = mode;
             state.legendFilter = null;
             clearFilterUI();
             viewSelect.value = mode;
             legendPanel.classList.toggle('visible', mode === 'density');
             incomeLegendPanel.classList.toggle('visible', mode === 'income');
+            parallelPanel.classList.toggle('visible', mode === 'parallel');
             pppToggle.classList.toggle('visible', mode === 'income');
             timelinePanel.classList.toggle('visible', hasTimeline(mode));
+
+            const pInp = document.getElementById('parallel-input');
+            const pStack = document.getElementById('parallel-stack');
+            if (pInp && mode !== 'parallel') pInp.value = '';
+            if (pStack && mode !== 'parallel') pStack.classList.remove('has-active-filter');
 
             // Clear hover on mode switch
             hoveredIdx = -1;
             nameTag.classList.remove('visible');
             document.body.style.cursor = 'default';
+            labelContentMode = '';
 
             redrawColorCanvas(-1);
         }
@@ -961,7 +1551,6 @@
         viewSelect.addEventListener('change', (e) => setMode(e.target.value));
 
         // === PPP toggle ===
-        const pppToggle = document.getElementById('ppp-toggle');
         const btnNominal = document.getElementById('btn-nominal');
         const btnPpp = document.getElementById('btn-ppp');
         const incomeLegendTitle = document.getElementById('income-legend-title');
@@ -998,6 +1587,123 @@
         timelinePanel.addEventListener('pointermove', (e) => e.stopPropagation());
         viewSelect.addEventListener('pointerdown', (e) => e.stopPropagation());
         pppToggle.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+        // === Parallels: minimap, rail, keyboard ===
+        const parallelCanvas = document.getElementById('parallel-minimap');
+        const parallelMinimapWrap = document.getElementById('parallel-minimap-wrap');
+        const parallelInput = document.getElementById('parallel-input');
+        const parallelClear = document.getElementById('parallel-clear');
+        const parallelRail = document.getElementById('parallel-rail');
+
+        function minimapEventToSnappedLat(clientX, clientY) {
+            const rect = parallelCanvas.getBoundingClientRect();
+            const mx = clientX - rect.left;
+            const my = clientY - rect.top;
+            const w = rect.width;
+            const h = rect.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const rad = Math.min(w, h) / 2 - 3;
+            const dx = mx - cx;
+            const dy = my - cy;
+            if (dx * dx + dy * dy > (rad + 12) * (rad + 12)) return null;
+            const lat = ((cy - my) / (rad * 0.92)) * 90;
+            return clampIntLat(lat);
+        }
+
+        let parallelMinimapDown = null;
+        parallelMinimapWrap.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            parallelMinimapDown = { x: e.clientX, y: e.clientY };
+        });
+        parallelMinimapWrap.addEventListener('pointerup', (e) => {
+            e.stopPropagation();
+            if (!parallelMinimapDown) return;
+            const dx = e.clientX - parallelMinimapDown.x;
+            const dy = e.clientY - parallelMinimapDown.y;
+            parallelMinimapDown = null;
+            if (dx * dx + dy * dy > 64) return;
+            if (state.mode !== 'parallel') return;
+            const snapped = minimapEventToSnappedLat(e.clientX, e.clientY);
+            if (snapped === null) return;
+            if (state.parallelLat === snapped) setParallelLat(null);
+            else setParallelLat(snapped);
+        });
+
+        parallelPanel.addEventListener('pointerdown', (e) => e.stopPropagation());
+        parallelPanel.addEventListener('pointermove', (e) => e.stopPropagation());
+
+        function applyParallelInputFromField() {
+            const raw = parallelInput.value.trim();
+            if (raw === '' || raw === '—') {
+                setParallelLat(null);
+                return;
+            }
+            const cleaned = raw.replace(/[^\d.-]/g, '');
+            if (cleaned === '' || cleaned === '-') {
+                setParallelLat(null);
+                return;
+            }
+            const n = clampIntLat(cleaned);
+            if (n === null) {
+                parallelInput.value = state.parallelLat === null ? '' : String(state.parallelLat);
+                return;
+            }
+            setParallelLat(n);
+        }
+
+        function nudgeParallelBy(delta) {
+            let base = state.parallelLat;
+            if (base === null) {
+                const v = clampIntLat(parallelInput.value.trim());
+                base = v !== null ? v : 0;
+            }
+            setParallelLat(clampIntLat(base + delta));
+        }
+
+        parallelInput.addEventListener('change', () => applyParallelInputFromField());
+        parallelInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                parallelInput.blur();
+                applyParallelInputFromField();
+                return;
+            }
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                nudgeParallelBy(e.key === 'ArrowUp' ? 1 : -1);
+            }
+        });
+
+        parallelClear.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setParallelLat(null);
+        });
+
+        document.getElementById('parallel-spin-up').addEventListener('click', (e) => {
+            e.stopPropagation();
+            nudgeParallelBy(1);
+        });
+        document.getElementById('parallel-spin-down').addEventListener('click', (e) => {
+            e.stopPropagation();
+            nudgeParallelBy(-1);
+        });
+        document.getElementById('parallel-spin-up').addEventListener('pointerdown', (e) => e.stopPropagation());
+        document.getElementById('parallel-spin-down').addEventListener('pointerdown', (e) => e.stopPropagation());
+
+        parallelRail.addEventListener('wheel', (e) => {
+            if (state.mode !== 'parallel') return;
+            e.preventDefault();
+            e.stopPropagation();
+            nudgeParallelBy(e.deltaY < 0 ? 1 : -1);
+        }, { passive: false });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (state.mode !== 'parallel' || state.parallelLat === null) return;
+            e.preventDefault();
+            setParallelLat(null);
+        });
 
         // === Legend filter (click to isolate a range) ===
         // Each legend has tick labels corresponding to boundary values.
@@ -1108,6 +1814,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            if (state.mode === 'parallel') drawParallelMinimap();
         });
 
         // === Animate ===
