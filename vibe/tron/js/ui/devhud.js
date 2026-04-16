@@ -217,7 +217,7 @@ export function createDevHudController(opts) {
   section("Trail", [
     { key: "trailOpacity", label: "Opacity", min: 0.1, max: 1, step: 0.02 },
     { key: "trailFadeSpeed", label: "Fade speed", min: 0.1, max: 5, step: 0.05 },
-    { key: "defaultTrailLength", label: "Default max segments", min: 8, max: 200, step: 1 },
+    { key: "defaultTrailLength", label: "Default max segments", min: 8, max: 400, step: 1 },
     { key: "trailExtendAmount", label: "Trail extend pickup +", min: 1, max: 50, step: 1 },
     { key: "trailImmunitySegments", label: "Self-immunity segments", min: 0, max: 24, step: 1 },
     { key: "minimumArenaSize", label: "Min arena size (editor)", min: 40, max: 400, step: 4 },
