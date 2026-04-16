@@ -180,7 +180,7 @@ export function extractGatesFromWallObjects(wallObjects) {
 }
 
 /** Plan § Spawn System — units into the arena along the wall inward normal from the gate center. */
-export const ENTRANCE_SPAWN_CLEAR_DEPTH = 2;
+export const ENTRANCE_SPAWN_CLEAR_DEPTH = 8;
 
 /**
  * Player spawn at the **entrance** gate: centered on the gate width, `clearDepth` units inside the arena,

@@ -88,7 +88,7 @@ export function ensureEditorWipLevel(preferredWipId) {
 }
 
 /**
- * @param {{ edge: string; position: number; width: number }} g
+ * @param {{ edge: string; position: number; width: number; role?: string }} g
  * @param {number} aw
  * @param {number} ad
  */
@@ -96,7 +96,7 @@ function gateClearAabb(g, aw, ad) {
   const halfW = aw / 2;
   const halfD = ad / 2;
   const w = g.width;
-  const depth = 5;
+  const depth = g.role === "entrance" ? 10 : 5;
   const p = g.position;
   const eps = 1e-3;
   switch (g.edge) {
@@ -139,9 +139,10 @@ export function collectGateClearTileKeys(wallObjects, arenaWidth, arenaDepth) {
     const edge = o.edge;
     const position = o.position;
     const width = o.width;
+    const role = o.role;
     if (typeof edge !== "string" || typeof position !== "number" || typeof width !== "number") continue;
     const aabb = gateClearAabb(
-      { edge, position, width },
+      { edge, position, width, role: typeof role === "string" ? role : undefined },
       arenaWidth,
       arenaDepth,
     );
