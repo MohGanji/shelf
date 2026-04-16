@@ -263,8 +263,6 @@ export function createTrailWallSystem(options) {
     const heading = typeof state.heading === "number" ? state.heading : 0;
     sampleRearContact(state.x, state.z, heading, tmpRear);
 
-    const fadeSpeed = Math.max(0.001, devHud.trailFadeSpeed);
-
     if (anchors.length === 0) {
       anchors.push(tmpRear.clone());
       anchors.push(tmpRear.clone());
@@ -276,41 +274,60 @@ export function createTrailWallSystem(options) {
       distSinceAnchor += spd * dt;
     }
 
+    // 1. Add new segments as we move
     while (distSinceAnchor >= segDist) {
       if (spd <= 0.12) break;
-      if (totalEdgeCount() < maxSeg) {
-        anchors.push(tmpRear.clone());
-        segmentOpacities.push(1);
-        maybeNotifyNewSegment();
-        distSinceAnchor -= segDist;
-        anchorsDirty = true;
-        continue;
-      }
-
-      const tail =
-        frozenChains.length > 0 ? frozenChains[0].segmentOpacities[0] ?? 1 : segmentOpacities[0] ?? 1;
-      const nextOp = Math.max(0, tail - fadeSpeed * dt);
-      if (frozenChains.length > 0) frozenChains[0].segmentOpacities[0] = nextOp;
-      else segmentOpacities[0] = nextOp;
+      
+      anchors.push(tmpRear.clone());
+      segmentOpacities.push(1);
+      maybeNotifyNewSegment();
+      distSinceAnchor -= segDist;
       anchorsDirty = true;
-      if (nextOp > 0) break;
-
-      const liveRecycle = shiftOldestFadedSegment();
-      if (liveRecycle) {
-        anchors.push(tmpRear.clone());
-        segmentOpacities.push(1);
-        maybeNotifyNewSegment();
-        distSinceAnchor -= segDist;
-      }
-      anchorsDirty = true;
-      break;
     }
 
-    // Always keep the newest anchor on the rear axle every frame.
+    // 2. Always keep the newest anchor on the rear axle every frame.
     // This ensures the trail is continuous and collision is accurate up to the cycle.
     if (anchors.length >= 1) {
       anchors[anchors.length - 1].copy(tmpRear);
       anchorsDirty = true;
+    }
+
+    // 3. Handle fading and trimming at the tail
+    // We want the trail to be maxSeg long. 
+    // We fade the oldest segments over time to create a smooth tail.
+    const fadeSpeed = Math.max(0.001, devHud.trailFadeSpeed);
+    
+    // We need to fade out segments that exceed maxSeg.
+    // Since we might add multiple segments per frame, we need to fade them fast enough,
+    // or just fade a fixed number of segments at the tail.
+    // For a smooth visual, we can just reduce the opacity of the oldest segment.
+    // If we have excess segments, we force them to fade faster so they don't pile up.
+    let excess = totalEdgeCount() - maxSeg;
+    
+    if (excess > 0) {
+      // We have more segments than allowed. We must remove them.
+      // To prevent the array from growing infinitely, we instantly trim any segments
+      // beyond a small fade buffer, and fade the rest.
+      while (totalEdgeCount() > maxSeg + 5) {
+        trimOldestEdgeInstant();
+        anchorsDirty = true;
+      }
+      
+      // Fade the oldest segment
+      let tailOp = frozenChains.length > 0 ? frozenChains[0].segmentOpacities[0] : segmentOpacities[0];
+      if (tailOp !== undefined) {
+        // Fade faster if we have more excess
+        const currentFadeSpeed = fadeSpeed * (1 + excess * 2);
+        tailOp -= currentFadeSpeed * dt;
+        
+        if (tailOp <= 0) {
+          shiftOldestFadedSegment();
+        } else {
+          if (frozenChains.length > 0) frozenChains[0].segmentOpacities[0] = tailOp;
+          else segmentOpacities[0] = tailOp;
+        }
+        anchorsDirty = true;
+      }
     }
 
     if (anchorsDirty) {
