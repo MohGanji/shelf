@@ -312,7 +312,7 @@ export function extractArenaDimensionsFromLevel(level) {
 
 /**
  * Which manifest-loaded level should drive the arena sandbox (dimensions + `scene.userData` metadata).
- * Prefers the entry whose `level-N` index matches `save.progress.currentLevel`, else first non-lobby, else first.
+ * Prefers the lobby level by default for normal boots.
  *
  * @param {Record<string, unknown>[]} validLevels
  * @param {{ progress: { currentLevel: number } }} save
@@ -320,10 +320,7 @@ export function extractArenaDimensionsFromLevel(level) {
  */
 export function selectPlaytestCampaignLevel(validLevels, save) {
   if (!validLevels.length) return null;
-  const target = Math.max(0, Math.floor(save.progress.currentLevel));
-  const exact = validLevels.find((L) => parseCampaignLevelIndex(L) === target);
-  if (exact) return exact;
-  const nonLobby = validLevels.find((L) => L && L.id !== LOBBY_LEVEL_ID);
-  if (nonLobby) return nonLobby;
+  const lobby = validLevels.find((L) => L && L.id === LOBBY_LEVEL_ID);
+  if (lobby) return lobby;
   return validLevels[0] ?? null;
 }
