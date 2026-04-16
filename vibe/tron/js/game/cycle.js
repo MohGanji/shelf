@@ -873,11 +873,12 @@ function createAssetBasedLightCycle(options = {}) {
       m.color.copy(primary).multiplyScalar(0.18);
     }
     for (const m of darkMaterials) {
-      m.emissive.setHex(0x000000);
-      m.emissiveIntensity = 0;
-      m.color.setHex(0x1a1f28); // Dark grey/blue body
-      m.metalness = 0.8;
-      m.roughness = 0.3;
+      m.emissive.copy(primary).multiplyScalar(0.05); // slight tint
+      m.emissiveIntensity = 0.5;
+      m.color.setHex(0x040608); // very dark base
+      m.metalness = 0.95;
+      m.roughness = 0.15; // glossier
+      m.envMapIntensity = 1.4;
     }
   }
 
