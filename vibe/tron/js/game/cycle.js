@@ -564,7 +564,7 @@ export function createProceduralLightCycle(options = {}) {
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const streakGeo = new THREE.PlaneGeometry(W * 4.2, L * 0.2, 1, 1);
+  const streakGeo = new THREE.PlaneGeometry(W * 1.0, L * 0.2, 1, 1);
   disposableGeoms.push(streakGeo);
   const streakA = new THREE.Mesh(streakGeo, streakMat);
   streakA.rotation.x = -Math.PI * 0.42;
@@ -846,7 +846,7 @@ function createAssetBasedLightCycle(options = {}) {
     blending: THREE.AdditiveBlending,
     depthWrite: false,
   });
-  const streakGeo = new THREE.PlaneGeometry(W * 4.2, L * 0.2, 1, 1);
+  const streakGeo = new THREE.PlaneGeometry(W * 1.0, L * 0.2, 1, 1);
   const streakA = new THREE.Mesh(streakGeo, streakMat);
   streakA.rotation.x = -Math.PI * 0.42;
   streakA.position.z = -0.02;
