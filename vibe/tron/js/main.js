@@ -1578,6 +1578,34 @@ async function main() {
       ...boostPadField.getMinimapBoostPads(),
       ...portalField.getMinimapPortals(),
     ];
+    
+    const minimapGates = [];
+    if (game.scene.userData.gates && Array.isArray(game.scene.userData.gates.list)) {
+      const halfW = playCfg.arenaWidth / 2;
+      const halfD = playCfg.arenaDepth / 2;
+      for (const g of game.scene.userData.gates.list) {
+        const half = g.width / 2;
+        const p = g.position;
+        let x0 = 0, x1 = 0, z0 = 0, z1 = 0;
+        if (g.edge === "south" || g.edge === "north") {
+          x0 = -halfW + p - half;
+          x1 = -halfW + p + half;
+          z0 = g.edge === "south" ? -halfD : halfD;
+          z1 = z0;
+        } else {
+          z0 = -halfD + p - half;
+          z1 = -halfD + p + half;
+          x0 = g.edge === "west" ? -halfW : halfW;
+          x1 = x0;
+        }
+        minimapGates.push({
+          x0, x1, z0, z1,
+          role: g.role,
+          open: !g.locked || g.role === "entrance"
+        });
+      }
+    }
+
     const mmNow = performance.now();
     const mmInt = graphicsProfile.minimapMinIntervalMs;
     if (mmInt <= 0 || mmNow - lastMinimapDrawMs >= mmInt) {
@@ -1591,6 +1619,7 @@ async function main() {
         enemies: minimapEnemies,
         trailSources: minimapTrailSources,
         barrierBodies: game.scene.userData.barrierBodies,
+        gates: minimapGates,
         itemPoints: itemPts,
       });
     }

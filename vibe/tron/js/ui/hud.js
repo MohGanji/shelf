@@ -24,6 +24,7 @@ import { Box, Vec3 } from "../vendor/cannon-es-module.js";
  * @property {{ x: number; z: number; color: string }[]} enemies
  * @property {MinimapTrailSource[]} trailSources
  * @property {import("cannon-es").Body[] | undefined} barrierBodies
+ * @property {{ x0: number; x1: number; z0: number; z1: number; role: string; open: boolean }[]} [gates]
  * @property {{ x: number; z: number }[]} itemPoints — power-ups, boost pads, portals (hollow circles)
  */
 
@@ -158,6 +159,19 @@ export function createArenaMinimapRenderer(canvas) {
           const h = Math.abs(y1 - y0);
           if (w < 0.5 && h < 0.5) continue;
           ctx.fillRect(left, top, Math.max(w, 1), Math.max(h, 1));
+        }
+      }
+
+      if (frame.gates) {
+        ctx.lineWidth = 2;
+        for (const g of frame.gates) {
+          const [cx0, cy0] = toCanvas(g.x0, g.z0);
+          const [cx1, cy1] = toCanvas(g.x1, g.z1);
+          ctx.strokeStyle = g.open ? "rgba(0, 255, 200, 0.9)" : "rgba(255, 60, 60, 0.8)";
+          ctx.beginPath();
+          ctx.moveTo(cx0, cy0);
+          ctx.lineTo(cx1, cy1);
+          ctx.stroke();
         }
       }
 
