@@ -264,7 +264,7 @@ function mergeIntervals(intervals) {
  * @param {ParsedGate[]} gates
  * @returns {Record<WallEdge, Interval[]>}
  */
-export function openGateGapsByEdge(gates) {
+export function openGateGapsByEdge(gates, opts = {}) {
   /** @type {Record<WallEdge, Interval[]>} */
   const raw = {
     north: [],
@@ -273,7 +273,7 @@ export function openGateGapsByEdge(gates) {
     west: [],
   };
   for (const g of gates) {
-    if (g.locked) continue;
+    if (g.locked && !(opts.includeLockedEntrance && g.role === "entrance")) continue;
     const half = g.width / 2;
     raw[g.edge].push({ start: g.position - half, end: g.position + half });
   }
@@ -487,7 +487,7 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
 function buildSingleGateGroup(g, playCfg) {
   const group = new THREE.Group();
   const w = g.width;
-  const open = !g.locked;
+  const open = !g.locked || g.role === "entrance";
   /** Dark metal body + saturated teal emissive (not white) — intensity drives “neon” read. */
   const colorHex = open ? 0x061018 : 0x0a1018;
   const emissiveHex = open ? 0x00997a : 0x1a3044;

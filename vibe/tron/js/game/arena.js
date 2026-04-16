@@ -198,7 +198,7 @@ function buildGridGeometry(halfW, halfD, lineStep) {
  * @param {PerimeterEdge} edge
  * @param {ReturnType<typeof openGateGapsByEdge>} gapsByEdge
  */
-export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, gapsByEdge) {
+export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, visualGaps, physicsGaps) {
   const per = scene.userData.tronPerimeter;
   if (!per || !per.edgeVisualGroups || !per.wallBodiesByEdge || !per.wallMaterials) return;
 
@@ -234,10 +234,11 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
     }
   }
 
-  const g = gapsByEdge[edge];
+  const vg = visualGaps[edge];
+  const pg = physicsGaps[edge];
 
   if (edge === "south") {
-    for (const seg of solidSegmentsAlongWall(aw, g)) {
+    for (const seg of solidSegmentsAlongWall(aw, vg)) {
       forChunks(seg.start, seg.end, (u, v) => {
         const slen = v - u;
         const cx = -halfW + (u + v) / 2;
@@ -246,7 +247,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
         visGroup.add(mesh);
       });
     }
-    for (const seg of solidSegmentsAlongWall(aw, g)) {
+    for (const seg of solidSegmentsAlongWall(aw, pg)) {
       const s0 = seg.start;
       const s1 = seg.end;
       const hx = (s1 - s0) / 2;
@@ -260,7 +261,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
       bodies.push(body);
     }
   } else if (edge === "north") {
-    for (const seg of solidSegmentsAlongWall(aw, g)) {
+    for (const seg of solidSegmentsAlongWall(aw, vg)) {
       forChunks(seg.start, seg.end, (u, v) => {
         const slen = v - u;
         const cx = -halfW + (u + v) / 2;
@@ -269,7 +270,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
         visGroup.add(mesh);
       });
     }
-    for (const seg of solidSegmentsAlongWall(aw, g)) {
+    for (const seg of solidSegmentsAlongWall(aw, pg)) {
       const s0 = seg.start;
       const s1 = seg.end;
       const hx = (s1 - s0) / 2;
@@ -283,7 +284,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
       bodies.push(body);
     }
   } else if (edge === "west") {
-    for (const seg of solidSegmentsAlongWall(ad, g)) {
+    for (const seg of solidSegmentsAlongWall(ad, vg)) {
       forChunks(seg.start, seg.end, (u, v) => {
         const slen = v - u;
         const cz = -halfD + (u + v) / 2;
@@ -292,7 +293,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
         visGroup.add(mesh);
       });
     }
-    for (const seg of solidSegmentsAlongWall(ad, g)) {
+    for (const seg of solidSegmentsAlongWall(ad, pg)) {
       const s0 = seg.start;
       const s1 = seg.end;
       const hz = (s1 - s0) / 2;
@@ -306,7 +307,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
       bodies.push(body);
     }
   } else if (edge === "east") {
-    for (const seg of solidSegmentsAlongWall(ad, g)) {
+    for (const seg of solidSegmentsAlongWall(ad, vg)) {
       forChunks(seg.start, seg.end, (u, v) => {
         const slen = v - u;
         const cz = -halfD + (u + v) / 2;
@@ -315,7 +316,7 @@ export function rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, edge, g
         visGroup.add(mesh);
       });
     }
-    for (const seg of solidSegmentsAlongWall(ad, g)) {
+    for (const seg of solidSegmentsAlongWall(ad, pg)) {
       const s0 = seg.start;
       const s1 = seg.end;
       const hz = (s1 - s0) / 2;
@@ -346,8 +347,9 @@ export function runtimeUnlockCampaignExitGate(scene, world, playCfg, wallMat) {
   const exit = grec.list.find((x) => x.role === "exit");
   if (!exit || !exit.locked) return null;
   exit.locked = false;
-  const gaps = openGateGapsByEdge(grec.list);
-  rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, exit.edge, gaps);
+  const visualGaps = openGateGapsByEdge(grec.list, { includeLockedEntrance: true });
+  const physicsGaps = openGateGapsByEdge(grec.list, { includeLockedEntrance: false });
+  rebuildPerimeterWallEdge(scene, world, playCfg, wallMat, exit.edge, visualGaps, physicsGaps);
   scene.userData.openGateFootprints = computeOpenGateWallFootprints(
     grec.list,
     playCfg.arenaWidth,
@@ -370,10 +372,11 @@ export function runtimeUnlockCampaignExitGate(scene, world, playCfg, wallMat) {
 export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, playCfg, level = null) {
   const gates =
     level && Array.isArray(level.wallObjects) ? extractGatesFromWallObjects(level.wallObjects) : [];
-  const gapsByEdge = openGateGapsByEdge(gates);
+  const visualGaps = openGateGapsByEdge(gates, { includeLockedEntrance: true });
+  const physicsGaps = openGateGapsByEdge(gates, { includeLockedEntrance: false });
 
-  const vis = buildArenaVisuals(scene, playCfg, gapsByEdge);
-  const wallBodiesByEdge = buildArenaPhysics(world, wallMat, floorMat, playCfg, gapsByEdge);
+  const vis = buildArenaVisuals(scene, playCfg, visualGaps);
+  const wallBodiesByEdge = buildArenaPhysics(world, wallMat, floorMat, playCfg, physicsGaps);
 
   /** First entry in `vis.materials` is the arena floor — used for PMREM env (P9.6). */
   scene.userData.arenaFloorMaterial = vis.materials[0];
