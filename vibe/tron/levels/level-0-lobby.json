@@ -48,8 +48,260 @@
   "barriers": [
     {
       "type": "building",
+      "x": -122,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -122,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -122,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -122,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -122,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -121,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -121,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -121,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -121,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -121,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -120,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -120,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
       "x": -120,
       "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -120,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -120,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -119,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -119,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -119,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -119,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -119,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -118,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -118,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -118,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -118,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -118,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 118,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 118,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 118,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 118,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 118,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 119,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 119,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 119,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 119,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 119,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 120,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 120,
+      "z": -41,
       "height": 5,
       "shape": "square"
     },
@@ -62,31 +314,787 @@
     },
     {
       "type": "building",
+      "x": 120,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 120,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 121,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 121,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 121,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 121,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 121,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 122,
+      "z": -42,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 122,
+      "z": -41,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 122,
+      "z": -40,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 122,
+      "z": -39,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 122,
+      "z": -38,
+      "height": 5,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -152,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -152,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -152,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -152,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -152,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -151,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -151,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -151,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -151,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -151,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -150,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -150,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
       "x": -150,
       "z": 40,
       "height": 4,
-      "shape": "hexagon"
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -150,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -150,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -149,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -149,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -149,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -149,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -149,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -148,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -148,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -148,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -148,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -148,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 148,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 148,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 148,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 148,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 148,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 149,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 149,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 149,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 149,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 149,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 150,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 150,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
     },
     {
       "type": "building",
       "x": 150,
       "z": 40,
       "height": 4,
-      "shape": "hexagon"
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 150,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 150,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 151,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 151,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 151,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 151,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 151,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 152,
+      "z": 38,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 152,
+      "z": 39,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 152,
+      "z": 40,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 152,
+      "z": 41,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 152,
+      "z": 42,
+      "height": 4,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -82,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -82,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -82,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -82,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -82,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -81,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -81,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -81,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -81,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -81,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -80,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -80,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
     },
     {
       "type": "building",
       "x": -80,
       "z": 60,
       "height": 3,
-      "shape": "triangle"
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -80,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -80,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -79,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -79,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -79,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -79,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -79,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -78,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -78,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -78,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -78,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": -78,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 78,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 78,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 78,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 78,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 78,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 79,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 79,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 79,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 79,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 79,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 80,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 80,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
     },
     {
       "type": "building",
       "x": 80,
       "z": 60,
       "height": 3,
-      "shape": "triangle"
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 80,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 80,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 81,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 81,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 81,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 81,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 81,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 82,
+      "z": 58,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 82,
+      "z": 59,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 82,
+      "z": 60,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 82,
+      "z": 61,
+      "height": 3,
+      "shape": "square"
+    },
+    {
+      "type": "building",
+      "x": 82,
+      "z": 62,
+      "height": 3,
+      "shape": "square"
     }
   ],
   "gameObjects": [],
