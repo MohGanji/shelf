@@ -113,9 +113,9 @@ function renderGarageStats(el, save) {
   const total = save.progress.totalCoinsEarned;
   const gate = save.progress.currentLevel;
   el.innerHTML = `
-    <span class="garage-stats__item"><span class="garage-stats__label">NEON</span><span class="garage-stats__value">${coins}</span></span>
+    <span class="garage-stats__item"><span class="garage-stats__label"><span class="neon-coin-icon">⬡</span></span><span class="garage-stats__value">${coins}</span></span>
     <span class="garage-stats__item"><span class="garage-stats__label">Total earned</span><span class="garage-stats__value">${total}</span></span>
-    <span class="garage-stats__item"><span class="garage-stats__label">Start gate</span><span class="garage-stats__value">Arena ${gate}</span></span>
+    <span class="garage-stats__item"><span class="garage-stats__label">Current level</span><span class="garage-stats__value">Arena ${gate}</span></span>
   `;
 }
 
@@ -145,10 +145,15 @@ function renderColorSwatches(container, kind, save, onChanged) {
     btn.title = entry.name;
     btn.setAttribute("aria-label", `${entry.name}${!owned && entry.cost > 0 ? `, unlock ${entry.cost} NEON` : ""}`);
 
+    const nameLabel = document.createElement("span");
+    nameLabel.className = "garage-swatch__name";
+    nameLabel.textContent = entry.name;
+    btn.appendChild(nameLabel);
+
     if (!owned && entry.cost > 0) {
       const tag = document.createElement("span");
       tag.className = "garage-swatch__tag";
-      tag.textContent = String(entry.cost);
+      tag.innerHTML = `<span class="neon-coin-icon">⬡</span> ${entry.cost}`;
       btn.appendChild(tag);
     }
 
@@ -158,16 +163,16 @@ function renderColorSwatches(container, kind, save, onChanged) {
 
     btn.addEventListener("click", () => {
       if (owned) {
-        if (kind === "cycle") save.player.cycleColor = hexNorm;
-        else save.player.trailColor = hexNorm;
+        save.player.cycleColor = hexNorm;
+        save.player.trailColor = hexNorm;
         persistSave(save);
         onChanged();
         return;
       }
       if (entry.cost <= 0) {
         unlockCosmeticColor(save, kind, hexNorm);
-        if (kind === "cycle") save.player.cycleColor = hexNorm;
-        else save.player.trailColor = hexNorm;
+        save.player.cycleColor = hexNorm;
+        save.player.trailColor = hexNorm;
         persistSave(save);
         onChanged();
         return;
@@ -175,8 +180,8 @@ function renderColorSwatches(container, kind, save, onChanged) {
       if (save.progress.coins < entry.cost) return;
       spendCoins(save, entry.cost);
       unlockCosmeticColor(save, kind, hexNorm);
-      if (kind === "cycle") save.player.cycleColor = hexNorm;
-      else save.player.trailColor = hexNorm;
+      save.player.cycleColor = hexNorm;
+      save.player.trailColor = hexNorm;
       persistSave(save);
       onChanged();
     });
@@ -196,31 +201,50 @@ function renderAttributeUpgrades(container, save, onChanged) {
   for (const key of GARAGE_ATTR_KEYS) {
     const level = clampAttributeLevel(save.player.attributes[key]);
     const card = document.createElement("div");
-    card.className = "garage-upgrade-card";
+    card.className = "garage-upgrade-row";
 
-    const title = document.createElement("p");
-    title.className = "garage-upgrade-card__title";
-    title.textContent = ATTR_LABELS[key];
+    const header = document.createElement("div");
+    header.className = "garage-upgrade-row__header";
 
-    const meta = document.createElement("p");
-    meta.className = "garage-upgrade-card__meta";
+    const title = document.createElement("span");
+    title.className = "garage-upgrade-row__title";
+    title.textContent = ATTR_LABELS[key].toUpperCase();
+
+    const val = document.createElement("span");
+    val.className = "garage-upgrade-row__val";
+    val.textContent = level;
+
+    header.append(title, val);
+
+    const body = document.createElement("div");
+    body.className = "garage-upgrade-row__body";
+
+    const barContainer = document.createElement("div");
+    barContainer.className = "garage-upgrade-row__bar-container";
+
+    const currentBar = document.createElement("div");
+    currentBar.className = "garage-upgrade-row__bar-current";
+    currentBar.style.width = `${(level / 10) * 100}%`;
+
+    const upgradeBar = document.createElement("div");
+    upgradeBar.className = "garage-upgrade-row__bar-upgrade";
+
+    barContainer.append(currentBar, upgradeBar);
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "garage-upgrade-card__btn";
+    btn.className = "garage-upgrade-row__btn";
 
     if (level >= 10) {
-      meta.innerHTML = `<strong>Lv ${level}/10</strong> — ${formatAttrBenefit(key, level)}<br/>Maximum level reached.`;
+      upgradeBar.style.display = "none";
       btn.textContent = "MAX";
       btn.disabled = true;
     } else {
+      upgradeBar.style.width = "10%";
+      upgradeBar.style.left = `${(level / 10) * 100}%`;
+      
       const cost = ATTRIBUTE_UPGRADE_COSTS[level - 1] ?? 0;
-      const nextLv = level + 1;
-      meta.innerHTML = `<strong>Lv ${level}/10</strong> — ${formatAttrBenefit(key, level)}<br/>Next (${nextLv}/10): ${formatAttrBenefit(
-        key,
-        nextLv,
-      )} · <strong>${cost}</strong> NEON`;
-      btn.textContent = "UPGRADE";
+      btn.innerHTML = `<span class="neon-coin-icon">⬡</span> ${cost}`;
       btn.disabled = save.progress.coins < cost;
       btn.addEventListener("click", () => {
         if (level >= 10 || save.progress.coins < cost) return;
@@ -231,7 +255,8 @@ function renderAttributeUpgrades(container, save, onChanged) {
       });
     }
 
-    card.append(title, meta, btn);
+    body.append(barContainer, btn);
+    card.append(header, body);
     container.appendChild(card);
   }
 }
@@ -280,13 +305,11 @@ export function mountGarageDestinationScreen(opts) {
 
   const statsEl = document.getElementById("garage-stats");
   const cycleSw = document.getElementById("garage-cycle-swatches");
-  const trailSw = document.getElementById("garage-trail-swatches");
   const upgradesEl = document.getElementById("garage-upgrades");
 
   function refreshGarageCommerce() {
     if (statsEl) renderGarageStats(statsEl, save);
     if (cycleSw) renderColorSwatches(cycleSw, "cycle", save, refreshGarageCommerce);
-    if (trailSw) renderColorSwatches(trailSw, "trail", save, refreshGarageCommerce);
     if (upgradesEl) renderAttributeUpgrades(upgradesEl, save, refreshGarageCommerce);
     showroom.syncFromSave(save);
   }
