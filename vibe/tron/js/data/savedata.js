@@ -10,7 +10,7 @@ const SAVE_KEY = PLAYER_SAVE_KEY;
  * @property {number} version
  * @property {object} player
  * @property {string} player.cycleColor
- * @property {string} player.trailColor
+ * @property {string} player.trailColor — always kept equal to `cycleColor` (persist + load).
  * @property {object} player.attributes
  * @property {number} player.attributes.speed
  * @property {number} player.attributes.acceleration
@@ -170,7 +170,21 @@ export function normalizePlayerSave(raw) {
     controlsShown: Boolean(o.controlsShown),
   };
   clampProgressToLinearIntegrity(out);
+  syncTrailColorToCycle(out);
   return out;
+}
+
+/**
+ * Trail uses the same neon as the cycle; unify cosmetics lists from older saves.
+ * @param {PlayerSave} save
+ */
+function syncTrailColorToCycle(save) {
+  save.player.trailColor = save.player.cycleColor;
+  const oc = save.cosmetics.ownedCycleColors.map(String);
+  const ot = save.cosmetics.ownedTrailColors.map(String);
+  const union = [...new Set([...oc, ...ot])];
+  save.cosmetics.ownedCycleColors = union;
+  save.cosmetics.ownedTrailColors = union;
 }
 
 /** @param {number} n */
@@ -195,6 +209,7 @@ export function loadSave() {
 
 /** @param {PlayerSave} data */
 export function saveToStorage(data) {
+  syncTrailColorToCycle(data);
   localStorage.setItem(SAVE_KEY, JSON.stringify(data));
 }
 
@@ -302,12 +317,10 @@ export function spendCoins(save, amount) {
  * @param {string} colorHex
  */
 export function unlockCosmeticColor(save, kind, colorHex) {
+  void kind;
   const c = String(colorHex);
-  if (kind === "cycle") {
-    if (!save.cosmetics.ownedCycleColors.includes(c)) save.cosmetics.ownedCycleColors.push(c);
-  } else if (kind === "trail") {
-    if (!save.cosmetics.ownedTrailColors.includes(c)) save.cosmetics.ownedTrailColors.push(c);
-  }
+  if (!save.cosmetics.ownedCycleColors.includes(c)) save.cosmetics.ownedCycleColors.push(c);
+  if (!save.cosmetics.ownedTrailColors.includes(c)) save.cosmetics.ownedTrailColors.push(c);
 }
 
 /**

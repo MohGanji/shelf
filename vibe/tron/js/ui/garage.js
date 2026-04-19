@@ -133,8 +133,8 @@ function renderGarageStats(el, save) {
  */
 function renderColorSwatches(container, kind, save, onChanged) {
   container.replaceChildren();
-  const current =
-    kind === "cycle" ? normalizeHex(save.player.cycleColor) : normalizeHex(save.player.trailColor);
+  void kind;
+  const current = normalizeHex(save.player.cycleColor);
 
   for (const entry of GARAGE_COLOR_CATALOG) {
     const hexNorm = normalizeHex(entry.hex);

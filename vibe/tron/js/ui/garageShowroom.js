@@ -81,7 +81,6 @@ export function mountGarageShowroom(opts) {
   const devHud = mergeDevHud({ ...save.devHud, ...(opts.devHud ?? {}) });
   const floorStep = getFloorGridLineStep(devHud);
   const cycleHex = typeof save.player.cycleColor === "string" ? save.player.cycleColor : "#00FFFF";
-  const trailHex = typeof save.player.trailColor === "string" ? save.player.trailColor : "#00FFFF";
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(VOID_BG);
@@ -235,9 +234,8 @@ export function mountGarageShowroom(opts) {
    */
   function syncFromSave(save) {
     const ch = typeof save.player.cycleColor === "string" ? save.player.cycleColor : "#00FFFF";
-    const th = typeof save.player.trailColor === "string" ? save.player.trailColor : "#00FFFF";
     cycle.setPrimaryColor(ch);
-    applyTrailPreviewColor(th);
+    applyTrailPreviewColor(ch);
   }
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);

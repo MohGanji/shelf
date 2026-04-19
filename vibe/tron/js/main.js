@@ -441,7 +441,7 @@ async function main() {
   /** P8.5 — throttle trail tinks (spawn is dense; callback is also strided in trail.js). */
   let lastTrailTinkMs = 0;
   const trailWall = createTrailWallSystem({
-    color: save.player.trailColor ?? "#00FFFF",
+    color: save.player.cycleColor ?? "#00FFFF",
     devHud,
     world: playCfg.world,
     maxSegments: playCfg.trailMaxSegments,
@@ -1548,14 +1548,11 @@ async function main() {
     renderNitroHud();
     updateEquipHud();
 
-    const trailColorHud =
-      typeof save.player.trailColor === "string" && save.player.trailColor
-        ? save.player.trailColor
-        : save.player.cycleColor ?? "#00FFFF";
+    const playerNeonHex = save.player.cycleColor ?? "#00FFFF";
     /** P9.4 — minimap: trails, barriers, pickups / pads / portals, player + enemy dots. */
     const minimapTrailSources = [
       {
-        color: trailColorHud,
+        color: playerNeonHex,
         getSegments: () => trailWall.getMinimapSegments(),
       },
     ];
