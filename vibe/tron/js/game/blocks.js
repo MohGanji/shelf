@@ -156,6 +156,10 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   if (style === 0 && scene.userData.arenaFloorMaterial) {
     // Style 0: Exact same material as the floor (cloned so we can tweak if needed)
     matBuilding = scene.userData.arenaFloorMaterial.clone();
+    // Make it glossy and reflective like the cycle body
+    matBuilding.metalness = 0.95;
+    matBuilding.roughness = 0.15;
+    matBuilding.envMapIntensity = 1.4;
     // Add a very subtle wireframe glitch effect on top later
   } else if (style === 1) {
     // Style 1: Pure wireframe glitch
