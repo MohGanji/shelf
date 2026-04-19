@@ -225,6 +225,9 @@ async function main() {
 
   const devHud = runtime.devHud; // single mutable runtime HUD — keep in sync with save via persistDevHudToSave
 
+  /** Refreshes Garage coin UI when dev HUD grants coins (bound in `mountGarageDestinationScreen`). */
+  let devEconomyUiRefresh = () => {};
+
   /** Persist full merged devHud so keyboard tweaks survive reload (plan § Config Override Chain). */
   function persistDevHudToSave() {
     save.devHud = mergeDevHud({ ...devHud });
@@ -273,11 +276,28 @@ async function main() {
     if (hud) hud.hidden = true;
     if (mm) mm.hidden = true;
     if (ban) ban.hidden = true;
+    createDevHudController({
+      devHud,
+      applyDevHud: (patch) => {
+        game.applyDevHud(patch);
+      },
+      persist: persistDevHudToSave,
+      syncHud: () => {},
+      isInputBlocked: () => false,
+      grantDevCoins: (amount) => {
+        addCoins(save, amount);
+        persistSave(save);
+        devEconomyUiRefresh();
+      },
+    });
     mountGarageDestinationScreen({
       game,
       save,
       canvas,
       devHud,
+      bindDevEconomyRefresh: (fn) => {
+        devEconomyUiRefresh = fn;
+      },
       onReturnToLobby: () => {
         window.location.reload();
       },
@@ -1111,6 +1131,11 @@ async function main() {
     syncHud: syncArenaHud,
     isInputBlocked: () =>
       isTunnelBlockingInput() || isControlsOverlayBlockingInput() || isPauseOverlayBlockingInput(),
+    grantDevCoins: (amount) => {
+      addCoins(save, amount);
+      persistSave(save);
+      devEconomyUiRefresh();
+    },
   });
 
   syncArenaHud();

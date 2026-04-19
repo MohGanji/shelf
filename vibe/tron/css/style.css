@@ -1925,11 +1925,12 @@ body {
 }
 
 /* P9.2 — Developer HUD (`.` toggle): live devHud sliders, persists to save */
+/* z-index above `.tron-destination` (45), editor shells (46), and editor return chip (55) so it stays usable in Garage / Architect. */
 .dev-hud {
   position: fixed;
   top: max(12px, env(safe-area-inset-top, 0px));
   right: max(12px, env(safe-area-inset-right, 0px));
-  z-index: 28;
+  z-index: 60;
   width: min(
     380px,
     calc(
@@ -2075,6 +2076,45 @@ body {
   font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
   opacity: 0.88;
+}
+
+.dev-hud__economy-hint {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  opacity: 0.82;
+  color: rgba(170, 210, 240, 0.95);
+}
+
+.dev-hud__btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dev-hud__grant {
+  flex: 1 1 auto;
+  min-width: 6.5rem;
+  padding: 6px 10px;
+  font-family: "Rajdhani", system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(0, 24, 32, 0.95);
+  background: linear-gradient(180deg, rgba(0, 255, 255, 0.82), rgba(0, 200, 220, 0.68));
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dev-hud__grant:hover {
+  filter: brightness(1.06);
+}
+
+.dev-hud__grant:focus-visible {
+  outline: 2px solid rgba(0, 255, 255, 0.85);
+  outline-offset: 2px;
 }
 
 .dev-hud__check {

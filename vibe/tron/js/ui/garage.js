@@ -370,7 +370,7 @@ export function createGarageController() {
  * @returns {{ dispose(): void }}
  */
 export function mountGarageDestinationScreen(opts) {
-  const { game, save, canvas, onReturnToLobby, devHud } = opts;
+  const { game, save, canvas, onReturnToLobby, devHud, bindDevEconomyRefresh } = opts;
   const root = document.getElementById("garage-destination");
   if (!root) {
     return { dispose() {} };
@@ -398,6 +398,10 @@ export function mountGarageDestinationScreen(opts) {
   }
 
   refreshGarageCommerce();
+
+  if (typeof bindDevEconomyRefresh === "function") {
+    bindDevEconomyRefresh(refreshGarageCommerce);
+  }
 
   const onReturn = () => onReturnToLobby();
 

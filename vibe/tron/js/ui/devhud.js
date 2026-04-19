@@ -12,6 +12,7 @@ import { DEFAULT_DEV_HUD, mergeDevHud } from "../config.js";
  *   persist: () => void;
  *   syncHud?: () => void;
  *   isInputBlocked: () => boolean;
+ *   grantDevCoins?: (amount: number) => void;
  * }} DevHudControllerOptions
  */
 
@@ -29,7 +30,7 @@ function isDevKey(k) {
  * @returns {DevHudController}
  */
 export function createDevHudController(opts) {
-  const { devHud, applyDevHud, persist, syncHud, isInputBlocked } = opts;
+  const { devHud, applyDevHud, persist, syncHud, isInputBlocked, grantDevCoins } = opts;
 
   const root = document.createElement("div");
   root.id = "dev-hud-panel";
@@ -222,6 +223,9 @@ export function createDevHudController(opts) {
     { key: "defaultTrailLength", label: "Default max segments", min: 8, max: 400, step: 1 },
     { key: "trailExtendAmount", label: "Trail extend pickup +", min: 1, max: 50, step: 1 },
     { key: "trailImmunitySegments", label: "Self-immunity segments", min: 0, max: 24, step: 1 },
+    { key: "trailGlowThickMul", label: "Glow width ×", min: 1, max: 4, step: 0.02 },
+    { key: "trailGlowHeightMul", label: "Glow height ×", min: 1, max: 2.5, step: 0.02 },
+    { key: "trailGlowAlpha", label: "Glow tint strength", min: 0, max: 1.25, step: 0.02 },
     { key: "minimumArenaSize", label: "Min arena size (editor)", min: 40, max: 400, step: 4 },
   ]);
 
@@ -276,6 +280,36 @@ export function createDevHudController(opts) {
   section("Near-miss", [
     { key: "nearMissDistance", label: "Near-miss distance", min: 0.2, max: 6, step: 0.05 },
   ]);
+
+  if (typeof grantDevCoins === "function") {
+    const det = document.createElement("details");
+    det.className = "dev-hud__section";
+    det.open = true;
+    const sum = document.createElement("summary");
+    sum.className = "dev-hud__summary";
+    sum.textContent = "Economy (dev)";
+    det.appendChild(sum);
+    const ecoHint = document.createElement("p");
+    ecoHint.className = "dev-hud__economy-hint";
+    ecoHint.textContent =
+      "Adds NEON coins to your save so you can buy cycle colors in the Garage. Does not unlock levels.";
+    det.appendChild(ecoHint);
+    const row = document.createElement("div");
+    row.className = "dev-hud__btn-row";
+    for (const { amount, label } of [
+      { amount: 50, label: "+50 coins" },
+      { amount: 500, label: "+500 coins" },
+    ]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "dev-hud__grant";
+      b.textContent = label;
+      b.addEventListener("click", () => grantDevCoins(amount));
+      row.appendChild(b);
+    }
+    det.appendChild(row);
+    scroll.appendChild(det);
+  }
 
   root.appendChild(header);
   root.appendChild(scroll);

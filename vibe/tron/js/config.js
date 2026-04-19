@@ -103,6 +103,12 @@ export const DEFAULT_DEV_HUD = {
   buildingGlitchStyle: 0,
   fogDensity: 0.009,
   trailOpacity: 0.8,
+  /** Additive colored glow shell: `trailWallThickness` × this (feeds hue into bloom). */
+  trailGlowThickMul: 1.7,
+  /** Additive colored glow shell: `trailWallHeight` × this. */
+  trailGlowHeightMul: 1.5,
+  /** Additive glow strength (× trail opacity × segment fade; try 0 to disable shell). */
+  trailGlowAlpha: 0.18,
   trailFadeSpeed: 1.0,
   defaultTrailLength: 200,
   trailExtendAmount: 10,

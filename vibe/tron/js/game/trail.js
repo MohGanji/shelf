@@ -45,6 +45,25 @@ export function createTrailWallSystem(options) {
     color.set(options.color);
   }
   const devHud = options.devHud;
+
+  function glowThickMul() {
+    const n = devHud.trailGlowThickMul;
+    return typeof n === "number" && Number.isFinite(n) ? Math.max(1, Math.min(4, n)) : 1.7;
+  }
+  function glowHeightMul() {
+    const n = devHud.trailGlowHeightMul;
+    return typeof n === "number" && Number.isFinite(n) ? Math.max(1, Math.min(2.5, n)) : 1.5;
+  }
+  function glowAlpha() {
+    const n = devHud.trailGlowAlpha;
+    return typeof n === "number" && Number.isFinite(n) ? Math.max(0, Math.min(1.25, n)) : 0.18;
+  }
+
+  /** When thickness/height multipliers change, merged glow geometry must rebuild. */
+  let prevGlowDimsKey = "";
+  /** When glow shell is toggled off (alpha → 0), drop/add merged glow meshes. */
+  let prevGlowShell = /** @type {boolean | null} */ (null);
+
   const onNewSegment = typeof options.onNewSegment === "function" ? options.onNewSegment : null;
   const w = options.world ?? WORLD;
   const segDist = w.segmentSpawnDistance;
@@ -60,15 +79,23 @@ export function createTrailWallSystem(options) {
   const trailTileMap = createTrailTileMap({ arenaWidth, arenaDepth });
 
   const root = new THREE.Group();
+  const glowSegmentsGroup = new THREE.Group();
+  glowSegmentsGroup.renderOrder = 0;
   const segmentsGroup = new THREE.Group();
+  segmentsGroup.renderOrder = 1;
+  root.add(glowSegmentsGroup);
   root.add(segmentsGroup);
 
+  /**
+   * Lit metal + key light on thin wall boxes reads as blown-out white under bloom (especially exotics).
+   * Match showroom: black albedo, emissive-only read (see `garageShowroom.js` trail preview note).
+   */
   const baseMaterial = new THREE.MeshStandardMaterial({
-    color: color.clone().multiplyScalar(0.18),
-    emissive: color,
+    color: 0x000000,
+    emissive: color.clone(),
     emissiveIntensity: 0.95 * devHud.neonIntensity,
-    metalness: 0.38,
-    roughness: 0.28,
+    metalness: 0,
+    roughness: 1,
     transparent: true,
     opacity: devHud.trailOpacity,
     depthWrite: false,
@@ -162,11 +189,13 @@ export function createTrailWallSystem(options) {
   }
 
   function disposeSegmentChildren() {
-    while (segmentsGroup.children.length) {
-      const ch = segmentsGroup.children.pop();
-      if (ch instanceof THREE.Mesh) {
-        ch.geometry?.dispose();
-        if (ch.material && ch.material !== baseMaterial) ch.material.dispose();
+    for (const group of [glowSegmentsGroup, segmentsGroup]) {
+      while (group.children.length) {
+        const ch = group.children.pop();
+        if (ch instanceof THREE.Mesh) {
+          ch.geometry?.dispose();
+          if (ch.material && ch.material !== baseMaterial) ch.material.dispose();
+        }
       }
     }
   }
@@ -174,8 +203,9 @@ export function createTrailWallSystem(options) {
   /**
    * Build merged geometry for one logical segment (piecewise boxes along straight chord).
    * @param {number} segOpacity 0–1
+   * @param {boolean} asGlow — wide additive strip (hue = trail color) under the core wall
    */
-  function buildSegmentMeshes(a, b, segOpacity) {
+  function buildSegmentMeshes(a, b, segOpacity, asGlow = false) {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
     const chord = Math.hypot(dx, dz);
@@ -183,7 +213,9 @@ export function createTrailWallSystem(options) {
 
     const divisions = Math.max(4, Math.min(64, Math.ceil(chord * 12)));
     const parts = [];
-    const halfH = wallH * 0.5;
+    const thickUse = asGlow ? thick * glowThickMul() : thick;
+    const wallHUse = asGlow ? wallH * glowHeightMul() : wallH;
+    const halfH = wallHUse * 0.5;
 
     for (let i = 0; i < divisions; i++) {
       const t0 = i / divisions;
@@ -195,7 +227,7 @@ export function createTrailWallSystem(options) {
       const slen = Math.hypot(sdx, sdz);
       if (slen < 1e-5) continue;
 
-      const geom = new THREE.BoxGeometry(thick, wallH, slen);
+      const geom = new THREE.BoxGeometry(thickUse, wallHUse, slen);
       const mx = (tmpA.x + tmpB.x) * 0.5;
       const mz = (tmpA.z + tmpB.z) * 0.5;
       quat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(sdx, sdz));
@@ -210,25 +242,46 @@ export function createTrailWallSystem(options) {
     const merged = mergeGeometries(parts);
     for (const g of parts) g.dispose();
 
-    const segMaterial = baseMaterial.clone();
-    const op = devHud.trailOpacity * Math.max(0, Math.min(1, segOpacity));
-    segMaterial.opacity = op;
-    segMaterial.transparent = op < 0.995;
-    const mesh = new THREE.Mesh(merged, segMaterial);
-    mesh.frustumCulled = false;
-    segmentsGroup.add(mesh);
+    const opFade = Math.max(0, Math.min(1, segOpacity));
+    if (!asGlow) {
+      const segMaterial = baseMaterial.clone();
+      const op = devHud.trailOpacity * opFade;
+      segMaterial.opacity = op;
+      segMaterial.transparent = op < 0.995;
+      const mesh = new THREE.Mesh(merged, segMaterial);
+      mesh.frustumCulled = false;
+      segmentsGroup.add(mesh);
+    } else {
+      const gop = devHud.trailOpacity * opFade * glowAlpha();
+      const gm = new THREE.MeshBasicMaterial({
+        color: color.clone(),
+        transparent: true,
+        opacity: gop,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.DoubleSide,
+      });
+      gm.color.copy(color);
+      gm.userData.segFade = opFade;
+      const mesh = new THREE.Mesh(merged, gm);
+      mesh.frustumCulled = false;
+      glowSegmentsGroup.add(mesh);
+    }
   }
 
   function rebuildGeometry() {
     disposeSegmentChildren();
     trailTileMap.clear();
+    const wantGlowShell = glowAlpha() > 0.001;
 
     let g = 0;
     for (const fc of frozenChains) {
       for (let i = 0; i < fc.anchors.length - 1; i++) {
         const o = fc.segmentOpacities[i] ?? 1;
         if (o <= 0.001) continue;
-        buildSegmentMeshes(fc.anchors[i], fc.anchors[i + 1], o);
+        buildSegmentMeshes(fc.anchors[i], fc.anchors[i + 1], o, false);
+        if (wantGlowShell) buildSegmentMeshes(fc.anchors[i], fc.anchors[i + 1], o, true);
         trailTileMap.stampEdge(
           fc.anchors[i].x,
           fc.anchors[i].z,
@@ -243,7 +296,8 @@ export function createTrailWallSystem(options) {
     for (let i = 0; i < anchors.length - 1; i++) {
       const o = segmentOpacities[i] ?? 1;
       if (o <= 0.001) continue;
-      buildSegmentMeshes(anchors[i], anchors[i + 1], o);
+      buildSegmentMeshes(anchors[i], anchors[i + 1], o, false);
+      if (wantGlowShell) buildSegmentMeshes(anchors[i], anchors[i + 1], o, true);
       trailTileMap.stampEdge(
         anchors[i].x,
         anchors[i].z,
@@ -267,12 +321,24 @@ export function createTrailWallSystem(options) {
   function update(dt, state) {
     pulseT += dt;
     const pulse = 0.1 * Math.sin(pulseT * 3.4);
+    const glowKey = `${glowThickMul()}:${glowHeightMul()}`;
+    if (glowKey !== prevGlowDimsKey) {
+      prevGlowDimsKey = glowKey;
+      anchorsDirty = true;
+    }
+    const wantGlowShell = glowAlpha() > 0.001;
+    if (prevGlowShell === null) prevGlowShell = wantGlowShell;
+    else if (wantGlowShell !== prevGlowShell) {
+      prevGlowShell = wantGlowShell;
+      anchorsDirty = true;
+    }
     if (cosmeticToken) {
       writeExoticTrailEmissive(color, cosmeticToken, pulseT);
       baseMaterial.emissive.copy(color);
-      baseMaterial.color.copy(color).multiplyScalar(0.18);
+      baseMaterial.color.set(0x000000);
     }
-    baseMaterial.emissiveIntensity = (0.92 + pulse) * devHud.neonIntensity;
+    const pulseI = 0.92 + pulse;
+    baseMaterial.emissiveIntensity = pulseI * devHud.neonIntensity;
     baseMaterial.opacity = devHud.trailOpacity;
 
     const spd = typeof state.speed === "number" ? state.speed : 0;
@@ -354,11 +420,17 @@ export function createTrailWallSystem(options) {
     for (const m of segmentsGroup.children) {
       if (m instanceof THREE.Mesh && m.material) {
         const mat = /** @type {THREE.MeshStandardMaterial} */ (m.material);
-        if (cosmeticToken) {
-          mat.emissive.copy(color);
-          mat.color.copy(color).multiplyScalar(0.18);
-        }
-        mat.emissiveIntensity = (0.92 + pulse) * devHud.neonIntensity;
+        mat.color.set(0x000000);
+        mat.emissive.copy(color);
+        mat.emissiveIntensity = pulseI * devHud.neonIntensity;
+      }
+    }
+    for (const m of glowSegmentsGroup.children) {
+      if (m instanceof THREE.Mesh && m.material) {
+        const mat = /** @type {THREE.MeshBasicMaterial} */ (m.material);
+        mat.color.copy(color);
+        const sf = typeof mat.userData.segFade === "number" ? mat.userData.segFade : 1;
+        mat.opacity = devHud.trailOpacity * Math.max(0, Math.min(1, sf)) * glowAlpha();
       }
     }
   }
@@ -407,7 +479,7 @@ export function createTrailWallSystem(options) {
       cosmeticToken = null;
       color.set(hex);
     }
-    baseMaterial.color.copy(color).multiplyScalar(0.18);
+    baseMaterial.color.set(0x000000);
     baseMaterial.emissive.copy(color);
   }
 
