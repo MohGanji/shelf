@@ -25,6 +25,14 @@ import { mountGarageShowroom } from "./garageShowroom.js";
 import { setEditorPlaytestReturn } from "../sessionEditorPlaytest.js";
 import { setSessionBootTarget } from "../sessionBoot.js";
 
+/** Shared neon coin graphic (avoid Unicode hexagon — poor contrast on cyan buttons). */
+const NEON_COIN_SRC = new URL("../../assets/ui/neon-coin.svg", import.meta.url).href;
+
+/** @param {string} [className] */
+function neonCoinImg(className = "neon-coin-icon") {
+  return `<img class="${className}" src="${NEON_COIN_SRC}" width="14" height="14" alt="" />`;
+}
+
 /** Plan § Cosmetics — catalog (cost 0 = default owned). */
 const GARAGE_COLOR_CATALOG = [
   { name: "Cyan", hex: "#00FFFF", cost: 0 },
@@ -42,11 +50,11 @@ const GARAGE_COLOR_CATALOG = [
 const GARAGE_ATTR_KEYS = ["speed", "acceleration", "trailLength", "nitroBars", "handling"];
 
 const ATTR_LABELS = {
-  speed: "Speed",
-  acceleration: "Acceleration",
-  trailLength: "Trail length",
-  nitroBars: "Nitro bars",
-  handling: "Handling",
+  speed: "Spd",
+  acceleration: "Accel",
+  trailLength: "Trail",
+  nitroBars: "Nitro",
+  handling: "Hnd",
 };
 
 /**
@@ -110,12 +118,10 @@ function ownsColor(save, kind, hex) {
  */
 function renderGarageStats(el, save) {
   const coins = save.progress.coins;
-  const total = save.progress.totalCoinsEarned;
   const gate = save.progress.currentLevel;
   el.innerHTML = `
-    <span class="garage-stats__item"><span class="garage-stats__label"><span class="neon-coin-icon">⬡</span></span><span class="garage-stats__value">${coins}</span></span>
-    <span class="garage-stats__item"><span class="garage-stats__label">Total earned</span><span class="garage-stats__value">${total}</span></span>
-    <span class="garage-stats__item"><span class="garage-stats__label">Current level</span><span class="garage-stats__value">Arena ${gate}</span></span>
+    <span class="garage-stats__item garage-stats__item--coins"><span class="garage-stats__coin-wrap">${neonCoinImg("neon-coin-icon neon-coin-icon--header")}</span><span class="garage-stats__value">${coins}</span></span>
+    <span class="garage-stats__item"><span class="garage-stats__label">Arena</span><span class="garage-stats__value">${gate}</span></span>
   `;
 }
 
@@ -145,15 +151,10 @@ function renderColorSwatches(container, kind, save, onChanged) {
     btn.title = entry.name;
     btn.setAttribute("aria-label", `${entry.name}${!owned && entry.cost > 0 ? `, unlock ${entry.cost} NEON` : ""}`);
 
-    const nameLabel = document.createElement("span");
-    nameLabel.className = "garage-swatch__name";
-    nameLabel.textContent = entry.name;
-    btn.appendChild(nameLabel);
-
     if (!owned && entry.cost > 0) {
       const tag = document.createElement("span");
       tag.className = "garage-swatch__tag";
-      tag.innerHTML = `<span class="neon-coin-icon">⬡</span> ${entry.cost}`;
+      tag.innerHTML = `${neonCoinImg()}<span class="garage-swatch__tag-val">${entry.cost}</span>`;
       btn.appendChild(tag);
     }
 
@@ -244,7 +245,7 @@ function renderAttributeUpgrades(container, save, onChanged) {
       upgradeBar.style.left = `${(level / 10) * 100}%`;
       
       const cost = ATTRIBUTE_UPGRADE_COSTS[level - 1] ?? 0;
-      btn.innerHTML = `<span class="neon-coin-icon">⬡</span> ${cost}`;
+      btn.innerHTML = `${neonCoinImg()}<span class="garage-upgrade-row__price">${cost}</span>`;
       btn.disabled = save.progress.coins < cost;
       btn.addEventListener("click", () => {
         if (level >= 10 || save.progress.coins < cost) return;

@@ -1291,7 +1291,8 @@
       >
         <p class="level-complete-overlay__title">LEVEL COMPLETE</p>
         <p class="level-complete-overlay__coins">
-          <span data-coin-base>0</span> <span class="neon-coin-icon">⬡</span>
+          <span data-coin-base>0</span>
+          <img class="neon-coin-icon" src="./assets/ui/neon-coin.svg" width="18" height="18" alt="" />
         </p>
         <p class="level-complete-overlay__bonus" data-coin-bonus-hint></p>
         <p class="level-complete-overlay__hint">Ride through the EXIT gate to claim rewards.</p>
@@ -1309,12 +1310,13 @@
           <h2 id="garage-destination-title" class="tron-destination__title">GARAGE</h2>
           <div class="garage-stats" id="garage-stats" aria-live="polite"></div>
           <div class="garage-grid">
-            <section class="garage-panel">
-              <h3 class="garage-panel__heading">Color</h3>
-              <div class="garage-swatches garage-swatches--vertical" id="garage-cycle-swatches" role="group" aria-label="Cycle & Trail colors"></div>
+            <section class="garage-panel garage-panel--colors" aria-label="Cycle and trail color">
+              <h3 class="garage-panel__heading garage-panel__heading--sr">Color</h3>
+              <div class="garage-swatches garage-swatches--rail" id="garage-cycle-swatches" role="group" aria-label="Cycle & Trail colors"></div>
             </section>
+            <div class="garage-grid__spacer" aria-hidden="true"></div>
             <section class="garage-panel garage-panel--upgrades">
-              <h3 class="garage-panel__heading">Attribute upgrades</h3>
+              <h3 class="garage-panel__heading">Upgrades</h3>
               <div id="garage-upgrades" class="garage-upgrades"></div>
             </section>
           </div>
