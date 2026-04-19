@@ -150,18 +150,10 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   const style = playCfg.devHud.buildingGlitchStyle ?? 0;
   
   let matBuilding;
-  if (style === 0) {
-    // Style 0: Exact same color as floor, slightly transparent, highly reflective
-    matBuilding = new THREE.MeshStandardMaterial({
-      color: playCfg.colors.gridFloor,
-      emissive: 0x00ffcc,
-      emissiveIntensity: neon * 0.1,
-      metalness: 0.9,
-      roughness: 0.1,
-      transparent: true,
-      opacity: 0.9,
-      wireframe: Math.random() > 0.85
-    });
+  if (style === 0 && scene.userData.arenaFloorMaterial) {
+    // Style 0: Exact same material as the floor (cloned so we can tweak if needed)
+    matBuilding = scene.userData.arenaFloorMaterial.clone();
+    // Add a very subtle wireframe glitch effect on top later
   } else if (style === 1) {
     // Style 1: Pure wireframe glitch
     matBuilding = new THREE.MeshStandardMaterial({
@@ -188,8 +180,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     // Style 3: Solid block with grid lines (like the floor itself)
     matBuilding = new THREE.MeshStandardMaterial({
       color: playCfg.colors.gridFloor,
-      emissive: playCfg.colors.gridLine,
-      emissiveIntensity: neon * 0.2,
+      emissive: new THREE.Color(playCfg.colors.gridLine).multiplyScalar(0.055),
       metalness: 0.12,
       roughness: 0.82,
     });
@@ -268,7 +259,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
         const wireMat = new THREE.LineBasicMaterial({ 
           color: 0x00ffcc, 
           transparent: true, 
-          opacity: 0.15 + Math.random() * 0.15 
+          opacity: 0.05 + Math.random() * 0.1 
         });
         const wire = new THREE.LineSegments(wireGeo, wireMat);
         // Slightly scale up the wireframe to avoid z-fighting
