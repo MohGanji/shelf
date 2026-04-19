@@ -5,7 +5,7 @@
 
 import * as THREE from "../vendor/three-module.js";
 
-import { getFloorGridLineStep, mergeDevHud } from "../config.js";
+import { CYCLE_BOUNDS, getFloorGridLineStep, mergeDevHud } from "../config.js";
 import { createLightCycle } from "../game/cycle.js";
 
 const VOID_BG = 0x050508;
@@ -93,48 +93,40 @@ export function mountGarageShowroom(opts) {
 
   let trailCol = new THREE.Color(trailHex);
   const trailRoot = new THREE.Group();
-  trailRoot.position.set(0, 0, -0.06);
+  /** Rear attachment: past rear wheel (+Z is forward on the cycle). */
+  const L = CYCLE_BOUNDS.length;
+  trailRoot.position.set(0, 0.12, -L * 0.58);
   cycle.root.add(trailRoot);
 
-  const nSeg = 8;
-  /** @type {THREE.MeshStandardMaterial[]} */
-  const trailMats = [];
-  for (let i = 0; i < nSeg; i++) {
-    const t = i / (nSeg - 1);
-    const z = -0.28 - t * 2.45;
-    const x = Math.sin(t * Math.PI * 0.5) * 0.42;
-    const th = 0.38 + t * 0.22;
-    const tw = 0.07 + t * 0.05;
-    const tl = 0.34 + t * 0.08;
-    const segGeom = new THREE.BoxGeometry(tw, th, tl);
-    const segMat = new THREE.MeshStandardMaterial({
-      color: trailCol.clone().multiplyScalar(0.25),
-      emissive: trailCol.clone(),
-      emissiveIntensity: 1.05 + t * 0.35,
-      metalness: 0.25,
-      roughness: 0.42,
-      transparent: true,
-      opacity: 0.88 - t * 0.12,
-    });
-    trailMats.push(segMat);
-    const seg = new THREE.Mesh(segGeom, segMat);
-    seg.position.set(x, 0.12 + t * 0.06, z);
-    seg.rotation.y = Math.sin(t * 1.4) * 0.12;
-    trailRoot.add(seg);
-  }
+  /** One smooth tube behind the bike (no gaps); curve in trailRoot local space from rear contact. */
+  const trailCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0.03, 0.01, -0.42),
+    new THREE.Vector3(0.09, 0.028, -1.02),
+    new THREE.Vector3(0.16, 0.042, -1.62),
+    new THREE.Vector3(0.24, 0.052, -2.28),
+  ]);
+  const trailRad = 0.052;
+  const trailGeom = new THREE.TubeGeometry(trailCurve, 80, trailRad, 8, false);
+  const trailMat = new THREE.MeshStandardMaterial({
+    color: trailCol.clone().multiplyScalar(0.25),
+    emissive: trailCol.clone(),
+    emissiveIntensity: 1.22,
+    metalness: 0.28,
+    roughness: 0.4,
+    transparent: true,
+    opacity: 0.88,
+  });
+  const trailMesh = new THREE.Mesh(trailGeom, trailMat);
+  trailRoot.add(trailMesh);
 
   /**
    * @param {string} hex
    */
   function applyTrailPreviewColor(hex) {
     trailCol.set(hex);
-    for (let i = 0; i < trailMats.length; i++) {
-      const t = i / Math.max(1, trailMats.length - 1);
-      const m = trailMats[i];
-      m.color.copy(trailCol).multiplyScalar(0.25);
-      m.emissive.copy(trailCol);
-      m.emissiveIntensity = 1.05 + t * 0.35;
-    }
+    trailMat.color.copy(trailCol).multiplyScalar(0.25);
+    trailMat.emissive.copy(trailCol);
   }
 
   /**
@@ -206,10 +198,8 @@ export function mountGarageShowroom(opts) {
       plateMat.dispose();
       ringGeom.dispose();
       ringMat.dispose();
-      trailRoot.traverse((o) => {
-        if (o instanceof THREE.Mesh) o.geometry?.dispose();
-      });
-      for (const m of trailMats) m.dispose();
+      trailGeom.dispose();
+      trailMat.dispose();
       grid.geometry.dispose();
       const gmat = grid.material;
       if (Array.isArray(gmat)) gmat.forEach((m) => m.dispose());
