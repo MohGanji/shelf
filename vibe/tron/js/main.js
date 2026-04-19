@@ -704,7 +704,7 @@ async function main() {
     if (baseEl) baseEl.textContent = String(base);
     if (bonusEl) {
       bonusEl.textContent =
-        th > 0 && tb > 0 ? `Exit within ${th}s for +${tb} <span class="neon-coin-icon">⬡</span> (timer).` : "";
+        th > 0 && tb > 0 ? `Exit within ${th}s for +${tb} NEON (timer).` : "";
     }
     audio.playLevelCompleteChord();
     levelCompleteOverlay.hidden = false;
