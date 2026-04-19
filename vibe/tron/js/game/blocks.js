@@ -146,7 +146,19 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   const wallH = playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight;
   const neon = barrierNeon(playCfg);
   const matWall = neonBarrierMaterial(0x113344, 0x0088aa, neon);
-  const matBuilding = neonBarrierMaterial(0x1a3355, 0x0066cc, neon * 1.05);
+  
+  // Make buildings look more like ground bumps/glitches
+  const matBuilding = new THREE.MeshStandardMaterial({
+    color: 0x020408, // Very dark, matching the floor base
+    emissive: 0x00ffcc,
+    emissiveIntensity: neon * 0.15, // Very subtle glow
+    metalness: 0.8,
+    roughness: 0.2,
+    transparent: true,
+    opacity: 0.85, // Slightly transparent to look glitchy
+    wireframe: Math.random() > 0.8 // Occasional full wireframe glitch
+  });
+  
   const matStructure = neonBarrierMaterial(0x223355, 0x00aaff, neon * 1.1);
 
   /** @type {string[]} */
@@ -213,6 +225,19 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
       mesh.position.set(seg.cx, h / 2, seg.cz);
       mesh.castShadow = false;
       mesh.receiveShadow = false;
+      
+      // Add a glitchy wireframe overlay
+      const wireGeo = new THREE.EdgesGeometry(mesh.geometry);
+      const wireMat = new THREE.LineBasicMaterial({ 
+        color: 0x00ffcc, 
+        transparent: true, 
+        opacity: 0.15 + Math.random() * 0.15 
+      });
+      const wire = new THREE.LineSegments(wireGeo, wireMat);
+      // Slightly scale up the wireframe to avoid z-fighting
+      wire.scale.setScalar(1.001);
+      mesh.add(wire);
+
       group.add(mesh);
       bodies.push(
         addBarrierBox(
