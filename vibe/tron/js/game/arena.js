@@ -380,6 +380,8 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
 
   /** First entry in `vis.materials` is the arena floor — used for PMREM env (P9.6). */
   scene.userData.arenaFloorMaterial = vis.materials[0];
+  scene.userData.arenaFloorMaterial.userData = scene.userData.arenaFloorMaterial.userData || {};
+  scene.userData.arenaFloorMaterial.userData.sceneRef = scene;
 
   scene.userData.tronPerimeter = {
     wallMaterials: vis.wallMaterials,
@@ -578,6 +580,22 @@ export function applyArenaFloorEnvMap(renderer, floorMat, playCfg) {
   floorMat.metalness = Math.min(0.26, floorMat.metalness + 0.08);
   floorMat.roughness = Math.max(0.72, floorMat.roughness - 0.06);
   floorMat.needsUpdate = true;
+  
+  // Also apply the envMap to the scene globally so buildings can pick it up
+  // or we can just set it on the scene environment
+  floorMat.userData = floorMat.userData || {};
+  floorMat.userData.envMap = rt.texture;
+  
+  // Apply to any building materials that were created before the envMap was ready
+  if (renderer && renderer.getContext()) {
+    const scene = floorMat.userData.sceneRef;
+    if (scene && scene.userData && scene.userData.buildingMaterials) {
+      for (const mat of scene.userData.buildingMaterials) {
+        mat.envMap = rt.texture;
+        mat.needsUpdate = true;
+      }
+    }
+  }
 
   pmrem.dispose();
   /** Keep `rt` alive — `floorMat.envMap` references its texture. */

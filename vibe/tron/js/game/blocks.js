@@ -249,9 +249,14 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
       color: 0xffffff, // Let the map show through
       metalness: 0.95,
       roughness: 0.15, // Base roughness, overridden by roughnessMap
-      envMap: scene.userData.arenaFloorMaterial.envMap,
+      envMap: scene.userData.arenaFloorMaterial.envMap || scene.userData.arenaFloorMaterial.userData?.envMap,
       envMapIntensity: 2.0
     });
+    
+    // We need to store a reference to this material so we can update its envMap later
+    // when the PMREM generator finishes in main.js
+    if (!scene.userData.buildingMaterials) scene.userData.buildingMaterials = [];
+    scene.userData.buildingMaterials.push(matBuilding);
     
     const texs = getWindowTextures();
     matBuilding.map = texs.map;
