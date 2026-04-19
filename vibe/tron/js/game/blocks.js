@@ -73,7 +73,7 @@ function getWindowTexture() {
   ctx.fillRect(0, 0, 128, 128);
   
   ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 4;
   ctx.strokeRect(0, 0, 128, 128);
   
   ctx.beginPath();
@@ -212,7 +212,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     const tex = getWindowTexture();
     matBuilding.emissiveMap = tex;
     matBuilding.emissive = new THREE.Color(playCfg.colors.gridLine);
-    matBuilding.emissiveIntensity = neon * 0.4;
+    matBuilding.emissiveIntensity = neon * 0.6;
     
     // Make it glossy and reflective like the cycle body
     matBuilding.metalness = 1.0;
