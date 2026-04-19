@@ -61,6 +61,57 @@ function coerceBarrier(b) {
   return out;
 }
 
+let windowTexCache = null;
+function getWindowTexture() {
+  if (windowTexCache) return windowTexCache;
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, 128, 128);
+  
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(0, 0, 128, 128);
+  
+  ctx.beginPath();
+  ctx.moveTo(0, 64);
+  ctx.lineTo(128, 64);
+  ctx.stroke();
+  
+  windowTexCache = new THREE.CanvasTexture(canvas);
+  windowTexCache.wrapS = THREE.RepeatWrapping;
+  windowTexCache.wrapT = THREE.RepeatWrapping;
+  windowTexCache.magFilter = THREE.LinearFilter;
+  windowTexCache.minFilter = THREE.LinearMipmapLinearFilter;
+  return windowTexCache;
+}
+
+function scaleBoxUVs(geo, windowsPerUnit = 1) {
+  const pos = geo.attributes.position;
+  const uv = geo.attributes.uv;
+  const norm = geo.attributes.normal;
+  if (!pos || !uv || !norm) return;
+  for (let i = 0; i < uv.count; i++) {
+    const nx = Math.abs(norm.getX(i));
+    const ny = Math.abs(norm.getY(i));
+    const nz = Math.abs(norm.getZ(i));
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    
+    if (nx > 0.5) {
+      uv.setXY(i, z * windowsPerUnit, y * windowsPerUnit);
+    } else if (ny > 0.5) {
+      uv.setXY(i, x * windowsPerUnit, z * windowsPerUnit);
+    } else if (nz > 0.5) {
+      uv.setXY(i, x * windowsPerUnit, y * windowsPerUnit);
+    }
+  }
+}
+
 /** 1-unit tile centers from level JSON (integers expected; rounded for stable keys). */
 function tileKey(x, z) {
   return `${Math.round(x)},${Math.round(z)}`;
@@ -156,11 +207,17 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   if (style === 0 && scene.userData.arenaFloorMaterial) {
     // Style 0: Exact same material as the floor (cloned so we can tweak if needed)
     matBuilding = scene.userData.arenaFloorMaterial.clone();
+    
+    // Add a window texture to make it look like a skyscraper
+    const tex = getWindowTexture();
+    matBuilding.emissiveMap = tex;
+    matBuilding.emissive = new THREE.Color(0x00ffcc);
+    matBuilding.emissiveIntensity = neon * 0.8;
+    
     // Make it glossy and reflective like the cycle body
     matBuilding.metalness = 0.95;
     matBuilding.roughness = 0.15;
     matBuilding.envMapIntensity = 1.4;
-    // Add a very subtle wireframe glitch effect on top later
   } else if (style === 1) {
     // Style 1: Pure wireframe glitch
     matBuilding = new THREE.MeshStandardMaterial({
@@ -250,18 +307,23 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     );
   }
 
+  const H_MULT = 6;
+
   for (const [h, keySet] of squareBuildingsByHeight) {
+    const tallH = h * H_MULT;
     for (const seg of mergeAxisAlignedBarrierTiles(keySet)) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(seg.halfX * 2, h, seg.halfZ * 2),
-        matBuilding,
-      );
-      mesh.position.set(seg.cx, h / 2, seg.cz);
+      const geo = new THREE.BoxGeometry(seg.halfX * 2, tallH, seg.halfZ * 2);
+      if (style === 0) {
+        scaleBoxUVs(geo, 1.0); // 1 window per unit
+      }
+      
+      const mesh = new THREE.Mesh(geo, matBuilding);
+      mesh.position.set(seg.cx, tallH / 2, seg.cz);
       mesh.castShadow = false;
       mesh.receiveShadow = false;
       
       // Add a glitchy wireframe overlay
-      if (style === 0 || style === 2) {
+      if (style === 2) {
         const wireGeo = new THREE.EdgesGeometry(mesh.geometry);
         const wireMat = new THREE.LineBasicMaterial({ 
           color: 0x00ffcc, 
@@ -290,8 +352,8 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
         addBarrierBox(
           world,
           wallMatRef,
-          { x: seg.halfX, y: h / 2, z: seg.halfZ },
-          { x: seg.cx, y: h / 2, z: seg.cz },
+          { x: seg.halfX, y: tallH / 2, z: seg.halfZ },
+          { x: seg.cx, y: tallH / 2, z: seg.cz },
         ),
       );
     }
@@ -299,17 +361,18 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
 
   for (const b of nonSquareBuildings) {
     const h = typeof b.height === "number" ? Math.max(1, Math.min(5, Math.floor(b.height))) : 2;
+    const tallH = h * H_MULT;
     const shape = b.shape === "triangle" || b.shape === "hexagon" ? b.shape : "square";
     const segs = shape === "triangle" ? 3 : 6;
     const radius = shape === "triangle" ? 0.55 : 0.52;
     const mesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius, radius, h, segs),
+      new THREE.CylinderGeometry(radius, radius, tallH, segs),
       matBuilding,
     );
-    mesh.position.set(b.x, h / 2, b.z);
+    mesh.position.set(b.x, tallH / 2, b.z);
     group.add(mesh);
     bodies.push(
-      addBarrierBox(world, wallMatRef, { x: radius, y: h / 2, z: radius }, { x: b.x, y: h / 2, z: b.z }),
+      addBarrierBox(world, wallMatRef, { x: radius, y: tallH / 2, z: radius }, { x: b.x, y: tallH / 2, z: b.z }),
     );
   }
 
