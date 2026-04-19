@@ -161,6 +161,7 @@ export function createDevHudController(opts) {
     { key: "tunnelGridLineStep", label: "Tunnel grid step (×32px texture)", min: 1, max: 16, step: 1 },
     { key: "neonIntensity", label: "Neon intensity", min: 0.5, max: 3, step: 0.05 },
     { key: "cycleNeonIntensity", label: "Cycle neon intensity", min: 0.5, max: 3, step: 0.05 },
+    { key: "buildingGlitchStyle", label: "Building glitch style", min: 0, max: 3, step: 1 },
     { key: "fogDensity", label: "Fog density", min: 0, max: 0.06, step: 0.001 },
   ]);
 

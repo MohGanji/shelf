@@ -147,17 +147,53 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   const neon = barrierNeon(playCfg);
   const matWall = neonBarrierMaterial(0x113344, 0x0088aa, neon);
   
-  // Make buildings look more like ground bumps/glitches
-  const matBuilding = new THREE.MeshStandardMaterial({
-    color: 0x020408, // Very dark, matching the floor base
-    emissive: 0x00ffcc,
-    emissiveIntensity: neon * 0.15, // Very subtle glow
-    metalness: 0.8,
-    roughness: 0.2,
-    transparent: true,
-    opacity: 0.85, // Slightly transparent to look glitchy
-    wireframe: Math.random() > 0.8 // Occasional full wireframe glitch
-  });
+  const style = playCfg.devHud.buildingGlitchStyle ?? 0;
+  
+  let matBuilding;
+  if (style === 0) {
+    // Style 0: Exact same color as floor, slightly transparent, highly reflective
+    matBuilding = new THREE.MeshStandardMaterial({
+      color: playCfg.colors.gridFloor,
+      emissive: 0x00ffcc,
+      emissiveIntensity: neon * 0.1,
+      metalness: 0.9,
+      roughness: 0.1,
+      transparent: true,
+      opacity: 0.9,
+      wireframe: Math.random() > 0.85
+    });
+  } else if (style === 1) {
+    // Style 1: Pure wireframe glitch
+    matBuilding = new THREE.MeshStandardMaterial({
+      color: 0x000000,
+      emissive: 0x00ffcc,
+      emissiveIntensity: neon * 0.5,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.6
+    });
+  } else if (style === 2) {
+    // Style 2: Holographic scanlines/additive
+    matBuilding = new THREE.MeshStandardMaterial({
+      color: playCfg.colors.gridFloor,
+      emissive: 0x00ffcc,
+      emissiveIntensity: neon * 0.3,
+      metalness: 0.5,
+      roughness: 0.5,
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending
+    });
+  } else {
+    // Style 3: Solid block with grid lines (like the floor itself)
+    matBuilding = new THREE.MeshStandardMaterial({
+      color: playCfg.colors.gridFloor,
+      emissive: playCfg.colors.gridLine,
+      emissiveIntensity: neon * 0.2,
+      metalness: 0.12,
+      roughness: 0.82,
+    });
+  }
   
   const matStructure = neonBarrierMaterial(0x223355, 0x00aaff, neon * 1.1);
 
@@ -227,16 +263,29 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
       mesh.receiveShadow = false;
       
       // Add a glitchy wireframe overlay
-      const wireGeo = new THREE.EdgesGeometry(mesh.geometry);
-      const wireMat = new THREE.LineBasicMaterial({ 
-        color: 0x00ffcc, 
-        transparent: true, 
-        opacity: 0.15 + Math.random() * 0.15 
-      });
-      const wire = new THREE.LineSegments(wireGeo, wireMat);
-      // Slightly scale up the wireframe to avoid z-fighting
-      wire.scale.setScalar(1.001);
-      mesh.add(wire);
+      if (style === 0 || style === 2) {
+        const wireGeo = new THREE.EdgesGeometry(mesh.geometry);
+        const wireMat = new THREE.LineBasicMaterial({ 
+          color: 0x00ffcc, 
+          transparent: true, 
+          opacity: 0.15 + Math.random() * 0.15 
+        });
+        const wire = new THREE.LineSegments(wireGeo, wireMat);
+        // Slightly scale up the wireframe to avoid z-fighting
+        wire.scale.setScalar(1.001);
+        mesh.add(wire);
+      } else if (style === 3) {
+        // Grid lines to match floor
+        const wireGeo = new THREE.EdgesGeometry(mesh.geometry);
+        const wireMat = new THREE.LineBasicMaterial({ 
+          color: playCfg.colors.gridLine, 
+          transparent: true, 
+          opacity: 0.25 
+        });
+        const wire = new THREE.LineSegments(wireGeo, wireMat);
+        wire.scale.setScalar(1.001);
+        mesh.add(wire);
+      }
 
       group.add(mesh);
       bodies.push(

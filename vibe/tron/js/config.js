@@ -98,6 +98,7 @@ export const DEFAULT_DEV_HUD = {
   tunnelGridLineStep: 4,
   neonIntensity: 0.95,
   cycleNeonIntensity: 0.5,
+  buildingGlitchStyle: 0,
   fogDensity: 0.009,
   trailOpacity: 0.8,
   trailFadeSpeed: 1.0,
