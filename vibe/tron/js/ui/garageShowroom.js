@@ -7,6 +7,7 @@ import * as THREE from "../vendor/three-module.js";
 import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { CYCLE_BOUNDS, WORLD, getFloorGridLineStep, mergeDevHud } from "../config.js";
+import { sanitizeNeonHex } from "../data/savedata.js";
 import { createLightCycle } from "../game/cycle.js";
 
 /**
@@ -80,7 +81,7 @@ export function mountGarageShowroom(opts) {
   const { renderer, canvas, save } = opts;
   const devHud = mergeDevHud({ ...save.devHud, ...(opts.devHud ?? {}) });
   const floorStep = getFloorGridLineStep(devHud);
-  const cycleHex = typeof save.player.cycleColor === "string" ? save.player.cycleColor : "#00FFFF";
+  const cycleHex = sanitizeNeonHex(save.player?.cycleColor);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(VOID_BG);
@@ -220,7 +221,7 @@ export function mountGarageShowroom(opts) {
   }
 
   function applyTrailPreviewColor(hex) {
-    trailCol.set(hex);
+    trailCol.set(sanitizeNeonHex(hex));
     if (trailWallMat) {
       trailWallMat.color.copy(trailCol).multiplyScalar(0.18);
       trailWallMat.emissive.copy(trailCol);
@@ -233,7 +234,7 @@ export function mountGarageShowroom(opts) {
    * @param {import("../data/savedata.js").PlayerSave} save
    */
   function syncFromSave(save) {
-    const ch = typeof save.player.cycleColor === "string" ? save.player.cycleColor : "#00FFFF";
+    const ch = sanitizeNeonHex(save.player?.cycleColor);
     cycle.setPrimaryColor(ch);
     applyTrailPreviewColor(ch);
   }

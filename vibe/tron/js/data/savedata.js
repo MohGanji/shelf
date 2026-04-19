@@ -5,6 +5,23 @@ export const PLAYER_SAVE_KEY = "tron-light-cycles-save-v1";
 
 const SAVE_KEY = PLAYER_SAVE_KEY;
 
+const DEFAULT_NEON_HEX = "#00ffff";
+
+/**
+ * @param {unknown} raw
+ * @param {string} [fallback]
+ * @returns {string} `#rrggbb` lowercase
+ */
+export function sanitizeNeonHex(raw, fallback = DEFAULT_NEON_HEX) {
+  if (typeof raw !== "string") return fallback;
+  const s = raw.trim();
+  if (!s) return fallback;
+  const h = s.startsWith("#") ? s.slice(1) : s;
+  const full = h.length === 3 ? [...h].map((c) => c + c).join("") : h;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return fallback;
+  return `#${full.toLowerCase()}`;
+}
+
 /**
  * @typedef {object} PlayerSave
  * @property {number} version
@@ -132,8 +149,8 @@ export function normalizePlayerSave(raw) {
   const out = {
     version,
     player: {
-      cycleColor: typeof playerIn.cycleColor === "string" ? playerIn.cycleColor : d.player.cycleColor,
-      trailColor: typeof playerIn.trailColor === "string" ? playerIn.trailColor : d.player.trailColor,
+      cycleColor: sanitizeNeonHex(typeof playerIn.cycleColor === "string" ? playerIn.cycleColor : d.player.cycleColor),
+      trailColor: sanitizeNeonHex(typeof playerIn.trailColor === "string" ? playerIn.trailColor : d.player.trailColor),
       attributes: {
         speed: typeof attrIn.speed === "number" && Number.isFinite(attrIn.speed) ? clampAttr(attrIn.speed) : d.player.attributes.speed,
         acceleration:
@@ -179,12 +196,22 @@ export function normalizePlayerSave(raw) {
  * @param {PlayerSave} save
  */
 function syncTrailColorToCycle(save) {
-  save.player.trailColor = save.player.cycleColor;
-  const oc = save.cosmetics.ownedCycleColors.map(String);
-  const ot = save.cosmetics.ownedTrailColors.map(String);
-  const union = [...new Set([...oc, ...ot])];
-  save.cosmetics.ownedCycleColors = union;
-  save.cosmetics.ownedTrailColors = union;
+  if (!save || typeof save !== "object" || !save.player || typeof save.player !== "object") return;
+  if (!save.cosmetics || typeof save.cosmetics !== "object") return;
+
+  const cyc = sanitizeNeonHex(save.player.cycleColor);
+  save.player.cycleColor = cyc;
+  save.player.trailColor = cyc;
+
+  const oc = Array.isArray(save.cosmetics.ownedCycleColors)
+    ? save.cosmetics.ownedCycleColors.map((x) => sanitizeNeonHex(String(x)))
+    : [];
+  const ot = Array.isArray(save.cosmetics.ownedTrailColors)
+    ? save.cosmetics.ownedTrailColors.map((x) => sanitizeNeonHex(String(x)))
+    : [];
+  const union = [...new Set([...oc, ...ot, cyc])];
+  save.cosmetics.ownedCycleColors = [...union];
+  save.cosmetics.ownedTrailColors = [...union];
 }
 
 /** @param {number} n */
