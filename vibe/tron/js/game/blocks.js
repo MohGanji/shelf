@@ -308,7 +308,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   }
 
   const H_MULT = 6;
-  const buildingGridStep = playCfg.devHud.floorGridLineStep ?? 4;
+  const buildingGridStep = playCfg.devHud.buildingGridStep ?? 4;
 
   for (const [h, keySet] of squareBuildingsByHeight) {
     const tallH = h * H_MULT;

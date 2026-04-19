@@ -158,6 +158,7 @@ export function createDevHudController(opts) {
     { key: "crtScanlines", label: "CRT scanlines", kind: "bool" },
     { key: "gridBrightness", label: "Grid brightness", min: 0, max: 1, step: 0.02 },
     { key: "floorGridLineStep", label: "Floor grid step (world units)", min: 1, max: 16, step: 1 },
+    { key: "buildingGridStep", label: "Building grid step (world units)", min: 1, max: 16, step: 1 },
     { key: "tunnelGridLineStep", label: "Tunnel grid step (×32px texture)", min: 1, max: 16, step: 1 },
     { key: "neonIntensity", label: "Neon intensity", min: 0.5, max: 3, step: 0.05 },
     { key: "cycleNeonIntensity", label: "Cycle neon intensity", min: 0.5, max: 3, step: 0.05 },

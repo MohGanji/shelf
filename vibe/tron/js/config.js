@@ -94,6 +94,8 @@ export const DEFAULT_DEV_HUD = {
   gridBrightness: 0.2,
   /** Arena / editor / garage floor: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
   floorGridLineStep: 4,
+  /** Building neon grid size: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
+  buildingGridStep: 4,
   /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
   tunnelGridLineStep: 4,
   neonIntensity: 0.95,
