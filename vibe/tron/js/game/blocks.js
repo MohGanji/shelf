@@ -74,58 +74,61 @@ function tileKey(x, z) {
  * @returns {{ cx: number; cz: number; halfX: number; halfZ: number }[]}
  */
 function mergeAxisAlignedBarrierTiles(tileKeys) {
-  /** @type {Set<string>} */
-  let rem = new Set(tileKeys);
-  /** @type {{ cx: number; cz: number; halfX: number; halfZ: number }[]} */
+  const rem = new Set(tileKeys);
   const out = [];
 
-  const zUniq = [...new Set([...rem].map((k) => Number(k.split(",")[1])))].sort((a, b) => a - b);
-  for (const z of zUniq) {
-    const xs = [...rem]
-      .filter((k) => Number(k.split(",")[1]) === z)
-      .map((k) => Number(k.split(",")[0]))
-      .sort((a, b) => a - b);
-    if (xs.length === 0) continue;
-    let i = 0;
-    while (i < xs.length) {
-      let j = i;
-      while (j + 1 < xs.length && xs[j + 1] === xs[j] + 1) j++;
-      const run = xs.slice(i, j + 1);
-      const x0 = run[0];
-      const x1 = run[run.length - 1];
-      const len = x1 - x0 + 1;
-      out.push({ cx: (x0 + x1) / 2, cz: z, halfX: len / 2, halfZ: 0.5 });
-      for (const x of run) rem.delete(tileKey(x, z));
-      i = j + 1;
+  while (rem.size > 0) {
+    // Pick the top-left-most tile to ensure we build optimal rectangles
+    let minZ = Infinity;
+    let minX = Infinity;
+    for (const k of rem) {
+      const [x, z] = k.split(",").map(Number);
+      if (z < minZ) {
+        minZ = z;
+        minX = x;
+      } else if (z === minZ && x < minX) {
+        minX = x;
+      }
     }
-  }
-
-  const xUniq = [...new Set([...rem].map((k) => Number(k.split(",")[0])))].sort((a, b) => a - b);
-  for (const x of xUniq) {
-    const zs = [...rem]
-      .filter((k) => Number(k.split(",")[0]) === x)
-      .map((k) => Number(k.split(",")[1]))
-      .sort((a, b) => a - b);
-    if (zs.length === 0) continue;
-    let i = 0;
-    while (i < zs.length) {
-      let j = i;
-      while (j + 1 < zs.length && zs[j + 1] === zs[j] + 1) j++;
-      const run = zs.slice(i, j + 1);
-      const z0 = run[0];
-      const z1 = run[run.length - 1];
-      const len = z1 - z0 + 1;
-      out.push({ cx: x, cz: (z0 + z1) / 2, halfX: 0.5, halfZ: len / 2 });
-      for (const z of run) rem.delete(tileKey(x, z));
-      i = j + 1;
+    
+    const sx = minX;
+    const sz = minZ;
+    
+    // Find the max width in +x direction
+    let w = 1;
+    while (rem.has(tileKey(sx + w, sz))) {
+      w++;
     }
+    
+    // Find the max depth in +z direction that maintains this width
+    let d = 1;
+    let canExpandDepth = true;
+    while (canExpandDepth) {
+      for (let dx = 0; dx < w; dx++) {
+        if (!rem.has(tileKey(sx + dx, sz + d))) {
+          canExpandDepth = false;
+          break;
+        }
+      }
+      if (canExpandDepth) {
+        d++;
+      }
+    }
+    
+    // We found a rectangle of size w x d starting at (sx, sz)
+    // Remove all these tiles from rem
+    for (let dx = 0; dx < w; dx++) {
+      for (let dz = 0; dz < d; dz++) {
+        rem.delete(tileKey(sx + dx, sz + dz));
+      }
+    }
+    
+    // Calculate center and half-extents
+    const cx = sx + (w - 1) / 2;
+    const cz = sz + (d - 1) / 2;
+    out.push({ cx, cz, halfX: w / 2, halfZ: d / 2 });
   }
-
-  for (const k of rem) {
-    const [ix, iz] = k.split(",").map(Number);
-    out.push({ cx: ix, cz: iz, halfX: 0.5, halfZ: 0.5 });
-  }
-
+  
   return out;
 }
 
