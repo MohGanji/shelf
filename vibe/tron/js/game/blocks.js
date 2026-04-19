@@ -211,7 +211,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     // Add a window texture to make it look like a skyscraper
     const tex = getWindowTexture();
     matBuilding.emissiveMap = tex;
-    matBuilding.emissive = new THREE.Color(0x00ffcc);
+    matBuilding.emissive = new THREE.Color(playCfg.colors.gridLine);
     matBuilding.emissiveIntensity = neon * 0.4;
     
     // Make it glossy and reflective like the cycle body
@@ -308,13 +308,14 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   }
 
   const H_MULT = 6;
+  const buildingGridStep = playCfg.devHud.floorGridLineStep ?? 4;
 
   for (const [h, keySet] of squareBuildingsByHeight) {
     const tallH = h * H_MULT;
     for (const seg of mergeAxisAlignedBarrierTiles(keySet)) {
       const geo = new THREE.BoxGeometry(seg.halfX * 2, tallH, seg.halfZ * 2);
       if (style === 0) {
-        scaleBoxUVs(geo, 1.0); // 1 window per unit
+        scaleBoxUVs(geo, 1.0 / buildingGridStep);
       }
       
       const mesh = new THREE.Mesh(geo, matBuilding);
@@ -365,10 +366,11 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     const shape = b.shape === "triangle" || b.shape === "hexagon" ? b.shape : "square";
     const segs = shape === "triangle" ? 3 : 6;
     const radius = shape === "triangle" ? 0.55 : 0.52;
-    const mesh = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius, radius, tallH, segs),
-      matBuilding,
-    );
+    const geo = new THREE.CylinderGeometry(radius, radius, tallH, segs);
+    if (style === 0) {
+      scaleBoxUVs(geo, 1.0 / buildingGridStep);
+    }
+    const mesh = new THREE.Mesh(geo, matBuilding);
     mesh.position.set(b.x, tallH / 2, b.z);
     group.add(mesh);
     bodies.push(
