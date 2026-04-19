@@ -62,70 +62,31 @@ function coerceBarrier(b) {
 }
 
 let windowTexCache = null;
-let windowRoughnessCache = null;
-
-function getWindowTextures() {
-  if (windowTexCache && windowRoughnessCache) {
-    return { map: windowTexCache, roughnessMap: windowRoughnessCache };
-  }
-  
+function getWindowTexture() {
+  if (windowTexCache) return windowTexCache;
   const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
+  canvas.width = 128;
+  canvas.height = 128;
   const ctx = canvas.getContext("2d");
   
-  // Diffuse map (Base Color)
-  // Glass background (dark tinted blue/grey)
-  ctx.fillStyle = "#02050a";
-  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, 128, 128);
   
-  // Subtle glass reflection bake
-  const grad = ctx.createLinearGradient(0, 0, 256, 256);
-  grad.addColorStop(0, "rgba(255, 255, 255, 0.08)");
-  grad.addColorStop(0.5, "rgba(255, 255, 255, 0.0)");
-  grad.addColorStop(1, "rgba(255, 255, 255, 0.02)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 256, 256);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(0, 0, 128, 128);
   
-  // Mullions (frames)
-  ctx.strokeStyle = "#000000";
-  ctx.lineWidth = 12;
-  ctx.strokeRect(0, 0, 256, 256);
   ctx.beginPath();
-  ctx.moveTo(0, 128);
-  ctx.lineTo(256, 128);
+  ctx.moveTo(0, 64);
+  ctx.lineTo(128, 64);
   ctx.stroke();
   
   windowTexCache = new THREE.CanvasTexture(canvas);
   windowTexCache.wrapS = THREE.RepeatWrapping;
   windowTexCache.wrapT = THREE.RepeatWrapping;
-  windowTexCache.anisotropy = 4;
-  
-  // Roughness Map
-  const rCanvas = document.createElement("canvas");
-  rCanvas.width = 256;
-  rCanvas.height = 256;
-  const rCtx = rCanvas.getContext("2d");
-  
-  // Glass is very smooth (low roughness = dark)
-  rCtx.fillStyle = "#050505";
-  rCtx.fillRect(0, 0, 256, 256);
-  
-  // Frames are very rough (high roughness = white)
-  rCtx.strokeStyle = "#ffffff";
-  rCtx.lineWidth = 12;
-  rCtx.strokeRect(0, 0, 256, 256);
-  rCtx.beginPath();
-  rCtx.moveTo(0, 128);
-  rCtx.lineTo(256, 128);
-  rCtx.stroke();
-  
-  windowRoughnessCache = new THREE.CanvasTexture(rCanvas);
-  windowRoughnessCache.wrapS = THREE.RepeatWrapping;
-  windowRoughnessCache.wrapT = THREE.RepeatWrapping;
-  windowRoughnessCache.anisotropy = 4;
-  
-  return { map: windowTexCache, roughnessMap: windowRoughnessCache };
+  windowTexCache.magFilter = THREE.LinearFilter;
+  windowTexCache.minFilter = THREE.LinearMipmapLinearFilter;
+  return windowTexCache;
 }
 
 function scaleBoxUVs(geo, windowsPerUnit = 1) {
@@ -244,24 +205,19 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   
   let matBuilding;
   if (style === 0 && scene.userData.arenaFloorMaterial) {
-    // Style 0: Realistic glass skyscraper
-    matBuilding = new THREE.MeshStandardMaterial({
-      color: 0xffffff, // Let the map show through
-      metalness: 0.95,
-      roughness: 0.15, // Base roughness, overridden by roughnessMap
-      envMap: scene.userData.arenaFloorMaterial.envMap || scene.userData.arenaFloorMaterial.userData?.envMap,
-      envMapIntensity: 2.0
-    });
+    // Style 0: Exact same material as the floor (cloned so we can tweak if needed)
+    matBuilding = scene.userData.arenaFloorMaterial.clone();
     
-    // We need to store a reference to this material so we can update its envMap later
-    // when the PMREM generator finishes in main.js
-    if (!scene.userData.buildingMaterials) scene.userData.buildingMaterials = [];
-    scene.userData.buildingMaterials.push(matBuilding);
+    // Add a window texture to make it look like a skyscraper
+    const tex = getWindowTexture();
+    matBuilding.emissiveMap = tex;
+    matBuilding.emissive = new THREE.Color(0x00ffcc);
+    matBuilding.emissiveIntensity = neon * 0.4;
     
-    const texs = getWindowTextures();
-    matBuilding.map = texs.map;
-    matBuilding.roughnessMap = texs.roughnessMap;
-    
+    // Make it glossy and reflective like the cycle body
+    matBuilding.metalness = 1.0;
+    matBuilding.roughness = 0.05;
+    matBuilding.envMapIntensity = 2.5;
   } else if (style === 1) {
     // Style 1: Pure wireframe glitch
     matBuilding = new THREE.MeshStandardMaterial({
@@ -358,7 +314,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     for (const seg of mergeAxisAlignedBarrierTiles(keySet)) {
       const geo = new THREE.BoxGeometry(seg.halfX * 2, tallH, seg.halfZ * 2);
       if (style === 0) {
-        scaleBoxUVs(geo, 2.0); // 2 windows per unit for denser grid
+        scaleBoxUVs(geo, 1.0); // 1 window per unit
       }
       
       const mesh = new THREE.Mesh(geo, matBuilding);
