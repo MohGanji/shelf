@@ -164,18 +164,18 @@ export const DEFAULT_DEV_HUD = {
   /** 0 = first gameplay stem, 1 = second (`MUSIC_ASSET_URLS.gameplayVariants`). */
   gameplayMusicVariant: 0,
   /** Tighter chase cam so the cycle reads at a glance on large arenas (was 8 / 58°). */
-  cameraDistance: 6.5,
+  cameraDistance: 11.0,
   /** Raised so the bike and trail stay in frame near tall perimeter walls. */
-  cameraHeight: 4.5,
-  cameraLookAhead: 3.5,
-  cameraDamping: 0.09,
+  cameraHeight: 7.5,
+  cameraLookAhead: 5.0,
+  cameraDamping: 0.1,
   cameraTurnOffset: 1.5,
   /** Chase cam base vertical FOV (degrees). Nitro widens from here when enabled. */
-  cameraBaseFov: 52,
+  cameraBaseFov: 55,
   /** Extra FOV during nitro when `nitroFovWiden` is true. */
-  nitroFovAdd: 12,
+  nitroFovAdd: 12.0,
   /** Extra camera distance (units) during nitro when `nitroCameraPullBack` is true. */
-  nitroPullBackAdd: 2.0,
+  nitroPullBackAdd: 5.0,
 };
 
 /** Power-up palette (plan § Power-up color coding) */
