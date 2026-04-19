@@ -4,15 +4,16 @@
  */
 
 import * as THREE from "../vendor/three-module.js";
+import { cosmeticColorToRgbInt } from "./neonCosmetic.js";
 
 /**
  * @param {string} h
  * @returns {number}
  */
 export function hexColorToInt(h) {
-  if (typeof h !== "string" || h[0] !== "#") return 0xffffff;
-  const n = parseInt(h.slice(1), 16);
-  return Number.isFinite(n) ? n : 0xffffff;
+  if (typeof h === "string") return cosmeticColorToRgbInt(h);
+  if (typeof h === "number" && Number.isFinite(h)) return h;
+  return 0xffffff;
 }
 
 /**

@@ -51,6 +51,7 @@ import { createNitroState, isNitroBurstActive } from "./game/nitroSystem.js";
 import { createGameplayParticles, hexColorToInt } from "./game/particles.js";
 import { createBoostPadField, createPortalField } from "./game/objects.js";
 import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
+import { cosmeticColorToCssHex } from "./game/neonCosmetic.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
   applyEnemyWallAndBarrierSlide,
@@ -433,7 +434,7 @@ async function main() {
   playerBody.userData.equipSlotQueued = undefined;
   world.addBody(playerBody);
 
-  const playerCycle = createLightCycle({ devHud });
+  const playerCycle = createLightCycle({ devHud, color: save.player.cycleColor ?? "#00FFFF" });
   playerCycle.root.position.set(spawnX, playCfg.playerSpawnY, spawnZ);
   playerCycle.root.rotation.y = spawnHeading;
   game.scene.add(playerCycle.root);
@@ -1548,11 +1549,11 @@ async function main() {
     renderNitroHud();
     updateEquipHud();
 
-    const playerNeonHex = save.player.cycleColor ?? "#00FFFF";
+    const playerNeonCss = cosmeticColorToCssHex(save.player.cycleColor ?? "#00FFFF");
     /** P9.4 — minimap: trails, barriers, pickups / pads / portals, player + enemy dots. */
     const minimapTrailSources = [
       {
-        color: playerNeonHex,
+        color: playerNeonCss,
         getSegments: () => trailWall.getMinimapSegments(),
       },
     ];
@@ -1612,7 +1613,7 @@ async function main() {
         arenaDepth: playCfg.arenaDepth,
         playerX: playerBody.position.x,
         playerZ: playerBody.position.z,
-        playerColor: save.player.cycleColor ?? "#00FFFF",
+        playerColor: playerNeonCss,
         enemies: minimapEnemies,
         trailSources: minimapTrailSources,
         barrierBodies: game.scene.userData.barrierBodies,

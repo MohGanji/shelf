@@ -1211,6 +1211,30 @@ body {
     0 0 18px rgba(0, 255, 255, 0.45);
 }
 
+.garage-swatch--exotic-aurora {
+  background-color: #0a1018;
+  background-image: linear-gradient(
+    128deg,
+    #00fff2 0%,
+    #7a40ff 42%,
+    #ff2088 78%,
+    #00ccff 100%
+  );
+  background-size: 160% 160%;
+}
+
+.garage-swatch--exotic-prism {
+  background-color: #0c0a14;
+  background-image: conic-gradient(
+    from 200deg at 50% 45%,
+    #ff00aa,
+    #ffee00,
+    #00ffee,
+    #8866ff,
+    #ff00aa
+  );
+}
+
 .garage-swatch--locked {
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.4),
@@ -1250,14 +1274,23 @@ body {
 .garage-upgrade-row__title {
   font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: rgba(200, 240, 255, 0.95);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 0.35rem;
 }
 
 .garage-upgrade-row__val {
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: rgba(200, 240, 255, 0.95);
+  text-align: right;
+  line-height: 1.25;
+  max-width: 62%;
+  flex-shrink: 0;
 }
 
 .garage-upgrade-row__body {

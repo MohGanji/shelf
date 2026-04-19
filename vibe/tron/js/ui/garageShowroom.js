@@ -7,8 +7,8 @@ import * as THREE from "../vendor/three-module.js";
 import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { CYCLE_BOUNDS, WORLD, getFloorGridLineStep, mergeDevHud } from "../config.js";
-import { sanitizeNeonHex } from "../data/savedata.js";
 import { createLightCycle } from "../game/cycle.js";
+import { isExoticNeonToken, normalizePlayerNeonColor, writeExoticTrailEmissive } from "../game/neonCosmetic.js";
 
 /**
  * Same construction as `trail.js` `buildSegmentMeshes`: thin vertical wall boxes along a polyline on XZ.
@@ -81,7 +81,7 @@ export function mountGarageShowroom(opts) {
   const { renderer, canvas, save } = opts;
   const devHud = mergeDevHud({ ...save.devHud, ...(opts.devHud ?? {}) });
   const floorStep = getFloorGridLineStep(devHud);
-  const cycleHex = sanitizeNeonHex(save.player?.cycleColor);
+  let showroomNeon = normalizePlayerNeonColor(save.player?.cycleColor);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(VOID_BG);
@@ -142,11 +142,16 @@ export function mountGarageShowroom(opts) {
   ring.position.y = 0.145;
   plateGroup.add(ring);
 
-  const cycle = createLightCycle({ devHud, color: cycleHex });
+  const cycle = createLightCycle({ devHud, color: showroomNeon });
   cycle.root.position.set(0, 0.2, 0);
   scene.add(cycle.root);
 
-  let trailCol = new THREE.Color(trailHex);
+  const trailCol = new THREE.Color();
+  if (isExoticNeonToken(showroomNeon)) {
+    writeExoticTrailEmissive(trailCol, showroomNeon, 0);
+  } else {
+    trailCol.set(showroomNeon);
+  }
   const trailRoot = new THREE.Group();
   /** Rear attachment: past rear wheel (+Z is forward on the cycle). */
   const L = CYCLE_BOUNDS.length;
@@ -182,12 +187,18 @@ export function mountGarageShowroom(opts) {
   if (!trailGeom) {
     console.warn("[garageShowroom] trail preview geometry empty");
   } else {
+    /**
+     * Gameplay trail uses the same PBR recipe as `trail.js` but the arena runs through
+     * `EffectComposer` + bloom; the showroom calls `renderer.render` directly (no bloom).
+     * Lit metal + strong key light on thin wall boxes reads as a blown-out white slab — keep
+     * diffuse black and drive appearance from emissive + additive glow so it matches cycle neon.
+     */
     trailWallMat = new THREE.MeshStandardMaterial({
-      color: trailCol.clone().multiplyScalar(0.18),
+      color: 0x000000,
       emissive: trailCol.clone(),
-      emissiveIntensity: 0.95 * neon,
-      metalness: 0.38,
-      roughness: 0.28,
+      emissiveIntensity: 1.55 * neon,
+      metalness: 0,
+      roughness: 1,
       transparent: true,
       opacity: trailOp,
       depthWrite: false,
@@ -202,7 +213,7 @@ export function mountGarageShowroom(opts) {
     trailGlowMat = new THREE.MeshBasicMaterial({
       color: trailCol.clone(),
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.58,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       depthTest: true,
@@ -220,10 +231,14 @@ export function mountGarageShowroom(opts) {
     }
   }
 
-  function applyTrailPreviewColor(hex) {
-    trailCol.set(sanitizeNeonHex(hex));
+  function paintTrailPreviewEmissive() {
+    if (isExoticNeonToken(showroomNeon)) {
+      writeExoticTrailEmissive(trailCol, showroomNeon, trailPulseT);
+    } else {
+      trailCol.set(showroomNeon);
+    }
     if (trailWallMat) {
-      trailWallMat.color.copy(trailCol).multiplyScalar(0.18);
+      trailWallMat.color.set(0x000000);
       trailWallMat.emissive.copy(trailCol);
     }
     if (trailGlowMat) trailGlowMat.color.copy(trailCol);
@@ -234,9 +249,9 @@ export function mountGarageShowroom(opts) {
    * @param {import("../data/savedata.js").PlayerSave} save
    */
   function syncFromSave(save) {
-    const ch = sanitizeNeonHex(save.player?.cycleColor);
-    cycle.setPrimaryColor(ch);
-    applyTrailPreviewColor(ch);
+    showroomNeon = normalizePlayerNeonColor(save.player?.cycleColor);
+    cycle.setPrimaryColor(showroomNeon);
+    paintTrailPreviewEmissive();
   }
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
@@ -273,10 +288,15 @@ export function mountGarageShowroom(opts) {
     if (trailWallMat && trailGlowMat) {
       trailPulseT += dt;
       const tPulse = 0.1 * Math.sin(trailPulseT * 3.4);
-      trailWallMat.emissiveIntensity = (0.92 + tPulse) * neon;
+      trailWallMat.emissiveIntensity = (1.55 + tPulse) * neon;
       trailWallMat.opacity = trailOp;
       const gPulse = 0.38 + 0.06 * Math.sin(trailPulseT * 2.8);
-      trailGlowMat.opacity = Math.min(0.55, gPulse + 0.12);
+      trailGlowMat.opacity = Math.min(0.72, gPulse + 0.22);
+      if (isExoticNeonToken(showroomNeon)) {
+        writeExoticTrailEmissive(trailCol, showroomNeon, trailPulseT);
+        trailWallMat.emissive.copy(trailCol);
+        trailGlowMat.color.copy(trailCol);
+      }
     }
 
     cycle.root.rotation.y += dt * 0.38;

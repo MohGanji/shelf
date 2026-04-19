@@ -1,6 +1,13 @@
 import * as THREE from "../vendor/three-module.js";
 import { CYCLE_BOUNDS, TRON_COLORS, mergeDevHud } from "../config.js";
 import { getCycleAssetTemplate, hasLoadedCycleAsset } from "./cycleAssetLoader.js";
+import {
+  EXOTIC_AURORA,
+  EXOTIC_PRISM,
+  isExoticNeonToken,
+  normalizePlayerNeonColor,
+  writeExoticCyclePalettePrimary,
+} from "./neonCosmetic.js";
 
 export { preloadLightCycleAsset } from "./cycleAssetLoader.js";
 
@@ -87,7 +94,7 @@ function installTronShader(material, rimColorUniform, rimStrengthUniform, timeUn
  * Procedural mesh, or a loaded GLB/GLTF/SVG if {@link preloadLightCycleAsset} succeeded.
  *
  * @param {object} [options]
- * @param {number} [options.color] — primary emissive color (hex), default player cyan
+ * @param {string} [options.color] — `#rrggbb` or exotic id (`neon:prism`, `neon:aurora`)
  * @param {'player'|'enemy'} [options.variant] — picks default color when `color` omitted
  * @param {ReturnType<typeof mergeDevHud>} [options.devHud] — animation toggles + tuning (mutable)
  */
@@ -108,7 +115,10 @@ export function createProceduralLightCycle(options = {}) {
   const variant = options.variant ?? "player";
   const defaultHex =
     variant === "enemy" ? TRON_COLORS.enemyCycle : TRON_COLORS.playerCycle;
-  let primaryHex = options.color ?? defaultHex;
+  let storedNeon = normalizePlayerNeonColor(
+    options.color != null ? String(options.color) : String(defaultHex),
+    String(defaultHex),
+  );
 
   const devHud = options.devHud ?? mergeDevHud({});
 
@@ -118,7 +128,14 @@ export function createProceduralLightCycle(options = {}) {
 
   const { length: L, width: W, height: H } = CYCLE_BOUNDS;
 
-  const primary = new THREE.Color(primaryHex);
+  const primary = new THREE.Color();
+  const exoA = new THREE.Color();
+  const exoB = new THREE.Color();
+  if (isExoticNeonToken(storedNeon)) {
+    writeExoticCyclePalettePrimary(primary, storedNeon, 0);
+  } else {
+    primary.set(storedNeon);
+  }
   const bodyBase = primary.clone().multiplyScalar(0.08);
   const emissiveDim = primary.clone().multiplyScalar(0.22);
 
@@ -579,9 +596,7 @@ export function createProceduralLightCycle(options = {}) {
   let tiltCurrent = 0;
   let pitchCurrent = 0;
 
-  function applyPrimaryColor(hex) {
-    primaryHex = hex;
-    primary.set(hex);
+  function paintSolidNeonPalette() {
     bodyBase.copy(primary).multiplyScalar(0.08);
     emissiveDim.copy(primary).multiplyScalar(0.22);
     ns = neonScale();
@@ -611,7 +626,64 @@ export function createProceduralLightCycle(options = {}) {
     syncTronRim(1);
   }
 
-  applyPrimaryColor(primaryHex);
+  /**
+   * Exotic cosmetics: no arena bloom here, but hue motion reads as rainbow / aurora.
+   * @param {string} id
+   * @param {number} timeSec
+   */
+  function exoticProceduralApply(id, timeSec) {
+    if (id === EXOTIC_PRISM) {
+      primary.setHSL((timeSec * 0.22) % 1, 0.92, 0.54);
+      paintSolidNeonPalette();
+      return;
+    }
+    if (id === EXOTIC_AURORA) {
+      const h1 = (timeSec * 0.06) % 1;
+      const h2 = (h1 + 0.45) % 1;
+      const h3 = (h1 + 0.12) % 1;
+      exoA.setHSL(h1, 0.9, 0.54);
+      exoB.setHSL(h2, 0.88, 0.52);
+      primary.lerpColors(exoA, exoB, 0.5);
+      bodyBase.copy(primary).multiplyScalar(0.08);
+      emissiveDim.copy(exoA).lerp(exoB, 0.5).multiplyScalar(0.22);
+
+      stripMatStrong.emissive.copy(exoA);
+      stripMatSoft.emissive.copy(exoB);
+      wheelGlowMat.emissive.setHSL(h3, 0.88, 0.52);
+      wheelGlowMat.color.copy(wheelGlowMat.emissive).multiplyScalar(0.06);
+      stripMatStrong.color.copy(exoA).multiplyScalar(0.08);
+      stripMatSoft.color.copy(exoB).multiplyScalar(0.08);
+      underglowMat.emissive.copy(exoA).lerp(exoB, 0.55);
+      rearAccentMat.emissive.copy(exoB).lerp(exoA, 0.5);
+      rimBloomMat.color.copy(exoA).lerp(exoB, 0.5);
+      hullEdgeMat.color.copy(rimBloomMat.color);
+      hubGlowMat.color.copy(exoA).lerp(exoB, 0.5).multiplyScalar(0.25);
+
+      bodyMat.emissive.copy(emissiveDim);
+      ns = neonScale();
+      bodyMat.emissiveIntensity = EMISSIVE.hull * ns;
+      stripMatStrong.emissiveIntensity = EMISSIVE.stripStrong * ns;
+      stripMatSoft.emissiveIntensity = EMISSIVE.stripSoft * ns;
+      wheelGlowMat.emissiveIntensity = EMISSIVE.wheelNeon * ns;
+      underglowMat.emissiveIntensity = EMISSIVE.underglow * ns;
+      rearAccentMat.emissiveIntensity = EMISSIVE.rearSlot * ns;
+      glassMat.emissive.copy(exoA).lerp(exoB, 0.35).multiplyScalar(0.35);
+      glassMat.emissiveIntensity = EMISSIVE.glass * ns;
+      syncTronRim(1);
+    }
+  }
+
+  function applyPrimaryColor(input) {
+    storedNeon = normalizePlayerNeonColor(String(input ?? defaultHex), String(defaultHex));
+    if (isExoticNeonToken(storedNeon)) {
+      exoticProceduralApply(storedNeon, tronTimeUniform.value);
+      return;
+    }
+    primary.set(storedNeon);
+    paintSolidNeonPalette();
+  }
+
+  applyPrimaryColor(storedNeon);
 
   /**
    * @param {number} dt
@@ -627,6 +699,10 @@ export function createProceduralLightCycle(options = {}) {
     if (dt <= 0) return;
 
     tronTimeUniform.value += dt;
+
+    if (isExoticNeonToken(storedNeon)) {
+      exoticProceduralApply(storedNeon, tronTimeUniform.value);
+    }
 
     ns = neonScale();
     bodyMat.emissiveIntensity = EMISSIVE.hull * ns;
@@ -736,7 +812,7 @@ export function createProceduralLightCycle(options = {}) {
     root,
     animationRoot,
     get primaryColor() {
-      return primaryHex;
+      return storedNeon;
     },
     setPrimaryColor,
     /** @param {Partial<typeof devHud>} patch */
@@ -762,7 +838,11 @@ function createAssetBasedLightCycle(options = {}) {
   const variant = options.variant ?? "player";
   const defaultHex =
     variant === "enemy" ? TRON_COLORS.enemyCycle : TRON_COLORS.playerCycle;
-  let primaryHex = options.color ?? defaultHex;
+  let storedNeon = normalizePlayerNeonColor(
+    options.color != null ? String(options.color) : String(defaultHex),
+    String(defaultHex),
+  );
+  let exoticPhaseT = 0;
   const devHud = options.devHud ?? mergeDevHud({});
 
   const model = tpl.clone(true);
@@ -772,7 +852,14 @@ function createAssetBasedLightCycle(options = {}) {
   root.add(animationRoot);
 
   const { length: L, width: W, height: H } = CYCLE_BOUNDS;
-  const primary = new THREE.Color(primaryHex);
+  const primary = new THREE.Color();
+  const exoA = new THREE.Color();
+  const exoB = new THREE.Color();
+  if (isExoticNeonToken(storedNeon)) {
+    writeExoticCyclePalettePrimary(primary, storedNeon, 0);
+  } else {
+    primary.set(storedNeon);
+  }
 
   /** @type {THREE.Mesh[]} */
   const wheelMeshes = [];
@@ -860,9 +947,7 @@ function createAssetBasedLightCycle(options = {}) {
   let tiltCurrent = 0;
   let pitchCurrent = 0;
 
-  function applyPrimaryColor(hex) {
-    primaryHex = hex;
-    primary.set(hex);
+  function paintAssetTintSolid() {
     const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
     for (const m of tintMaterials) {
       if (m._baseEmissiveIntensity === undefined) {
@@ -882,10 +967,58 @@ function createAssetBasedLightCycle(options = {}) {
     }
   }
 
-  applyPrimaryColor(primaryHex);
+  function paintAssetExotic(id, tSec) {
+    const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
+    if (id === EXOTIC_PRISM) {
+      primary.setHSL((tSec * 0.22) % 1, 0.92, 0.54);
+      paintAssetTintSolid();
+      return;
+    }
+    if (id === EXOTIC_AURORA) {
+      const h1 = (tSec * 0.06) % 1;
+      const h2 = (h1 + 0.48) % 1;
+      exoA.setHSL(h1, 0.9, 0.54);
+      exoB.setHSL(h2, 0.88, 0.52);
+      tintMaterials.forEach((m, i) => {
+        if (m._baseEmissiveIntensity === undefined) {
+          m._baseEmissiveIntensity = Math.max(1.1, m.emissiveIntensity ?? 0.8);
+        }
+        const c = i % 2 === 0 ? exoA : exoB;
+        m.emissive.copy(c);
+        m.color.copy(c).multiplyScalar(0.18);
+        m.emissiveIntensity = m._baseEmissiveIntensity * nScale;
+      });
+      primary.lerpColors(exoA, exoB, 0.5);
+      for (const m of darkMaterials) {
+        m.emissive.copy(primary).multiplyScalar(0.05);
+        m.emissiveIntensity = 0.5;
+        m.color.setHex(0x040608);
+        m.metalness = 0.95;
+        m.roughness = 0.15;
+        m.envMapIntensity = 1.4;
+      }
+    }
+  }
+
+  function applyPrimaryColor(input) {
+    storedNeon = normalizePlayerNeonColor(String(input ?? defaultHex), String(defaultHex));
+    if (isExoticNeonToken(storedNeon)) {
+      paintAssetExotic(storedNeon, exoticPhaseT);
+      return;
+    }
+    primary.set(storedNeon);
+    paintAssetTintSolid();
+  }
+
+  applyPrimaryColor(storedNeon);
 
   function update(dt, input) {
     if (dt <= 0) return;
+
+    exoticPhaseT += dt;
+    if (isExoticNeonToken(storedNeon)) {
+      paintAssetExotic(storedNeon, exoticPhaseT);
+    }
 
     const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
     for (const m of tintMaterials) {
@@ -980,7 +1113,7 @@ function createAssetBasedLightCycle(options = {}) {
     root,
     animationRoot,
     get primaryColor() {
-      return primaryHex;
+      return storedNeon;
     },
     setPrimaryColor,
     patchDevHud(patch) {

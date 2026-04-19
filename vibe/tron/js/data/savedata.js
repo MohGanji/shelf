@@ -1,4 +1,5 @@
 import { mergeDevHud } from "../config.js";
+import { normalizeCosmeticListEntry, normalizePlayerNeonColor } from "../game/neonCosmetic.js";
 
 /** @type {const} */
 export const PLAYER_SAVE_KEY = "tron-light-cycles-save-v1";
@@ -149,8 +150,14 @@ export function normalizePlayerSave(raw) {
   const out = {
     version,
     player: {
-      cycleColor: sanitizeNeonHex(typeof playerIn.cycleColor === "string" ? playerIn.cycleColor : d.player.cycleColor),
-      trailColor: sanitizeNeonHex(typeof playerIn.trailColor === "string" ? playerIn.trailColor : d.player.trailColor),
+      cycleColor: normalizePlayerNeonColor(
+        typeof playerIn.cycleColor === "string" ? playerIn.cycleColor : d.player.cycleColor,
+        d.player.cycleColor,
+      ),
+      trailColor: normalizePlayerNeonColor(
+        typeof playerIn.trailColor === "string" ? playerIn.trailColor : d.player.trailColor,
+        d.player.trailColor,
+      ),
       attributes: {
         speed: typeof attrIn.speed === "number" && Number.isFinite(attrIn.speed) ? clampAttr(attrIn.speed) : d.player.attributes.speed,
         acceleration:
@@ -199,15 +206,15 @@ function syncTrailColorToCycle(save) {
   if (!save || typeof save !== "object" || !save.player || typeof save.player !== "object") return;
   if (!save.cosmetics || typeof save.cosmetics !== "object") return;
 
-  const cyc = sanitizeNeonHex(save.player.cycleColor);
+  const cyc = normalizePlayerNeonColor(save.player.cycleColor, createDefaultSave().player.cycleColor);
   save.player.cycleColor = cyc;
   save.player.trailColor = cyc;
 
   const oc = Array.isArray(save.cosmetics.ownedCycleColors)
-    ? save.cosmetics.ownedCycleColors.map((x) => sanitizeNeonHex(String(x)))
+    ? save.cosmetics.ownedCycleColors.map((x) => normalizeCosmeticListEntry(String(x)))
     : [];
   const ot = Array.isArray(save.cosmetics.ownedTrailColors)
-    ? save.cosmetics.ownedTrailColors.map((x) => sanitizeNeonHex(String(x)))
+    ? save.cosmetics.ownedTrailColors.map((x) => normalizeCosmeticListEntry(String(x)))
     : [];
   const union = [...new Set([...oc, ...ot, cyc])];
   save.cosmetics.ownedCycleColors = [...union];
@@ -345,7 +352,7 @@ export function spendCoins(save, amount) {
  */
 export function unlockCosmeticColor(save, kind, colorHex) {
   void kind;
-  const c = String(colorHex);
+  const c = normalizeCosmeticListEntry(String(colorHex));
   if (!save.cosmetics.ownedCycleColors.includes(c)) save.cosmetics.ownedCycleColors.push(c);
   if (!save.cosmetics.ownedTrailColors.includes(c)) save.cosmetics.ownedTrailColors.push(c);
 }

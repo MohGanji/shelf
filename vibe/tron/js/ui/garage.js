@@ -2,11 +2,15 @@
  * Garage showroom UI (plan Phase 7). P7.4 adds colors, upgrades, stats panels.
  */
 
-import { ATTRIBUTE_UPGRADE_COSTS, WORLD, mergeDevHud } from "../config.js";
+import {
+  ATTRIBUTE_UPGRADE_COSTS,
+  createRuntimeFromPlayerSave,
+  getArenaPlaytestConfig,
+  mergeDevHud,
+} from "../config.js";
 import { loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
 import { persistSave, spendCoins, unlockCosmeticColor } from "../data/savedata.js";
 import { clampAttributeLevel } from "../game/attributes.js";
-import { nitroBarsFromAttributeLevel } from "../game/nitroSystem.js";
 import {
   appendManifestEntry,
   buildCampaignExportFilename,
@@ -24,6 +28,7 @@ import { LOBBY_LEVEL_ID, MIN_ARENA_SIZE, validateLevel } from "../levels/schema.
 import { mountGarageShowroom } from "./garageShowroom.js";
 import { setEditorPlaytestReturn } from "../sessionEditorPlaytest.js";
 import { setSessionBootTarget } from "../sessionBoot.js";
+import { EXOTIC_AURORA, EXOTIC_PRISM, normalizeCosmeticListEntry, normalizePlayerNeonColor } from "../game/neonCosmetic.js";
 
 /** Shared neon coin graphic (avoid Unicode hexagon — poor contrast on cyan buttons). */
 const NEON_COIN_SRC = new URL("../../assets/ui/neon-coin.svg", import.meta.url).href;
@@ -33,29 +38,122 @@ function neonCoinImg(className = "neon-coin-icon") {
   return `<img class="${className}" src="${NEON_COIN_SRC}" width="14" height="14" alt="" />`;
 }
 
+const STANDARD_NEON_COST = 50;
+/** Exotic finishes (multi-tone / spectrum motion in-game) — 3× standard unlock. */
+const EXOTIC_NEON_COST = STANDARD_NEON_COST * 3;
+
 /** Plan § Cosmetics — catalog (cost 0 = default owned). */
 const GARAGE_COLOR_CATALOG = [
   { name: "Cyan", hex: "#00FFFF", cost: 0 },
-  { name: "Hot Pink", hex: "#FF1493", cost: 50 },
-  { name: "Crimson", hex: "#FF0033", cost: 50 },
-  { name: "Gold", hex: "#FFD700", cost: 50 },
-  { name: "White", hex: "#FFFFFF", cost: 50 },
-  { name: "Neon Yellow", hex: "#CCFF00", cost: 50 },
-  { name: "Coral", hex: "#FF6B6B", cost: 50 },
-  { name: "Ice Blue", hex: "#66CCFF", cost: 50 },
-  { name: "Tron Orange", hex: "#FF6600", cost: 50 },
+  { name: "Hot Pink", hex: "#FF1493", cost: STANDARD_NEON_COST },
+  { name: "Crimson", hex: "#FF0033", cost: STANDARD_NEON_COST },
+  { name: "Gold", hex: "#FFD700", cost: STANDARD_NEON_COST },
+  { name: "White", hex: "#FFFFFF", cost: STANDARD_NEON_COST },
+  { name: "Neon Yellow", hex: "#CCFF00", cost: STANDARD_NEON_COST },
+  { name: "Coral", hex: "#FF6B6B", cost: STANDARD_NEON_COST },
+  { name: "Ice Blue", hex: "#66CCFF", cost: STANDARD_NEON_COST },
+  { name: "Tron Orange", hex: "#FF6600", cost: STANDARD_NEON_COST },
+  {
+    name: "Aurora Veil",
+    exoticId: EXOTIC_AURORA,
+    swatch: "aurora",
+    cost: EXOTIC_NEON_COST,
+  },
+  {
+    name: "Prism Drift",
+    exoticId: EXOTIC_PRISM,
+    swatch: "prism",
+    cost: EXOTIC_NEON_COST,
+  },
 ];
 
 /** @type {readonly (keyof import("../data/savedata.js").PlayerSave["player"]["attributes"])[]} */
 const GARAGE_ATTR_KEYS = ["speed", "acceleration", "trailLength", "nitroBars", "handling"];
 
-const ATTR_LABELS = {
-  speed: "Spd",
-  acceleration: "Accel",
-  trailLength: "Trail",
-  nitroBars: "Nitro",
-  handling: "Hnd",
+const ATTR_TITLES = {
+  speed: "Speed",
+  acceleration: "Acceleration",
+  trailLength: "Trail length",
+  nitroBars: "Nitro bars",
+  handling: "Handling",
 };
+
+/**
+ * @param {import("../data/savedata.js").PlayerSave["player"]["attributes"]} attrs
+ * @param {import("../data/savedata.js").PlayerSave} save
+ */
+function playtestForGarage(attrs, save) {
+  const runtime = createRuntimeFromPlayerSave(save);
+  return getArenaPlaytestConfig(runtime, attrs, {});
+}
+
+/**
+ * @param {string} key
+ * @param {ReturnType<typeof getArenaPlaytestConfig>} play
+ */
+function readGarageMetric(key, play) {
+  switch (key) {
+    case "speed":
+      return play.maxMoveSpeed;
+    case "acceleration":
+      return play.acceleration;
+    case "handling":
+      return play.baseTurnRate;
+    case "nitroBars":
+      return play.nitroBarCount;
+    case "trailLength":
+      return play.trailMaxSegments;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Stat at current save levels vs same save with one attribute capped at 10 (bar scale 0 → max).
+ * @param {string} key
+ * @param {import("../data/savedata.js").PlayerSave} save
+ */
+function garageAttrScale(key, save) {
+  const base = save.player.attributes;
+  const playCur = playtestForGarage(base, save);
+  const attrsMaxOne = { ...base, [key]: 10 };
+  const playCap = playtestForGarage(attrsMaxOne, save);
+  const cur = readGarageMetric(key, playCur);
+  const max = Math.max(readGarageMetric(key, playCap), 1e-9);
+  return { cur, max };
+}
+
+/**
+ * @param {string} key
+ * @param {import("../data/savedata.js").PlayerSave} save
+ * @param {number} level
+ */
+function garageMetricAtAttributeLevel(key, save, level) {
+  const attrs = { ...save.player.attributes, [key]: clampAttributeLevel(level) };
+  return readGarageMetric(key, playtestForGarage(attrs, save));
+}
+
+/**
+ * @param {string} key
+ * @param {number} cur
+ * @param {number} max
+ */
+function formatGarageAttrFraction(key, cur, max) {
+  switch (key) {
+    case "speed":
+      return `${Math.round(cur)} / ${Math.round(max)} u/s`;
+    case "acceleration":
+      return `${cur.toFixed(1)} / ${max.toFixed(1)} u/s²`;
+    case "trailLength":
+      return `${Math.round(cur)} / ${Math.round(max)} seg`;
+    case "nitroBars":
+      return `${cur} / ${max}`;
+    case "handling":
+      return `${cur.toFixed(2)} / ${max.toFixed(2)} rad/s`;
+    default:
+      return `${cur} / ${max}`;
+  }
+}
 
 /**
  * @param {string} raw
@@ -70,46 +168,14 @@ function normalizeHex(raw) {
 }
 
 /**
- * @param {number} level
- * @param {number} min
- * @param {number} max
- */
-function attrScalar(level, min, max) {
-  const lv = Math.max(1, Math.min(10, Math.floor(level)));
-  return min + ((lv - 1) * (max - min)) / 9;
-}
-
-/**
- * @param {string} key
- * @param {number} level
- */
-function formatAttrBenefit(key, level) {
-  const L = clampAttributeLevel(level);
-  switch (key) {
-    case "speed":
-      return `${Math.round(attrScalar(L, WORLD.defaultTopSpeed, 120))} u/s top speed`;
-    case "acceleration":
-      return `${attrScalar(L, WORLD.defaultAcceleration, 50).toFixed(1)} u/s² acceleration`;
-    case "trailLength":
-      return `${Math.round(attrScalar(L, 40, 100))} max trail segments`;
-    case "nitroBars":
-      return `${nitroBarsFromAttributeLevel(L)} nitro bars`;
-    case "handling":
-      return `${attrScalar(L, 2.5, 5.0).toFixed(2)} rad/s turn rate`;
-    default:
-      return "";
-  }
-}
-
-/**
  * @param {import("../data/savedata.js").PlayerSave} save
  * @param {"cycle"|"trail"} kind
  * @param {string} hex
  */
-function ownsColor(save, kind, hex) {
-  const want = normalizeHex(hex);
+function ownsColor(save, kind, catalogKey) {
+  const want = normalizeCosmeticListEntry(String(catalogKey));
   const list = kind === "cycle" ? save.cosmetics.ownedCycleColors : save.cosmetics.ownedTrailColors;
-  return list.some((c) => normalizeHex(c) === want);
+  return list.some((c) => normalizeCosmeticListEntry(String(c)) === want);
 }
 
 /**
@@ -134,18 +200,22 @@ function renderGarageStats(el, save) {
 function renderColorSwatches(container, kind, save, onChanged) {
   container.replaceChildren();
   void kind;
-  const current = normalizeHex(save.player.cycleColor);
+  const current = normalizePlayerNeonColor(save.player.cycleColor);
 
   for (const entry of GARAGE_COLOR_CATALOG) {
-    const hexNorm = normalizeHex(entry.hex);
-    const owned = ownsColor(save, kind, entry.hex);
-    const selected = current === hexNorm;
+    const catalogKey = entry.exoticId ?? normalizeHex(entry.hex);
+    const owned = ownsColor(save, kind, catalogKey);
+    const selected = current === catalogKey;
     const canAfford = save.progress.coins >= entry.cost;
 
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "garage-swatch";
-    btn.style.backgroundColor = entry.hex;
+    if (entry.swatch) {
+      btn.classList.add(`garage-swatch--exotic-${entry.swatch}`);
+    } else {
+      btn.style.backgroundColor = entry.hex;
+    }
     if (selected) btn.classList.add("garage-swatch--selected");
     if (!owned) btn.classList.add("garage-swatch--locked");
     btn.title = entry.name;
@@ -163,26 +233,27 @@ function renderColorSwatches(container, kind, save, onChanged) {
     }
 
     btn.addEventListener("click", () => {
+      const persistChoice = normalizePlayerNeonColor(catalogKey);
       if (owned) {
-        save.player.cycleColor = hexNorm;
-        save.player.trailColor = hexNorm;
+        save.player.cycleColor = persistChoice;
+        save.player.trailColor = persistChoice;
         persistSave(save);
         onChanged();
         return;
       }
       if (entry.cost <= 0) {
-        unlockCosmeticColor(save, kind, hexNorm);
-        save.player.cycleColor = hexNorm;
-        save.player.trailColor = hexNorm;
+        unlockCosmeticColor(save, kind, persistChoice);
+        save.player.cycleColor = persistChoice;
+        save.player.trailColor = persistChoice;
         persistSave(save);
         onChanged();
         return;
       }
       if (save.progress.coins < entry.cost) return;
       spendCoins(save, entry.cost);
-      unlockCosmeticColor(save, kind, hexNorm);
-      save.player.cycleColor = hexNorm;
-      save.player.trailColor = hexNorm;
+      unlockCosmeticColor(save, kind, persistChoice);
+      save.player.cycleColor = persistChoice;
+      save.player.trailColor = persistChoice;
       persistSave(save);
       onChanged();
     });
@@ -201,6 +272,12 @@ function renderAttributeUpgrades(container, save, onChanged) {
 
   for (const key of GARAGE_ATTR_KEYS) {
     const level = clampAttributeLevel(save.player.attributes[key]);
+    const { cur, max } = garageAttrScale(key, save);
+    const curPct = Math.min(100, Math.max(0, (cur / max) * 100));
+    const nextVal = level >= 10 ? cur : garageMetricAtAttributeLevel(key, save, level + 1);
+    const delta = Math.max(0, nextVal - cur);
+    const upgradePct = max > 0 ? Math.min(100 - curPct, (delta / max) * 100) : 0;
+
     const card = document.createElement("div");
     card.className = "garage-upgrade-row";
 
@@ -209,11 +286,11 @@ function renderAttributeUpgrades(container, save, onChanged) {
 
     const title = document.createElement("span");
     title.className = "garage-upgrade-row__title";
-    title.textContent = ATTR_LABELS[key].toUpperCase();
+    title.textContent = ATTR_TITLES[key];
 
     const val = document.createElement("span");
     val.className = "garage-upgrade-row__val";
-    val.textContent = level;
+    val.textContent = formatGarageAttrFraction(key, cur, max);
 
     header.append(title, val);
 
@@ -222,10 +299,14 @@ function renderAttributeUpgrades(container, save, onChanged) {
 
     const barContainer = document.createElement("div");
     barContainer.className = "garage-upgrade-row__bar-container";
+    barContainer.title =
+      level >= 10
+        ? `${ATTR_TITLES[key]} — max tier (10/10)`
+        : `${ATTR_TITLES[key]} — next tier: ${formatGarageAttrFraction(key, nextVal, max)}`;
 
     const currentBar = document.createElement("div");
     currentBar.className = "garage-upgrade-row__bar-current";
-    currentBar.style.width = `${(level / 10) * 100}%`;
+    currentBar.style.width = `${curPct}%`;
 
     const upgradeBar = document.createElement("div");
     upgradeBar.className = "garage-upgrade-row__bar-upgrade";
@@ -241,9 +322,10 @@ function renderAttributeUpgrades(container, save, onChanged) {
       btn.textContent = "MAX";
       btn.disabled = true;
     } else {
-      upgradeBar.style.width = "10%";
-      upgradeBar.style.left = `${(level / 10) * 100}%`;
-      
+      upgradeBar.style.width = `${upgradePct}%`;
+      upgradeBar.style.left = `${curPct}%`;
+      if (upgradePct <= 0.05) upgradeBar.style.display = "none";
+
       const cost = ATTRIBUTE_UPGRADE_COSTS[level - 1] ?? 0;
       btn.innerHTML = `${neonCoinImg()}<span class="garage-upgrade-row__price">${cost}</span>`;
       btn.disabled = save.progress.coins < cost;

@@ -1,6 +1,7 @@
 import * as THREE from "../vendor/three-module.js";
 import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js";
 import { CYCLE_BOUNDS, WORLD } from "../config.js";
+import { isExoticNeonToken, writeExoticTrailEmissive } from "./neonCosmetic.js";
 import { createTrailTileMap } from "./trailTileMap.js";
 
 /** @typedef {typeof WORLD} WorldConstants */
@@ -32,7 +33,17 @@ import { createTrailTileMap } from "./trailTileMap.js";
  * @param {() => void} [options.onNewSegment] — plan P8.5: soft tink (~once per legacy world unit of new wall)
  */
 export function createTrailWallSystem(options) {
-  const color = new THREE.Color(options.color);
+  /** @type {string | null} */
+  let cosmeticToken =
+    typeof options.color === "string" && isExoticNeonToken(options.color.trim())
+      ? options.color.trim()
+      : null;
+  const color = new THREE.Color();
+  if (cosmeticToken) {
+    writeExoticTrailEmissive(color, cosmeticToken, 0);
+  } else {
+    color.set(options.color);
+  }
   const devHud = options.devHud;
   const onNewSegment = typeof options.onNewSegment === "function" ? options.onNewSegment : null;
   const w = options.world ?? WORLD;
@@ -256,6 +267,11 @@ export function createTrailWallSystem(options) {
   function update(dt, state) {
     pulseT += dt;
     const pulse = 0.1 * Math.sin(pulseT * 3.4);
+    if (cosmeticToken) {
+      writeExoticTrailEmissive(color, cosmeticToken, pulseT);
+      baseMaterial.emissive.copy(color);
+      baseMaterial.color.copy(color).multiplyScalar(0.18);
+    }
     baseMaterial.emissiveIntensity = (0.92 + pulse) * devHud.neonIntensity;
     baseMaterial.opacity = devHud.trailOpacity;
 
@@ -338,6 +354,10 @@ export function createTrailWallSystem(options) {
     for (const m of segmentsGroup.children) {
       if (m instanceof THREE.Mesh && m.material) {
         const mat = /** @type {THREE.MeshStandardMaterial} */ (m.material);
+        if (cosmeticToken) {
+          mat.emissive.copy(color);
+          mat.color.copy(color).multiplyScalar(0.18);
+        }
         mat.emissiveIntensity = (0.92 + pulse) * devHud.neonIntensity;
       }
     }
@@ -380,7 +400,13 @@ export function createTrailWallSystem(options) {
 
   /** @param {import('three').ColorRepresentation} hex */
   function setColor(hex) {
-    color.set(hex);
+    if (typeof hex === "string" && isExoticNeonToken(hex.trim())) {
+      cosmeticToken = hex.trim();
+      writeExoticTrailEmissive(color, cosmeticToken, pulseT);
+    } else {
+      cosmeticToken = null;
+      color.set(hex);
+    }
     baseMaterial.color.copy(color).multiplyScalar(0.18);
     baseMaterial.emissive.copy(color);
   }
