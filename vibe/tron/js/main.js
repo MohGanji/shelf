@@ -336,7 +336,7 @@ async function main() {
   buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
 
   const arenaFloorMat = game.scene.userData.arenaFloorMaterial;
-  if (arenaFloorMat) applyArenaFloorEnvMap(game.renderer, arenaFloorMat, playCfg);
+  if (arenaFloorMat) applyArenaFloorEnvMap(game.renderer, arenaFloorMat, playCfg, game.scene);
 
   const gameplayParticles = createGameplayParticles({ scene: game.scene, devHud });
 

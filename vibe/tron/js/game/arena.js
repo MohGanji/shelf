@@ -380,8 +380,6 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
 
   /** First entry in `vis.materials` is the arena floor — used for PMREM env (P9.6). */
   scene.userData.arenaFloorMaterial = vis.materials[0];
-  scene.userData.arenaFloorMaterial.userData = scene.userData.arenaFloorMaterial.userData || {};
-  scene.userData.arenaFloorMaterial.userData.sceneRef = scene;
 
   scene.userData.tronPerimeter = {
     wallMaterials: vis.wallMaterials,
@@ -521,8 +519,9 @@ export function buildArenaPhysics(world, wallMat, floorMat, cfg, gapsByEdge) {
  * @param {THREE.WebGLRenderer} renderer
  * @param {THREE.MeshStandardMaterial} floorMat
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
+ * @param {THREE.Scene | null} [scene] — when set, barrier/building meshes get the same env map (cloned floor mats are created before this runs).
  */
-export function applyArenaFloorEnvMap(renderer, floorMat, playCfg) {
+export function applyArenaFloorEnvMap(renderer, floorMat, playCfg, scene = null) {
   if (!renderer || !floorMat || !playCfg) return;
   const devHud = playCfg.devHud ?? {};
   const neon =
@@ -580,21 +579,19 @@ export function applyArenaFloorEnvMap(renderer, floorMat, playCfg) {
   floorMat.metalness = Math.min(0.26, floorMat.metalness + 0.08);
   floorMat.roughness = Math.max(0.72, floorMat.roughness - 0.06);
   floorMat.needsUpdate = true;
-  
-  // Also apply the envMap to the scene globally so buildings can pick it up
-  // or we can just set it on the scene environment
-  floorMat.userData = floorMat.userData || {};
-  floorMat.userData.envMap = rt.texture;
-  
-  // Apply to any building materials that were created before the envMap was ready
-  if (renderer && renderer.getContext()) {
-    const scene = floorMat.userData.sceneRef;
-    if (scene && scene.userData && scene.userData.buildingMaterials) {
-      for (const mat of scene.userData.buildingMaterials) {
-        mat.envMap = rt.texture;
-        mat.needsUpdate = true;
+
+  const barriers = scene?.userData?.barriersGroup;
+  if (barriers) {
+    barriers.traverse((obj) => {
+      if (!obj.isMesh) return;
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const m of mats) {
+        if (m && "envMap" in m) {
+          m.envMap = rt.texture;
+          m.needsUpdate = true;
+        }
       }
-    }
+    });
   }
 
   pmrem.dispose();

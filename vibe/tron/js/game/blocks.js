@@ -207,7 +207,9 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   if (style === 0 && scene.userData.arenaFloorMaterial) {
     // Style 0: Exact same material as the floor (cloned so we can tweak if needed)
     matBuilding = scene.userData.arenaFloorMaterial.clone();
-    
+    // three.js clones userData via JSON — never keep scene/texture refs there
+    matBuilding.userData = {};
+
     // Add a window texture to make it look like a skyscraper
     const tex = getWindowTexture();
     matBuilding.emissiveMap = tex;
