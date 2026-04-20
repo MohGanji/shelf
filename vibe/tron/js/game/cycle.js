@@ -3,6 +3,8 @@ import { CYCLE_BOUNDS, TRON_COLORS, mergeDevHud } from "../config.js";
 import { getCycleAssetTemplate, hasLoadedCycleAsset } from "./cycleAssetLoader.js";
 import {
   EXOTIC_AURORA,
+  EXOTIC_POLICE,
+  EXOTIC_POLICE_STROBE_HZ,
   EXOTIC_PRISM,
   isExoticNeonToken,
   normalizePlayerNeonColor,
@@ -94,7 +96,7 @@ function installTronShader(material, rimColorUniform, rimStrengthUniform, timeUn
  * Procedural mesh, or a loaded GLB/GLTF/SVG if {@link preloadLightCycleAsset} succeeded.
  *
  * @param {object} [options]
- * @param {string} [options.color] — `#rrggbb` or exotic id (`neon:prism`, `neon:aurora`)
+ * @param {string} [options.color] — `#rrggbb` or exotic id (`neon:prism`, `neon:aurora`, `neon:police`)
  * @param {'player'|'enemy'} [options.variant] — picks default color when `color` omitted
  * @param {ReturnType<typeof mergeDevHud>} [options.devHud] — animation toggles + tuning (mutable)
  */
@@ -671,6 +673,11 @@ export function createProceduralLightCycle(options = {}) {
       glassMat.emissiveIntensity = EMISSIVE.glass * ns;
       syncTronRim(1);
     }
+    if (id === EXOTIC_POLICE) {
+      const onBlue = (Math.floor(timeSec * EXOTIC_POLICE_STROBE_HZ) % 2) === 1;
+      primary.setHex(onBlue ? 0x2266ff : 0xff2222);
+      paintSolidNeonPalette();
+    }
   }
 
   function applyPrimaryColor(input) {
@@ -997,6 +1004,11 @@ function createAssetBasedLightCycle(options = {}) {
         m.roughness = 0.15;
         m.envMapIntensity = 1.4;
       }
+    }
+    if (id === EXOTIC_POLICE) {
+      const onBlue = (Math.floor(tSec * EXOTIC_POLICE_STROBE_HZ) % 2) === 1;
+      primary.setHex(onBlue ? 0x2266ff : 0xff2222);
+      paintAssetTintSolid();
     }
   }
 

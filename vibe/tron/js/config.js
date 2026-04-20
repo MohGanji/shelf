@@ -97,7 +97,7 @@ export const DEFAULT_DEV_HUD = {
   /** Building neon grid size: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
   buildingGridStep: 1,
   /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
-  tunnelGridLineStep: 4,
+  tunnelGridLineStep: 8,
   neonIntensity: 0.95,
   cycleNeonIntensity: 0.5,
   buildingGlitchStyle: 0,

@@ -8,7 +8,13 @@ export const EXOTIC_PRISM = "neon:prism";
 /** Multi-tone aurora: offset hues on strips / wheels (no true UV gradient). */
 export const EXOTIC_AURORA = "neon:aurora";
 
-const ALLOW = new Set([EXOTIC_PRISM, EXOTIC_AURORA]);
+/** Emergency bar — hard-step red / blue strobe (synced trail + cycle). */
+export const EXOTIC_POLICE = "neon:police";
+
+/** Full red↔blue strobe cycles per second (integer steps). */
+export const EXOTIC_POLICE_STROBE_HZ = 2.4;
+
+const ALLOW = new Set([EXOTIC_PRISM, EXOTIC_AURORA, EXOTIC_POLICE]);
 
 /**
  * @param {unknown} s
@@ -70,6 +76,7 @@ export function cosmeticColorToCssHex(raw) {
   const t = normalizePlayerNeonColor(String(raw ?? ""), DEFAULT_HEX);
   if (t === EXOTIC_PRISM) return "#00ffd0";
   if (t === EXOTIC_AURORA) return "#d040ff";
+  if (t === EXOTIC_POLICE) return "#6644cc";
   return t.startsWith("#") ? t : DEFAULT_HEX;
 }
 
@@ -104,6 +111,11 @@ export function writeExoticTrailEmissive(target, token, tSec) {
     _tmpA.setHSL(h1, 0.9, 0.54);
     _tmpB.setHSL(h2, 0.88, 0.52);
     target.lerpColors(_tmpA, _tmpB, 0.5);
+    return;
+  }
+  if (token === EXOTIC_POLICE) {
+    const onBlue = (Math.floor(tSec * EXOTIC_POLICE_STROBE_HZ) % 2) === 1;
+    target.setHex(onBlue ? 0x2266ff : 0xff2222);
     return;
   }
   target.set(DEFAULT_HEX);

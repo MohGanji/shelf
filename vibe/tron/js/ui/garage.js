@@ -28,7 +28,13 @@ import { LOBBY_LEVEL_ID, MIN_ARENA_SIZE, validateLevel } from "../levels/schema.
 import { mountGarageShowroom } from "./garageShowroom.js";
 import { setEditorPlaytestReturn } from "../sessionEditorPlaytest.js";
 import { setSessionBootTarget } from "../sessionBoot.js";
-import { EXOTIC_AURORA, EXOTIC_PRISM, normalizeCosmeticListEntry, normalizePlayerNeonColor } from "../game/neonCosmetic.js";
+import {
+  EXOTIC_AURORA,
+  EXOTIC_POLICE,
+  EXOTIC_PRISM,
+  normalizeCosmeticListEntry,
+  normalizePlayerNeonColor,
+} from "../game/neonCosmetic.js";
 
 /** Shared neon coin graphic (avoid Unicode hexagon — poor contrast on cyan buttons). */
 const NEON_COIN_SRC = new URL("../../assets/ui/neon-coin.svg", import.meta.url).href;
@@ -39,8 +45,10 @@ function neonCoinImg(className = "neon-coin-icon") {
 }
 
 const STANDARD_NEON_COST = 50;
-/** Exotic finishes (multi-tone / spectrum motion in-game) — 3× standard unlock. */
+/** Aurora Veil — 3× standard. */
 const EXOTIC_NEON_COST = STANDARD_NEON_COST * 3;
+/** Prism Drift — premium full-spectrum finish. */
+const EXOTIC_PRISM_NEON_COST = 250;
 
 /** Plan § Cosmetics — catalog (cost 0 = default owned). */
 const GARAGE_COLOR_CATALOG = [
@@ -54,6 +62,12 @@ const GARAGE_COLOR_CATALOG = [
   { name: "Ice Blue", hex: "#66CCFF", cost: STANDARD_NEON_COST },
   { name: "Tron Orange", hex: "#FF6600", cost: STANDARD_NEON_COST },
   {
+    name: "Police Bar",
+    exoticId: EXOTIC_POLICE,
+    swatch: "police",
+    cost: EXOTIC_NEON_COST,
+  },
+  {
     name: "Aurora Veil",
     exoticId: EXOTIC_AURORA,
     swatch: "aurora",
@@ -63,7 +77,7 @@ const GARAGE_COLOR_CATALOG = [
     name: "Prism Drift",
     exoticId: EXOTIC_PRISM,
     swatch: "prism",
-    cost: EXOTIC_NEON_COST,
+    cost: EXOTIC_PRISM_NEON_COST,
   },
 ];
 

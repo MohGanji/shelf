@@ -1211,6 +1211,17 @@ body {
     0 0 18px rgba(0, 255, 255, 0.45);
 }
 
+.garage-swatch--exotic-police {
+  background-color: #0c0812;
+  background-image: linear-gradient(
+    118deg,
+    #ff2222 0%,
+    #ff2222 42%,
+    #2244ff 58%,
+    #2244ff 100%
+  );
+}
+
 .garage-swatch--exotic-aurora {
   background-color: #0a1018;
   background-image: linear-gradient(
