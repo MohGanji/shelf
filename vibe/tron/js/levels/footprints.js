@@ -110,6 +110,63 @@ export function resolveTriangleBuildingRotationY(o) {
   return snapTriangleBuildingRotationY(r);
 }
 
+const PORTAL_YAW_90 = Math.PI * 0.5;
+
+/**
+ * Portals on a 2×2 tile only need 0° or 90° yaw; 180°/270° are equivalent by symmetry of the pair / footprint.
+ * Level data uses `portalHalfTurn` only; legacy `rotation` (rad) is still read here if present until fully migrated in memory.
+ * @param {Record<string, unknown>} o
+ */
+export function resolvePortalRotationY(o) {
+  if (typeof o.portalHalfTurn === "number" && Number.isInteger(o.portalHalfTurn)) {
+    return ((o.portalHalfTurn % 2) + 2) % 2 === 1 ? PORTAL_YAW_90 : 0;
+  }
+  const r = typeof o.rotation === "number" && Number.isFinite(o.rotation) ? o.rotation : 0;
+  const q = Math.round(r / (Math.PI / 2));
+  const m = ((q % 4) + 4) % 4;
+  return m === 0 || m === 2 ? 0 : PORTAL_YAW_90;
+}
+
+/**
+ * @param {number} r
+ * @returns {0 | 1}
+ */
+export function portalHalfTurnIndexFromRotation(r) {
+  if (typeof r !== "number" || !Number.isFinite(r)) return 0;
+  const q = Math.round(r / (Math.PI / 2));
+  const m = ((q % 4) + 4) % 4;
+  return m === 0 || m === 2 ? 0 : 1;
+}
+
+/**
+ * @param {Record<string, unknown>} o
+ * @returns {0 | 1}
+ */
+export function portalHalfTurnIndexFromObject(o) {
+  if (typeof o.portalHalfTurn === "number" && Number.isInteger(o.portalHalfTurn)) {
+    return /** @type {0 | 1} */ (((o.portalHalfTurn % 2) + 2) % 2);
+  }
+  const r = typeof o.rotation === "number" && Number.isFinite(o.rotation) ? o.rotation : 0;
+  return portalHalfTurnIndexFromRotation(r);
+}
+
+/**
+ * Portals use only `portalHalfTurn` in JSON; strips legacy `rotation` after deriving half-turn.
+ * Mutates `level` in place. Call before `validateLevel` (also invoked from there).
+ * @param {Record<string, unknown>} level
+ */
+export function normalizePortalGameObjectsInLevel(level) {
+  const arr = level.gameObjects;
+  if (!Array.isArray(arr)) return;
+  for (const item of arr) {
+    if (!item || typeof item !== "object") continue;
+    const o = /** @type {Record<string, unknown>} */ (item);
+    if (o.type !== "portal") continue;
+    o.portalHalfTurn = portalHalfTurnIndexFromObject(o);
+    delete o.rotation;
+  }
+}
+
 /**
  * @param {"barriers" | "gameObjects" | "powerups" | "enemies" | string} list
  * @param {Record<string, unknown>} o
@@ -133,15 +190,21 @@ export function getFloorObjectFootprint(list, o) {
   if (list === "gameObjects") {
     if (o.type === "boost_pad") {
       return {
-        width: positiveGridSpan(o.width, 2),
-        depth: positiveGridSpan(o.depth, 2),
+        width: positiveGridSpan(o.width, 4),
+        depth: positiveGridSpan(o.depth, 4),
         fixedSize: false,
         shape: "rect",
         rotation: 0,
       };
     }
     if (o.type === "portal") {
-      return { width: 2, depth: 2, fixedSize: true, shape: "rect", rotation: finiteNumber(o.rotation) ? o.rotation : 0 };
+      return {
+        width: 2,
+        depth: 2,
+        fixedSize: true,
+        shape: "rect",
+        rotation: resolvePortalRotationY(/** @type {Record<string, unknown>} */ (o)),
+      };
     }
   }
   if (list === "barriers") {

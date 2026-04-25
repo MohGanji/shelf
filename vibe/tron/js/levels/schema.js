@@ -8,6 +8,7 @@ import {
   floorObjectInsideAuthoringBounds,
   floorObjectOccupiedCells,
   getFloorObjectFootprint,
+  normalizePortalGameObjectsInLevel,
 } from "./footprints.js";
 
 /** Minimum arena width/depth in units (tiles). */
@@ -106,6 +107,8 @@ export function validateLevel(json) {
   if (!isPlainObject(json)) {
     return { valid: false, errors: ["Root value must be a JSON object"] };
   }
+
+  normalizePortalGameObjectsInLevel(/** @type {Record<string, unknown>} */ (json));
 
   expectNonEmptyString("id", json.id, errors);
   expectNonEmptyString("name", json.name, errors);
@@ -524,7 +527,9 @@ function validateGameObjects(gameObjects, errors, v2) {
       }
     }
     if (type === "portal") {
-      expectFiniteNumber(`${path}.rotation`, g.rotation, errors);
+      if (typeof g.portalHalfTurn !== "number" || !Number.isInteger(g.portalHalfTurn) || (g.portalHalfTurn !== 0 && g.portalHalfTurn !== 1)) {
+        errors.push(`${path}.portalHalfTurn must be 0 or 1`);
+      }
       const pairId = g.pairId;
       if (typeof pairId !== "string" || pairId.trim() === "") {
         errors.push(`${path}.pairId must be a non-empty string`);

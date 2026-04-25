@@ -8,6 +8,7 @@ import * as THREE from "../vendor/three-module.js";
 import { Body, Box, Vec3 } from "../vendor/cannon-es-module.js";
 import { COLLISION_GROUP_ARENA_SOLID, COLLISION_GROUP_CYCLE } from "../engine/physics.js";
 import { applyBoostPadBurst } from "./nitroSystem.js";
+import { resolvePortalRotationY } from "../levels/footprints.js";
 
 /** @typedef {"boost_pad" | "portal"} GameObjectKind */
 
@@ -100,8 +101,8 @@ export function createBoostPadField(opts) {
     if (/** @type {unknown} */ (g).type !== "boost_pad") continue;
     const x = typeof g.x === "number" ? g.x : 0;
     const z = typeof g.z === "number" ? g.z : 0;
-    const width = typeof g.width === "number" && Number.isFinite(g.width) && g.width > 0 ? g.width : 2.4;
-    const depth = typeof g.depth === "number" && Number.isFinite(g.depth) && g.depth > 0 ? g.depth : 2.4;
+    const width = typeof g.width === "number" && Number.isFinite(g.width) && g.width > 0 ? g.width : 4;
+    const depth = typeof g.depth === "number" && Number.isFinite(g.depth) && g.depth > 0 ? g.depth : 4;
     const colorHex = parseOptionalHexColor(/** @type {Record<string, unknown>} */ (g).color, 0x55eeff);
 
     const geo = new THREE.BoxGeometry(width, 0.07, depth);
@@ -278,7 +279,7 @@ function portalRightXZ(rotY) {
  */
 
 /**
- * Paired portals: teleport player + enemies, preserve speed, rotate heading to exit `rotation`,
+ * Paired portals: teleport player + enemies, preserve speed, exit yaw from resolved portal orientation (`portalHalfTurn` in level JSON),
  * break trail at entry, short trail-hit immunity after exit. Inactive face uses a thin static box (slide like a wall).
  *
  * @param {object} opts
@@ -344,7 +345,7 @@ export function createPortalField(opts) {
     const ep = {
       x: typeof o.x === "number" ? o.x : 0,
       z: typeof o.z === "number" ? o.z : 0,
-      rotation: typeof o.rotation === "number" ? o.rotation : 0,
+      rotation: resolvePortalRotationY(o),
       pairId,
       colorHex: parseHex(typeof o.pairColor === "string" ? o.pairColor : "#FF00FF"),
     };

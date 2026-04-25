@@ -185,7 +185,7 @@
       "type": "portal",
       "x": 101.38,
       "z": 126.67,
-      "rotation": 0.0,
+      "portalHalfTurn": 0,
       "pairId": "13-portal-1",
       "pairColor": "#7CFFEA"
     },
@@ -193,7 +193,7 @@
       "type": "portal",
       "x": -130.34,
       "z": -84.44,
-      "rotation": 3.14,
+      "portalHalfTurn": 0,
       "pairId": "13-portal-1",
       "pairColor": "#7CFFEA"
     }

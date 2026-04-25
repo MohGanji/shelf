@@ -31,6 +31,8 @@ export function getPowerupCategory(type) {
 
 /** Horizontal distance (units) from cycle center to pickup to collect. */
 const PICKUP_RADIUS = 1.65;
+/** Slightly larger grab radius for 2×2 “tile” instant / equippable pickups (nitro / shield). */
+const PICKUP_RADIUS_LARGE = 1.9;
 
 /** Powerups should read as roughly 2x2 floor pickups in campaign maps. */
 const POWERUP_FOOTPRINT = 2.0;
@@ -46,13 +48,13 @@ const PICKUP_BURST_DURATION = 0.38;
 function createPowerupGeometryForType(type) {
   switch (type) {
     case "nitro_recharge":
-      return { geo: new THREE.IcosahedronGeometry(0.62, 1), visual: "orb" };
+      return { geo: new THREE.IcosahedronGeometry(1.02, 1), visual: "orb" };
     case "trail_extend":
       return { geo: new THREE.CylinderGeometry(0.31, 0.36, 1.2, 10), visual: "column" };
     case "nitro_capacity":
       return { geo: new THREE.DodecahedronGeometry(0.7, 0), visual: "poly" };
     case "shield":
-      return { geo: new THREE.TorusGeometry(0.58, 0.16, 12, 40), visual: "torus" };
+      return { geo: new THREE.TorusGeometry(0.88, 0.22, 14, 48), visual: "torus" };
     default:
       return { geo: new THREE.IcosahedronGeometry(0.65, 0), visual: "orb" };
   }
@@ -272,7 +274,7 @@ export function createCampaignPowerupField(opts) {
     const accents = [];
     if (type === "nitro_recharge") {
       const orbit = new THREE.Mesh(
-        new THREE.TorusGeometry(0.95, 0.035, 8, 40),
+        new THREE.TorusGeometry(1.2, 0.045, 10, 44),
         mat,
       );
       orbit.rotation.x = Math.PI / 2;
@@ -369,8 +371,10 @@ export function createCampaignPowerupField(opts) {
       const px = playerBody.position.x;
       const pz = playerBody.position.z;
       const dPlayer = Math.hypot(px - inst.x, pz - inst.z);
+      const pickR =
+        inst.type === "nitro_recharge" || inst.type === "shield" ? PICKUP_RADIUS_LARGE : PICKUP_RADIUS;
 
-      if (canPlayerPick && dPlayer < PICKUP_RADIUS) {
+      if (canPlayerPick && dPlayer < pickR) {
         spawnPickupBurst(inst.x, inst.node.position.y, inst.z, inst.emissive, neon);
         if (inst.category === "level_permanent") {
           if (inst.type === "trail_extend") apply.onPlayerTrailExtend();
@@ -396,7 +400,7 @@ export function createCampaignPowerupField(opts) {
 
         const ex = e.body.position.x;
         const ez = e.body.position.z;
-        if (Math.hypot(ex - inst.x, ez - inst.z) >= PICKUP_RADIUS) continue;
+        if (Math.hypot(ex - inst.x, ez - inst.z) >= pickR) continue;
 
         spawnPickupBurst(inst.x, inst.node.position.y, inst.z, inst.emissive, neon);
         if (inst.type === "nitro_recharge") {

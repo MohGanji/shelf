@@ -7,6 +7,7 @@ import {
   getFloorObjectFootprint,
   triangleBuildingRotationQuarterIndex,
   triangleBuildingRotationRadFromQuarterIndex,
+  portalHalfTurnIndexFromObject,
 } from "./footprints.js";
 
 /**
@@ -466,7 +467,7 @@ export function mountEditorPropertiesPanel(root, opts) {
       if (typ === "portal") {
         const pid = typeof o.pairId === "string" ? o.pairId : "";
         const pcol = typeof o.pairColor === "string" ? o.pairColor : "";
-        const rot = typeof o.rotation === "number" ? o.rotation : 0;
+        const halfNow = portalHalfTurnIndexFromObject(o);
 
         const pairRo = document.createElement("p");
         pairRo.className = "editor-props__ro";
@@ -475,19 +476,28 @@ export function mountEditorPropertiesPanel(root, opts) {
 
         const rLabel = document.createElement("label");
         rLabel.className = "editor-props__field";
-        rLabel.innerHTML = `<span class="editor-props__label">Rotation (rad)</span>`;
-        const rIn = document.createElement("input");
-        rIn.type = "number";
-        rIn.step = "0.01";
-        rIn.className = "editor-props__input";
-        rIn.value = String(rot);
-        rIn.addEventListener("change", () => {
-          beforeMutation?.();
-          o.rotation = clampFloat(rIn.value, -100, 100);
-          onApply();
+        rLabel.innerHTML = `<span class="editor-props__label">Rotation</span>`;
+        const rSel = document.createElement("select");
+        rSel.className = "editor-props__input";
+        for (const [h, label] of /** @type {const} */ ([[0, "0°"], [1, "90°"]])) {
+          const op = document.createElement("option");
+          op.value = String(h);
+          op.textContent = label;
+          if (h === halfNow) op.selected = true;
+          rSel.appendChild(op);
+        }
+        rSel.addEventListener("change", () => {
+          const h = ((Number(rSel.value) % 2) + 2) % 2;
+          const ok = applyValidatedFloorMutation(list, o, (draft) => {
+            draft.portalHalfTurn = /** @type {0 | 1} */ (h);
+            delete draft.rotation;
+          });
+          if (!ok) {
+            rSel.value = String(portalHalfTurnIndexFromObject(o));
+          }
         });
-        rIn.addEventListener("keydown", (e) => e.stopPropagation());
-        rLabel.appendChild(rIn);
+        rSel.addEventListener("keydown", (e) => e.stopPropagation());
+        rLabel.appendChild(rSel);
         wrap.appendChild(rLabel);
       } else {
         const note = document.createElement("p");
@@ -518,7 +528,10 @@ export function mountEditorPropertiesPanel(root, opts) {
 
       const note = document.createElement("p");
       note.className = "editor-props__ro";
-      note.textContent = "Type and category are fixed when placed.";
+      note.textContent =
+        ptype === "nitro_recharge" || ptype === "shield"
+          ? "Nitro recharges and shields use a fixed 2×2 tile footprint. Type and category are set when placed."
+          : "Type and category are fixed when placed.";
       wrap.appendChild(note);
 
       appendDeleteButton(wrap);

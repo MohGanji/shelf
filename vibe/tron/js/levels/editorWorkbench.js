@@ -24,6 +24,7 @@ import {
   getFloorObjectWorldCenter,
   gridTopLeftToWorldCenter,
   resolveTriangleBuildingRotationY,
+  resolvePortalRotationY,
 } from "./footprints.js";
 
 /**
@@ -441,11 +442,15 @@ export function mountEditorWorkbench(opts) {
         } else {
           const col = typeof o.pairColor === "string" ? o.pairColor : "#FF00FF";
           const c = new THREE.Color(col);
+          const span = Math.max(0.4, Math.min(fp.width, fp.depth));
+          const major = span * 0.44;
+          const minor = Math.max(0.08, span * 0.11);
           mesh = new THREE.Mesh(
-            new THREE.TorusGeometry(0.38, 0.1, 10, 24),
+            new THREE.TorusGeometry(major, minor, 12, 32),
             new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.55 }),
           );
           mesh.position.set(x, 0.45, z);
+          mesh.rotation.y = resolvePortalRotationY(o);
           mesh.rotation.x = Math.PI / 2;
         }
         mesh.userData.editorPick = /** @type {FloorPick} */ ({
@@ -470,18 +475,27 @@ export function mountEditorWorkbench(opts) {
         if (!p || typeof p !== "object") continue;
         const o = /** @type {Record<string, unknown>} */ (p);
         const cat = o.category;
+        const ptype = typeof o.type === "string" ? o.type : "";
         const c = getFloorObjectWorldCenter(level, "powerups", o);
+        const fpP = getFloorObjectFootprint("powerups", o);
         const x = c.x;
         const z = c.z;
         if (typeof x !== "number" || typeof z !== "number") continue;
         let col = 0x00ff66;
         if (cat === "level_permanent") col = 0x0088ff;
         if (cat === "equippable") col = 0xcc00ff;
-        const mesh = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.38, 0),
-          new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.45 }),
-        );
-        mesh.position.set(x, 0.42, z);
+        const mat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.45 });
+        const wx = Math.max(0.2, fpP.width - 0.1);
+        const dz = Math.max(0.2, fpP.depth - 0.1);
+        let mesh;
+        if (ptype === "nitro_recharge" || ptype === "shield") {
+          mesh = new THREE.Mesh(new THREE.BoxGeometry(wx, 0.14, dz), mat);
+          mesh.position.set(x, 0.22, z);
+        } else {
+          const s = Math.min(wx, dz) * 0.45;
+          mesh = new THREE.Mesh(new THREE.OctahedronGeometry(s, 0), mat);
+          mesh.position.set(x, 0.42, z);
+        }
         mesh.userData.editorPick = /** @type {FloorPick} */ ({
           type: "floor",
           list: "powerups",
@@ -504,12 +518,16 @@ export function mountEditorWorkbench(opts) {
         if (!e || typeof e !== "object") continue;
         const o = /** @type {Record<string, unknown>} */ (e);
         const c = getFloorObjectWorldCenter(level, "enemies", o);
+        const fpE = getFloorObjectFootprint("enemies", o);
         const x = c.x;
         const z = c.z;
         if (typeof x !== "number" || typeof z !== "number") continue;
+        const wx = Math.max(0.15, fpE.width - 0.12);
+        const dz = Math.max(0.15, fpE.depth - 0.12);
+        const color = parseOptionalHexColor(o.color, 0xff6600);
         const mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(0.55, 0.2, 0.85),
-          new THREE.MeshStandardMaterial({ color: 0xff6600, emissive: 0x882200, emissiveIntensity: 0.45 }),
+          new THREE.BoxGeometry(wx, 0.2, dz),
+          new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.35 }),
         );
         mesh.position.set(x, 0.2, z);
         const rot = typeof o.rotation === "number" ? o.rotation : 0;
@@ -635,13 +653,18 @@ export function mountEditorWorkbench(opts) {
             : "pylon";
         return {
           list: "barriers",
-          obj: { type: "structure", variant: variant === "column" || variant === "obelisk" ? variant : "pylon" },
+          obj: {
+            type: "structure",
+            variant: variant === "column" || variant === "obelisk" ? variant : "pylon",
+            width: 10,
+            depth: 10,
+          },
         };
       }
     }
     if (sel.category === "game_object") {
-      if (sel.kind === "boost_pad") return { list: "gameObjects", obj: { type: "boost_pad" } };
-      if (sel.kind === "portal") return { list: "gameObjects", obj: { type: "portal", rotation: 0 } };
+      if (sel.kind === "boost_pad") return { list: "gameObjects", obj: { type: "boost_pad", width: 4, depth: 4 } };
+      if (sel.kind === "portal") return { list: "gameObjects", obj: { type: "portal", portalHalfTurn: 0 } };
     }
     if (sel.category === "powerup") {
       if (sel.kind === "nitro_recharge") return { list: "powerups", obj: { type: "nitro_recharge", category: "instant" } };
@@ -697,23 +720,30 @@ export function mountEditorWorkbench(opts) {
           sel.meta && typeof sel.meta === "object" && typeof sel.meta.variant === "string"
             ? sel.meta.variant
             : "pylon";
-        commitPaletteObject("barriers", {
-          type: "structure",
-          variant: variant === "column" || variant === "obelisk" ? variant : "pylon",
-        }, ix, iz);
+        commitPaletteObject(
+          "barriers",
+          {
+            type: "structure",
+            variant: variant === "column" || variant === "obelisk" ? variant : "pylon",
+            width: 10,
+            depth: 10,
+          },
+          ix,
+          iz,
+        );
       }
       return;
     }
 
     if (sel.category === "game_object") {
       if (sel.kind === "boost_pad") {
-        commitPaletteObject("gameObjects", { type: "boost_pad" }, ix, iz);
+        commitPaletteObject("gameObjects", { type: "boost_pad", width: 4, depth: 4 }, ix, iz);
       } else if (sel.kind === "portal") {
         const incomplete = findIncompletePortalPairId(level);
         if (incomplete) {
           commitPaletteObject("gameObjects", {
             type: "portal",
-            rotation: 0,
+            portalHalfTurn: 0,
             pairId: incomplete,
             pairColor: findPairColorForId(level, incomplete) ?? PORTAL_PAIR_COLORS[0],
           }, ix, iz);
@@ -724,7 +754,7 @@ export function mountEditorWorkbench(opts) {
           const pairColor = PORTAL_PAIR_COLORS[n];
           commitPaletteObject("gameObjects", {
             type: "portal",
-            rotation: 0,
+            portalHalfTurn: 0,
             pairId,
             pairColor,
           }, ix, iz);
