@@ -473,6 +473,10 @@ export function mountEditorPropertiesPanel(root, opts) {
         pairRo.className = "editor-props__ro";
         pairRo.innerHTML = `<strong>Pair ID</strong> ${escapeHtml(pid)} · <strong>Color</strong> ${escapeHtml(pcol)}`;
         wrap.appendChild(pairRo);
+        const fpNote = document.createElement("p");
+        fpNote.className = "editor-props__ro";
+        fpNote.textContent = "Footprint is fixed at 5×5 tiles (same as a gate).";
+        wrap.appendChild(fpNote);
 
         const rLabel = document.createElement("label");
         rLabel.className = "editor-props__field";

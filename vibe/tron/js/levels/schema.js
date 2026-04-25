@@ -14,7 +14,7 @@ import {
 /** Minimum arena width/depth in units (tiles). */
 export const MIN_ARENA_SIZE = 40;
 
-/** Gate objects are always this many units wide along the wall. */
+/** Gate objects are always this many units wide along the wall. Portal floor footprint must match. */
 export const GATE_WIDTH = 5;
 
 /** Lobby campaign id — special layout and gate rules. */

@@ -7,6 +7,9 @@
 
 export const LEVEL_SCHEMA_VERSION_V2 = 2;
 
+/** Portals use a fixed 5×5 floor footprint, same as wall gates in schema (see `GATE_WIDTH`). */
+export const PORTAL_FLOOR_FOOTPRINT = 5;
+
 /** @param {unknown} v */
 function finiteNumber(v) {
   return typeof v === "number" && Number.isFinite(v);
@@ -113,7 +116,7 @@ export function resolveTriangleBuildingRotationY(o) {
 const PORTAL_YAW_90 = Math.PI * 0.5;
 
 /**
- * Portals on a 2×2 tile only need 0° or 90° yaw; 180°/270° are equivalent by symmetry of the pair / footprint.
+ * Portals on a 5×5 square footprint only need 0° or 90° yaw; 180°/270° are equivalent by symmetry of the pair.
  * Level data uses `portalHalfTurn` only; legacy `rotation` (rad) is still read here if present until fully migrated in memory.
  * @param {Record<string, unknown>} o
  */
@@ -199,8 +202,8 @@ export function getFloorObjectFootprint(list, o) {
     }
     if (o.type === "portal") {
       return {
-        width: 2,
-        depth: 2,
+        width: PORTAL_FLOOR_FOOTPRINT,
+        depth: PORTAL_FLOOR_FOOTPRINT,
         fixedSize: true,
         shape: "rect",
         rotation: resolvePortalRotationY(/** @type {Record<string, unknown>} */ (o)),

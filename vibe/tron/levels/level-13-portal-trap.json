@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 210.0,
+      "position": 210,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,210 +28,259 @@
   "barriers": [
     {
       "type": "building",
-      "x": -123.1,
-      "z": 168.89,
+      "x": -123,
+      "z": 169,
       "height": 3,
       "shape": "square",
       "width": 173.79,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 1,
+      "gridZ": 339
     },
     {
       "type": "building",
-      "x": 123.1,
-      "z": 168.89,
+      "x": 123,
+      "z": 169,
       "height": 3,
       "shape": "square",
       "width": 173.79,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 247,
+      "gridZ": 339
     },
     {
       "type": "building",
-      "x": -144.83,
-      "z": 126.67,
+      "x": -145,
+      "z": 127,
       "height": 3,
       "shape": "square",
       "width": 130.34,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 1,
+      "gridZ": 297
     },
     {
       "type": "building",
-      "x": 173.79,
-      "z": 105.56,
+      "x": 174,
+      "z": 106,
       "height": 3,
       "shape": "square",
       "width": 72.41,
-      "depth": 84.44
+      "depth": 84.44,
+      "gridX": 349,
+      "gridZ": 255
     },
     {
       "type": "building",
-      "x": -166.55,
-      "z": 84.44,
+      "x": -166.5,
+      "z": 84,
       "height": 3,
       "shape": "square",
       "width": 86.9,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 1,
+      "gridZ": 254
     },
     {
       "type": "building",
-      "x": 0.0,
-      "z": 21.11,
+      "x": 0,
+      "z": 21.5,
       "height": 3,
       "shape": "square",
       "width": 14.48,
-      "depth": 168.89
+      "depth": 168.89,
+      "gridX": 204,
+      "gridZ": 128
     },
     {
       "type": "building",
-      "x": -181.03,
-      "z": 42.22,
+      "x": -181,
+      "z": 42,
       "height": 3,
       "shape": "square",
       "width": 57.93,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 1,
+      "gridZ": 212
     },
     {
       "type": "building",
-      "x": -14.48,
-      "z": 0.0,
+      "x": -14,
+      "z": 0.5,
       "height": 3,
       "shape": "square",
       "width": 14.48,
-      "depth": 126.67
+      "depth": 126.67,
+      "gridX": 190,
+      "gridZ": 128
     },
     {
       "type": "building",
-      "x": 14.48,
-      "z": 0.0,
+      "x": 14,
+      "z": 0.5,
       "height": 3,
       "shape": "square",
       "width": 14.48,
-      "depth": 126.67
+      "depth": 126.67,
+      "gridX": 218,
+      "gridZ": 128
     },
     {
       "type": "building",
-      "x": 188.28,
-      "z": 42.22,
+      "x": 188.5,
+      "z": 42,
       "height": 3,
       "shape": "square",
       "width": 43.45,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 378,
+      "gridZ": 212
     },
     {
       "type": "building",
-      "x": -195.52,
-      "z": 0.0,
+      "x": -195.5,
+      "z": 0,
       "height": 3,
       "shape": "square",
       "width": 28.97,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 1,
+      "gridZ": 170
     },
     {
       "type": "building",
-      "x": -28.97,
-      "z": -21.11,
+      "x": -29,
+      "z": -21,
       "height": 3,
       "shape": "square",
       "width": 14.48,
-      "depth": 84.44
+      "depth": 84.44,
+      "gridX": 175,
+      "gridZ": 128
     },
     {
       "type": "building",
-      "x": 28.97,
-      "z": -21.11,
+      "x": 29,
+      "z": -21,
       "height": 3,
       "shape": "square",
       "width": 14.48,
-      "depth": 84.44
+      "depth": 84.44,
+      "gridX": 233,
+      "gridZ": 128
     },
     {
       "type": "building",
-      "x": 195.52,
-      "z": -84.44,
+      "x": 195.5,
+      "z": -84.5,
       "height": 3,
       "shape": "square",
       "width": 28.97,
-      "depth": 211.11
+      "depth": 211.11,
+      "gridX": 392,
+      "gridZ": 1
     },
     {
       "type": "building",
-      "x": -50.69,
-      "z": -42.22,
+      "x": -50.5,
+      "z": -42,
       "height": 3,
       "shape": "square",
       "width": 28.97,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 146,
+      "gridZ": 128
     },
     {
       "type": "building",
-      "x": 166.55,
-      "z": -147.78,
+      "x": 166.5,
+      "z": -148,
       "height": 3,
       "shape": "square",
       "width": 28.97,
-      "depth": 84.44
+      "depth": 84.44,
+      "gridX": 363,
+      "gridZ": 1
     },
     {
       "type": "building",
-      "x": 94.14,
-      "z": -168.89,
+      "x": 94,
+      "z": -169,
       "height": 3,
       "shape": "square",
       "width": 115.86,
-      "depth": 42.22
+      "depth": 42.22,
+      "gridX": 247,
+      "gridZ": 1
     }
   ],
   "gameObjects": [
     {
       "type": "portal",
-      "x": 101.38,
-      "z": 126.67,
+      "x": 101,
+      "z": 127,
       "portalHalfTurn": 0,
       "pairId": "13-portal-1",
-      "pairColor": "#7CFFEA"
+      "pairColor": "#7CFFEA",
+      "gridX": 311,
+      "gridZ": 317
     },
     {
       "type": "portal",
-      "x": -130.34,
-      "z": -84.44,
+      "x": -130,
+      "z": -84,
       "portalHalfTurn": 0,
       "pairId": "13-portal-1",
-      "pairColor": "#7CFFEA"
+      "pairColor": "#7CFFEA",
+      "gridX": 80,
+      "gridZ": 106
     }
   ],
   "powerups": [
     {
       "type": "shield",
-      "x": 115.86,
-      "z": 0.0,
-      "category": "equippable"
+      "x": 116,
+      "z": 0,
+      "category": "equippable",
+      "gridX": 326,
+      "gridZ": 190
     }
   ],
   "enemies": [
     {
-      "x": 57.93,
-      "z": 126.67,
-      "rotation": 0.0,
+      "x": 57.5,
+      "z": 126.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 268,
+      "gridZ": 316
     },
     {
-      "x": -173.79,
-      "z": -84.44,
-      "rotation": 0.0,
+      "x": -173.5,
+      "z": -84.5,
+      "rotation": 0,
       "color": "#00E5FF",
-      "category": "hard"
+      "category": "hard",
+      "gridX": 37,
+      "gridZ": 105
     },
     {
-      "x": -57.93,
-      "z": -126.67,
-      "rotation": 0.0,
+      "x": -57.5,
+      "z": -126.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 153,
+      "gridZ": 63
     }
   ],
   "rewards": {
     "coins": 230,
     "timeBonusThreshold": 210,
     "timeBonusCoins": 61
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 422,
+  "mapDepth": 382
 }

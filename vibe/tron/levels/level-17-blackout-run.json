@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 230.0,
+      "position": 230,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 230.0,
+      "position": 230,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,91 +28,114 @@
   "barriers": [
     {
       "type": "building",
-      "x": -23.79,
-      "z": 133.33,
+      "x": -24,
+      "z": 133,
       "height": 3,
       "shape": "square",
       "width": 31.72,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 191,
+      "gridZ": 312
     },
     {
       "type": "building",
-      "x": -134.83,
-      "z": 88.89,
+      "x": -135,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 31.72,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 80,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": 103.1,
-      "z": 88.89,
+      "x": 103,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 31.72,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 318,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": -103.1,
-      "z": -88.89,
+      "x": -103,
+      "z": -89,
       "height": 3,
       "shape": "square",
       "width": 31.72,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 112,
+      "gridZ": 90
     },
     {
       "type": "building",
-      "x": 134.83,
-      "z": -88.89,
+      "x": 135,
+      "z": -89,
       "height": 3,
       "shape": "square",
       "width": 31.72,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 350,
+      "gridZ": 90
     }
   ],
   "gameObjects": [],
   "powerups": [
     {
       "type": "shield",
-      "x": 126.9,
-      "z": 0.0,
-      "category": "equippable"
+      "x": 127,
+      "z": 0,
+      "category": "equippable",
+      "gridX": 357,
+      "gridZ": 200
     },
     {
       "type": "nitro_recharge",
-      "x": -222.07,
-      "z": -133.33,
-      "category": "instant"
+      "x": -222,
+      "z": -133,
+      "category": "instant",
+      "gridX": 8,
+      "gridZ": 67
     }
   ],
   "enemies": [
     {
-      "x": -222.07,
-      "z": 133.33,
-      "rotation": 0.0,
+      "x": -222.5,
+      "z": 133.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 8,
+      "gridZ": 333
     },
     {
-      "x": 174.48,
-      "z": 133.33,
-      "rotation": 0.0,
+      "x": 174.5,
+      "z": 133.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 405,
+      "gridZ": 333
     },
     {
-      "x": 0.0,
-      "z": 0.0,
-      "rotation": 0.0,
+      "x": 0.5,
+      "z": 0.5,
+      "rotation": 0,
       "color": "#B266FF",
-      "category": "boss"
+      "category": "boss",
+      "gridX": 231,
+      "gridZ": 200
     }
   ],
   "rewards": {
     "coins": 290,
     "timeBonusThreshold": 250,
     "timeBonusCoins": 73
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 462,
+  "mapDepth": 402
 }

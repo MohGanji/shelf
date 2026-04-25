@@ -88,6 +88,7 @@ import {
 import { createDevHudController } from "./ui/devhud.js";
 import { createArenaMinimapRenderer } from "./ui/hud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
+import * as THREE from "./vendor/three-module.js";
 
 function $(id) {
   const el = document.getElementById(id);
@@ -607,6 +608,7 @@ async function main() {
 
   const chase = createChaseCamera(game.camera, devHud);
   chase.spawnAt(playerCycle.root.position, spawnHeading);
+  const portalWarpSnapPos = new THREE.Vector3();
 
   let nitroVis = 0;
   const nitroState = createNitroState(effectivePlayerNitroMax());
@@ -633,6 +635,22 @@ async function main() {
     devHud,
     onPortalWarp: (from, to) => {
       gameplayParticles.spawnPortalWarp(from, to);
+    },
+    onPlayerWarp: () => {
+      syncCyclePhysicsYaw(playerBody);
+      const h = playerBody.userData.heading ?? 0;
+      playerCycle.root.position.set(
+        playerBody.position.x,
+        playerBody.position.y,
+        playerBody.position.z,
+      );
+      playerCycle.root.rotation.y = h;
+      portalWarpSnapPos.set(
+        playerBody.position.x,
+        playerBody.position.y,
+        playerBody.position.z,
+      );
+      chase.spawnAt(portalWarpSnapPos, h);
     },
   });
 
@@ -1692,11 +1710,7 @@ async function main() {
         z: e.body.position.z,
         color: e.color,
       }));
-    const itemPts = [
-      ...powerupField.getMinimapPickups(),
-      ...boostPadField.getMinimapBoostPads(),
-      ...portalField.getMinimapPortals(),
-    ];
+    const itemPts = [...powerupField.getMinimapPickups(), ...portalField.getMinimapPortals()];
     
     const minimapGates = [];
     if (game.scene.userData.gates && Array.isArray(game.scene.userData.gates.list)) {
@@ -1738,6 +1752,7 @@ async function main() {
         enemies: minimapEnemies,
         trailSources: minimapTrailSources,
         barrierBodies: game.scene.userData.barrierBodies,
+        boostPadRects: boostPadField.getMinimapBoostPads(),
         gates: minimapGates,
         itemPoints: itemPts,
       });

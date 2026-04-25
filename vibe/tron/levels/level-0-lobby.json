@@ -137,7 +137,7 @@
     },
     {
       "type": "building",
-      "gridX": 216,
+      "gridX": 215,
       "gridZ": 190,
       "width": 14,
       "depth": 30,
@@ -145,12 +145,12 @@
       "shape": "square",
       "color": "#00e8ff",
       "zone": "arena-band",
-      "x": 22,
+      "x": 21,
       "z": 84
     },
     {
       "type": "building",
-      "gridX": 276,
+      "gridX": 283,
       "gridZ": 190,
       "width": 14,
       "depth": 30,
@@ -158,12 +158,12 @@
       "shape": "square",
       "color": "#ffe84a",
       "zone": "multiplayer-band",
-      "x": 82,
+      "x": 89,
       "z": 84
     },
     {
       "type": "building",
-      "gridX": 330,
+      "gridX": 337,
       "gridZ": 190,
       "width": 14,
       "depth": 30,
@@ -171,68 +171,8 @@
       "shape": "square",
       "color": "#ffe84a",
       "zone": "multiplayer-band",
-      "x": 136,
+      "x": 143,
       "z": 84
-    },
-    {
-      "type": "building",
-      "gridX": 86,
-      "gridZ": 82,
-      "width": 34,
-      "depth": 18,
-      "height": 3,
-      "shape": "triangle",
-      "triangleQuarter": 0,
-      "rotation": 0,
-      "color": "#00e8ff",
-      "zone": "left-concourse",
-      "x": -98,
-      "z": -30
-    },
-    {
-      "type": "building",
-      "gridX": 298,
-      "gridZ": 68,
-      "width": 34,
-      "depth": 18,
-      "height": 3,
-      "shape": "triangle",
-      "triangleQuarter": 2,
-      "rotation": 3.141592653589793,
-      "color": "#00e8ff",
-      "zone": "right-concourse",
-      "x": 114,
-      "z": -44
-    },
-    {
-      "type": "building",
-      "gridX": 152,
-      "gridZ": 105,
-      "width": 20,
-      "depth": 20,
-      "height": 3,
-      "shape": "triangle",
-      "triangleQuarter": 1,
-      "rotation": 1.5707963267948966,
-      "zone": "left-inner-mask",
-      "x": -39,
-      "z": -6,
-      "color": "#00e8ff"
-    },
-    {
-      "type": "building",
-      "gridX": 278,
-      "gridZ": 47,
-      "width": 28,
-      "depth": 14,
-      "height": 3,
-      "shape": "triangle",
-      "triangleQuarter": 3,
-      "rotation": 4.71238898038469,
-      "zone": "right-inner-mask",
-      "x": 91,
-      "z": -67,
-      "color": "#00e8ff"
     },
     {
       "type": "building",
@@ -288,6 +228,26 @@
     }
   ],
   "gameObjects": [
+    {
+      "type": "portal",
+      "gridX": 28,
+      "gridZ": 120,
+      "x": -172,
+      "z": 0,
+      "portalHalfTurn": 0,
+      "pairId": "0-lobby-concourse",
+      "pairColor": "#7CFFEA"
+    },
+    {
+      "type": "portal",
+      "gridX": 372,
+      "gridZ": 120,
+      "x": 172,
+      "z": 0,
+      "portalHalfTurn": 0,
+      "pairId": "0-lobby-concourse",
+      "pairColor": "#7CFFEA"
+    },
     {
       "type": "boost_pad",
       "gridX": 196,

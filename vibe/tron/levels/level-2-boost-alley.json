@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 120.0,
+      "position": 120,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 120.0,
+      "position": 120,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,80 +28,101 @@
   "barriers": [
     {
       "type": "building",
-      "x": -88.7,
-      "z": 10.0,
+      "x": -89,
+      "z": 10,
       "height": 3,
       "shape": "square",
       "width": 41.74,
-      "depth": 40.0
+      "depth": 40,
+      "gridX": 11,
+      "gridZ": 81
     },
     {
       "type": "building",
-      "x": 88.7,
-      "z": 10.0,
+      "x": 89,
+      "z": 10,
       "height": 3,
       "shape": "square",
       "width": 41.74,
-      "depth": 40.0
+      "depth": 40,
+      "gridX": 189,
+      "gridZ": 81
     }
   ],
   "gameObjects": [
     {
       "type": "boost_pad",
-      "x": -62.61,
-      "z": -40.0,
+      "x": -62.5,
+      "z": -40,
       "width": 23.48,
-      "depth": 28.0
+      "depth": 28,
+      "gridX": 47,
+      "gridZ": 37
     },
     {
       "type": "boost_pad",
-      "x": 62.61,
-      "z": -40.0,
+      "x": 62.5,
+      "z": -40,
       "width": 23.48,
-      "depth": 28.0
+      "depth": 28,
+      "gridX": 172,
+      "gridZ": 37
     },
     {
       "type": "boost_pad",
-      "x": -31.3,
-      "z": 60.0,
+      "x": -31.5,
+      "z": 60,
       "width": 23.48,
-      "depth": 28.0
+      "depth": 28,
+      "gridX": 78,
+      "gridZ": 137
     },
     {
       "type": "boost_pad",
-      "x": 31.3,
-      "z": 60.0,
+      "x": 31.5,
+      "z": 60,
       "width": 23.48,
-      "depth": 28.0
+      "depth": 28,
+      "gridX": 141,
+      "gridZ": 137
     }
   ],
   "powerups": [
     {
       "type": "nitro_recharge",
-      "x": 0.0,
-      "z": -40.0,
-      "category": "instant"
+      "x": 0,
+      "z": -40,
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 50
     }
   ],
   "enemies": [
     {
-      "x": -93.91,
-      "z": 60.0,
-      "rotation": 0.0,
+      "x": -93.5,
+      "z": 60.5,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 27,
+      "gridZ": 150
     },
     {
-      "x": 93.91,
-      "z": 60.0,
-      "rotation": 0.0,
+      "x": 93.5,
+      "z": 60.5,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 214,
+      "gridZ": 150
     }
   ],
   "rewards": {
     "coins": 65,
     "timeBonusThreshold": 100,
     "timeBonusCoins": 28
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 242,
+  "mapDepth": 182
 }

@@ -25,7 +25,8 @@ import { Box, Vec3 } from "../vendor/cannon-es-module.js";
  * @property {MinimapTrailSource[]} trailSources
  * @property {import("cannon-es").Body[] | undefined} barrierBodies
  * @property {{ x0: number; x1: number; z0: number; z1: number; role: string; open: boolean }[]} [gates]
- * @property {{ x: number; z: number }[]} itemPoints — power-ups, boost pads, portals (hollow circles)
+ * @property {{ x0: number; x1: number; z0: number; z1: number; color: string }[]} [boostPadRects] — world XZ AABBs, filled
+ * @property {{ x: number; z: number }[]} itemPoints — power-ups, portals (hollow circles)
  */
 
 const TMP = new Vec3();
@@ -88,7 +89,7 @@ export function barrierFootprintXZ(body) {
 }
 
 /**
- * P9.4 — corner minimap: arena aspect, trails as colored lines, barriers as squares, items as hollow circles.
+ * P9.4 — corner minimap: arena aspect, trails as lines, barriers as filled polys, boost pads as filled neon rects, pickups/portals as hollow circles.
  * @param {HTMLCanvasElement | null} canvas
  * @returns {{ draw: (frame: MinimapFrame) => void; dispose: () => void }}
  */
@@ -189,6 +190,36 @@ export function createArenaMinimapRenderer(canvas) {
         }
       }
 
+      const boostPads = frame.boostPadRects;
+      if (boostPads && boostPads.length > 0) {
+        for (const bp of boostPads) {
+          const uvs = [
+            toCanvas(bp.x0, bp.z0),
+            toCanvas(bp.x1, bp.z0),
+            toCanvas(bp.x0, bp.z1),
+            toCanvas(bp.x1, bp.z1),
+          ];
+          const us = uvs.map((p) => p[0]);
+          const vs = uvs.map((p) => p[1]);
+          const minU = Math.min(...us);
+          const maxU = Math.max(...us);
+          const minV = Math.min(...vs);
+          const maxV = Math.max(...vs);
+          const w = maxU - minU;
+          const h = maxV - minV;
+          if (w < 0.3 || h < 0.3) continue;
+          const col = typeof bp.color === "string" && /^#([0-9a-fA-F]{6})$/.test(bp.color) ? bp.color : "#55eeff";
+          const r = parseInt(col.slice(1, 3), 16);
+          const g = parseInt(col.slice(3, 5), 16);
+          const b = parseInt(col.slice(5, 7), 16);
+          ctx.fillStyle = `rgba(${r},${g},${b},0.32)`;
+          ctx.fillRect(minU, minV, w, h);
+          ctx.strokeStyle = `rgba(${Math.min(255, r + 40)},${Math.min(255, g + 50)},${Math.min(255, b + 40)},0.55)`;
+          ctx.lineWidth = 1;
+          ctx.strokeRect(minU + 0.5, minV + 0.5, w - 1, h - 1);
+        }
+      }
+
       if (frame.gates) {
         ctx.lineWidth = 2;
         for (const g of frame.gates) {
@@ -222,7 +253,7 @@ export function createArenaMinimapRenderer(canvas) {
 
       ctx.strokeStyle = "rgba(160, 255, 240, 0.75)";
       ctx.lineWidth = 1;
-      for (const p of frame.itemPoints) {
+      for (const p of frame.itemPoints ?? []) {
         const [cx, cy] = toCanvas(p.x, p.z);
         ctx.beginPath();
         ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);

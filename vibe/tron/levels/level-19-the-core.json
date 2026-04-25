@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 240.0,
+      "position": 240,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 240.0,
+      "position": 240,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,182 +28,135 @@
   "barriers": [
     {
       "type": "building",
-      "x": -162.58,
-      "z": 97.78,
+      "x": -162.5,
+      "z": 97.5,
       "height": 3,
       "shape": "square",
       "width": 30.97,
-      "depth": 48.89
+      "depth": 48.89,
+      "gridX": 63,
+      "gridZ": 294
     },
     {
       "type": "building",
-      "x": 15.48,
-      "z": 97.78,
-      "height": 3,
-      "shape": "square",
-      "width": 46.45,
-      "depth": 48.89
-    },
-    {
-      "type": "building",
-      "x": 193.55,
-      "z": 97.78,
+      "x": 193.5,
+      "z": 97.5,
       "height": 3,
       "shape": "square",
       "width": 30.97,
-      "depth": 48.89
+      "depth": 48.89,
+      "gridX": 419,
+      "gridZ": 294
     },
     {
       "type": "building",
-      "x": -61.94,
-      "z": 48.89,
+      "x": 15,
+      "z": -48.5,
       "height": 3,
       "shape": "square",
       "width": 46.45,
-      "depth": 48.89
+      "depth": 48.89,
+      "gridX": 233,
+      "gridZ": 148
     },
     {
       "type": "building",
-      "x": 61.94,
-      "z": 48.89,
-      "height": 3,
-      "shape": "square",
-      "width": 46.45,
-      "depth": 48.89
-    },
-    {
-      "type": "building",
-      "x": -108.39,
-      "z": 0.0,
-      "height": 3,
-      "shape": "square",
-      "width": 46.45,
-      "depth": 48.89
-    },
-    {
-      "type": "building",
-      "x": 108.39,
-      "z": 0.0,
-      "height": 3,
-      "shape": "square",
-      "width": 46.45,
-      "depth": 48.89
-    },
-    {
-      "type": "building",
-      "x": -162.58,
-      "z": -48.89,
+      "x": 193.5,
+      "z": -48.5,
       "height": 3,
       "shape": "square",
       "width": 30.97,
-      "depth": 48.89
+      "depth": 48.89,
+      "gridX": 419,
+      "gridZ": 148
     },
     {
       "type": "building",
-      "x": 15.48,
-      "z": -48.89,
-      "height": 3,
-      "shape": "square",
-      "width": 46.45,
-      "depth": 48.89
-    },
-    {
-      "type": "building",
-      "x": 193.55,
-      "z": -48.89,
-      "height": 3,
-      "shape": "square",
-      "width": 30.97,
-      "depth": 48.89
-    },
-    {
-      "type": "building",
-      "x": 38.71,
-      "z": 73.34,
+      "x": 38.5,
+      "z": 73.5,
       "height": 3,
       "shape": "triangle",
       "width": 51.33,
       "depth": 51.33,
-      "rotation": 0.81
+      "rotation": 0.81,
+      "gridX": 254,
+      "gridZ": 269
     },
     {
       "type": "building",
-      "x": -85.16,
-      "z": 24.45,
+      "x": -85.5,
+      "z": 24.5,
       "height": 3,
       "shape": "triangle",
       "width": 51.33,
       "depth": 51.33,
-      "rotation": 2.33
-    },
-    {
-      "type": "building",
-      "x": 85.16,
-      "z": 24.45,
-      "height": 3,
-      "shape": "triangle",
-      "width": 51.33,
-      "depth": 51.33,
-      "rotation": 0.81
-    },
-    {
-      "type": "building",
-      "x": -135.49,
-      "z": -24.45,
-      "height": 3,
-      "shape": "triangle",
-      "width": 51.33,
-      "depth": 51.33,
-      "rotation": 2.41
+      "rotation": 2.33,
+      "gridX": 130,
+      "gridZ": 220
     }
   ],
   "gameObjects": [],
   "powerups": [
     {
       "type": "trail_extend",
-      "x": -108.39,
-      "z": 146.67,
-      "category": "level_permanent"
+      "x": -108,
+      "z": 147,
+      "category": "level_permanent",
+      "gridX": 132,
+      "gridZ": 367
     },
     {
       "type": "shield",
-      "x": 0.0,
-      "z": 0.0,
-      "category": "equippable"
+      "x": 0,
+      "z": 0,
+      "category": "equippable",
+      "gridX": 240,
+      "gridZ": 220
     },
     {
       "type": "nitro_recharge",
-      "x": -77.42,
-      "z": -146.67,
-      "category": "instant"
+      "x": -77,
+      "z": -147,
+      "category": "instant",
+      "gridX": 163,
+      "gridZ": 73
     }
   ],
   "enemies": [
     {
-      "x": -232.26,
-      "z": 146.67,
-      "rotation": 0.0,
+      "x": -232.5,
+      "z": 146.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 8,
+      "gridZ": 366
     },
     {
-      "x": 77.42,
-      "z": 146.67,
-      "rotation": 0.0,
+      "x": 77.5,
+      "z": 146.5,
+      "rotation": 0,
       "color": "#00E5FF",
-      "category": "hard"
+      "category": "hard",
+      "gridX": 318,
+      "gridZ": 366
     },
     {
-      "x": 0.0,
-      "z": 48.89,
-      "rotation": 0.0,
+      "x": 0.5,
+      "z": 48.5,
+      "rotation": 0,
       "color": "#B266FF",
-      "category": "boss"
+      "category": "boss",
+      "gridX": 241,
+      "gridZ": 268
     }
   ],
   "rewards": {
     "coins": 320,
     "timeBonusThreshold": 270,
     "timeBonusCoins": 79
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 482,
+  "mapDepth": 442
 }

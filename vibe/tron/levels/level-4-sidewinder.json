@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 140.0,
+      "position": 140,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 140.0,
+      "position": 140,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,69 +28,86 @@
   "barriers": [
     {
       "type": "building",
-      "x": -36.52,
-      "z": 73.33,
+      "x": -36.5,
+      "z": 73,
       "height": 3,
       "shape": "square",
       "width": 85.22,
-      "depth": 24.44
+      "depth": 24.44,
+      "gridX": 62,
+      "gridZ": 172
     },
     {
       "type": "building",
-      "x": 36.52,
-      "z": 24.44,
+      "x": 36.5,
+      "z": 24,
       "height": 3,
       "shape": "square",
       "width": 85.22,
-      "depth": 24.44
+      "depth": 24.44,
+      "gridX": 135,
+      "gridZ": 123
     },
     {
       "type": "building",
-      "x": -36.52,
-      "z": -24.44,
+      "x": -36.5,
+      "z": -24,
       "height": 3,
       "shape": "square",
       "width": 85.22,
-      "depth": 24.44
+      "depth": 24.44,
+      "gridX": 62,
+      "gridZ": 75
     },
     {
       "type": "building",
-      "x": 36.52,
-      "z": -73.33,
+      "x": 36.5,
+      "z": -73,
       "height": 3,
       "shape": "square",
       "width": 85.22,
-      "depth": 24.44
+      "depth": 24.44,
+      "gridX": 135,
+      "gridZ": 26
     }
   ],
   "gameObjects": [],
   "powerups": [
     {
       "type": "nitro_recharge",
-      "x": 97.39,
-      "z": -48.89,
-      "category": "instant"
+      "x": 97,
+      "z": -49,
+      "category": "instant",
+      "gridX": 237,
+      "gridZ": 61
     }
   ],
   "enemies": [
     {
-      "x": 97.39,
-      "z": 73.33,
-      "rotation": 0.0,
+      "x": 97.5,
+      "z": 73.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 238,
+      "gridZ": 183
     },
     {
-      "x": -133.91,
-      "z": 48.89,
-      "rotation": 0.0,
+      "x": -133.5,
+      "z": 48.5,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 7,
+      "gridZ": 158
     }
   ],
   "rewards": {
     "coins": 95,
     "timeBonusThreshold": 120,
     "timeBonusCoins": 34
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 282,
+  "mapDepth": 222
 }

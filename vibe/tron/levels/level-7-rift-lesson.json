@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 160.0,
+      "position": 160,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 160.0,
+      "position": 160,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,75 +28,94 @@
   "barriers": [
     {
       "type": "building",
-      "x": 0.0,
+      "x": 0.5,
       "z": 17.5,
       "height": 3,
       "shape": "square",
       "width": 12.8,
-      "depth": 175.0
+      "depth": 175,
+      "gridX": 155,
+      "gridZ": 71
     }
   ],
   "gameObjects": [
     {
       "type": "portal",
-      "x": -76.8,
-      "z": 87.5,
+      "x": -77,
+      "z": 88,
       "portalHalfTurn": 0,
       "pairId": "7-portal-1",
-      "pairColor": "#7CFFEA"
+      "pairColor": "#7CFFEA",
+      "gridX": 83,
+      "gridZ": 228
     },
     {
       "type": "portal",
-      "x": 76.8,
-      "z": 87.5,
+      "x": 77,
+      "z": 88,
       "portalHalfTurn": 0,
       "pairId": "7-portal-1",
-      "pairColor": "#7CFFEA"
+      "pairColor": "#7CFFEA",
+      "gridX": 237,
+      "gridZ": 228
     },
     {
       "type": "portal",
-      "x": -128.0,
-      "z": -87.5,
+      "x": -128,
+      "z": -87,
       "portalHalfTurn": 0,
       "pairId": "7-portal-2",
-      "pairColor": "#FF7CFF"
+      "pairColor": "#FF7CFF",
+      "gridX": 32,
+      "gridZ": 53
     },
     {
       "type": "portal",
-      "x": 25.6,
-      "z": -87.5,
+      "x": 26,
+      "z": -87,
       "portalHalfTurn": 0,
       "pairId": "7-portal-2",
-      "pairColor": "#FF7CFF"
+      "pairColor": "#FF7CFF",
+      "gridX": 186,
+      "gridZ": 53
     }
   ],
   "powerups": [
     {
       "type": "trail_extend",
-      "x": -76.8,
-      "z": 17.5,
-      "category": "level_permanent"
+      "x": -77,
+      "z": 18,
+      "category": "level_permanent",
+      "gridX": 83,
+      "gridZ": 158
     }
   ],
   "enemies": [
     {
-      "x": -128.0,
+      "x": -127.5,
       "z": 87.5,
-      "rotation": 0.0,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 33,
+      "gridZ": 227
     },
     {
-      "x": 128.0,
+      "x": 128.5,
       "z": 87.5,
-      "rotation": 0.0,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 289,
+      "gridZ": 227
     }
   ],
   "rewards": {
     "coins": 140,
     "timeBonusThreshold": 150,
     "timeBonusCoins": 43
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 322,
+  "mapDepth": 282
 }

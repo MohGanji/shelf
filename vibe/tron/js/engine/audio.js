@@ -994,16 +994,16 @@ export function createAudioEngine(options = {}) {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.setValueAtTime(880, t0);
-      osc.frequency.exponentialRampToValueAtTime(220, t0 + 0.09);
+      osc.frequency.setValueAtTime(720, t0);
+      osc.frequency.exponentialRampToValueAtTime(180, t0 + 0.12);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.085 * sfxVolume, t0 + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      g.gain.exponentialRampToValueAtTime(0.12 * sfxVolume, t0 + 0.018);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
       osc.connect(g);
       g.connect(sfxGain);
       try {
         osc.start(t0);
-        osc.stop(t0 + 0.16);
+        osc.stop(t0 + 0.24);
       } catch {
         /* ignore */
       }

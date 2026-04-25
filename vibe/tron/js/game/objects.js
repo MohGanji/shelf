@@ -8,7 +8,7 @@ import * as THREE from "../vendor/three-module.js";
 import { Body, Box, Vec3 } from "../vendor/cannon-es-module.js";
 import { COLLISION_GROUP_ARENA_SOLID, COLLISION_GROUP_CYCLE } from "../engine/physics.js";
 import { applyBoostPadBurst } from "./nitroSystem.js";
-import { resolvePortalRotationY } from "../levels/footprints.js";
+import { resolvePortalRotationY, PORTAL_FLOOR_FOOTPRINT } from "../levels/footprints.js";
 
 /** @typedef {"boost_pad" | "portal"} GameObjectKind */
 
@@ -235,9 +235,24 @@ export function createBoostPadField(opts) {
     instances.length = 0;
   }
 
-  /** P9.4 — boost pad centers for minimap. */
+  /**
+   * P9.4 — boost pad AABBs on XZ (world) + accent color for minimap (filled rects, not point circles).
+   * @returns {{ x0: number; x1: number; z0: number; z1: number; color: string }[]}
+   */
   function getMinimapBoostPads() {
-    return instances.map((i) => ({ x: i.x, z: i.z }));
+    return instances.map((i) => {
+      const hw = i.width / 2;
+      const hd = i.depth / 2;
+      const n = (i.colorHex & 0xffffff) >>> 0;
+      const color = `#${n.toString(16).padStart(6, "0")}`;
+      return {
+        x0: i.x - hw,
+        x1: i.x + hw,
+        z0: i.z - hd,
+        z1: i.z + hd,
+        color,
+      };
+    });
   }
 
   return { root, tick, dispose, getMinimapBoostPads };
@@ -267,8 +282,25 @@ function portalRightXZ(rotY) {
 }
 
 /**
+ * World-space exit / forward in XZ for a portal. JSON `resolvePortalRotationY` (0 or 90°) is the **group** Y, and
+ * the torus has an extra local +π/2 Y, so the opening faces `portalForwardXZ(rot + π/2)` — same as the editor
+ * (`rY + π/2` on one mesh). Use this for travel, trigger slab, and back baffle, not `portalForwardXZ(rot)` alone.
+ * @param {number} levelRotY — from {@link resolvePortalRotationY}
+ */
+function portalExitForwardXZ(levelRotY) {
+  return portalForwardXZ(levelRotY + Math.PI * 0.5);
+}
+
+/**
+ * @param {number} levelRotY
+ */
+function portalExitRightXZ(levelRotY) {
+  return portalRightXZ(levelRotY + Math.PI * 0.5);
+}
+
+/**
  * @typedef {object} PortalFieldTickContext
- * @property {boolean} isLobby
+ * @property {boolean} isLobby — passed from main; not used to disable warps (lobby has `levelStarted` at load)
  * @property {boolean} levelStarted
  * @property {import('cannon-es').Body} playerBody
  * @property {import('./enemies.js').CampaignEnemyEntity[]} enemies
@@ -280,7 +312,8 @@ function portalRightXZ(rotY) {
 
 /**
  * Paired portals: teleport player + enemies, preserve speed, exit yaw from resolved portal orientation (`portalHalfTurn` in level JSON),
- * break trail at entry, short trail-hit immunity after exit. Inactive face uses a thin static box (slide like a wall).
+ * break trail at entry, short trail-hit immunity after exit. A thin static box sits on the **exit** side of the frame (`+fwd` from
+ * the portal center) so the approach from `-fwd` is never blocked; it only stops sliding through the back of the arch after the ring.
  *
  * @param {object} opts
  * @param {import('three').Scene} opts.scene
@@ -290,11 +323,13 @@ function portalRightXZ(rotY) {
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} opts.playCfg
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {(from: PortalEndpoint, to: PortalEndpoint) => void} [opts.onPortalWarp] — P9.3 warp particles
+ * @param {() => void} [opts.onPlayerWarp] — e.g. snap chase camera; called right after a successful **player** warp
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PortalFieldTickContext) => void; dispose: () => void }}
  */
 export function createPortalField(opts) {
   const { scene, world, wallMat, playCfg, devHud } = opts;
   const onPortalWarp = opts.onPortalWarp;
+  const onPlayerWarp = opts.onPlayerWarp;
   const raw = opts.gameObjects;
   const root = new THREE.Group();
   root.name = "portals";
@@ -363,14 +398,19 @@ export function createPortalField(opts) {
     if (ends.length !== 2) continue;
     pairs.push({ a: ends[0], b: ends[1] });
 
+    const P = PORTAL_FLOOR_FOOTPRINT;
+    const major = P * 0.43;
+    const minor = P * 0.026;
     for (const ep of ends) {
       const node = new THREE.Group();
       node.position.set(ep.x, 0, ep.z);
       node.rotation.y = ep.rotation;
 
       const em = ep.colorHex;
+      // Default TorusGeometry lies in the XY plane (flat; hole axis is +Z). RotY(π/2) places the main ring
+      // in the YZ plane (standing “Stargate” with horizontal passage through, matching gate scale).
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(1.05, 0.09, 12, 48),
+        new THREE.TorusGeometry(major, minor, 20, 64),
         new THREE.MeshStandardMaterial({
           color: em,
           emissive: em,
@@ -379,37 +419,22 @@ export function createPortalField(opts) {
           roughness: 0.3,
         }),
       );
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = 0.72;
+      ring.rotation.set(0, Math.PI / 2, 0);
+      ring.position.y = major + minor;
 
-      const disc = new THREE.Mesh(
-        new THREE.CircleGeometry(0.92, 40),
-        new THREE.MeshStandardMaterial({
-          color: 0x040608,
-          emissive: em,
-          emissiveIntensity: 0.55 * neon,
-          metalness: 0.2,
-          roughness: 0.5,
-          transparent: true,
-          opacity: 0.88,
-          side: THREE.DoubleSide,
-        }),
-      );
-      disc.rotation.x = -Math.PI / 2;
-      disc.position.y = 0.04;
-
-      node.add(disc);
       node.add(ring);
       root.add(node);
 
-      const fwd = portalForwardXZ(ep.rotation);
-      const bx = ep.x - fwd.x * 0.55;
-      const bz = ep.z - fwd.z * 0.55;
+      const exitFwd = portalExitForwardXZ(ep.rotation);
+      const backOff = 0.85;
+      // Baffle *past* the opening on the exit side; approach is from `-exitFwd` in XZ.
+      const bx = ep.x + exitFwd.x * backOff;
+      const bz = ep.z + exitFwd.z * backOff;
       const body = new Body({ mass: 0, material: wallMat });
       body.userData = {};
-      body.addShape(new Box(new Vec3(1.15, 0.72, 0.08)));
+      body.addShape(new Box(new Vec3(P * 0.55, 0.95, 0.1)));
       body.position.set(bx, spawnY, bz);
-      body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), ep.rotation);
+      body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), ep.rotation + Math.PI * 0.5);
       body.userData.kind = "portalBack";
       body.collisionFilterGroup = COLLISION_GROUP_ARENA_SOLID;
       body.collisionFilterMask = COLLISION_GROUP_CYCLE;
@@ -428,14 +453,14 @@ export function createPortalField(opts) {
    */
   function warpBody(body, from, to, nowMs) {
     onPortalWarp?.(from, to);
-    const tf = portalForwardXZ(to.rotation);
+    const tf = portalExitForwardXZ(to.rotation);
     const vx = body.velocity.x;
     const vz = body.velocity.z;
     const spd0 = Math.hypot(vx, vz);
     const spdStored = typeof body.userData.speed === "number" ? body.userData.speed : 0;
     const outSpd = spd0 > 0.35 ? spd0 : Math.max(spdStored, 2.5);
 
-    const spawnD = 2.35;
+    const spawnD = 2.65;
     body.position.x = to.x + tf.x * spawnD;
     body.position.z = to.z + tf.z * spawnD;
     body.position.y = spawnY;
@@ -458,18 +483,19 @@ export function createPortalField(opts) {
   function inPortalTrigger(body, portal) {
     const relx = body.position.x - portal.x;
     const relz = body.position.z - portal.z;
-    const fwd = portalForwardXZ(portal.rotation);
-    const rt = portalRightXZ(portal.rotation);
+    const fwd = portalExitForwardXZ(portal.rotation);
+    const rt = portalExitRightXZ(portal.rotation);
     const along = relx * fwd.x + relz * fwd.z;
     const lat = relx * rt.x + relz * rt.z;
-    if (along > 0.48 || along < -1.45) return false;
-    if (Math.abs(lat) > 1.22) return false;
+    if (along > 0.55 || along < -2.05) return false;
+    if (Math.abs(lat) > PORTAL_FLOOR_FOOTPRINT * 0.49) return false;
 
     const vx = body.velocity.x;
     const vz = body.velocity.z;
     const spd = Math.hypot(vx, vz);
     const into = vx * fwd.x + vz * fwd.z;
-    if (spd > 0.55 && into < spd * 0.28) return false;
+    // `fwd` = world exit (matches mesh: group Y + child π/2 on the torus). Block only clear wrong-way.
+    if (spd > 0.5 && into < -0.2 * spd) return false;
     return true;
   }
 
@@ -478,17 +504,10 @@ export function createPortalField(opts) {
    * @param {PortalFieldTickContext} ctx
    */
   function tick(_dt, ctx) {
-    const {
-      isLobby,
-      levelStarted,
-      playerBody,
-      enemies,
-      devHud: hud,
-      detachPlayerTrail,
-      detachEnemyTrail,
-      onPortalSound,
-    } = ctx;
-    if (isLobby || !levelStarted) return;
+    const { levelStarted, playerBody, enemies, devHud: hud, detachPlayerTrail, detachEnemyTrail, onPortalSound } =
+      ctx;
+    // Match boost pads: lobby has levelStarted true at load; campaign stays off until first W.
+    if (!levelStarted) return;
 
     const coolSec = typeof hud.specialObjectCooldown === "number" ? hud.specialObjectCooldown : 5;
     const coolMs = Math.max(0.25, coolSec) * 1000;
@@ -511,6 +530,7 @@ export function createPortalField(opts) {
         if (now - (playerBody.userData._portalAntiReentryMs ?? 0) < 220) continue;
         detachPlayerTrail();
         warpBody(playerBody, from, to, now);
+        onPlayerWarp?.();
         pairCooldownUntilMs.set(pid, now + coolMs);
         onPortalSound();
         warped = true;

@@ -25,6 +25,7 @@ import {
   gridTopLeftToWorldCenter,
   resolveTriangleBuildingRotationY,
   resolvePortalRotationY,
+  PORTAL_FLOOR_FOOTPRINT,
 } from "./footprints.js";
 
 /**
@@ -442,16 +443,16 @@ export function mountEditorWorkbench(opts) {
         } else {
           const col = typeof o.pairColor === "string" ? o.pairColor : "#FF00FF";
           const c = new THREE.Color(col);
-          const span = Math.max(0.4, Math.min(fp.width, fp.depth));
-          const major = span * 0.44;
-          const minor = Math.max(0.08, span * 0.11);
+          const span = Math.max(PORTAL_FLOOR_FOOTPRINT, Math.min(fp.width, fp.depth));
+          const major = span * 0.43;
+          const minor = Math.max(0.08, span * 0.026);
+          const rY = resolvePortalRotationY(o);
           mesh = new THREE.Mesh(
-            new THREE.TorusGeometry(major, minor, 12, 32),
+            new THREE.TorusGeometry(major, minor, 16, 40),
             new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.55 }),
           );
-          mesh.position.set(x, 0.45, z);
-          mesh.rotation.y = resolvePortalRotationY(o);
-          mesh.rotation.x = Math.PI / 2;
+          mesh.position.set(x, major + minor, z);
+          mesh.rotation.set(0, rY + Math.PI / 2, 0);
         }
         mesh.userData.editorPick = /** @type {FloorPick} */ ({
           type: "floor",

@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 200.0,
+      "position": 200,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 200.0,
+      "position": 200,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,444 +28,389 @@
   "barriers": [
     {
       "type": "building",
-      "x": -148.15,
-      "z": 177.78,
+      "x": -148,
+      "z": 178,
       "height": 3,
       "shape": "square",
       "width": 103.7,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 1,
+      "gridZ": 357
     },
     {
       "type": "building",
-      "x": 148.15,
-      "z": 177.78,
+      "x": 148,
+      "z": 178,
       "height": 3,
       "shape": "square",
       "width": 103.7,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 297,
+      "gridZ": 357
     },
     {
       "type": "building",
-      "x": -170.37,
-      "z": 133.33,
+      "x": -170.5,
+      "z": 133,
       "height": 3,
       "shape": "square",
       "width": 59.26,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 1,
+      "gridZ": 312
     },
     {
       "type": "building",
-      "x": -66.67,
-      "z": 133.33,
+      "x": -67,
+      "z": 133,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 119,
+      "gridZ": 312
     },
     {
       "type": "building",
-      "x": 37.04,
-      "z": 133.33,
+      "x": 37,
+      "z": 133,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 223,
+      "gridZ": 312
     },
     {
       "type": "building",
-      "x": 155.56,
-      "z": 133.33,
+      "x": 155.5,
+      "z": 133,
       "height": 3,
       "shape": "square",
       "width": 59.26,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 327,
+      "gridZ": 312
     },
     {
       "type": "building",
-      "x": -185.19,
-      "z": 88.89,
+      "x": -185,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 1,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": -96.3,
-      "z": 88.89,
+      "x": -96,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 90,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": -37.04,
-      "z": 88.89,
+      "x": -37,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 149,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": 7.41,
-      "z": 66.67,
+      "x": 7,
+      "z": 66.5,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 88.89
+      "depth": 88.89,
+      "gridX": 193,
+      "gridZ": 223
     },
     {
       "type": "building",
-      "x": 66.67,
-      "z": 88.89,
+      "x": 67,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 253,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": 162.96,
-      "z": 88.89,
+      "x": 163,
+      "z": 89,
       "height": 3,
       "shape": "square",
       "width": 44.44,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 342,
+      "gridZ": 268
     },
     {
       "type": "building",
-      "x": -125.93,
-      "z": 44.44,
+      "x": -126,
+      "z": 44,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 60,
+      "gridZ": 223
     },
     {
       "type": "building",
-      "x": -14.81,
-      "z": 44.44,
+      "x": 126,
+      "z": 44,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 312,
+      "gridZ": 223
+    },
+    {
+      "type": "building",
+      "x": -52,
+      "z": 0,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 134,
+      "gridZ": 179
+    },
+    {
+      "type": "building",
+      "x": 52,
+      "z": 0,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 238,
+      "gridZ": 179
+    },
+    {
+      "type": "building",
+      "x": -141,
+      "z": -44,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 45,
+      "gridZ": 135
+    },
+    {
+      "type": "building",
+      "x": -15,
+      "z": -44,
+      "height": 3,
+      "shape": "square",
+      "width": 44.44,
+      "depth": 44.44,
+      "gridX": 164,
+      "gridZ": 135
+    },
+    {
+      "type": "building",
+      "x": 111,
+      "z": -44,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 297,
+      "gridZ": 135
+    },
+    {
+      "type": "building",
+      "x": -178,
+      "z": -133.5,
+      "height": 3,
+      "shape": "square",
+      "width": 44.44,
+      "depth": 133.33,
+      "gridX": 1,
+      "gridZ": 1
+    },
+    {
+      "type": "building",
+      "x": -96,
+      "z": -89,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 90,
+      "gridZ": 90
+    },
+    {
+      "type": "building",
+      "x": -37,
+      "z": -89,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 149,
+      "gridZ": 90
+    },
+    {
+      "type": "building",
+      "x": 7,
+      "z": -89,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 44.44,
+      "gridX": 193,
+      "gridZ": 90
+    },
+    {
+      "type": "building",
+      "x": 67,
+      "z": -111.5,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 88.89,
+      "gridX": 253,
+      "gridZ": 45
+    },
+    {
+      "type": "building",
+      "x": 156,
+      "z": -133.5,
+      "height": 3,
+      "shape": "square",
+      "width": 29.63,
+      "depth": 133.33,
+      "gridX": 342,
+      "gridZ": 1
+    },
+    {
+      "type": "building",
+      "x": -148.5,
+      "z": -155.5,
       "height": 3,
       "shape": "square",
       "width": 14.81,
-      "depth": 44.44
+      "depth": 88.89,
+      "gridX": 45,
+      "gridZ": 1
     },
     {
       "type": "building",
-      "x": 125.93,
-      "z": 44.44,
+      "x": -67,
+      "z": -133,
       "height": 3,
       "shape": "square",
       "width": 29.63,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 119,
+      "gridZ": 46
     },
     {
       "type": "building",
-      "x": -51.85,
-      "z": 0.0,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": 51.85,
-      "z": 0.0,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": -140.74,
-      "z": -44.44,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": -14.81,
-      "z": -44.44,
+      "x": -119,
+      "z": -178,
       "height": 3,
       "shape": "square",
       "width": 44.44,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 60,
+      "gridZ": 1
     },
     {
       "type": "building",
-      "x": 111.11,
-      "z": -44.44,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": -177.78,
-      "z": -133.33,
+      "x": 119,
+      "z": -178,
       "height": 3,
       "shape": "square",
       "width": 44.44,
-      "depth": 133.33
+      "depth": 44.44,
+      "gridX": 298,
+      "gridZ": 1
     },
     {
       "type": "building",
-      "x": -96.3,
-      "z": -88.89,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": -37.04,
-      "z": -88.89,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": 7.41,
-      "z": -88.89,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": 66.67,
-      "z": -111.11,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 88.89
-    },
-    {
-      "type": "building",
-      "x": 155.56,
-      "z": -133.33,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 133.33
-    },
-    {
-      "type": "building",
-      "x": -148.15,
-      "z": -155.56,
+      "x": 192.5,
+      "z": -178,
       "height": 3,
       "shape": "square",
       "width": 14.81,
-      "depth": 88.89
-    },
-    {
-      "type": "building",
-      "x": -66.67,
-      "z": -133.33,
-      "height": 3,
-      "shape": "square",
-      "width": 29.63,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": 177.78,
-      "z": -155.56,
-      "height": 3,
-      "shape": "square",
-      "width": 14.81,
-      "depth": 88.89
-    },
-    {
-      "type": "building",
-      "x": -118.52,
-      "z": -177.78,
-      "height": 3,
-      "shape": "square",
-      "width": 44.44,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": 118.52,
-      "z": -177.78,
-      "height": 3,
-      "shape": "square",
-      "width": 44.44,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": 192.59,
-      "z": -177.78,
-      "height": 3,
-      "shape": "square",
-      "width": 14.81,
-      "depth": 44.44
-    },
-    {
-      "type": "building",
-      "x": -81.48,
-      "z": 111.11,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 2.16
-    },
-    {
-      "type": "building",
-      "x": -51.86,
-      "z": 111.11,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 0.98
-    },
-    {
-      "type": "building",
-      "x": 22.23,
-      "z": 100.0,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 1.99
-    },
-    {
-      "type": "building",
-      "x": 51.86,
-      "z": 111.11,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 0.98
-    },
-    {
-      "type": "building",
-      "x": -111.12,
-      "z": 66.66,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 2.16
-    },
-    {
-      "type": "building",
-      "x": -25.93,
-      "z": 66.66,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 1.11
-    },
-    {
-      "type": "building",
-      "x": 144.44,
-      "z": 66.66,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 2.27
-    },
-    {
-      "type": "building",
-      "x": -33.33,
-      "z": -22.22,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 0.88
-    },
-    {
-      "type": "building",
-      "x": -159.26,
-      "z": -88.89,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 1.97
-    },
-    {
-      "type": "building",
-      "x": -81.48,
-      "z": -111.11,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 0.98
-    },
-    {
-      "type": "building",
-      "x": -51.86,
-      "z": -111.11,
-      "height": 3,
-      "shape": "triangle",
-      "width": 23.33,
-      "depth": 23.33,
-      "rotation": 2.16
+      "depth": 44.44,
+      "gridX": 386,
+      "gridZ": 1
     }
   ],
   "gameObjects": [],
   "powerups": [
     {
       "type": "trail_extend",
-      "x": 118.52,
-      "z": 133.33,
-      "category": "level_permanent"
+      "x": 119,
+      "z": 133,
+      "category": "level_permanent",
+      "gridX": 319,
+      "gridZ": 333
     },
     {
       "type": "nitro_recharge",
-      "x": 0.0,
-      "z": 0.0,
-      "category": "instant"
+      "x": 0,
+      "z": 0,
+      "category": "instant",
+      "gridX": 200,
+      "gridZ": 200
     }
   ],
   "enemies": [
     {
-      "x": -14.81,
-      "z": 133.33,
-      "rotation": 0.0,
+      "x": -14.5,
+      "z": 133.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 186,
+      "gridZ": 333
     },
     {
-      "x": -148.15,
-      "z": 44.44,
-      "rotation": 0.0,
+      "x": -148.5,
+      "z": 44.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 52,
+      "gridZ": 244
     },
     {
-      "x": 133.33,
-      "z": -88.89,
-      "rotation": 0.0,
+      "x": 133.5,
+      "z": -88.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 334,
+      "gridZ": 111
     }
   ],
   "rewards": {
     "coins": 215,
     "timeBonusThreshold": 200,
     "timeBonusCoins": 58
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 402,
+  "mapDepth": 402
 }

@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 100.0,
+      "position": 100,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 100.0,
+      "position": 100,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,28 +28,35 @@
   "barriers": [
     {
       "type": "building",
-      "x": 0.0,
-      "z": -11.11,
+      "x": 0,
+      "z": -11,
       "height": 3,
       "shape": "square",
       "width": 31.58,
-      "depth": 44.44
+      "depth": 44.44,
+      "gridX": 85,
+      "gridZ": 68
     }
   ],
   "gameObjects": [],
   "powerups": [],
   "enemies": [
     {
-      "x": 0.0,
-      "z": 44.44,
-      "rotation": 0.0,
+      "x": 0.5,
+      "z": 44.5,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 101,
+      "gridZ": 144
     }
   ],
   "rewards": {
     "coins": 50,
     "timeBonusThreshold": 90,
     "timeBonusCoins": 25
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 202,
+  "mapDepth": 202
 }

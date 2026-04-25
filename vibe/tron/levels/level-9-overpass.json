@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 180.0,
+      "position": 180,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 180.0,
+      "position": 180,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,139 +28,158 @@
   "barriers": [
     {
       "type": "building",
-      "x": 60.0,
-      "z": 100.0,
+      "x": 60.5,
+      "z": 100.5,
       "height": 3,
       "shape": "square",
       "width": 53.33,
-      "depth": 33.33
+      "depth": 33.33,
+      "gridX": 215,
+      "gridZ": 235
     },
     {
       "type": "building",
-      "x": -6.67,
-      "z": 66.67,
+      "x": -6.5,
+      "z": 66.5,
       "height": 3,
       "shape": "square",
       "width": 53.33,
-      "depth": 33.33
+      "depth": 33.33,
+      "gridX": 148,
+      "gridZ": 201
     },
     {
       "type": "building",
-      "x": -100.0,
-      "z": 33.33,
+      "x": -99.5,
+      "z": 33.5,
       "height": 3,
       "shape": "square",
       "width": 53.33,
-      "depth": 33.33
+      "depth": 33.33,
+      "gridX": 55,
+      "gridZ": 168
     },
     {
       "type": "building",
-      "x": 126.67,
-      "z": 33.33,
+      "x": 126.5,
+      "z": 33.5,
       "height": 3,
       "shape": "square",
       "width": 53.33,
-      "depth": 33.33
+      "depth": 33.33,
+      "gridX": 281,
+      "gridZ": 168
     },
     {
       "type": "building",
-      "x": -120.0,
-      "z": -16.67,
+      "x": -119.5,
+      "z": -16.5,
       "height": 3,
       "shape": "square",
       "width": 13.33,
-      "depth": 66.67
+      "depth": 66.67,
+      "gridX": 55,
+      "gridZ": 101
     },
     {
       "type": "building",
-      "x": 146.67,
-      "z": 0.0,
+      "x": 146.5,
+      "z": 0.5,
       "height": 3,
       "shape": "square",
       "width": 13.33,
-      "depth": 33.33
+      "depth": 33.33,
+      "gridX": 321,
+      "gridZ": 135
     },
     {
       "type": "building",
-      "x": 133.33,
-      "z": -33.33,
+      "x": 133.5,
+      "z": -33.5,
       "height": 3,
       "shape": "square",
       "width": 13.33,
-      "depth": 33.33
+      "depth": 33.33,
+      "gridX": 308,
+      "gridZ": 101
     },
     {
       "type": "building",
-      "x": 73.33,
-      "z": -66.67,
+      "x": 73.5,
+      "z": -66.5,
       "height": 3,
       "shape": "square",
       "width": 53.33,
-      "depth": 33.33
-    },
-    {
-      "type": "building",
-      "x": 140.0,
-      "z": -16.66,
-      "height": 3,
-      "shape": "triangle",
-      "width": 17.49,
-      "depth": 17.49,
-      "rotation": 1.95
+      "depth": 33.33,
+      "gridX": 228,
+      "gridZ": 68
     }
   ],
   "gameObjects": [
     {
       "type": "boost_pad",
-      "x": -6.67,
-      "z": -33.33,
+      "x": -6.5,
+      "z": -33.5,
       "width": 72.66,
       "depth": 4.8,
-      "rotation": -0.0
+      "gridX": 138,
+      "gridZ": 115
     },
     {
       "type": "boost_pad",
-      "x": -86.67,
-      "z": 100.0,
+      "x": -87,
+      "z": 100.5,
       "width": 45.99,
       "depth": 4.8,
-      "rotation": -0.0
+      "gridX": 71,
+      "gridZ": 249
     }
   ],
   "powerups": [
     {
       "type": "nitro_recharge",
-      "x": -80.0,
-      "z": -100.0,
-      "category": "instant"
+      "x": -80,
+      "z": -100,
+      "category": "instant",
+      "gridX": 100,
+      "gridZ": 50
     }
   ],
   "enemies": [
     {
-      "x": -146.67,
-      "z": 100.0,
-      "rotation": 0.0,
+      "x": -146.5,
+      "z": 100.5,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 34,
+      "gridZ": 250
     },
     {
-      "x": 133.33,
-      "z": 100.0,
-      "rotation": 0.0,
+      "x": 133.5,
+      "z": 100.5,
+      "rotation": 0,
       "color": "#FF8A00",
-      "category": "easy"
+      "category": "easy",
+      "gridX": 314,
+      "gridZ": 250
     },
     {
-      "x": -146.67,
-      "z": -100.0,
-      "rotation": 0.0,
+      "x": -146.5,
+      "z": -99.5,
+      "rotation": 0,
       "color": "#00E5FF",
-      "category": "hard"
+      "category": "hard",
+      "gridX": 34,
+      "gridZ": 50
     }
   ],
   "rewards": {
     "coins": 170,
     "timeBonusThreshold": 170,
     "timeBonusCoins": 49
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 362,
+  "mapDepth": 302
 }

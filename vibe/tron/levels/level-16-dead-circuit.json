@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 220.0,
+      "position": 220,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,164 +28,191 @@
   "barriers": [
     {
       "type": "building",
-      "x": -128.97,
+      "x": -128.5,
       "z": 137.5,
       "height": 3,
       "shape": "square",
       "width": 60.69,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 62,
+      "gridZ": 331
     },
     {
       "type": "building",
-      "x": 98.62,
+      "x": 98.5,
       "z": 137.5,
       "height": 3,
       "shape": "square",
       "width": 60.69,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 289,
+      "gridZ": 331
     },
     {
       "type": "building",
-      "x": -98.62,
+      "x": -99,
       "z": 82.5,
       "height": 3,
       "shape": "square",
       "width": 30.34,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 107,
+      "gridZ": 276
     },
     {
       "type": "building",
-      "x": 0.0,
+      "x": 0,
       "z": 82.5,
       "height": 3,
       "shape": "square",
       "width": 106.21,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 168,
+      "gridZ": 276
     },
     {
       "type": "building",
-      "x": 98.62,
+      "x": 99,
       "z": 82.5,
       "height": 3,
       "shape": "square",
       "width": 30.34,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 305,
+      "gridZ": 276
     },
     {
       "type": "building",
-      "x": -159.31,
-      "z": 0.0,
+      "x": -159.5,
+      "z": 0,
       "height": 3,
       "shape": "square",
       "width": 60.69,
-      "depth": 110.0
+      "depth": 110,
+      "gridX": 31,
+      "gridZ": 166
     },
     {
       "type": "building",
-      "x": 144.14,
-      "z": 0.0,
+      "x": 144.5,
+      "z": 0,
       "height": 3,
       "shape": "square",
       "width": 60.69,
-      "depth": 110.0
+      "depth": 110,
+      "gridX": 335,
+      "gridZ": 166
     },
     {
       "type": "building",
-      "x": -15.17,
-      "z": -55.0,
+      "x": -15,
+      "z": -55,
       "height": 3,
       "shape": "square",
       "width": 75.86,
-      "depth": 110.0
+      "depth": 110,
+      "gridX": 168,
+      "gridZ": 111
     },
     {
       "type": "building",
-      "x": -98.62,
+      "x": -99,
       "z": -82.5,
       "height": 3,
       "shape": "square",
       "width": 30.34,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 107,
+      "gridZ": 111
     },
     {
       "type": "building",
-      "x": 68.28,
+      "x": 68,
       "z": -82.5,
       "height": 3,
       "shape": "square",
       "width": 30.34,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 274,
+      "gridZ": 111
     },
     {
       "type": "building",
-      "x": -128.97,
+      "x": -128.5,
       "z": -137.5,
       "height": 3,
       "shape": "square",
       "width": 60.69,
-      "depth": 55.0
+      "depth": 55,
+      "gridX": 62,
+      "gridZ": 56
     },
     {
       "type": "building",
-      "x": 98.62,
+      "x": 98.5,
       "z": -137.5,
       "height": 3,
       "shape": "square",
       "width": 60.69,
-      "depth": 55.0
-    },
-    {
-      "type": "building",
-      "x": 121.38,
-      "z": 41.25,
-      "height": 3,
-      "shape": "triangle",
-      "width": 28.88,
-      "depth": 28.88,
-      "rotation": 1.07
+      "depth": 55,
+      "gridX": 289,
+      "gridZ": 56
     }
   ],
   "gameObjects": [],
   "powerups": [
     {
       "type": "nitro_recharge",
-      "x": -15.17,
-      "z": 137.5,
-      "category": "instant"
+      "x": -15,
+      "z": 138,
+      "category": "instant",
+      "gridX": 205,
+      "gridZ": 358
     },
     {
       "type": "nitro_recharge",
-      "x": 182.07,
-      "z": -137.5,
-      "category": "instant"
+      "x": 182,
+      "z": -137,
+      "category": "instant",
+      "gridX": 402,
+      "gridZ": 83
     }
   ],
   "enemies": [
     {
-      "x": -212.41,
+      "x": -212.5,
       "z": 137.5,
-      "rotation": 0.0,
+      "rotation": 0,
       "color": "#00E5FF",
-      "category": "hard"
+      "category": "hard",
+      "gridX": 8,
+      "gridZ": 357
     },
     {
-      "x": 182.07,
+      "x": 182.5,
       "z": 137.5,
-      "rotation": 0.0,
+      "rotation": 0,
       "color": "#00E5FF",
-      "category": "hard"
+      "category": "hard",
+      "gridX": 403,
+      "gridZ": 357
     },
     {
-      "x": -212.41,
+      "x": -212.5,
       "z": -137.5,
-      "rotation": 0.0,
+      "rotation": 0,
       "color": "#00E5FF",
-      "category": "hard"
+      "category": "hard",
+      "gridX": 8,
+      "gridZ": 82
     }
   ],
   "rewards": {
     "coins": 275,
     "timeBonusThreshold": 240,
     "timeBonusCoins": 70
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 442,
+  "mapDepth": 442
 }

@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 120.0,
+      "position": 120,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 120.0,
+      "position": 120,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -28,53 +28,66 @@
   "barriers": [
     {
       "type": "building",
-      "x": 0.0,
-      "z": -13.33,
+      "x": 0.5,
+      "z": -13,
       "height": 3,
       "shape": "square",
       "width": 11.43,
-      "depth": 160.0
+      "depth": 160,
+      "gridX": 116,
+      "gridZ": 28
     },
     {
       "type": "building",
-      "x": -51.43,
-      "z": 0.0,
+      "x": -51,
+      "z": 0.5,
       "height": 3,
       "shape": "square",
       "width": 45.71,
-      "depth": 26.67
+      "depth": 26.67,
+      "gridX": 47,
+      "gridZ": 108
     },
     {
       "type": "building",
-      "x": 51.43,
-      "z": 0.0,
+      "x": 51,
+      "z": 0.5,
       "height": 3,
       "shape": "square",
       "width": 45.71,
-      "depth": 26.67
+      "depth": 26.67,
+      "gridX": 149,
+      "gridZ": 108
     }
   ],
   "gameObjects": [],
   "powerups": [
     {
       "type": "trail_extend",
-      "x": -57.14,
-      "z": -80.0,
-      "category": "level_permanent"
+      "x": -57,
+      "z": -80,
+      "category": "level_permanent",
+      "gridX": 63,
+      "gridZ": 40
     }
   ],
   "enemies": [
     {
-      "x": 0.0,
-      "z": 80.0,
-      "rotation": 0.0,
+      "x": 0.5,
+      "z": 80.5,
+      "rotation": 0,
       "color": "#FF3D7F",
-      "category": "medium"
+      "category": "medium",
+      "gridX": 121,
+      "gridZ": 200
     }
   ],
   "rewards": {
     "coins": 80,
     "timeBonusThreshold": 110,
     "timeBonusCoins": 31
-  }
+  },
+  "schemaVersion": 2,
+  "mapWidth": 242,
+  "mapDepth": 242
 }
