@@ -73,6 +73,22 @@ export function createBlankWipLevel(arenaWidth = 80, arenaDepth = 80) {
 }
 
 /**
+ * @param {unknown} level
+ * @returns {level is Record<string, unknown>}
+ */
+export function isEditorV2Level(level) {
+  if (!level || typeof level !== "object" || Array.isArray(level)) return false;
+  const L = /** @type {Record<string, unknown>} */ (level);
+  return (
+    L.schemaVersion === LEVEL_SCHEMA_VERSION_V2 &&
+    typeof L.mapWidth === "number" &&
+    Number.isFinite(L.mapWidth) &&
+    typeof L.mapDepth === "number" &&
+    Number.isFinite(L.mapDepth)
+  );
+}
+
+/**
  * Load first WIP or create a blank level and persist.
  * @param {string} [preferredWipId] — open this WIP when present (e.g. Return to Editor / backtick).
  * @returns {Record<string, unknown>}
@@ -81,15 +97,17 @@ export function ensureEditorWipLevel(preferredWipId) {
   if (typeof preferredWipId === "string" && preferredWipId.trim()) {
     const id = preferredWipId.trim();
     const pick = getWipLevel(id);
-    if (pick && typeof pick === "object") {
+    if (isEditorV2Level(pick)) {
       return /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(pick)));
     }
   }
   const ids = listWipLevelIds();
   if (ids.length > 0) {
-    const first = getWipLevel(ids[0]);
-    if (first && typeof first === "object") {
-      return /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(first)));
+    for (const id of ids) {
+      const pick = getWipLevel(id);
+      if (isEditorV2Level(pick)) {
+        return /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(pick)));
+      }
     }
   }
   const blank = createBlankWipLevel();
@@ -170,14 +188,6 @@ export function collectGateClearTileKeys(wallObjects, arenaWidth, arenaDepth) {
 }
 
 /**
- * @param {number} x
- * @param {number} z
- */
-export function snapTile(x, z) {
-  return { ix: Math.round(x), iz: Math.round(z) };
-}
-
-/**
  * @param {Record<string, unknown>} level
  * @param {number} x
  * @param {number} z
@@ -185,13 +195,13 @@ export function snapTile(x, z) {
 export function snapAuthoringCell(level, x, z) {
   const mapWidth = typeof level.mapWidth === "number" ? level.mapWidth : level.arenaWidth;
   const mapDepth = typeof level.mapDepth === "number" ? level.mapDepth : level.arenaDepth;
-  if (level.schemaVersion === LEVEL_SCHEMA_VERSION_V2 && typeof mapWidth === "number" && typeof mapDepth === "number") {
-    return {
-      ix: Math.floor(x + mapWidth / 2),
-      iz: Math.floor(z + mapDepth / 2),
-    };
+  if (level.schemaVersion !== LEVEL_SCHEMA_VERSION_V2 || typeof mapWidth !== "number" || typeof mapDepth !== "number") {
+    throw new Error("Editor only supports schemaVersion 2 levels with mapWidth/mapDepth");
   }
-  return snapTile(x, z);
+  return {
+    ix: Math.floor(x + mapWidth / 2),
+    iz: Math.floor(z + mapDepth / 2),
+  };
 }
 
 /**
@@ -202,17 +212,15 @@ export function snapAuthoringCell(level, x, z) {
  * @param {number} iz
  */
 export function setEditorObjectPlacement(level, list, o, ix, iz) {
-  if (level.schemaVersion === LEVEL_SCHEMA_VERSION_V2) {
-    o.gridX = ix;
-    o.gridZ = iz;
-    const fp = getFloorObjectFootprint(list, o);
-    const c = gridTopLeftToWorldCenter(level, ix, iz, fp.width, fp.depth);
-    o.x = c.x;
-    o.z = c.z;
-    return;
+  if (level.schemaVersion !== LEVEL_SCHEMA_VERSION_V2) {
+    throw new Error("Editor only supports schemaVersion 2 placement");
   }
-  o.x = ix;
-  o.z = iz;
+  o.gridX = ix;
+  o.gridZ = iz;
+  const fp = getFloorObjectFootprint(list, o);
+  const c = gridTopLeftToWorldCenter(level, ix, iz, fp.width, fp.depth);
+  o.x = c.x;
+  o.z = c.z;
 }
 
 /**
@@ -232,10 +240,7 @@ export function collectOccupiedFloorTileKeys(level) {
       const b = barriers[i];
       if (b && typeof b === "object") {
         const o = /** @type {Record<string, unknown>} */ (b);
-        if (
-          (typeof o.x === "number" && typeof o.z === "number") ||
-          (typeof o.gridX === "number" && typeof o.gridZ === "number")
-        ) tryAdd("barriers", o);
+        if (typeof o.gridX === "number" && typeof o.gridZ === "number") tryAdd("barriers", o);
       }
     }
   }
@@ -244,10 +249,7 @@ export function collectOccupiedFloorTileKeys(level) {
     for (const g of gameObjects) {
       if (g && typeof g === "object") {
         const o = /** @type {Record<string, unknown>} */ (g);
-        if (
-          (typeof o.x === "number" && typeof o.z === "number") ||
-          (typeof o.gridX === "number" && typeof o.gridZ === "number")
-        ) tryAdd("gameObjects", o);
+        if (typeof o.gridX === "number" && typeof o.gridZ === "number") tryAdd("gameObjects", o);
       }
     }
   }
@@ -256,10 +258,7 @@ export function collectOccupiedFloorTileKeys(level) {
     for (const p of powerups) {
       if (p && typeof p === "object") {
         const o = /** @type {Record<string, unknown>} */ (p);
-        if (
-          (typeof o.x === "number" && typeof o.z === "number") ||
-          (typeof o.gridX === "number" && typeof o.gridZ === "number")
-        ) tryAdd("powerups", o);
+        if (typeof o.gridX === "number" && typeof o.gridZ === "number") tryAdd("powerups", o);
       }
     }
   }
@@ -268,10 +267,7 @@ export function collectOccupiedFloorTileKeys(level) {
     for (const e of enemies) {
       if (e && typeof e === "object") {
         const o = /** @type {Record<string, unknown>} */ (e);
-        if (
-          (typeof o.x === "number" && typeof o.z === "number") ||
-          (typeof o.gridX === "number" && typeof o.gridZ === "number")
-        ) tryAdd("enemies", o);
+        if (typeof o.gridX === "number" && typeof o.gridZ === "number") tryAdd("enemies", o);
       }
     }
   }

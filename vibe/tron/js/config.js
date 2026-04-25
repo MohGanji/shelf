@@ -110,17 +110,17 @@ export const DEFAULT_DEV_HUD = {
   trailFadeSpeed: 1.0,
   /** Legacy alias migrated into `playerBaseTrailLength`; kept for old saves/internal fallback only. */
   defaultTrailLength: 200,
-  maxSpeed: 120,
-  maxAcceleration: 50,
-  maxHandlingRadPerSec: 5.0,
-  maxNitroBars: 8,
+  maxSpeed: 100,
+  maxAcceleration: 70,
+  maxHandlingRadPerSec: 6.0,
+  maxNitroBars: 7,
   playerBaseTrailLength: 200,
   enemyBaseTrailLength: 200,
-  playerTrailUpgradeMaxPercent: 40,
-  playerBasePercent: 35,
-  enemyEasyPercent: 27,
-  enemyMediumPercent: 47,
-  enemyHardPercent: 75,
+  playerTrailUpgradeMaxPercent: 50,
+  playerBasePercent: 45,
+  enemyEasyPercent: 33,
+  enemyMediumPercent: 58,
+  enemyHardPercent: 77,
   enemyBossPercent: 93,
   trailExtendAmount: 10,
   nitroCapacityPlusAmount: 1,
@@ -422,7 +422,8 @@ export function enemyCategoryPercent(devHud, category) {
  * @param {unknown} level
  */
 export function playerAttributePercent(devHud, level) {
-  const base = percent(devHud.playerBasePercent, DEFAULT_DEV_HUD.playerBasePercent);
+  /** Min 1% at level 1 so speed/handling never hit 0 from a 0% dev-HUD "Player base" save. */
+  const base = Math.max(1, percent(devHud.playerBasePercent, DEFAULT_DEV_HUD.playerBasePercent));
   const lv = Math.max(1, Math.min(10, Math.floor(Number(level))));
   return base + ((lv - 1) * (100 - base)) / 9;
 }

@@ -8,7 +8,7 @@ import {
   getArenaPlaytestConfig,
   mergeDevHud,
 } from "../config.js";
-import { loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
+import { DEFAULT_CAMPAIGN_BASE, loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
 import { persistSave, spendCoins, unlockCosmeticColor } from "../data/savedata.js";
 import { clampAttributeLevel } from "../game/attributes.js";
 import {
@@ -18,7 +18,7 @@ import {
   nextCampaignLevelIndex,
   triggerDownload,
 } from "../levels/editorExport.js";
-import { createBlankWipLevel, ensureEditorWipLevel } from "../levels/editorLevel.js";
+import { createBlankWipLevel, ensureEditorWipLevel, isEditorV2Level } from "../levels/editorLevel.js";
 import { mountEditorOrthographicViewport } from "../levels/editorView.js";
 import { mountEditorWorkbench } from "../levels/editorWorkbench.js";
 import { mountEditorPalette } from "../levels/editorPalette.js";
@@ -38,10 +38,40 @@ import {
 
 /** Shared neon coin graphic (avoid Unicode hexagon — poor contrast on cyan buttons). */
 const NEON_COIN_SRC = new URL("../../assets/ui/neon-coin.svg", import.meta.url).href;
+const EDITOR_SOURCE_KEY = "__editorSource";
 
 /** @param {string} [className] */
 function neonCoinImg(className = "neon-coin-icon") {
   return `<img class="${className}" src="${NEON_COIN_SRC}" width="14" height="14" alt="" />`;
+}
+
+/** @param {string} base */
+function editorCampaignBase(base) {
+  return base.endsWith("/") ? base : `${base}/`;
+}
+
+/**
+ * @param {Record<string, unknown>} level
+ * @returns {Record<string, unknown>}
+ */
+function withoutEditorSource(level) {
+  const out = /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(level)));
+  delete out[EDITOR_SOURCE_KEY];
+  return out;
+}
+
+/**
+ * @param {Record<string, unknown>} level
+ * @returns {{ filename?: string; originalId?: string } | null}
+ */
+function readEditorSource(level) {
+  const src = level[EDITOR_SOURCE_KEY];
+  if (!src || typeof src !== "object" || Array.isArray(src)) return null;
+  const rec = /** @type {Record<string, unknown>} */ (src);
+  return {
+    filename: typeof rec.filename === "string" ? rec.filename : undefined,
+    originalId: typeof rec.originalId === "string" ? rec.originalId : undefined,
+  };
 }
 
 const STANDARD_NEON_COST = 50;
@@ -457,8 +487,13 @@ export function mountEditorDestinationScreen(opts) {
   const newLevelDialog = /** @type {HTMLDialogElement | null} */ (
     document.getElementById("editor-new-level-dialog")
   );
+  const openLevelDialog = /** @type {HTMLDialogElement | null} */ (
+    document.getElementById("editor-open-level-dialog")
+  );
   const newLevelForm = document.getElementById("editor-new-level-form");
   const newLevelErr = document.getElementById("editor-new-level-error");
+  const openLevelList = document.getElementById("editor-open-level-list");
+  const openLevelErr = document.getElementById("editor-open-level-error");
   if (!root || !opts.game?.renderer) {
     return { dispose() {} };
   }
@@ -470,6 +505,42 @@ export function mountEditorDestinationScreen(opts) {
   }
   /* P6.1 — orthographic grid renders on the canvas; keep it in the accessibility tree. */
   canvas.removeAttribute("aria-hidden");
+
+  const statusEl = document.getElementById("editor-status");
+  const paletteToggleBtn = root.querySelector("[data-editor-toggle-palette]");
+  const propsToggleBtn = root.querySelector("[data-editor-toggle-props]");
+  /** @type {"palette" | "props" | null} */
+  let openDrawer = null;
+
+  /** @param {string} msg */
+  function setEditorStatus(msg) {
+    if (statusEl) statusEl.textContent = msg;
+  }
+
+  /** @param {"palette" | "props" | null} next */
+  function setEditorDrawer(next) {
+    openDrawer = next;
+    const paletteOpen = next === "palette";
+    const propsOpen = next === "props";
+    if (paletteRoot) {
+      paletteRoot.hidden = !paletteOpen;
+      paletteRoot.classList.toggle("editor-drawer--open", paletteOpen);
+      paletteRoot.inert = !paletteOpen;
+      paletteRoot.setAttribute("aria-hidden", String(!paletteOpen));
+    }
+    if (propsRoot) {
+      propsRoot.hidden = !propsOpen;
+      propsRoot.classList.toggle("editor-drawer--open", propsOpen);
+      propsRoot.inert = !propsOpen;
+      propsRoot.setAttribute("aria-hidden", String(!propsOpen));
+    }
+    if (paletteToggleBtn instanceof HTMLButtonElement) {
+      paletteToggleBtn.setAttribute("aria-expanded", String(paletteOpen));
+    }
+    if (propsToggleBtn instanceof HTMLButtonElement) {
+      propsToggleBtn.setAttribute("aria-expanded", String(propsOpen));
+    }
+  }
 
   /**
    * P6.5 — viewport + workbench + UI for one WIP level; dispose fully before remounting (arena size is immutable per level).
@@ -484,6 +555,8 @@ export function mountEditorDestinationScreen(opts) {
       canvas,
       arenaWidth: aw,
       arenaDepth: ad,
+      mapWidth: typeof level.mapWidth === "number" ? level.mapWidth : aw + 2,
+      mapDepth: typeof level.mapDepth === "number" ? level.mapDepth : ad + 2,
       devHud: opts.devHud,
     });
 
@@ -492,7 +565,16 @@ export function mountEditorDestinationScreen(opts) {
     if (paletteRoot) {
       paletteRoot.hidden = false;
       paletteRoot.classList.remove("tron-destination--hidden");
-      paletteCtl = mountEditorPalette(paletteRoot);
+      paletteCtl = mountEditorPalette(paletteRoot, {
+        onSelectionChange: (sel) => {
+          if (sel) {
+            setEditorStatus(`Armed ${sel.kind}. Click the map grid to place it; red means blocked.`);
+            setEditorDrawer(null);
+          } else {
+            setEditorStatus("Palette cleared. Click an object to select it, or open Palette to place a block.");
+          }
+        },
+      });
     }
 
     /** P6.6 — undo/redo snapshots (place/move/delete/properties). */
@@ -507,7 +589,17 @@ export function mountEditorDestinationScreen(opts) {
       getPaletteSelection: () => paletteCtl.getSelection(),
       level,
       onPersist: (L) => upsertWipLevel(L),
-      onSelectionChange: () => editorUi.syncProps(),
+      onSelectionChange: (sel) => {
+        editorUi.syncProps();
+        if (sel) {
+          setEditorDrawer("props");
+          setEditorStatus(sel.type === "gate" ? "Gate selected. Drag along the wall or edit properties." : "Object selected. Drag to move or edit properties.");
+        } else if (openDrawer === "props") {
+          setEditorDrawer(null);
+          setEditorStatus("Selection cleared. Open Palette to place blocks, or click an existing object.");
+        }
+      },
+      onStatusChange: (msg) => setEditorStatus(msg),
       beforeMutation: () => history.beforeMutation(),
     });
 
@@ -525,12 +617,23 @@ export function mountEditorDestinationScreen(opts) {
         level,
         getSelection: () => workbench.getSelection(),
         onApply: () => workbench.refresh(),
+        onVisualRefresh: () => workbench.refreshVisual(),
+        onDelete: () => workbench.deleteSelection(),
+        validateFloorObject: (draft) => workbench.canPlaceSelectionDraft(draft),
+        onInvalidChange: (msg) => setEditorStatus(msg),
         beforeMutation: () => history.beforeMutation(),
       });
       editorUi.syncProps = () => propsCtl.sync();
       propsCtl.sync();
     }
 
+    setEditorDrawer(null);
+    const src = readEditorSource(level);
+    setEditorStatus(
+      src?.filename
+        ? `Editing ${src.filename}. Export JSON downloads a replacement for that file. ⌥/Alt+drag a selected object to clone.`
+        : "Top-down v2 map ready. Open Palette, choose a block, then click the grid. ⌥/Alt+drag a selected object to clone.",
+    );
     return { level, viewport, workbench, paletteCtl, propsCtl, history, afterHistoryRestore };
   }
 
@@ -569,9 +672,15 @@ export function mountEditorDestinationScreen(opts) {
   async function runExportLevel() {
     setExportError("");
     const level = session.level;
-    const v = validateLevel(level);
+    const source = readEditorSource(level);
+    const cleanLevel = withoutEditorSource(level);
+    const v = validateLevel(cleanLevel);
     if (!v.valid) {
       setExportError(`Invalid level: ${v.errors[0] ?? "validation failed"}`);
+      return;
+    }
+    if (source?.filename) {
+      triggerDownload(source.filename, JSON.stringify(cleanLevel, null, 2));
       return;
     }
     let manifest;
@@ -581,10 +690,10 @@ export function mountEditorDestinationScreen(opts) {
       manifest = [];
     }
     const nextN = nextCampaignLevelIndex(manifest);
-    const nameStr = typeof level.name === "string" ? level.name : "Untitled";
+    const nameStr = typeof cleanLevel.name === "string" ? cleanLevel.name : "Untitled";
     const filename = buildCampaignExportFilename(nameStr, nextN);
     const campaignId = `level-${nextN}`;
-    const payload = buildCampaignLevelJsonForExport(level, campaignId);
+    const payload = buildCampaignLevelJsonForExport(cleanLevel, campaignId);
     triggerDownload(filename, JSON.stringify(payload, null, 2));
   }
 
@@ -592,7 +701,9 @@ export function mountEditorDestinationScreen(opts) {
   async function runExportManifest() {
     setExportError("");
     const level = session.level;
-    const v = validateLevel(level);
+    const source = readEditorSource(level);
+    const cleanLevel = withoutEditorSource(level);
+    const v = validateLevel(cleanLevel);
     if (!v.valid) {
       setExportError(`Invalid level: ${v.errors[0] ?? "validation failed"}`);
       return;
@@ -603,8 +714,12 @@ export function mountEditorDestinationScreen(opts) {
     } catch {
       manifest = [];
     }
+    if (source?.filename) {
+      triggerDownload("manifest.json", JSON.stringify(appendManifestEntry(manifest, source.filename), null, 2));
+      return;
+    }
     const nextN = nextCampaignLevelIndex(manifest);
-    const nameStr = typeof level.name === "string" ? level.name : "Untitled";
+    const nameStr = typeof cleanLevel.name === "string" ? cleanLevel.name : "Untitled";
     const filename = buildCampaignExportFilename(nameStr, nextN);
     const updated = appendManifestEntry(manifest, filename);
     triggerDownload("manifest.json", JSON.stringify(updated, null, 2));
@@ -644,16 +759,123 @@ export function mountEditorDestinationScreen(opts) {
       setExportError(`Invalid level file: ${v.errors[0] ?? "validation failed"}`);
       return;
     }
-    if (json.id === LOBBY_LEVEL_ID) {
-      setExportError("Invalid level file: Lobby campaign level cannot be imported as WIP");
+    if (!isEditorV2Level(json)) {
+      setExportError("Invalid level file: the editor only supports schemaVersion 2 levels with mapWidth/mapDepth.");
       return;
     }
-    const wipId = `wip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
     const next = /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(json)));
-    next.id = wipId;
     upsertWipLevel(next);
     disposeEditorSession(session);
     session = mountEditorSession(/** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(next))));
+  }
+
+  /** @param {string} msg */
+  function setOpenLevelError(msg) {
+    if (!openLevelErr) return;
+    if (!msg) {
+      openLevelErr.hidden = true;
+      openLevelErr.textContent = "";
+      return;
+    }
+    openLevelErr.hidden = false;
+    openLevelErr.textContent = msg;
+  }
+
+  /** @param {string} s */
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /** @param {string} filename */
+  function campaignFilenameLabel(filename) {
+    if (filename === "level-0-lobby.json") return "Lobby";
+    return filename.replace(/\.json$/i, "").replace(/^level-(\d+)-/i, "Arena $1 — ").replace(/-/g, " ");
+  }
+
+  /** @param {string} filename */
+  async function openCampaignFilename(filename) {
+    setOpenLevelError("");
+    setExportError("");
+    let json;
+    try {
+      const base = editorCampaignBase(DEFAULT_CAMPAIGN_BASE);
+      const res = await fetch(`${base}${filename.replace(/^\//, "")}`);
+      if (!res.ok) {
+        setOpenLevelError(`Could not load ${filename}: HTTP ${res.status}`);
+        return;
+      }
+      json = JSON.parse(await res.text());
+    } catch (e) {
+      setOpenLevelError(`Could not load ${filename}: ${String(e)}`);
+      return;
+    }
+    const v = validateLevel(json);
+    if (!v.valid) {
+      setOpenLevelError(`Invalid campaign level: ${v.errors[0] ?? "validation failed"}`);
+      return;
+    }
+    if (!isEditorV2Level(json)) {
+      setOpenLevelError("This editor only supports schemaVersion 2 campaign levels.");
+      return;
+    }
+    const next = /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(json)));
+    next[EDITOR_SOURCE_KEY] = {
+      kind: "campaign",
+      filename,
+      originalId: typeof next.id === "string" ? next.id : "",
+    };
+    upsertWipLevel(next);
+    disposeEditorSession(session);
+    session = mountEditorSession(/** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(next))));
+    if (openLevelDialog) openLevelDialog.close();
+    setExportError("");
+    setEditorStatus(`Editing ${filename}. Export JSON downloads a replacement for that file.`);
+  }
+
+  async function openExistingLevelDialog() {
+    setOpenLevelError("");
+    if (openLevelList) {
+      openLevelList.innerHTML = '<p class="editor-open-level-dialog__lead">Loading campaign levels...</p>';
+    }
+    if (openLevelDialog) {
+      try {
+        openLevelDialog.showModal();
+      } catch {
+        /* already open */
+      }
+    }
+    let manifest;
+    try {
+      manifest = await loadCampaignManifest();
+    } catch {
+      manifest = [];
+    }
+    if (!openLevelList) return;
+    if (!manifest.length) {
+      openLevelList.innerHTML = '<p class="editor-open-level-dialog__lead">No campaign levels found.</p>';
+      return;
+    }
+    openLevelList.replaceChildren();
+    for (const filename of manifest) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "editor-open-level-dialog__item";
+      btn.setAttribute("role", "option");
+      const kind = filename === "level-0-lobby.json" ? "Lobby" : "Campaign";
+      btn.innerHTML = `
+        <span>
+          <span class="editor-open-level-dialog__item-title">${escapeHtml(campaignFilenameLabel(filename))}</span>
+          <span class="editor-open-level-dialog__item-meta">${escapeHtml(filename)}</span>
+        </span>
+        <span class="editor-open-level-dialog__item-kind">${kind}</span>
+      `;
+      btn.addEventListener("click", () => void openCampaignFilename(filename));
+      openLevelList.appendChild(btn);
+    }
   }
 
   const onImportLevelClick = () => {
@@ -690,6 +912,15 @@ export function mountEditorDestinationScreen(opts) {
   };
   if (playtestBtn) playtestBtn.addEventListener("click", onPlaytestClick);
 
+  const onPaletteToggleClick = () => {
+    setEditorDrawer(openDrawer === "palette" ? null : "palette");
+  };
+  const onPropsToggleClick = () => {
+    setEditorDrawer(openDrawer === "props" ? null : "props");
+  };
+  if (paletteToggleBtn) paletteToggleBtn.addEventListener("click", onPaletteToggleClick);
+  if (propsToggleBtn) propsToggleBtn.addEventListener("click", onPropsToggleClick);
+
   /** Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z / Ctrl/Cmd+Y redo — skip when typing in form fields. */
   const onUndoRedoKey = (/** @type {KeyboardEvent} */ e) => {
     if (!e.ctrlKey && !e.metaKey) return;
@@ -722,6 +953,7 @@ export function mountEditorDestinationScreen(opts) {
 
   const btn = root.querySelector("[data-return-lobby]");
   const newLevelBtn = root.querySelector("[data-editor-new-level]");
+  const openExistingBtn = root.querySelector("[data-editor-open-existing]");
   const onClick = () => onReturn();
   if (btn) btn.addEventListener("click", onClick);
 
@@ -774,14 +1006,22 @@ export function mountEditorDestinationScreen(opts) {
   }
 
   const onNewLevelClick = () => openNewLevelDialog();
+  const onOpenExistingClick = () => void openExistingLevelDialog();
   if (newLevelBtn) newLevelBtn.addEventListener("click", onNewLevelClick);
+  if (openExistingBtn) openExistingBtn.addEventListener("click", onOpenExistingClick);
 
   const cancelBtn = document.querySelector("[data-editor-new-level-cancel]");
+  const openCancelBtn = document.querySelector("[data-editor-open-level-cancel]");
   const onNewLevelCancel = () => {
     setNewLevelError("");
     if (newLevelDialog) newLevelDialog.close();
   };
+  const onOpenLevelCancel = () => {
+    setOpenLevelError("");
+    if (openLevelDialog) openLevelDialog.close();
+  };
   if (cancelBtn) cancelBtn.addEventListener("click", onNewLevelCancel);
+  if (openCancelBtn) openCancelBtn.addEventListener("click", onOpenLevelCancel);
 
   if (newLevelForm instanceof HTMLFormElement) {
     newLevelForm.addEventListener("submit", onNewLevelSubmit);
@@ -795,6 +1035,18 @@ export function mountEditorDestinationScreen(opts) {
       newLevelDialog.close();
       return;
     }
+    if (openLevelDialog?.open) {
+      e.preventDefault();
+      e.stopPropagation();
+      openLevelDialog.close();
+      return;
+    }
+    if (openDrawer) {
+      e.preventDefault();
+      e.stopPropagation();
+      setEditorDrawer(null);
+      return;
+    }
     onReturn();
   };
   window.addEventListener("keydown", onKey);
@@ -805,16 +1057,20 @@ export function mountEditorDestinationScreen(opts) {
       if (propsRoot) {
         propsRoot.hidden = true;
         propsRoot.classList.add("tron-destination--hidden");
+        propsRoot.classList.remove("editor-drawer--open");
       }
       if (paletteRoot) {
         paletteRoot.hidden = true;
         paletteRoot.classList.add("tron-destination--hidden");
+        paletteRoot.classList.remove("editor-drawer--open");
       }
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keydown", onUndoRedoKey);
       if (btn) btn.removeEventListener("click", onClick);
       if (newLevelBtn) newLevelBtn.removeEventListener("click", onNewLevelClick);
+      if (openExistingBtn) openExistingBtn.removeEventListener("click", onOpenExistingClick);
       if (cancelBtn) cancelBtn.removeEventListener("click", onNewLevelCancel);
+      if (openCancelBtn) openCancelBtn.removeEventListener("click", onOpenLevelCancel);
       if (newLevelForm instanceof HTMLFormElement) {
         newLevelForm.removeEventListener("submit", onNewLevelSubmit);
       }
@@ -823,6 +1079,8 @@ export function mountEditorDestinationScreen(opts) {
       if (importLevelBtn) importLevelBtn.removeEventListener("click", onImportLevelClick);
       if (importFileInput) importFileInput.removeEventListener("change", onImportFileChange);
       if (playtestBtn) playtestBtn.removeEventListener("click", onPlaytestClick);
+      if (paletteToggleBtn) paletteToggleBtn.removeEventListener("click", onPaletteToggleClick);
+      if (propsToggleBtn) propsToggleBtn.removeEventListener("click", onPropsToggleClick);
       setExportError("");
       root.hidden = true;
       root.classList.add("tron-destination--hidden");

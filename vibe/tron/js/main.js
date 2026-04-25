@@ -514,6 +514,33 @@ async function main() {
     });
   }
 
+  let editorShortcutTunnelStarted = false;
+
+  function beginEditorShortcutTunnel() {
+    if (editorShortcutTunnelStarted) return;
+    editorShortcutTunnelStarted = true;
+    audio.playGateEnterHum();
+    setEditorPlaytestReturn(null);
+    setSessionBootTarget({ mode: "editor" });
+    game.stopLoop();
+    playTunnel(
+      game.renderer,
+      () => {
+        window.location.reload();
+      },
+      {
+        durationSeconds: CONFIG.tunnelGateSeconds,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+          clearTrailAndEquipForTunnel();
+        },
+        devHud,
+      },
+    ).catch(() => {
+      window.location.reload();
+    });
+  }
+
   const { state: arenaKeys } = createTronCycleKeyState();
   /** @type {boolean} */
   let prevEquipE = false;
@@ -1039,6 +1066,36 @@ async function main() {
     true,
   );
 
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "/" && e.code !== "Slash") return;
+      if (isTunnelBlockingInput()) return;
+      if (isControlsOverlayBlockingInput()) return;
+      if (isPauseOverlayBlockingInput()) return;
+      if (playerDerezPhase !== "alive") return;
+      if (
+        gameMode !== GameMode.LOBBY &&
+        gameMode !== GameMode.LEVEL &&
+        gameMode !== GameMode.LEVEL_COMPLETE
+      ) {
+        return;
+      }
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      beginEditorShortcutTunnel();
+    },
+    true,
+  );
+
   function renderNitroHud() {
     if (!hudNitroEl) return;
     const max = Math.max(1, effectivePlayerNitroMax());
@@ -1266,9 +1323,6 @@ async function main() {
           }
         } else if (role === "garage") {
           beginLobbyGateTunnel({ mode: "garage" });
-          return;
-        } else if (role === "architect") {
-          beginLobbyGateTunnel({ mode: "editor" });
           return;
         }
       }

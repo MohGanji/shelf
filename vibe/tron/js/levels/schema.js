@@ -23,7 +23,7 @@ export const LOBBY_LEVEL_ID = "level-0";
 export const LOBBY_ARENA_WIDTH = 400;
 export const LOBBY_ARENA_DEPTH = 240;
 
-const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "architect"]);
+const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer"]);
 const EDGES = new Set(["north", "south", "east", "west"]);
 const BARRIER_TYPES = new Set(["wall", "building", "structure"]);
 const BUILDING_SHAPES = new Set(["square", "triangle"]);
@@ -321,7 +321,7 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
       }
       const role = wo.role;
       if (typeof role !== "string" || !GATE_ROLES.has(role)) {
-        errors.push(`${path}.role must be one of: entrance, exit, arena, garage, architect`);
+        errors.push(`${path}.role must be one of: entrance, exit, arena, garage, multiplayer`);
       } else {
         roleCounts[role] = (roleCounts[role] ?? 0) + 1;
       }
@@ -337,6 +337,9 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
         validateGateDestination(path, wo, errors);
       }
       if (typeof wo.signText !== "string") errors.push(`${path}.signText must be a string`);
+      if (wo.lockedRibbonText !== undefined && typeof wo.lockedRibbonText !== "string") {
+        errors.push(`${path}.lockedRibbonText must be a string when provided`);
+      }
       if (typeof wo.locked !== "boolean") errors.push(`${path}.locked must be a boolean`);
     } else if (t === "cosmetic_wall") {
       const edge = wo.edge;
@@ -361,14 +364,14 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
   }
 
   if (lobby) {
-    const need = ["entrance", "arena", "garage", "architect"];
+    const need = ["entrance", "arena", "garage", "multiplayer"];
     for (const r of need) {
       if ((roleCounts[r] ?? 0) !== 1) {
         errors.push(`Lobby must have exactly one gate with role "${r}" (found ${roleCounts[r] ?? 0})`);
       }
     }
     if ((roleCounts.exit ?? 0) !== 0) {
-      errors.push("Lobby must not include an exit gate (use arena, garage, architect roles)");
+      errors.push("Lobby must not include an exit gate (use arena, garage, multiplayer roles)");
     }
   } else {
     if ((roleCounts.entrance ?? 0) !== 1) {
@@ -377,7 +380,7 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
     if ((roleCounts.exit ?? 0) !== 1) {
       errors.push(`Non-lobby levels must have exactly one exit gate (found ${roleCounts.exit ?? 0})`);
     }
-    for (const r of ["arena", "garage", "architect"]) {
+    for (const r of ["arena", "garage", "multiplayer"]) {
       if ((roleCounts[r] ?? 0) !== 0) {
         errors.push(`Non-lobby levels must not include lobby-only gate role "${r}"`);
       }
@@ -409,8 +412,8 @@ function validateGateDestination(path, gate, errors) {
     if (dest !== "garage") errors.push(`${path}.destination must be "garage" for garage gates`);
     return;
   }
-  if (role === "architect") {
-    if (dest !== "editor") errors.push(`${path}.destination must be "editor" for architect gates`);
+  if (role === "multiplayer") {
+    if (dest !== null) errors.push(`${path}.destination must be null for multiplayer gates until multiplayer is implemented`);
   }
 }
 
@@ -444,6 +447,16 @@ function validateBarriers(barriers, errors) {
       const shape = b.shape;
       if (typeof shape !== "string" || !BUILDING_SHAPES.has(shape)) {
         errors.push(`${path}.shape must be one of: square, triangle`);
+      }
+      if (shape === "triangle") {
+        if (b.triangleQuarter !== undefined) {
+          const tq = b.triangleQuarter;
+          if (!isFiniteNumber(tq) || !Number.isInteger(tq) || tq < 0 || tq > 3) {
+            errors.push(`${path}.triangleQuarter must be an integer from 0 to 3 when provided`);
+          }
+        }
+      } else if (b.triangleQuarter !== undefined) {
+        errors.push(`${path}.triangleQuarter is only valid when shape is triangle`);
       }
     }
     if (type === "structure") {

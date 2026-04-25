@@ -1394,36 +1394,79 @@ body {
   height: 20px;
 }
 
-/* P6.1 — editor: keep Three.js canvas visible; chrome bar at top */
+/* P6.1 — editor: canvas-first chrome */
 .tron-destination--editor {
   inset: 0 0 auto 0;
   height: auto;
   min-height: unset;
   justify-content: flex-start;
-  padding: 0.85rem 1.25rem 1rem;
+  padding: max(0.55rem, env(safe-area-inset-top, 0px)) max(0.7rem, env(safe-area-inset-right, 0px)) 0.6rem max(0.7rem, env(safe-area-inset-left, 0px));
   background: linear-gradient(
     180deg,
-    rgba(6, 10, 20, 0.92) 0%,
-    rgba(6, 10, 20, 0.55) 70%,
+    rgba(6, 10, 20, 0.9) 0%,
+    rgba(6, 10, 20, 0.48) 76%,
     transparent 100%
   );
   border-bottom: 1px solid rgba(0, 255, 255, 0.2);
   pointer-events: none;
+  z-index: 48;
 }
 
 .tron-destination--editor .tron-destination__title,
-.tron-destination--editor .tron-destination__body,
 .tron-destination--editor .tron-destination__btn,
-.tron-destination--editor .tron-destination__toolbar {
+.tron-destination--editor .editor-topbar__actions,
+.tron-destination--editor .editor-help-strip {
   pointer-events: auto;
 }
 
-.tron-destination__toolbar {
+.editor-topbar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  width: 100%;
+}
+
+.editor-topbar__brand {
+  min-width: 0;
+}
+
+.tron-destination--editor .tron-destination__title {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 2.2rem);
+  line-height: 1;
+}
+
+.editor-status {
+  margin: 0.25rem 0 0;
+  max-width: min(44rem, calc(100vw - 1.4rem));
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgba(175, 220, 245, 0.9);
+  text-shadow: 0 0 8px rgba(0, 20, 30, 0.75);
+}
+
+.editor-topbar__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 0.35rem;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  max-width: calc(100vw - 1.4rem);
+}
+
+.editor-topbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+.tron-destination--editor .tron-destination__btn {
+  min-height: 2rem;
+  padding: 0.45rem 0.7rem;
+  font-size: clamp(0.62rem, 1.2vw, 0.76rem);
+  white-space: nowrap;
 }
 
 .tron-destination__btn--ghost {
@@ -1439,11 +1482,23 @@ body {
 
 /* P6.7 — export validation message */
 .editor-export-error {
-  margin: 0.35rem 0 0;
+  margin: 0.45rem 0 0;
   font-size: 0.8rem;
   line-height: 1.35;
   color: #ff8a8a;
-  max-width: 42rem;
+  max-width: min(52rem, calc(100vw - 1.4rem));
+  pointer-events: auto;
+}
+
+.editor-help-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  margin-top: 0.45rem;
+  max-width: min(42rem, calc(100vw - 1.4rem));
+  font-size: 0.65rem;
+  line-height: 1.25;
+  color: rgba(155, 205, 230, 0.8);
 }
 
 /* P6.5 — new level dialog (arena size at creation; immutable afterward) */
@@ -1549,9 +1604,122 @@ body {
   background: rgba(0, 120, 140, 0.55);
 }
 
-.tron-destination--editor .tron-destination__body {
-  max-width: 36rem;
-  font-size: 0.9rem;
+.editor-open-level-dialog {
+  width: min(34rem, 94vw);
+  max-height: min(42rem, 88vh);
+  padding: 0;
+  border: 1px solid rgba(0, 255, 255, 0.35);
+  border-radius: 6px;
+  background: linear-gradient(165deg, rgba(8, 14, 28, 0.98) 0%, rgba(4, 8, 18, 0.99) 100%);
+  color: rgba(200, 230, 255, 0.95);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
+}
+
+.editor-open-level-dialog::backdrop {
+  background: rgba(0, 4, 12, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.editor-open-level-dialog__form {
+  display: flex;
+  flex-direction: column;
+  max-height: min(42rem, 88vh);
+  padding: 1.15rem 1.25rem 1.2rem;
+}
+
+.editor-open-level-dialog__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #7ee8ff;
+}
+
+.editor-open-level-dialog__lead {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(170, 210, 240, 0.88);
+}
+
+.editor-open-level-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 8rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.2rem;
+}
+
+.editor-open-level-dialog__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  font: inherit;
+  color: rgba(210, 240, 255, 0.96);
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 200, 255, 0.24);
+  background: rgba(0, 24, 40, 0.55);
+}
+
+.editor-open-level-dialog__item:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  background: rgba(0, 48, 70, 0.58);
+}
+
+.editor-open-level-dialog__item-title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.editor-open-level-dialog__item-meta {
+  display: block;
+  margin-top: 0.18rem;
+  font-size: 0.68rem;
+  color: rgba(145, 195, 225, 0.82);
+}
+
+.editor-open-level-dialog__item-kind {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 220, 0.84);
+}
+
+.editor-open-level-dialog__error {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: #ff8899;
+}
+
+.editor-open-level-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.editor-open-level-dialog__btn {
+  padding: 0.45rem 0.95rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  background: rgba(0, 30, 50, 0.6);
+  color: rgba(200, 235, 255, 0.95);
+  font: inherit;
+  cursor: pointer;
+}
+
+.editor-open-level-dialog__btn:hover {
+  border-color: rgba(0, 255, 255, 0.55);
+  background: rgba(0, 50, 70, 0.55);
 }
 
 .tron-destination--editor kbd {
@@ -1633,24 +1801,29 @@ body {
   background: rgba(255, 80, 80, 0.2);
 }
 
-/* P6.2 — editor palette (six floor categories + wall-objects edge note) */
+/* P6.2 — editor drawers */
 .editor-palette-shell {
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(300px, 42vw);
+  top: clamp(4.75rem, 10vh, 6.5rem);
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  bottom: max(0.8rem, env(safe-area-inset-bottom, 0px));
+  width: min(22rem, calc(100vw - 1.5rem));
   z-index: 46;
   display: flex;
   flex-direction: column;
-  padding: 4.5rem 0.65rem 0.85rem 0.85rem;
+  padding: 0;
   box-sizing: border-box;
   pointer-events: none;
-  border-right: 1px solid rgba(0, 255, 255, 0.16);
-  background: linear-gradient(90deg, rgba(4, 10, 20, 0.97) 0%, rgba(4, 10, 20, 0.78) 88%, transparent 100%);
+  opacity: 0;
+  transform: translateX(calc(-100% - 1rem));
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
-.editor-palette-shell.editor-palette {
+.editor-palette-shell.editor-drawer--open {
+  opacity: 1;
+  transform: translateX(0);
   pointer-events: auto;
 }
 
@@ -1662,8 +1835,9 @@ body {
   max-height: 100%;
   border-radius: 4px;
   border: 1px solid rgba(0, 220, 255, 0.2);
-  background: linear-gradient(165deg, rgba(8, 14, 24, 0.94), rgba(4, 8, 16, 0.92));
+  background: linear-gradient(165deg, rgba(8, 14, 24, 0.97), rgba(4, 8, 16, 0.96));
   box-shadow:
+    0 18px 52px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(0, 200, 255, 0.06),
     inset 0 0 24px rgba(0, 60, 90, 0.15);
 }
@@ -1721,10 +1895,10 @@ body {
 
 .editor-palette__tile {
   margin: 0;
-  padding: 0.38rem 0.45rem;
+  padding: 0.5rem 0.55rem;
   text-align: left;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   line-height: 1.25;
   color: rgba(200, 230, 255, 0.95);
   cursor: pointer;
@@ -1776,24 +1950,29 @@ body {
   font-weight: 600;
 }
 
-/* P6.4 — Editor properties (right rail, mirrors plan § Properties panel) */
+/* P6.4 — Editor properties drawer */
 .editor-props-shell {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(300px, 42vw);
+  top: clamp(4.75rem, 10vh, 6.5rem);
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  bottom: max(0.8rem, env(safe-area-inset-bottom, 0px));
+  width: min(22rem, calc(100vw - 1.5rem));
   z-index: 46;
   display: flex;
   flex-direction: column;
-  padding: 4.5rem 0.85rem 0.85rem 0.65rem;
+  padding: 0;
   box-sizing: border-box;
   pointer-events: none;
-  border-left: 1px solid rgba(0, 255, 255, 0.16);
-  background: linear-gradient(270deg, rgba(4, 10, 20, 0.97) 0%, rgba(4, 10, 20, 0.78) 88%, transparent 100%);
+  opacity: 0;
+  transform: translateX(calc(100% + 1rem));
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
 
-.editor-props-shell.editor-props {
+.editor-props-shell.editor-drawer--open {
+  opacity: 1;
+  transform: translateX(0);
   pointer-events: auto;
 }
 
@@ -1805,8 +1984,9 @@ body {
   max-height: 100%;
   border-radius: 4px;
   border: 1px solid rgba(0, 220, 255, 0.2);
-  background: linear-gradient(195deg, rgba(8, 14, 24, 0.94), rgba(4, 8, 16, 0.92));
+  background: linear-gradient(195deg, rgba(8, 14, 24, 0.97), rgba(4, 8, 16, 0.96));
   box-shadow:
+    0 18px 52px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(0, 200, 255, 0.06),
     inset 0 0 24px rgba(0, 60, 90, 0.15);
   font-size: 0.72rem;
@@ -1814,6 +1994,52 @@ body {
   overflow: auto;
   overscroll-behavior: contain;
   padding: 0.55rem 0.6rem 0.65rem;
+}
+
+@media (max-width: 1100px) {
+  .editor-help-strip {
+    display: none;
+  }
+
+  .editor-palette-shell,
+  .editor-props-shell {
+    top: auto;
+    left: max(0.65rem, env(safe-area-inset-left, 0px));
+    right: max(0.65rem, env(safe-area-inset-right, 0px));
+    bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+    width: auto;
+    height: min(62vh, 29rem);
+    transform: translateY(calc(100% + 1rem));
+  }
+
+  .editor-palette-shell.editor-drawer--open,
+  .editor-props-shell.editor-drawer--open {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .tron-destination--editor {
+    padding-bottom: 0.45rem;
+  }
+
+  .editor-topbar__actions {
+    gap: 0.3rem;
+  }
+
+  .editor-topbar__group {
+    gap: 0.25rem;
+  }
+
+  .tron-destination--editor .tron-destination__btn {
+    min-height: 1.85rem;
+    padding: 0.38rem 0.48rem;
+    letter-spacing: 0.06em;
+  }
+
+  .editor-status {
+    font-size: 0.66rem;
+  }
 }
 
 .editor-props__empty {
@@ -1891,10 +2117,32 @@ body {
 }
 
 .editor-props__input--color {
-  max-width: 4rem;
-  min-height: 2rem;
-  padding: 0.15rem;
+  max-width: 7.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  cursor: text;
+}
+
+.editor-props__delete {
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(255, 80, 110, 0.55);
+  border-radius: 4px;
+  background: rgba(80, 0, 20, 0.32);
+  color: rgba(255, 220, 228, 0.96);
+  font: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
+}
+
+.editor-props__delete:hover,
+.editor-props__delete:focus-visible {
+  border-color: rgba(255, 105, 135, 0.88);
+  background: rgba(120, 0, 30, 0.45);
+  outline: none;
 }
 
 .editor-props__range {

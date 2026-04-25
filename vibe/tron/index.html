@@ -1253,7 +1253,7 @@
 
       <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
         <p>
-          Hub — ride north to the wall gates for Arena, Garage, and Architect. WASD to drive.
+          Hub — ride north to the wall gates for Arena, Garage, and locked Multiplayer. WASD to drive.
         </p>
       </div>
 
@@ -1335,27 +1335,58 @@
         aria-modal="true"
         aria-labelledby="editor-destination-title"
       >
-        <h2 id="editor-destination-title" class="tron-destination__title">ARCHITECT</h2>
-        <p class="tron-destination__body">
-          Orthographic grid — <kbd>middle-drag</kbd> to pan, <kbd>scroll</kbd> to zoom. Arm a block in the palette, click the floor to place; drag gates along walls;
-          <kbd>Del</kbd> remove, <kbd>R</kbd> rotate (portal / enemy), <kbd>Esc</kbd> clear selection. Red tiles = gate clear zones.
-        </p>
-        <div class="tron-destination__toolbar">
-          <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-new-level>
-            New Level…
-          </button>
-          <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-export-level>
-            Export level JSON
-          </button>
-          <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-export-manifest>
-            Export manifest
-          </button>
-          <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-import-level>
-            Import level JSON
-          </button>
-          <button type="button" class="tron-destination__btn tron-destination__btn--primary" data-editor-playtest>
-            Test
-          </button>
+        <div class="editor-topbar">
+          <div class="editor-topbar__brand">
+            <h2 id="editor-destination-title" class="tron-destination__title">ARCHITECT</h2>
+            <p id="editor-status" class="editor-status" role="status">
+              Top-down v2 map editor. Open the palette, choose a block, then click the grid.
+            </p>
+          </div>
+          <div class="editor-topbar__actions" aria-label="Map builder actions">
+            <div class="editor-topbar__group" aria-label="Editor panels">
+              <button
+                type="button"
+                class="tron-destination__btn tron-destination__btn--ghost"
+                data-editor-toggle-palette
+                aria-controls="editor-palette-root"
+                aria-expanded="false"
+              >
+                Palette
+              </button>
+              <button
+                type="button"
+                class="tron-destination__btn tron-destination__btn--ghost"
+                data-editor-toggle-props
+                aria-controls="editor-properties-root"
+                aria-expanded="false"
+              >
+                Properties
+              </button>
+            </div>
+            <div class="editor-topbar__group" aria-label="Level file actions">
+              <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-new-level>
+                New
+              </button>
+              <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-open-existing>
+                Open
+              </button>
+              <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-import-level>
+                Import
+              </button>
+              <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-export-level>
+                Export JSON
+              </button>
+              <button type="button" class="tron-destination__btn tron-destination__btn--ghost" data-editor-export-manifest>
+                Manifest
+              </button>
+            </div>
+            <div class="editor-topbar__group" aria-label="Navigation actions">
+              <button type="button" class="tron-destination__btn tron-destination__btn--primary" data-editor-playtest>
+                Test
+              </button>
+              <button type="button" class="tron-destination__btn" data-return-lobby>Lobby</button>
+            </div>
+          </div>
           <input
             id="editor-import-file"
             type="file"
@@ -1364,9 +1395,15 @@
             aria-hidden="true"
             tabindex="-1"
           />
-          <button type="button" class="tron-destination__btn" data-return-lobby>Return to Lobby</button>
         </div>
         <p id="editor-export-error" class="editor-export-error" hidden role="alert"></p>
+        <div class="editor-help-strip" aria-label="Editor controls">
+          <span><kbd>scroll</kbd> zoom</span>
+          <span><kbd>middle-drag</kbd> pan</span>
+          <span><kbd>drag selection</kbd> move</span>
+          <span><kbd>Properties</kbd> edit / delete</span>
+          <span><kbd>Esc</kbd> close panel / clear</span>
+        </div>
       </div>
 
       <dialog id="editor-new-level-dialog" class="editor-new-level-dialog" aria-labelledby="editor-new-level-title">
@@ -1409,6 +1446,20 @@
             <button type="submit" class="editor-new-level-dialog__btn editor-new-level-dialog__btn--primary">
               Create
             </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="editor-open-level-dialog" class="editor-open-level-dialog" aria-labelledby="editor-open-level-title">
+        <form method="dialog" class="editor-open-level-dialog__form">
+          <h3 id="editor-open-level-title" class="editor-open-level-dialog__title">Open campaign level</h3>
+          <p class="editor-open-level-dialog__lead">
+            Choose a bundled campaign level or the lobby. The editor opens it as a WIP copy with the original campaign id and filename preserved for export.
+          </p>
+          <div id="editor-open-level-list" class="editor-open-level-dialog__list" role="listbox" aria-label="Campaign levels"></div>
+          <p id="editor-open-level-error" class="editor-open-level-dialog__error" hidden role="alert"></p>
+          <div class="editor-open-level-dialog__actions">
+            <button type="button" class="editor-open-level-dialog__btn" data-editor-open-level-cancel>Cancel</button>
           </div>
         </form>
       </dialog>

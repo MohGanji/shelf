@@ -3,7 +3,11 @@
  */
 
 import { floorObjectTopLeftLabel, setEditorObjectPlacement } from "./editorLevel.js";
-import { getFloorObjectFootprint } from "./footprints.js";
+import {
+  getFloorObjectFootprint,
+  triangleBuildingRotationQuarterIndex,
+  triangleBuildingRotationRadFromQuarterIndex,
+} from "./footprints.js";
 
 /**
  * @param {string} s
@@ -19,6 +23,22 @@ function escapeHtml(s) {
 const ENEMY_CATEGORIES = ["easy", "medium", "hard", "boss"];
 
 /**
+ * @param {string} raw
+ * @returns {string | null} normalized #rrggbb, or null if invalid / incomplete
+ */
+function parseHexColor(raw) {
+  const t = String(raw).trim();
+  if (!t) return null;
+  const m = t.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!m) return null;
+  const g = m[1];
+  if (g.length === 3) {
+    return ("#" + g[0] + g[0] + g[1] + g[1] + g[2] + g[2]).toLowerCase();
+  }
+  return ("#" + g).toLowerCase();
+}
+
+/**
  * @typedef {{ type: "floor"; list: string; index: number } | { type: "gate"; index: number }} EditorPickLike
  */
 
@@ -28,12 +48,20 @@ const ENEMY_CATEGORIES = ["easy", "medium", "hard", "boss"];
  *   level: Record<string, unknown>;
  *   getSelection: () => EditorPickLike | null;
  *   onApply: () => void;
+ *   onVisualRefresh?: () => void;
+ *   onDelete?: () => void;
+ *   validateFloorObject?: (draft: Record<string, unknown>) => boolean;
+ *   onInvalidChange?: (msg: string) => void;
  *   beforeMutation?: () => void;
  * }} opts
  */
 export function mountEditorPropertiesPanel(root, opts) {
   const { level, getSelection, onApply } = opts;
+  const onVisualRefresh = opts.onVisualRefresh;
+  const onDelete = opts.onDelete;
   const beforeMutation = opts.beforeMutation;
+  const validateFloorObject = opts.validateFloorObject;
+  const onInvalidChange = opts.onInvalidChange;
 
   root.classList.add("editor-props");
   root.innerHTML =
@@ -49,6 +77,30 @@ export function mountEditorPropertiesPanel(root, opts) {
     const v = Number(n);
     if (!Number.isFinite(v)) return lo;
     return Math.max(lo, Math.min(hi, v));
+  }
+
+  /**
+   * @param {string} list
+   * @param {Record<string, unknown>} o
+   * @param {(draft: Record<string, unknown>) => void} mutate
+   */
+  function applyValidatedFloorMutation(list, o, mutate) {
+    const draft = { ...o };
+    mutate(draft);
+    if (typeof draft.gridX === "number" && typeof draft.gridZ === "number") {
+      setEditorObjectPlacement(level, list, draft, draft.gridX, draft.gridZ);
+    }
+    if (validateFloorObject && !validateFloorObject(draft)) {
+      onInvalidChange?.("Change blocked: footprint would overlap, leave the playable interior, or enter a gate clear zone.");
+      return false;
+    }
+    beforeMutation?.();
+    mutate(o);
+    if (typeof o.gridX === "number" && typeof o.gridZ === "number") {
+      setEditorObjectPlacement(level, list, o, o.gridX, o.gridZ);
+    }
+    onApply();
+    return true;
   }
 
   function appendSizeFields(wrap, list, o, fixedSize) {
@@ -68,18 +120,96 @@ export function mountEditorPropertiesPanel(root, opts) {
       input.value = String(value);
       input.disabled = fixedSize;
       input.addEventListener("change", () => {
-        beforeMutation?.();
-        o[key] = clampInt(input.value, 1, 99);
-        if (typeof o.gridX === "number" && typeof o.gridZ === "number") {
-          setEditorObjectPlacement(level, list, o, o.gridX, o.gridZ);
+        const nextValue = clampInt(input.value, 1, 99);
+        const ok = applyValidatedFloorMutation(list, o, (draft) => {
+          draft[key] = nextValue;
+        });
+        if (!ok) {
+          input.value = String(getFloorObjectFootprint(list, o)[key]);
+          return;
         }
-        input.value = String(o[key]);
-        onApply();
+        input.value = String(getFloorObjectFootprint(list, o)[key]);
       });
       input.addEventListener("keydown", (e) => e.stopPropagation());
       field.appendChild(input);
       wrap.appendChild(field);
     }
+  }
+
+  /**
+   * @param {HTMLElement} wrap
+   * @param {Record<string, unknown>} o
+   * @param {string} label
+   * @param {string} fallback
+   */
+  function appendColorField(wrap, o, label, fallback) {
+    const field = document.createElement("label");
+    field.className = "editor-props__field";
+    field.innerHTML = `<span class="editor-props__label">${label}</span>`;
+    const fall = parseHexColor(fallback) ?? fallback;
+    /**
+     * @param {unknown} c
+     */
+    function readHex(c) {
+      if (typeof c !== "string") return fall;
+      const p = parseHexColor(c);
+      return p != null ? p : fall;
+    }
+    const input = document.createElement("input");
+    input.type = "text";
+    input.setAttribute("spellcheck", "false");
+    input.setAttribute("autocapitalize", "off");
+    input.autocomplete = "off";
+    input.placeholder = fall;
+    input.className = "editor-props__input editor-props__input--color";
+    const fromObj = readHex(o.color);
+    input.value = fromObj;
+    let colorAtFocus = fromObj;
+    let historyArmed = false;
+    input.addEventListener("focus", () => {
+      const cur = readHex(o.color);
+      colorAtFocus = cur;
+      historyArmed = false;
+      input.value = cur;
+    });
+    input.addEventListener("input", () => {
+      const parsed = parseHexColor(input.value);
+      if (!parsed) return;
+      if (parsed === colorAtFocus) return;
+      if (!historyArmed) {
+        beforeMutation?.();
+        historyArmed = true;
+      }
+      o.color = parsed;
+      if (onVisualRefresh) onVisualRefresh();
+    });
+    input.addEventListener("blur", () => {
+      const parsed = parseHexColor(input.value);
+      if (parsed) {
+        o.color = parsed;
+        input.value = parsed;
+      } else {
+        input.value = readHex(o.color);
+      }
+      historyArmed = false;
+      if (onVisualRefresh) onVisualRefresh();
+      else onApply();
+    });
+    input.addEventListener("keydown", (e) => e.stopPropagation());
+    field.appendChild(input);
+    wrap.appendChild(field);
+  }
+
+  /** @param {HTMLElement} wrap */
+  function appendDeleteButton(wrap) {
+    if (!onDelete) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "editor-props__delete";
+    button.textContent = "Delete selected object";
+    button.addEventListener("click", () => onDelete());
+    button.addEventListener("keydown", (e) => e.stopPropagation());
+    wrap.appendChild(button);
   }
 
   function sync() {
@@ -184,6 +314,8 @@ export function mountEditorPropertiesPanel(root, opts) {
         appendSizeFields(wrap, list, o, fp.fixedSize);
       }
 
+      appendColorField(wrap, o, "Color", t === "building" ? "#3366aa" : t === "wall" ? "#4488cc" : "#5566aa");
+
       if (t === "building") {
         const shape = typeof o.shape === "string" ? o.shape : "square";
         const height = clampInt(o.height, 1, 5);
@@ -201,9 +333,26 @@ export function mountEditorPropertiesPanel(root, opts) {
           shSel.appendChild(op);
         }
         shSel.addEventListener("change", () => {
-          beforeMutation?.();
-          o.shape = shSel.value;
-          onApply();
+          const prev = shape;
+          const ok = applyValidatedFloorMutation(list, o, (draft) => {
+            draft.shape = shSel.value;
+            if (shSel.value === "triangle") {
+              const q =
+                typeof draft.triangleQuarter === "number" && Number.isInteger(draft.triangleQuarter)
+                  ? (((draft.triangleQuarter % 4) + 4) % 4)
+                  : triangleBuildingRotationQuarterIndex(
+                      typeof draft.rotation === "number" && Number.isFinite(draft.rotation) ? draft.rotation : 0,
+                    );
+              draft.triangleQuarter = /** @type {0 | 1 | 2 | 3} */(q);
+              draft.rotation = triangleBuildingRotationRadFromQuarterIndex(q);
+            } else {
+              delete draft.triangleQuarter;
+              delete draft.rotation;
+            }
+          });
+          if (!ok) {
+            shSel.value = prev;
+          }
         });
         shSel.addEventListener("keydown", (e) => e.stopPropagation());
         shLabel.appendChild(shSel);
@@ -228,6 +377,43 @@ export function mountEditorPropertiesPanel(root, opts) {
         hIn.addEventListener("keydown", (e) => e.stopPropagation());
         hLabel.appendChild(hIn);
         wrap.appendChild(hLabel);
+
+        if (shape === "triangle") {
+          const rLabel = document.createElement("label");
+          rLabel.className = "editor-props__field";
+          rLabel.innerHTML = `<span class="editor-props__label">Rotation (90° — hypotenuse)</span>`;
+          const rSel = document.createElement("select");
+          rSel.className = "editor-props__input";
+          const qNow =
+            typeof o.triangleQuarter === "number" && Number.isInteger(o.triangleQuarter)
+              ? (((o.triangleQuarter % 4) + 4) % 4)
+              : triangleBuildingRotationQuarterIndex(typeof o.rotation === "number" ? o.rotation : 0);
+          const rotLabels = ["0°", "90°", "180°", "270°"];
+          for (let qi = 0; qi < 4; qi++) {
+            const op = document.createElement("option");
+            op.value = String(qi);
+            op.textContent = rotLabels[qi];
+            if (qi === qNow) op.selected = true;
+            rSel.appendChild(op);
+          }
+          rSel.addEventListener("change", () => {
+            const q = ((Number(rSel.value) % 4) + 4) % 4;
+            const ok = applyValidatedFloorMutation(list, o, (draft) => {
+              draft.triangleQuarter = /** @type {0 | 1 | 2 | 3} */(q);
+              draft.rotation = triangleBuildingRotationRadFromQuarterIndex(q);
+            });
+            if (!ok) {
+              rSel.value = String(
+                typeof o.triangleQuarter === "number" && Number.isInteger(o.triangleQuarter)
+                  ? (((o.triangleQuarter % 4) + 4) % 4)
+                  : triangleBuildingRotationQuarterIndex(typeof o.rotation === "number" ? o.rotation : 0),
+              );
+            }
+          });
+          rSel.addEventListener("keydown", (e) => e.stopPropagation());
+          rLabel.appendChild(rSel);
+          wrap.appendChild(rLabel);
+        }
       } else if (t === "structure") {
         const variant = typeof o.variant === "string" ? o.variant : "pylon";
         const vLabel = document.createElement("label");
@@ -257,6 +443,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         wrap.appendChild(note);
       }
 
+      appendDeleteButton(wrap);
       root.appendChild(wrap);
       return;
     }
@@ -273,6 +460,7 @@ export function mountEditorPropertiesPanel(root, opts) {
 
       if (typ === "boost_pad") {
         appendSizeFields(wrap, list, o, fp.fixedSize);
+        appendColorField(wrap, o, "Color", "#ffcc44");
       }
 
       if (typ === "portal") {
@@ -308,6 +496,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         wrap.appendChild(note);
       }
 
+      appendDeleteButton(wrap);
       root.appendChild(wrap);
       return;
     }
@@ -332,6 +521,7 @@ export function mountEditorPropertiesPanel(root, opts) {
       note.textContent = "Type and category are fixed when placed.";
       wrap.appendChild(note);
 
+      appendDeleteButton(wrap);
       root.appendChild(wrap);
       return;
     }
@@ -345,22 +535,7 @@ export function mountEditorPropertiesPanel(root, opts) {
       xy.textContent = `Top-left: ${floorObjectTopLeftLabel(level, list, o)} · fixed footprint ${fp.width}x${fp.depth}`;
       wrap.appendChild(xy);
 
-      const cLabel = document.createElement("label");
-      cLabel.className = "editor-props__field";
-      cLabel.innerHTML = `<span class="editor-props__label">Cycle color</span>`;
-      const cIn = document.createElement("input");
-      cIn.type = "color";
-      cIn.className = "editor-props__input editor-props__input--color";
-      const hex = typeof o.color === "string" && /^#/.test(o.color) ? o.color : "#ff6600";
-      cIn.value = hex.length === 7 ? hex : "#ff6600";
-      cIn.addEventListener("pointerdown", () => beforeMutation?.(), { capture: true });
-      cIn.addEventListener("input", () => {
-        o.color = cIn.value;
-        onApply();
-      });
-      cIn.addEventListener("keydown", (e) => e.stopPropagation());
-      cLabel.appendChild(cIn);
-      wrap.appendChild(cLabel);
+      appendColorField(wrap, o, "Cycle color", "#ff6600");
 
       const category = ENEMY_CATEGORIES.includes(String(o.category)) ? String(o.category) : "easy";
       o.category = category;
@@ -403,6 +578,7 @@ export function mountEditorPropertiesPanel(root, opts) {
       rLabel.appendChild(rIn);
       wrap.appendChild(rLabel);
 
+      appendDeleteButton(wrap);
       root.appendChild(wrap);
       return;
     }
@@ -413,6 +589,7 @@ export function mountEditorPropertiesPanel(root, opts) {
     p.className = "editor-props__ro";
     p.textContent = "No property editor for this object type.";
     wrap.appendChild(p);
+    appendDeleteButton(wrap);
     root.appendChild(wrap);
   }
 

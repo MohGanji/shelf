@@ -37,6 +37,15 @@ const TMP2 = new Vec3();
  * @returns {{ x: number; z: number }[] | null}
  */
 export function barrierCornersXZ(body) {
+  const minimapCorners = body.userData?.minimapCornersXZ;
+  if (Array.isArray(minimapCorners) && minimapCorners.length >= 3) {
+    const out = [];
+    for (const p of minimapCorners) {
+      if (!p || typeof p.x !== "number" || typeof p.z !== "number") return null;
+      out.push({ x: p.x, z: p.z });
+    }
+    return out;
+  }
   const sh = body.shapes[0];
   if (!(sh instanceof Box)) return null;
   const he = sh.halfExtents;

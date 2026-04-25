@@ -69,6 +69,47 @@ export function worldPointToGridCell(level, x, z) {
   };
 }
 
+const TRI_BUILDING_ROT_QUARTER = Math.PI * 0.5;
+
+/**
+ * @param {number} r
+ * @returns {0 | 1 | 2 | 3}
+ */
+export function triangleBuildingRotationQuarterIndex(r) {
+  if (typeof r !== "number" || !Number.isFinite(r)) return 0;
+  const q = Math.round(r / TRI_BUILDING_ROT_QUARTER);
+  return /** @type {0 | 1 | 2 | 3} */(((q % 4) + 4) % 4);
+}
+
+/**
+ * @param {number} q
+ */
+export function triangleBuildingRotationRadFromQuarterIndex(q) {
+  const n = ((Math.floor(q) % 4) + 4) % 4;
+  return n * TRI_BUILDING_ROT_QUARTER;
+}
+
+/**
+ * @param {number} r
+ */
+export function snapTriangleBuildingRotationY(r) {
+  return triangleBuildingRotationRadFromQuarterIndex(triangleBuildingRotationQuarterIndex(r));
+}
+
+/**
+ * V2 triangle buildings: `triangleQuarter` 0–3 (hypotenuse / local geometry; see `createRightTrianglePrismGeometry`)
+ * is canonical. If missing, `rotation` (rad) is snapped to 90° steps. Same value drives mesh, Cannon quat, and slide logic.
+ * @param {Record<string, unknown>} o
+ */
+export function resolveTriangleBuildingRotationY(o) {
+  const q = o.triangleQuarter;
+  if (typeof q === "number" && Number.isInteger(q)) {
+    return triangleBuildingRotationRadFromQuarterIndex(q);
+  }
+  const r = typeof o.rotation === "number" && Number.isFinite(o.rotation) ? o.rotation : 0;
+  return snapTriangleBuildingRotationY(r);
+}
+
 /**
  * @param {"barriers" | "gameObjects" | "powerups" | "enemies" | string} list
  * @param {Record<string, unknown>} o
@@ -109,12 +150,18 @@ export function getFloorObjectFootprint(list, o) {
         ? String(o.shape)
         : "rect";
     const fixedSize = o.type === "structure";
+    const rotY =
+      o.type === "building" && o.shape === "triangle"
+        ? resolveTriangleBuildingRotationY(/** @type {Record<string, unknown>} */ (o))
+        : finiteNumber(o.rotation)
+          ? o.rotation
+          : 0;
     return {
       width: positiveGridSpan(o.width, 1),
       depth: positiveGridSpan(o.depth, 1),
       fixedSize,
       shape,
-      rotation: finiteNumber(o.rotation) ? o.rotation : 0,
+      rotation: rotY,
     };
   }
   return { width: 1, depth: 1, fixedSize: false, shape: "rect", rotation: 0 };

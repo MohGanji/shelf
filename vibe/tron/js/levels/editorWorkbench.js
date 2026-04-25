@@ -1,5 +1,5 @@
 /**
- * P6.3 — Editor placement: palette click-to-place, select / delete / move / rotate,
+ * P6.3 — Editor placement: palette click-to-place, select, move,
  * gate drag along walls, portal pair flow, gate clear-zone blocking, hover preview.
  */
 
@@ -23,6 +23,7 @@ import {
   getFloorObjectTopLeft,
   getFloorObjectWorldCenter,
   gridTopLeftToWorldCenter,
+  resolveTriangleBuildingRotationY,
 } from "./footprints.js";
 
 /**
@@ -30,6 +31,8 @@ import {
  *   type: "floor";
  *   list: "barriers" | "gameObjects" | "powerups" | "enemies";
  *   index: number;
+ *   x?: number;
+ *   z?: number;
  * }} FloorPick
  *
  * @typedef {{ type: "gate"; index: number }} GatePick
@@ -37,23 +40,68 @@ import {
  * @typedef {FloorPick | GatePick} EditorPick
  */
 
-/**
- * @param {number} ix
- * @param {number} iz
- * @param {number} aw
- * @param {number} ad
- */
-function tileInsideArena(ix, iz, aw, ad) {
-  const halfW = aw / 2;
-  const halfD = ad / 2;
-  return Math.abs(ix) < halfW - 1e-6 && Math.abs(iz) < halfD - 1e-6;
-}
-
 /** @param {unknown} h @param {number} fallback */
 function parseOptionalHexColor(h, fallback) {
   if (typeof h !== "string" || !/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(h)) return fallback;
   const n = parseInt(h.slice(1), 16);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Right-triangle prism matching runtime triangle buildings: right angle in the
+ * local southwest footprint corner before quarter-turn rotation.
+ *
+ * @param {number} w
+ * @param {number} d
+ * @param {number} h
+ */
+function createRightTrianglePrismGeometry(w, d, h) {
+  const x0 = -w / 2;
+  const x1 = w / 2;
+  const z0 = -d / 2;
+  const z1 = d / 2;
+  const y0 = -h / 2;
+  const y1 = h / 2;
+  const A = [x0, y0, z0];
+  const B = [x1, y0, z0];
+  const C = [x0, y0, z1];
+  const D = [x0, y1, z0];
+  const E = [x1, y1, z0];
+  const F = [x0, y1, z1];
+  /** @type {number[]} */
+  const verts = [];
+
+  /**
+   * @param {number[]} a
+   * @param {number[]} b
+   * @param {number[]} c
+   */
+  function tri(a, b, c) {
+    verts.push(...a, ...b, ...c);
+  }
+
+  /**
+   * @param {number[]} a
+   * @param {number[]} b
+   * @param {number[]} c
+   * @param {number[]} d0
+   */
+  function quad(a, b, c, d0) {
+    tri(a, b, c);
+    tri(a, c, d0);
+  }
+
+  tri(A, C, B);
+  tri(D, F, E);
+  quad(A, D, E, B);
+  quad(A, C, F, D);
+  quad(B, E, F, C);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts), 3));
+  geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+  return geo;
 }
 
 /**
@@ -96,19 +144,22 @@ function disposeGroupChildren(group) {
  *     arenaWidth: number;
  *     arenaDepth: number;
  *     screenToGround: (sx: number, sy: number) => THREE.Vector3;
+ *     panByScreenDelta?: (fromX: number, fromY: number, toX: number, toY: number) => void;
  *   };
  *   getPaletteSelection: () => unknown;
  *   level: Record<string, unknown>;
  *   onPersist?: (level: Record<string, unknown>) => void;
  *   onSelectionChange?: (sel: EditorPick | null) => void;
+ *   onStatusChange?: (msg: string) => void;
  *   beforeMutation?: () => void;
  * }} opts
- * @returns {{ dispose(): void; refresh(): void; getSelection: () => EditorPick | null; clearSelection(): void }}
+ * @returns {{ dispose(): void; refresh(): void; refreshVisual(): void; getSelection: () => EditorPick | null; clearSelection(): void; deleteSelection(): void; canPlaceSelectionDraft(draft: Record<string, unknown>): boolean }}
  */
 export function mountEditorWorkbench(opts) {
   const { viewport, getPaletteSelection, level } = opts;
   const onPersist = opts.onPersist ?? ((L) => upsertWipLevel(L));
   const onSelectionChange = opts.onSelectionChange;
+  const onStatusChange = opts.onStatusChange;
   const beforeMutation = opts.beforeMutation;
 
   const scene = viewport.scene;
@@ -153,6 +204,12 @@ export function mountEditorWorkbench(opts) {
     rebuild();
   }
 
+  /** Rebuild 3D + persist (e.g. property edits) without re-running selection hooks — keeps the properties panel from full DOM re-sync. */
+  function refreshVisual() {
+    rebuild();
+    schedulePersist();
+  }
+
   function refresh() {
     rebuild();
     schedulePersist();
@@ -163,11 +220,23 @@ export function mountEditorWorkbench(opts) {
     return selection;
   }
 
+  /** @param {Record<string, unknown>} draft */
+  function canPlaceSelectionDraft(draft) {
+    if (!selection || selection.type !== "floor") return false;
+    const pos = getFloorObjectTopLeft(level, selection.list, draft);
+    return canPlaceObjectAt(selection.list, draft, pos.gridX, pos.gridZ, selection);
+  }
+
   /** @type {EditorPick | null} */
   let dragFloor = null;
-  let dragGate = null;
+  /** @type {{ pick: FloorPick; pointerId: number; startX: number; startY: number; active: boolean; altKey: boolean } | null} */
+  let pendingFloorDrag = null;
   /** @type {{ index: number; edge: string; startPos: number; startClient: number } | null */
   let gateDrag = null;
+  /** @type {{ pick: GatePick; pointerId: number; startX: number; startY: number; active: boolean } | null} */
+  let pendingGateDrag = null;
+  /** @type {{ pointerId: number; lastX: number; lastY: number; moved: boolean } | null} */
+  let canvasPan = null;
 
   /** @type {number | null} */
   let persistTimer = null;
@@ -206,7 +275,6 @@ export function mountEditorWorkbench(opts) {
   function canPlaceObjectAt(list, obj, ix, iz, excludeOccupant) {
     const test = { ...obj };
     setEditorObjectPlacement(level, list, test, ix, iz);
-    if (level.schemaVersion !== 2 && !tileInsideArena(ix, iz, aw(), ad())) return false;
     if (!floorObjectInsideAuthoringBounds(level, list, test)) return false;
     const clear = collectGateClearTileKeys(
       Array.isArray(level.wallObjects) ? level.wallObjects : [],
@@ -215,17 +283,58 @@ export function mountEditorWorkbench(opts) {
     );
     for (const k of floorObjectOccupiedCells(level, list, test)) {
       if (clear.has(k)) return false;
-      if (level.schemaVersion === 2) {
-        const [gx, gz] = k.split(",").map(Number);
-        const c = gridTopLeftToWorldCenter(level, gx, gz, 1, 1);
-        if (clear.has(`${Math.round(c.x)},${Math.round(c.z)}`)) return false;
-      }
+      const [gx, gz] = k.split(",").map(Number);
+      const c = gridTopLeftToWorldCenter(level, gx, gz, 1, 1);
+      if (clear.has(`${Math.round(c.x)},${Math.round(c.z)}`)) return false;
     }
     const occ = occupiedExcluding(excludeOccupant);
     for (const k of floorObjectOccupiedCells(level, list, test)) {
       if (occ.has(k)) return false;
     }
     return true;
+  }
+
+  /**
+   * ⌥/Alt+drag: duplicate a floor object at the same cell (source excluded from collision), then drag the copy.
+   * Portals get a new pair or join an incomplete pair, same rules as palette placement.
+   *
+   * @param {FloorPick} sourcePick
+   * @returns {FloorPick | null} pick for the new instance, or null (e.g. max portal pairs)
+   */
+  function cloneFloorObjectAtSource(sourcePick) {
+    const { list, index } = sourcePick;
+    const arr = level[list];
+    if (!Array.isArray(arr) || !arr[index]) return null;
+    const src = /** @type {Record<string, unknown>} */ (arr[index]);
+    /** @type {Record<string, unknown>} */
+    let draft;
+    if (list === "gameObjects" && src.type === "portal") {
+      const incomplete = findIncompletePortalPairId(level);
+      draft = /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(src)));
+      if (incomplete) {
+        draft.pairId = incomplete;
+        draft.pairColor = findPairColorForId(level, incomplete) ?? PORTAL_PAIR_COLORS[0];
+      } else {
+        const n = countDistinctPortalPairs(level);
+        if (n >= PORTAL_PAIR_COLORS.length) return null;
+        draft.pairId = `p-${Date.now().toString(36)}`;
+        draft.pairColor = PORTAL_PAIR_COLORS[n];
+      }
+    } else {
+      draft = /** @type {Record<string, unknown>} */ (JSON.parse(JSON.stringify(src)));
+    }
+    const pos = getFloorObjectTopLeft(level, list, src);
+    if (!canPlaceObjectAt(list, draft, pos.gridX, pos.gridZ, sourcePick)) return null;
+    arr.push(draft);
+    setEditorObjectPlacement(level, list, draft, pos.gridX, pos.gridZ);
+    return /** @type {FloorPick} */ ({ type: "floor", list, index: arr.length - 1 });
+  }
+
+  /** @param {EditorPick | null} a @param {EditorPick | null} b */
+  function samePick(a, b) {
+    if (!a || !b || a.type !== b.type) return false;
+    if (a.type === "gate" && b.type === "gate") return a.index === b.index;
+    return a.type === "floor" && b.type === "floor" && a.list === b.list && a.index === b.index;
   }
 
   function rebuild() {
@@ -278,18 +387,22 @@ export function mountEditorWorkbench(opts) {
           color = parseOptionalHexColor(o.color, 0x3366aa);
           const geo =
             fp.shape === "triangle"
-              ? new THREE.CylinderGeometry(Math.max(fp.width, fp.depth) * 0.58, Math.max(fp.width, fp.depth) * 0.58, h, 3)
+              ? createRightTrianglePrismGeometry(Math.max(0.2, fp.width - 0.08), Math.max(0.2, fp.depth - 0.08), h)
               : new THREE.BoxGeometry(Math.max(0.2, fp.width - 0.08), h, Math.max(0.2, fp.depth - 0.08));
           mesh = new THREE.Mesh(
             geo,
             new THREE.MeshStandardMaterial({ color, emissive: 0x001844, emissiveIntensity: 0.4 }),
           );
           mesh.position.set(x, h / 2, z);
-          mesh.rotation.y = typeof o.rotation === "number" ? o.rotation : 0;
+          mesh.rotation.y =
+            fp.shape === "triangle"
+              ? resolveTriangleBuildingRotationY(/** @type {Record<string, unknown>} */ (o))
+              : 0;
         } else {
+          color = parseOptionalHexColor(o.color, 0x5566aa);
           mesh = new THREE.Mesh(
             new THREE.CylinderGeometry(Math.min(fp.width, fp.depth) * 0.25, Math.min(fp.width, fp.depth) * 0.25, 1.1, 10),
-            new THREE.MeshStandardMaterial({ color: 0x5566aa, emissive: 0x001a44, emissiveIntensity: 0.35 }),
+            new THREE.MeshStandardMaterial({ color, emissive: 0x001a44, emissiveIntensity: 0.35 }),
           );
           mesh.position.set(x, 0.55, z);
         }
@@ -475,7 +588,11 @@ export function mountEditorWorkbench(opts) {
         o = o.parent;
       }
       if (o && o.userData.editorPick) {
-        return /** @type {EditorPick} */ (o.userData.editorPick);
+        const pick = /** @type {EditorPick} */ (o.userData.editorPick);
+        if (pick.type === "floor") {
+          return { ...pick, x: v.x, z: v.z };
+        }
+        return pick;
       }
     }
     return { type: "ground", x: v.x, z: v.z };
@@ -490,32 +607,8 @@ export function mountEditorWorkbench(opts) {
     beforeMutation?.();
     arr.splice(selection.index, 1);
     setSelection(null);
+    onStatusChange?.("Object deleted.");
     schedulePersist();
-  }
-
-  function rotateSelection() {
-    if (!selection || selection.type === "gate") return;
-    const arr = level[selection.list];
-    if (!Array.isArray(arr)) return;
-    const o = arr[selection.index];
-    if (!o || typeof o !== "object") return;
-    const rec = /** @type {Record<string, unknown>} */ (o);
-    const rotatable =
-      selection.list === "enemies" ||
-      (selection.list === "gameObjects" && rec.type === "portal") ||
-      (selection.list === "barriers" && rec.type === "building" && rec.shape === "triangle");
-    if (rotatable) {
-      const r = typeof rec.rotation === "number" ? rec.rotation : 0;
-      const next = { ...rec, rotation: r + Math.PI / 2 };
-      const pos = getFloorObjectTopLeft(level, selection.list, rec);
-      if (!canPlaceObjectAt(selection.list, next, pos.gridX, pos.gridZ, selection)) return;
-      beforeMutation?.();
-      rec.rotation = r + Math.PI / 2;
-      setEditorObjectPlacement(level, selection.list, rec, pos.gridX, pos.gridZ);
-      rebuild();
-      schedulePersist();
-      onSelectionChange?.(selection);
-    }
   }
 
   function paletteObjectPreview(sel) {
@@ -527,7 +620,13 @@ export function mountEditorWorkbench(opts) {
           sel.meta && typeof sel.meta === "object" && sel.meta.shape === "triangle"
               ? "triangle"
               : "square";
-        return { list: "barriers", obj: { type: "building", height: 2, shape } };
+        return {
+          list: "barriers",
+          obj:
+            shape === "triangle"
+              ? { type: "building", height: 2, shape, width: 10, depth: 10, triangleQuarter: 0, rotation: 0 }
+              : { type: "building", height: 2, shape, width: 10, depth: 10 },
+        };
       }
       if (sel.kind === "structure") {
         const variant =
@@ -557,13 +656,17 @@ export function mountEditorWorkbench(opts) {
   }
 
   function commitPaletteObject(list, obj, ix, iz) {
-    if (!canPlaceObjectAt(list, obj, ix, iz, dragFloor)) return false;
+    if (!canPlaceObjectAt(list, obj, ix, iz, dragFloor)) {
+      onStatusChange?.("Cannot place there: footprint is blocked, outside the playable interior, or in a gate clear zone.");
+      return false;
+    }
     const arr = level[list];
     if (!Array.isArray(arr)) level[list] = [];
     beforeMutation?.();
     setEditorObjectPlacement(level, list, obj, ix, iz);
     /** @type {unknown[]} */ (level[list]).push(obj);
     rebuild();
+    onStatusChange?.("Placed. Select it to move or edit properties.");
     schedulePersist();
     return true;
   }
@@ -581,7 +684,14 @@ export function mountEditorWorkbench(opts) {
           sel.meta && typeof sel.meta === "object" && sel.meta.shape === "triangle"
               ? "triangle"
               : "square";
-        commitPaletteObject("barriers", { type: "building", height: 2, shape }, ix, iz);
+        commitPaletteObject(
+          "barriers",
+          shape === "triangle"
+            ? { type: "building", height: 2, shape, width: 10, depth: 10, triangleQuarter: 0, rotation: 0 }
+            : { type: "building", height: 2, shape, width: 10, depth: 10 },
+          ix,
+          iz,
+        );
       } else if (kind === "structure") {
         const variant =
           sel.meta && typeof sel.meta === "object" && typeof sel.meta.variant === "string"
@@ -675,68 +785,120 @@ export function mountEditorWorkbench(opts) {
         placeFromPalette(ix, iz);
         return;
       }
-      if (selection && selection.type === "floor") {
-        const arr = level[selection.list];
-        if (Array.isArray(arr) && arr[selection.index]) {
-          const o = arr[selection.index];
-          if (o && typeof o === "object") {
-            if (canPlaceObjectAt(selection.list, /** @type {Record<string, unknown>} */ (o), ix, iz, selection)) {
-              beforeMutation?.();
-              setEditorObjectPlacement(level, selection.list, /** @type {Record<string, unknown>} */ (o), ix, iz);
-              rebuild();
-              schedulePersist();
-              onSelectionChange?.(selection);
-              return;
-            }
-          }
-        }
-        return;
-      }
-      setSelection(null);
-      return;
-    }
-
-    if (hit.type === "gate") {
-      const wo = level.wallObjects;
-      if (!Array.isArray(wo)) return;
-      const g = wo[hit.index];
-      if (!g || typeof g !== "object") return;
-      const o = /** @type {Record<string, unknown>} */ (g);
-      const edge = o.edge;
-      const pos = o.position;
-      if (typeof edge !== "string" || typeof pos !== "number") return;
-      beforeMutation?.();
-      gateDrag = {
-        index: hit.index,
-        edge,
-        startPos: pos,
-        startClient: edge === "north" || edge === "south" ? e.clientX : e.clientY,
-      };
-      setSelection({ type: "gate", index: hit.index });
+      canvasPan = { pointerId: e.pointerId, lastX: e.clientX, lastY: e.clientY, moved: false };
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch {
         /* ignore */
+      }
+      return;
+    }
+
+    if (hit.type === "gate") {
+      const wasSelected = samePick(selection, hit);
+      setSelection({ type: "gate", index: hit.index });
+      if (wasSelected) {
+        pendingGateDrag = { pick: hit, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, active: false };
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch {
+          /* ignore */
+        }
       }
       return;
     }
 
     if (hit.type === "floor") {
-      beforeMutation?.();
-      dragFloor = hit;
+      const wasSelected = samePick(selection, hit);
       setSelection(hit);
-      try {
-        canvas.setPointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
+      if (wasSelected) {
+        pendingFloorDrag = {
+          pick: hit,
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          active: false,
+          altKey: e.altKey,
+        };
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch {
+          /* ignore */
+        }
       }
     }
   }
 
   /** @param {PointerEvent} e */
   function onPointerMove(e) {
+    if (canvasPan && e.pointerId === canvasPan.pointerId) {
+      e.preventDefault();
+      const dx = e.clientX - canvasPan.lastX;
+      const dy = e.clientY - canvasPan.lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 0) {
+        viewport.panByScreenDelta?.(canvasPan.lastX, canvasPan.lastY, e.clientX, e.clientY);
+        canvasPan.lastX = e.clientX;
+        canvasPan.lastY = e.clientY;
+        canvasPan.moved = true;
+        onStatusChange?.("Dragging map.");
+      }
+      return;
+    }
     const pal = getPaletteSelection();
     const hit = pickFromRaycast(e.clientX, e.clientY);
+
+    if (pendingGateDrag && e.pointerId === pendingGateDrag.pointerId) {
+      const moved = Math.hypot(e.clientX - pendingGateDrag.startX, e.clientY - pendingGateDrag.startY);
+      if (!pendingGateDrag.active && moved < 4) return;
+      if (!pendingGateDrag.active) {
+        const wo = level.wallObjects;
+        const g = Array.isArray(wo) ? wo[pendingGateDrag.pick.index] : null;
+        if (!g || typeof g !== "object") {
+          pendingGateDrag = null;
+          return;
+        }
+        const o = /** @type {Record<string, unknown>} */ (g);
+        const edge = o.edge;
+        const pos = o.position;
+        if (typeof edge !== "string" || typeof pos !== "number") {
+          pendingGateDrag = null;
+          return;
+        }
+        beforeMutation?.();
+        gateDrag = {
+          index: pendingGateDrag.pick.index,
+          edge,
+          startPos: pos,
+          startClient: edge === "north" || edge === "south" ? pendingGateDrag.startX : pendingGateDrag.startY,
+        };
+        pendingGateDrag.active = true;
+        onStatusChange?.("Dragging selected gate.");
+      }
+    }
+
+    if (pendingFloorDrag && e.pointerId === pendingFloorDrag.pointerId) {
+      const moved = Math.hypot(e.clientX - pendingFloorDrag.startX, e.clientY - pendingFloorDrag.startY);
+      if (!pendingFloorDrag.active && moved < 4) return;
+      if (!pendingFloorDrag.active) {
+        const pick = pendingFloorDrag.pick;
+        if (pendingFloorDrag.altKey && pick.type === "floor") {
+          beforeMutation?.();
+          const clonePick = cloneFloorObjectAtSource(pick);
+          if (clonePick) {
+            dragFloor = clonePick;
+            setSelection(clonePick);
+            onStatusChange?.("Placing copy — release to drop (⌥ Option / Alt + drag).");
+          } else {
+            dragFloor = pick;
+            onStatusChange?.("Can't duplicate (e.g. max portal pairs). Moving the original.");
+          }
+        } else {
+          beforeMutation?.();
+          dragFloor = pick;
+        }
+        pendingFloorDrag.active = true;
+      }
+    }
 
     if (hit.type === "ground") {
       const { ix, iz } = snapAuthoringCell(level, hit.x, hit.z);
@@ -752,6 +914,11 @@ export function mountEditorWorkbench(opts) {
         ghost.scale.set(fp.width, 1, fp.depth);
         /** @type {THREE.MeshBasicMaterial} */ (ghost.material).color.setHex(ok ? 0x00ff88 : 0xff2222);
         /** @type {THREE.MeshBasicMaterial} */ (ghost.material).opacity = ok ? 0.42 : 0.32;
+        onStatusChange?.(
+          ok
+            ? `Ready to place at grid ${ix}, ${iz}.`
+            : `Blocked at grid ${ix}, ${iz}: overlaps, gate clear zone, or outside the interior.`,
+        );
       } else {
         ghost.visible = false;
       }
@@ -782,20 +949,55 @@ export function mountEditorWorkbench(opts) {
     }
 
     if (dragFloor && e.buttons === 1) {
-      if (hit.type !== "ground") return;
-      const { ix, iz } = snapAuthoringCell(level, hit.x, hit.z);
+      const target = hit.type === "ground" ? hit : pickFromRaycast(e.clientX, e.clientY);
+      if (target.type !== "ground" && typeof target.x !== "number") return;
+      const hitX = typeof target.x === "number" ? target.x : hit.x;
+      const hitZ = typeof target.z === "number" ? target.z : hit.z;
+      const { ix, iz } = snapAuthoringCell(level, hitX, hitZ);
       const arr = level[dragFloor.list];
       if (!Array.isArray(arr)) return;
       const obj = arr[dragFloor.index];
       if (!obj || typeof obj !== "object") return;
       if (!canPlaceObjectAt(dragFloor.list, /** @type {Record<string, unknown>} */ (obj), ix, iz, dragFloor)) return;
       setEditorObjectPlacement(level, dragFloor.list, /** @type {Record<string, unknown>} */ (obj), ix, iz);
+      onStatusChange?.(`Moved to grid ${ix}, ${iz}.`);
       rebuild();
     }
   }
 
   /** @param {PointerEvent} e */
   function onPointerUp(e) {
+    if (pendingGateDrag && e.pointerId === pendingGateDrag.pointerId) {
+      pendingGateDrag = null;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (pendingFloorDrag && e.pointerId === pendingFloorDrag.pointerId) {
+      pendingFloorDrag = null;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (canvasPan && e.pointerId === canvasPan.pointerId) {
+      const moved = canvasPan.moved;
+      canvasPan = null;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      if (moved) onStatusChange?.("Map repositioned.");
+      else {
+        setSelection(null);
+        onStatusChange?.("Selection cleared.");
+      }
+      return;
+    }
     const hadGateDrag = !!gateDrag;
     if (gateDrag) {
       gateDrag = null;
@@ -822,19 +1024,16 @@ export function mountEditorWorkbench(opts) {
   /** @param {KeyboardEvent} e */
   function onKey(e) {
     if (e.key === "Escape") {
-      if (selection || gateDrag) {
+      if (selection || gateDrag || canvasPan || pendingFloorDrag || pendingGateDrag) {
         gateDrag = null;
+        canvasPan = null;
+        pendingFloorDrag = null;
+        pendingGateDrag = null;
         setSelection(null);
         e.preventDefault();
         e.stopImmediatePropagation();
       }
       return;
-    }
-    if (e.key === "Delete" || e.key === "Backspace") {
-      deleteSelection();
-    }
-    if (e.key === "r" || e.key === "R") {
-      rotateSelection();
     }
   }
 
@@ -852,7 +1051,10 @@ export function mountEditorWorkbench(opts) {
 
   return {
     getSelection,
+    canPlaceSelectionDraft,
+    deleteSelection,
     refresh,
+    refreshVisual,
     clearSelection,
     dispose() {
       canvas.removeEventListener("pointerdown", onPointerDown);

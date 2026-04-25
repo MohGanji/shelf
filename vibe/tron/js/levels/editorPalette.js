@@ -29,7 +29,7 @@ export function mountEditorPalette(root, opts) {
   root.innerHTML = `
     <div class="editor-palette__header">
       <span class="editor-palette__header-title">Palette</span>
-      <span class="editor-palette__header-sub">Floor objects — click to arm, then click the grid to place</span>
+      <span class="editor-palette__header-sub">Pick one item. This drawer closes so you can place it on the grid.</span>
     </div>
     <div class="editor-palette__scroll" role="tabpanel" aria-label="Block categories">
       ${renderCategory("Barriers", "barrier", [
@@ -59,8 +59,7 @@ export function mountEditorPalette(root, opts) {
     <div class="editor-palette__edge" aria-label="Wall objects">
       <div class="editor-palette__edge-title">Wall objects</div>
       <p class="editor-palette__edge-body">
-        Gates and cosmetic wall panels are <strong>not</strong> in this palette. Use the arena
-        <strong>edge</strong> (perimeter click) to open placement options — wiring lands in P6.3.
+        Gates are already on the perimeter. Select a gate on the map, then drag it along its wall.
       </p>
     </div>
   `;

@@ -10,7 +10,7 @@ export { GATE_WIDTH };
 
 /** @typedef {"north" | "south" | "east" | "west"} WallEdge */
 
-/** @typedef {"entrance" | "exit" | "arena" | "garage" | "architect"} GateRole */
+/** @typedef {"entrance" | "exit" | "arena" | "garage" | "multiplayer"} GateRole */
 
 /** Canonical role strings (must match `levels/schema.js` validation). */
 export const GATE_ROLES = Object.freeze(
@@ -19,7 +19,7 @@ export const GATE_ROLES = Object.freeze(
     "exit",
     "arena",
     "garage",
-    "architect",
+    "multiplayer",
   ]),
 );
 
@@ -140,7 +140,7 @@ export function withLobbyArenaGateLock(level, validLevels, save) {
 
 /**
  * @typedef {{ start: number; end: number }} Interval
- * @typedef {{ edge: WallEdge; position: number; width: number; role: GateRole; signText: string; locked: boolean; destination: unknown }} ParsedGate
+ * @typedef {{ edge: WallEdge; position: number; width: number; role: GateRole; signText: string; lockedRibbonText: string; locked: boolean; destination: unknown }} ParsedGate
  */
 
 /**
@@ -172,6 +172,7 @@ export function extractGatesFromWallObjects(wallObjects) {
       width: g.width,
       role: /** @type {GateRole} */ (role),
       signText: typeof g.signText === "string" ? g.signText : "",
+      lockedRibbonText: typeof g.lockedRibbonText === "string" ? g.lockedRibbonText : "",
       locked: !!g.locked,
       destination: g.destination,
     });
@@ -596,6 +597,30 @@ function buildSingleGateGroup(g, playCfg) {
     );
     sign.position.set(0, h - lintelH / 2, pillarD / 2 + 0.06);
     group.add(sign);
+  }
+
+  if (g.locked && g.lockedRibbonText && g.lockedRibbonText.trim() !== "") {
+    const tex = makeSignTexture(
+      g.lockedRibbonText,
+      900,
+      "#ff6bff",
+      { shadowBlur: 8, shadowColor: "rgba(255, 0, 255, 0.55)" },
+    );
+    const aspect = tex.image.width / tex.image.height;
+    const rh = 0.72;
+    const rw = Math.max(w + 1.4, rh * aspect);
+    const ribbon = new THREE.Mesh(
+      new THREE.PlaneGeometry(rw, rh),
+      new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    ribbon.position.set(0, h * 0.54, pillarD / 2 + 0.08);
+    ribbon.rotation.z = -0.22;
+    group.add(ribbon);
   }
 
   group.userData.gateRole = g.role;

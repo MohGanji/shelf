@@ -1,6 +1,7 @@
 import * as THREE from "../vendor/three-module.js";
 import { Vec3 } from "../vendor/cannon-es-module.js";
 import { createTriangleBarrierBody, createWallPhysicsBody } from "../engine/physics.js";
+import { resolveTriangleBuildingRotationY } from "../levels/footprints.js";
 
 /**
  * Interior barriers from validated level JSON — visuals + static cannon-es boxes (plan § Arena Object Categories, P5.4).
@@ -60,7 +61,7 @@ function addBarrierBox(world, wallMatRef, halfExtents, center, rotationY = 0) {
 
 /**
  * @param {unknown} b
- * @returns {{ type: string; x: number; z: number; height?: number; shape?: string; variant?: string; width?: number; depth?: number; rotation?: number; color?: string } | null}
+ * @returns {{ type: string; x: number; z: number; height?: number; shape?: string; variant?: string; width?: number; depth?: number; rotation?: number; triangleQuarter?: 0 | 1 | 2 | 3; color?: string } | null}
  */
 function coerceBarrier(b) {
   if (!b || typeof b !== "object") return null;
@@ -78,6 +79,9 @@ function coerceBarrier(b) {
   if (typeof o.width === "number" && Number.isFinite(o.width) && o.width > 0) out.width = o.width;
   if (typeof o.depth === "number" && Number.isFinite(o.depth) && o.depth > 0) out.depth = o.depth;
   if (typeof o.rotation === "number" && Number.isFinite(o.rotation)) out.rotation = o.rotation;
+  if (typeof o.triangleQuarter === "number" && Number.isInteger(o.triangleQuarter)) {
+    out.triangleQuarter = /** @type {0 | 1 | 2 | 3} */(((o.triangleQuarter % 4) + 4) % 4);
+  }
   if (typeof o.color === "string") out.color = o.color;
   return out;
 }
@@ -223,6 +227,20 @@ function addTriangleBarrierBody(world, wallMatRef, x, z, y, w, d, h, rot, bodies
     wallMatRef,
     rotationY: rot,
   });
+  const cos = Math.cos(rot);
+  const sin = Math.sin(rot);
+  const local = [
+    { x: -w / 2, z: -d / 2 },
+    { x: w / 2, z: -d / 2 },
+    { x: -w / 2, z: d / 2 },
+  ];
+  body.userData = {
+    ...(body.userData ?? {}),
+    minimapCornersXZ: local.map((p) => ({
+      x: x + p.x * cos + p.z * sin,
+      z: z - p.x * sin + p.z * cos,
+    })),
+  };
   world.addBody(body);
   bodies.push(body);
 }
@@ -550,9 +568,10 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     const mat = materialWithOptionalColor(b.color, matBuilding, neon);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(b.x, tallH / 2, b.z);
-    mesh.rotation.y = b.rotation ?? 0;
+    const triRotY = resolveTriangleBuildingRotationY(/** @type {Record<string, unknown>} */ (b));
+    mesh.rotation.y = triRotY;
     group.add(mesh);
-    addTriangleBarrierBody(world, wallMatRef, b.x, b.z, tallH / 2, w, d, tallH, b.rotation ?? 0, bodies);
+    addTriangleBarrierBody(world, wallMatRef, b.x, b.z, tallH / 2, w, d, tallH, triRotY, bodies);
   }
 
   for (const b of structureList) {
