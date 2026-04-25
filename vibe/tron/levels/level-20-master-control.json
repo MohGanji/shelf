@@ -1,0 +1,435 @@
+{
+  "id": "level-20",
+  "name": "Master Control",
+  "arenaWidth": 500,
+  "arenaDepth": 500,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 250.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 250.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -153.23,
+      "z": 222.22,
+      "height": 3,
+      "shape": "square",
+      "width": 193.55,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 153.23,
+      "z": 222.22,
+      "height": 3,
+      "shape": "square",
+      "width": 193.55,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -88.71,
+      "z": 166.67,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 56.45,
+      "z": 166.67,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 217.74,
+      "z": 166.67,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -233.87,
+      "z": 83.33,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 111.11
+    },
+    {
+      "type": "building",
+      "x": -185.48,
+      "z": 111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -8.06,
+      "z": 111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 129.03,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 169.35,
+      "z": 111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 233.87,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 277.78
+    },
+    {
+      "type": "building",
+      "x": -96.77,
+      "z": 55.56,
+      "height": 3,
+      "shape": "square",
+      "width": 48.39,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 80.65,
+      "z": 55.56,
+      "height": 3,
+      "shape": "square",
+      "width": 48.39,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 209.68,
+      "z": 55.56,
+      "height": 3,
+      "shape": "square",
+      "width": 16.13,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -241.94,
+      "z": -111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 16.13,
+      "depth": 277.78
+    },
+    {
+      "type": "building",
+      "x": -137.1,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 104.84,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -225.81,
+      "z": -138.89,
+      "height": 3,
+      "shape": "square",
+      "width": 16.13,
+      "depth": 222.22
+    },
+    {
+      "type": "building",
+      "x": -96.77,
+      "z": -55.56,
+      "height": 3,
+      "shape": "square",
+      "width": 48.39,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 80.65,
+      "z": -55.56,
+      "height": 3,
+      "shape": "square",
+      "width": 48.39,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 209.68,
+      "z": -55.56,
+      "height": 3,
+      "shape": "square",
+      "width": 16.13,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -185.48,
+      "z": -111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -8.06,
+      "z": -111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 129.03,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 169.35,
+      "z": -111.11,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -88.71,
+      "z": -166.67,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 88.71,
+      "z": -194.44,
+      "height": 3,
+      "shape": "square",
+      "width": 32.26,
+      "depth": 111.11
+    },
+    {
+      "type": "building",
+      "x": -153.23,
+      "z": -222.22,
+      "height": 3,
+      "shape": "square",
+      "width": 129.03,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 64.52,
+      "z": -222.22,
+      "height": 3,
+      "shape": "square",
+      "width": 16.13,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": 177.42,
+      "z": -222.22,
+      "height": 3,
+      "shape": "square",
+      "width": 145.16,
+      "depth": 55.56
+    },
+    {
+      "type": "building",
+      "x": -48.38,
+      "z": 138.89,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 0.6
+    },
+    {
+      "type": "building",
+      "x": -52.41,
+      "z": 83.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 2.58
+    },
+    {
+      "type": "building",
+      "x": 36.3,
+      "z": 83.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 0.56
+    },
+    {
+      "type": "building",
+      "x": -116.94,
+      "z": 27.78,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 2.2
+    },
+    {
+      "type": "building",
+      "x": -116.94,
+      "z": -27.78,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 0.94
+    },
+    {
+      "type": "building",
+      "x": -52.41,
+      "z": -83.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 0.56
+    },
+    {
+      "type": "building",
+      "x": 36.3,
+      "z": -83.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 2.58
+    },
+    {
+      "type": "building",
+      "x": -48.38,
+      "z": -138.89,
+      "height": 3,
+      "shape": "triangle",
+      "width": 29.16,
+      "depth": 29.16,
+      "rotation": 2.54
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "x": 169.35,
+      "z": -166.67,
+      "width": 55.64,
+      "depth": 5.8,
+      "rotation": -0.0
+    },
+    {
+      "type": "boost_pad",
+      "x": -169.35,
+      "z": 166.67,
+      "width": 55.64,
+      "depth": 5.8,
+      "rotation": -0.0
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": 112.9,
+      "z": 166.67,
+      "category": "instant"
+    },
+    {
+      "type": "shield",
+      "x": 0.0,
+      "z": -55.56,
+      "category": "equippable"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": -177.42,
+      "z": -166.67,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -241.94,
+      "z": 166.67,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": 193.55,
+      "z": 166.67,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": -16.13,
+      "z": 0.0,
+      "rotation": 0.0,
+      "color": "#B266FF",
+      "category": "boss"
+    },
+    {
+      "x": 225.81,
+      "z": -166.67,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    }
+  ],
+  "rewards": {
+    "coins": 335,
+    "timeBonusThreshold": 280,
+    "timeBonusCoins": 82
+  }
+}

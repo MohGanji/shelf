@@ -1,0 +1,118 @@
+{
+  "id": "level-17",
+  "name": "Blackout Run",
+  "arenaWidth": 460,
+  "arenaDepth": 400,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 230.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 230.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -23.79,
+      "z": 133.33,
+      "height": 3,
+      "shape": "square",
+      "width": 31.72,
+      "depth": 44.44
+    },
+    {
+      "type": "building",
+      "x": -134.83,
+      "z": 88.89,
+      "height": 3,
+      "shape": "square",
+      "width": 31.72,
+      "depth": 44.44
+    },
+    {
+      "type": "building",
+      "x": 103.1,
+      "z": 88.89,
+      "height": 3,
+      "shape": "square",
+      "width": 31.72,
+      "depth": 44.44
+    },
+    {
+      "type": "building",
+      "x": -103.1,
+      "z": -88.89,
+      "height": 3,
+      "shape": "square",
+      "width": 31.72,
+      "depth": 44.44
+    },
+    {
+      "type": "building",
+      "x": 134.83,
+      "z": -88.89,
+      "height": 3,
+      "shape": "square",
+      "width": 31.72,
+      "depth": 44.44
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": 126.9,
+      "z": 0.0,
+      "category": "equippable"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": -222.07,
+      "z": -133.33,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -222.07,
+      "z": 133.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": 174.48,
+      "z": 133.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": 0.0,
+      "z": 0.0,
+      "rotation": 0.0,
+      "color": "#B266FF",
+      "category": "boss"
+    }
+  ],
+  "rewards": {
+    "coins": 290,
+    "timeBonusThreshold": 250,
+    "timeBonusCoins": 73
+  }
+}

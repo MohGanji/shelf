@@ -4,6 +4,13 @@
 
 import { GATE_WIDTH, MIN_ARENA_SIZE } from "./schema.js";
 import { getWipLevel, listWipLevelIds, upsertWipLevel } from "./loader.js";
+import {
+  LEVEL_SCHEMA_VERSION_V2,
+  floorObjectOccupiedCells,
+  getFloorObjectFootprint,
+  getFloorObjectTopLeft,
+  gridTopLeftToWorldCenter,
+} from "./footprints.js";
 
 /** Neon pair colors (plan § Portal) — same order as gameplay. */
 export const PORTAL_PAIR_COLORS = Object.freeze([
@@ -24,10 +31,13 @@ export function createBlankWipLevel(arenaWidth = 80, arenaDepth = 80) {
   const ad = Math.max(MIN_ARENA_SIZE, Math.floor(arenaDepth));
   const id = `wip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   return {
+    schemaVersion: LEVEL_SCHEMA_VERSION_V2,
     id,
     name: "Untitled",
     arenaWidth: aw,
     arenaDepth: ad,
+    mapWidth: aw + 2,
+    mapDepth: ad + 2,
     wallObjects: [
       {
         type: "gate",
@@ -169,15 +179,51 @@ export function snapTile(x, z) {
 
 /**
  * @param {Record<string, unknown>} level
+ * @param {number} x
+ * @param {number} z
+ */
+export function snapAuthoringCell(level, x, z) {
+  const mapWidth = typeof level.mapWidth === "number" ? level.mapWidth : level.arenaWidth;
+  const mapDepth = typeof level.mapDepth === "number" ? level.mapDepth : level.arenaDepth;
+  if (level.schemaVersion === LEVEL_SCHEMA_VERSION_V2 && typeof mapWidth === "number" && typeof mapDepth === "number") {
+    return {
+      ix: Math.floor(x + mapWidth / 2),
+      iz: Math.floor(z + mapDepth / 2),
+    };
+  }
+  return snapTile(x, z);
+}
+
+/**
+ * @param {Record<string, unknown>} level
+ * @param {string} list
+ * @param {Record<string, unknown>} o
+ * @param {number} ix
+ * @param {number} iz
+ */
+export function setEditorObjectPlacement(level, list, o, ix, iz) {
+  if (level.schemaVersion === LEVEL_SCHEMA_VERSION_V2) {
+    o.gridX = ix;
+    o.gridZ = iz;
+    const fp = getFloorObjectFootprint(list, o);
+    const c = gridTopLeftToWorldCenter(level, ix, iz, fp.width, fp.depth);
+    o.x = c.x;
+    o.z = c.z;
+    return;
+  }
+  o.x = ix;
+  o.z = iz;
+}
+
+/**
+ * @param {Record<string, unknown>} level
  * @returns {Set<string>}
  */
 export function collectOccupiedFloorTileKeys(level) {
   /** @type {Set<string>} */
   const seen = new Set();
-  const tryAdd = (x, z) => {
-    const ix = Math.round(x);
-    const iz = Math.round(z);
-    seen.add(`${ix},${iz}`);
+  const tryAdd = (list, o) => {
+    for (const cell of floorObjectOccupiedCells(level, list, o)) seen.add(cell);
   };
 
   const barriers = level.barriers;
@@ -186,7 +232,10 @@ export function collectOccupiedFloorTileKeys(level) {
       const b = barriers[i];
       if (b && typeof b === "object") {
         const o = /** @type {Record<string, unknown>} */ (b);
-        if (typeof o.x === "number" && typeof o.z === "number") tryAdd(o.x, o.z);
+        if (
+          (typeof o.x === "number" && typeof o.z === "number") ||
+          (typeof o.gridX === "number" && typeof o.gridZ === "number")
+        ) tryAdd("barriers", o);
       }
     }
   }
@@ -195,7 +244,10 @@ export function collectOccupiedFloorTileKeys(level) {
     for (const g of gameObjects) {
       if (g && typeof g === "object") {
         const o = /** @type {Record<string, unknown>} */ (g);
-        if (typeof o.x === "number" && typeof o.z === "number") tryAdd(o.x, o.z);
+        if (
+          (typeof o.x === "number" && typeof o.z === "number") ||
+          (typeof o.gridX === "number" && typeof o.gridZ === "number")
+        ) tryAdd("gameObjects", o);
       }
     }
   }
@@ -204,7 +256,10 @@ export function collectOccupiedFloorTileKeys(level) {
     for (const p of powerups) {
       if (p && typeof p === "object") {
         const o = /** @type {Record<string, unknown>} */ (p);
-        if (typeof o.x === "number" && typeof o.z === "number") tryAdd(o.x, o.z);
+        if (
+          (typeof o.x === "number" && typeof o.z === "number") ||
+          (typeof o.gridX === "number" && typeof o.gridZ === "number")
+        ) tryAdd("powerups", o);
       }
     }
   }
@@ -213,12 +268,26 @@ export function collectOccupiedFloorTileKeys(level) {
     for (const e of enemies) {
       if (e && typeof e === "object") {
         const o = /** @type {Record<string, unknown>} */ (e);
-        if (typeof o.x === "number" && typeof o.z === "number") tryAdd(o.x, o.z);
+        if (
+          (typeof o.x === "number" && typeof o.z === "number") ||
+          (typeof o.gridX === "number" && typeof o.gridZ === "number")
+        ) tryAdd("enemies", o);
       }
     }
   }
 
   return seen;
+}
+
+/**
+ * @param {Record<string, unknown>} level
+ * @param {string} list
+ * @param {Record<string, unknown>} o
+ * @returns {string | null}
+ */
+export function floorObjectTopLeftLabel(level, list, o) {
+  const p = getFloorObjectTopLeft(level, list, o);
+  return `${p.gridX}, ${p.gridZ}`;
 }
 
 /**

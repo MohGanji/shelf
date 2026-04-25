@@ -1,0 +1,209 @@
+{
+  "id": "level-19",
+  "name": "The Core",
+  "arenaWidth": 480,
+  "arenaDepth": 440,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 240.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 240.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -162.58,
+      "z": 97.78,
+      "height": 3,
+      "shape": "square",
+      "width": 30.97,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 15.48,
+      "z": 97.78,
+      "height": 3,
+      "shape": "square",
+      "width": 46.45,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 193.55,
+      "z": 97.78,
+      "height": 3,
+      "shape": "square",
+      "width": 30.97,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": -61.94,
+      "z": 48.89,
+      "height": 3,
+      "shape": "square",
+      "width": 46.45,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 61.94,
+      "z": 48.89,
+      "height": 3,
+      "shape": "square",
+      "width": 46.45,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": -108.39,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 46.45,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 108.39,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 46.45,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": -162.58,
+      "z": -48.89,
+      "height": 3,
+      "shape": "square",
+      "width": 30.97,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 15.48,
+      "z": -48.89,
+      "height": 3,
+      "shape": "square",
+      "width": 46.45,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 193.55,
+      "z": -48.89,
+      "height": 3,
+      "shape": "square",
+      "width": 30.97,
+      "depth": 48.89
+    },
+    {
+      "type": "building",
+      "x": 38.71,
+      "z": 73.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 51.33,
+      "depth": 51.33,
+      "rotation": 0.81
+    },
+    {
+      "type": "building",
+      "x": -85.16,
+      "z": 24.45,
+      "height": 3,
+      "shape": "triangle",
+      "width": 51.33,
+      "depth": 51.33,
+      "rotation": 2.33
+    },
+    {
+      "type": "building",
+      "x": 85.16,
+      "z": 24.45,
+      "height": 3,
+      "shape": "triangle",
+      "width": 51.33,
+      "depth": 51.33,
+      "rotation": 0.81
+    },
+    {
+      "type": "building",
+      "x": -135.49,
+      "z": -24.45,
+      "height": 3,
+      "shape": "triangle",
+      "width": 51.33,
+      "depth": 51.33,
+      "rotation": 2.41
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "trail_extend",
+      "x": -108.39,
+      "z": 146.67,
+      "category": "level_permanent"
+    },
+    {
+      "type": "shield",
+      "x": 0.0,
+      "z": 0.0,
+      "category": "equippable"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": -77.42,
+      "z": -146.67,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -232.26,
+      "z": 146.67,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": 77.42,
+      "z": 146.67,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": 0.0,
+      "z": 48.89,
+      "rotation": 0.0,
+      "color": "#B266FF",
+      "category": "boss"
+    }
+  ],
+  "rewards": {
+    "coins": 320,
+    "timeBonusThreshold": 270,
+    "timeBonusCoins": 79
+  }
+}

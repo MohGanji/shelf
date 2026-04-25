@@ -1,0 +1,191 @@
+{
+  "id": "level-16",
+  "name": "Dead Circuit",
+  "arenaWidth": 440,
+  "arenaDepth": 440,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 204.83,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 220.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -128.97,
+      "z": 137.5,
+      "height": 3,
+      "shape": "square",
+      "width": 60.69,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": 98.62,
+      "z": 137.5,
+      "height": 3,
+      "shape": "square",
+      "width": 60.69,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": -98.62,
+      "z": 82.5,
+      "height": 3,
+      "shape": "square",
+      "width": 30.34,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": 0.0,
+      "z": 82.5,
+      "height": 3,
+      "shape": "square",
+      "width": 106.21,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": 98.62,
+      "z": 82.5,
+      "height": 3,
+      "shape": "square",
+      "width": 30.34,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": -159.31,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 60.69,
+      "depth": 110.0
+    },
+    {
+      "type": "building",
+      "x": 144.14,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 60.69,
+      "depth": 110.0
+    },
+    {
+      "type": "building",
+      "x": -15.17,
+      "z": -55.0,
+      "height": 3,
+      "shape": "square",
+      "width": 75.86,
+      "depth": 110.0
+    },
+    {
+      "type": "building",
+      "x": -98.62,
+      "z": -82.5,
+      "height": 3,
+      "shape": "square",
+      "width": 30.34,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": 68.28,
+      "z": -82.5,
+      "height": 3,
+      "shape": "square",
+      "width": 30.34,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": -128.97,
+      "z": -137.5,
+      "height": 3,
+      "shape": "square",
+      "width": 60.69,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": 98.62,
+      "z": -137.5,
+      "height": 3,
+      "shape": "square",
+      "width": 60.69,
+      "depth": 55.0
+    },
+    {
+      "type": "building",
+      "x": 121.38,
+      "z": 41.25,
+      "height": 3,
+      "shape": "triangle",
+      "width": 28.88,
+      "depth": 28.88,
+      "rotation": 1.07
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": -15.17,
+      "z": 137.5,
+      "category": "instant"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": 182.07,
+      "z": -137.5,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -212.41,
+      "z": 137.5,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": 182.07,
+      "z": 137.5,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": -212.41,
+      "z": -137.5,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    }
+  ],
+  "rewards": {
+    "coins": 275,
+    "timeBonusThreshold": 240,
+    "timeBonusCoins": 70
+  }
+}

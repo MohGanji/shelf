@@ -1,0 +1,236 @@
+{
+  "id": "level-10",
+  "name": "Circuit Breaker",
+  "arenaWidth": 420,
+  "arenaDepth": 420,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 222.73,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 222.73,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -120.91,
+      "z": 189.0,
+      "height": 3,
+      "shape": "square",
+      "width": 178.18,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": 133.64,
+      "z": 189.0,
+      "height": 3,
+      "shape": "square",
+      "width": 152.73,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": -140.0,
+      "z": 147.0,
+      "height": 3,
+      "shape": "square",
+      "width": 140.0,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": 152.73,
+      "z": 147.0,
+      "height": 3,
+      "shape": "square",
+      "width": 114.55,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": -165.45,
+      "z": 105.0,
+      "height": 3,
+      "shape": "square",
+      "width": 89.09,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": 178.18,
+      "z": 105.0,
+      "height": 3,
+      "shape": "square",
+      "width": 63.64,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": -178.18,
+      "z": 63.0,
+      "height": 3,
+      "shape": "square",
+      "width": 63.64,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": 190.91,
+      "z": 42.0,
+      "height": 3,
+      "shape": "square",
+      "width": 38.18,
+      "depth": 84.0
+    },
+    {
+      "type": "building",
+      "x": -190.91,
+      "z": 21.0,
+      "height": 3,
+      "shape": "square",
+      "width": 38.18,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": -197.27,
+      "z": -105.0,
+      "height": 3,
+      "shape": "square",
+      "width": 25.45,
+      "depth": 210.0
+    },
+    {
+      "type": "building",
+      "x": 197.27,
+      "z": -84.0,
+      "height": 3,
+      "shape": "square",
+      "width": 25.45,
+      "depth": 168.0
+    },
+    {
+      "type": "building",
+      "x": -178.18,
+      "z": -126.0,
+      "height": 3,
+      "shape": "square",
+      "width": 12.73,
+      "depth": 168.0
+    },
+    {
+      "type": "building",
+      "x": 178.18,
+      "z": -126.0,
+      "height": 3,
+      "shape": "square",
+      "width": 12.73,
+      "depth": 168.0
+    },
+    {
+      "type": "building",
+      "x": -159.09,
+      "z": -147.0,
+      "height": 3,
+      "shape": "square",
+      "width": 25.45,
+      "depth": 126.0
+    },
+    {
+      "type": "building",
+      "x": -133.64,
+      "z": -168.0,
+      "height": 3,
+      "shape": "square",
+      "width": 25.45,
+      "depth": 84.0
+    },
+    {
+      "type": "building",
+      "x": 159.09,
+      "z": -168.0,
+      "height": 3,
+      "shape": "square",
+      "width": 25.45,
+      "depth": 84.0
+    },
+    {
+      "type": "building",
+      "x": -95.45,
+      "z": -189.0,
+      "height": 3,
+      "shape": "square",
+      "width": 50.91,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": 120.91,
+      "z": -189.0,
+      "height": 3,
+      "shape": "square",
+      "width": 50.91,
+      "depth": 42.0
+    },
+    {
+      "type": "building",
+      "x": 190.91,
+      "z": -189.0,
+      "height": 3,
+      "shape": "square",
+      "width": 12.73,
+      "depth": 42.0
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": -50.91,
+      "z": 21.0,
+      "category": "instant"
+    },
+    {
+      "type": "shield",
+      "x": 101.82,
+      "z": 21.0,
+      "category": "equippable"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": 12.73,
+      "z": -147.0,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 25.45,
+      "z": 21.0,
+      "rotation": 0.0,
+      "color": "#B266FF",
+      "category": "boss"
+    }
+  ],
+  "rewards": {
+    "coins": 185,
+    "timeBonusThreshold": 180,
+    "timeBonusCoins": 52
+  }
+}

@@ -3,9 +3,9 @@
  * then tile-trail + solid-ray steering + hunting + peer separation (avoidance range, reaction time).
  */
 
-import { getArenaPlaytestConfig } from "../config.js";
+import { getArenaPlaytestConfig, normalizeEnemyCategory } from "../config.js";
 import { createPlayerBody, applyContinuousArenaWallSlide, applyContinuousBarrierSlide } from "../engine/physics.js";
-import { computeEnemyCycleKeys, intelligenceTier } from "./ai.js";
+import { computeEnemyCycleKeys } from "./ai.js";
 import { createLightCycle } from "./cycle.js";
 import { createTrailWallSystem } from "./trail.js";
 import { createNitroState, isNitroBurstActive } from "./nitroSystem.js";
@@ -22,6 +22,7 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @property {import('./nitroSystem.js').NitroRuntimeState} nitroState
  * @property {ReturnType<typeof getArenaPlaytestConfig>} playCfg
  * @property {number} intelligence — 1–10 (plan enemy attributes)
+ * @property {"easy" | "medium" | "hard" | "boss"} category
  * @property {string} color — cycle / trail hex (minimap, UI)
  * @property {boolean} [eliminated] — P2.3 combat: trail or cycle derez
  */
@@ -76,11 +77,15 @@ export function createCampaignEnemyEntities(opts) {
     if (!raw || typeof raw !== "object") continue;
 
     const attrs = /** @type {Record<string, number>} */ (raw.attributes ?? {});
-    const playCfg = getArenaPlaytestConfig(runtime, attrs, size);
+    const category = normalizeEnemyCategory(raw.category);
+    const playCfg = getArenaPlaytestConfig(runtime, attrs, size, {
+      actorType: "enemy",
+      enemyCategory: category,
+    });
     const intelligence =
       typeof attrs.intelligence === "number" && Number.isFinite(attrs.intelligence)
         ? Math.max(1, Math.min(10, Math.floor(attrs.intelligence)))
-        : 3;
+        : 10;
 
     const body = createPlayerBody(playCfg, playerMat);
     const x = typeof raw.x === "number" ? raw.x : 0;
@@ -130,6 +135,7 @@ export function createCampaignEnemyEntities(opts) {
       nitroState: createNitroState(playCfg.nitroBarCount),
       playCfg,
       intelligence,
+      category,
       color: colorStr,
       eliminated: false,
     });
@@ -178,9 +184,8 @@ export function createCampaignEnemyEntities(opts) {
   }
 
   /**
-   * P4.5 — tactical shield from tier + trail pressure (plan § AI Difficulty Tiers).
+   * Tactical shield from shared smart-AI pressure (not enemy category).
    * @param {object} o
-   * @param {"easy" | "medium" | "hard"} o.tier
    * @param {boolean} o.dangerFwd
    * @param {boolean} o.dangerL
    * @param {boolean} o.dangerR
@@ -188,10 +193,10 @@ export function createCampaignEnemyEntities(opts) {
    * @param {number} o.distPlayer
    * @param {number} o.playerSpeed
    * @param {import('cannon-es').Body} o.body
+   * @param {import('../config.js').DEFAULT_DEV_HUD} o.devHud
    */
   function shouldEnemyDeployShield(o) {
     const {
-      tier,
       dangerFwd,
       dangerL,
       dangerR,
@@ -199,26 +204,20 @@ export function createCampaignEnemyEntities(opts) {
       distPlayer,
       playerSpeed,
       body,
+      devHud: hud,
     } = o;
     const u = body.userData;
     if (u.equipSlot !== "shield") return false;
     if (u.shieldPhase !== "none") return false;
     const side = dangerL || dangerR;
-    if (tier === "easy") return dangerFwd;
-    if (tier === "medium") {
-      return (
-        dangerFwd ||
-        escapeBlocked ||
-        (distPlayer < 21 && playerSpeed > 9) ||
-        (side && distPlayer < 38)
-      );
-    }
+    const safety = typeof hud.aiSafetyPercent === "number" ? Math.max(0, Math.min(100, hud.aiSafetyPercent)) / 100 : 0.85;
+    const pressure = typeof hud.aiPressurePercent === "number" ? Math.max(0, Math.min(100, hud.aiPressurePercent)) / 100 : 0.6;
     return (
       dangerFwd ||
       escapeBlocked ||
-      distPlayer < 30 ||
-      (playerSpeed > 14 && distPlayer < 48) ||
-      side
+      (distPlayer < 22 + pressure * 10) ||
+      (playerSpeed > 14 && distPlayer < 34 + pressure * 18) ||
+      (side && safety > 0.45)
     );
   }
 
@@ -297,9 +296,7 @@ export function createCampaignEnemyEntities(opts) {
         };
         e.body.userData.aiSteer = ai.steer;
 
-        const tier = intelligenceTier(e.intelligence);
         const deployShield = shouldEnemyDeployShield({
-          tier,
           dangerFwd: ai.dangerFwd,
           dangerL: ai.dangerL,
           dangerR: ai.dangerR,
@@ -307,6 +304,7 @@ export function createCampaignEnemyEntities(opts) {
           distPlayer: ai.distPlayer,
           playerSpeed: pspd,
           body: e.body,
+          devHud: hud,
         });
         tickEnemyShieldFsm(e.body, dt, hud, deployShield);
       }

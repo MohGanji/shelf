@@ -1,13 +1,13 @@
 {
   "id": "level-2",
   "name": "Boost Alley",
-  "arenaWidth": 300,
-  "arenaDepth": 300,
+  "arenaWidth": 240,
+  "arenaDepth": 180,
   "wallObjects": [
     {
       "type": "gate",
       "edge": "south",
-      "position": 150,
+      "position": 120.0,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 150,
+      "position": 120.0,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -25,51 +25,83 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -88.7,
+      "z": 10.0,
+      "height": 3,
+      "shape": "square",
+      "width": 41.74,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 88.7,
+      "z": 10.0,
+      "height": 3,
+      "shape": "square",
+      "width": 41.74,
+      "depth": 40.0
+    }
+  ],
   "gameObjects": [
-    { "type": "boost_pad", "x": 25, "z": 40 }
+    {
+      "type": "boost_pad",
+      "x": -62.61,
+      "z": -40.0,
+      "width": 23.48,
+      "depth": 28.0
+    },
+    {
+      "type": "boost_pad",
+      "x": 62.61,
+      "z": -40.0,
+      "width": 23.48,
+      "depth": 28.0
+    },
+    {
+      "type": "boost_pad",
+      "x": -31.3,
+      "z": 60.0,
+      "width": 23.48,
+      "depth": 28.0
+    },
+    {
+      "type": "boost_pad",
+      "x": 31.3,
+      "z": 60.0,
+      "width": 23.48,
+      "depth": 28.0
+    }
   ],
   "powerups": [
     {
       "type": "nitro_recharge",
-      "x": -35,
-      "z": 55,
+      "x": 0.0,
+      "z": -40.0,
       "category": "instant"
     }
   ],
   "enemies": [
     {
-      "x": -50,
-      "z": 80,
-      "rotation": 1.57,
-      "color": "#FF6600",
-      "attributes": {
-        "speed": 3,
-        "acceleration": 3,
-        "trailLength": 4,
-        "nitroBars": 3,
-        "handling": 3,
-        "intelligence": 2
-      }
+      "x": -93.91,
+      "z": 60.0,
+      "rotation": 0.0,
+      "color": "#FF8A00",
+      "category": "easy"
     },
     {
-      "x": 60,
-      "z": -70,
-      "rotation": 3.14,
-      "color": "#FF6600",
-      "attributes": {
-        "speed": 3,
-        "acceleration": 3,
-        "trailLength": 4,
-        "nitroBars": 3,
-        "handling": 3,
-        "intelligence": 3
-      }
+      "x": 93.91,
+      "z": 60.0,
+      "rotation": 0.0,
+      "color": "#FF8A00",
+      "category": "easy"
     }
   ],
   "rewards": {
-    "coins": 60,
-    "timeBonusThreshold": 120,
-    "timeBonusCoins": 30
+    "coins": 65,
+    "timeBonusThreshold": 100,
+    "timeBonusCoins": 28
   }
 }

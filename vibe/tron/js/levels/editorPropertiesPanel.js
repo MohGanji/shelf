@@ -2,6 +2,9 @@
  * P6.4 — Properties panel: edit selected floor object or gate (plan § Editor Properties).
  */
 
+import { floorObjectTopLeftLabel, setEditorObjectPlacement } from "./editorLevel.js";
+import { getFloorObjectFootprint } from "./footprints.js";
+
 /**
  * @param {string} s
  */
@@ -13,14 +16,7 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-const ENEMY_ATTR_LABELS = {
-  speed: "Speed",
-  acceleration: "Acceleration",
-  trailLength: "Trail length",
-  nitroBars: "Nitro bars",
-  handling: "Handling",
-  intelligence: "Intelligence",
-};
+const ENEMY_CATEGORIES = ["easy", "medium", "hard", "boss"];
 
 /**
  * @typedef {{ type: "floor"; list: string; index: number } | { type: "gate"; index: number }} EditorPickLike
@@ -53,6 +49,37 @@ export function mountEditorPropertiesPanel(root, opts) {
     const v = Number(n);
     if (!Number.isFinite(v)) return lo;
     return Math.max(lo, Math.min(hi, v));
+  }
+
+  function appendSizeFields(wrap, list, o, fixedSize) {
+    const fp = getFloorObjectFootprint(list, o);
+    for (const [key, label, value] of [
+      ["width", "Width", fp.width],
+      ["depth", "Depth", fp.depth],
+    ]) {
+      const field = document.createElement("label");
+      field.className = "editor-props__field";
+      field.innerHTML = `<span class="editor-props__label">${label}${fixedSize ? " (fixed)" : ""}</span>`;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "1";
+      input.step = "1";
+      input.className = "editor-props__input";
+      input.value = String(value);
+      input.disabled = fixedSize;
+      input.addEventListener("change", () => {
+        beforeMutation?.();
+        o[key] = clampInt(input.value, 1, 99);
+        if (typeof o.gridX === "number" && typeof o.gridZ === "number") {
+          setEditorObjectPlacement(level, list, o, o.gridX, o.gridZ);
+        }
+        input.value = String(o[key]);
+        onApply();
+      });
+      input.addEventListener("keydown", (e) => e.stopPropagation());
+      field.appendChild(input);
+      wrap.appendChild(field);
+    }
   }
 
   function sync() {
@@ -138,6 +165,7 @@ export function mountEditorPropertiesPanel(root, opts) {
     }
     const raw = arr[sel.index];
     const o = /** @type {Record<string, unknown>} */ (raw);
+    const fp = getFloorObjectFootprint(list, o);
 
     const title = document.createElement("h3");
     title.className = "editor-props__title";
@@ -149,8 +177,12 @@ export function mountEditorPropertiesPanel(root, opts) {
 
       const xy = document.createElement("p");
       xy.className = "editor-props__ro";
-      xy.textContent = `Tile center: x ${typeof o.x === "number" ? o.x : "?"}, z ${typeof o.z === "number" ? o.z : "?"}`;
+      xy.textContent = `Top-left: ${floorObjectTopLeftLabel(level, list, o)} · footprint ${fp.width}x${fp.depth}`;
       wrap.appendChild(xy);
+
+      if (t === "building" || t === "wall") {
+        appendSizeFields(wrap, list, o, fp.fixedSize);
+      }
 
       if (t === "building") {
         const shape = typeof o.shape === "string" ? o.shape : "square";
@@ -161,7 +193,7 @@ export function mountEditorPropertiesPanel(root, opts) {
         shLabel.innerHTML = `<span class="editor-props__label">Shape</span>`;
         const shSel = document.createElement("select");
         shSel.className = "editor-props__input";
-        for (const opt of ["square", "triangle", "hexagon"]) {
+        for (const opt of ["square", "triangle"]) {
           const op = document.createElement("option");
           op.value = opt;
           op.textContent = opt;
@@ -236,8 +268,12 @@ export function mountEditorPropertiesPanel(root, opts) {
 
       const xy = document.createElement("p");
       xy.className = "editor-props__ro";
-      xy.textContent = `Tile: x ${typeof o.x === "number" ? o.x : "?"}, z ${typeof o.z === "number" ? o.z : "?"}`;
+      xy.textContent = `Top-left: ${floorObjectTopLeftLabel(level, list, o)} · footprint ${fp.width}x${fp.depth}`;
       wrap.appendChild(xy);
+
+      if (typ === "boost_pad") {
+        appendSizeFields(wrap, list, o, fp.fixedSize);
+      }
 
       if (typ === "portal") {
         const pid = typeof o.pairId === "string" ? o.pairId : "";
@@ -286,7 +322,8 @@ export function mountEditorPropertiesPanel(root, opts) {
       meta.className = "editor-props__dl";
       meta.innerHTML = `
         <div class="editor-props__row"><dt>Category</dt><dd>${escapeHtml(cat)}</dd></div>
-        <div class="editor-props__row"><dt>Tile</dt><dd>x ${typeof o.x === "number" ? o.x : "?"}, z ${typeof o.z === "number" ? o.z : "?"}</dd></div>
+        <div class="editor-props__row"><dt>Top-left</dt><dd>${escapeHtml(floorObjectTopLeftLabel(level, list, o) ?? "?")}</dd></div>
+        <div class="editor-props__row"><dt>Footprint</dt><dd>${fp.width}x${fp.depth} fixed</dd></div>
       `;
       wrap.appendChild(meta);
 
@@ -305,7 +342,7 @@ export function mountEditorPropertiesPanel(root, opts) {
 
       const xy = document.createElement("p");
       xy.className = "editor-props__ro";
-      xy.textContent = `Tile: x ${typeof o.x === "number" ? o.x : "?"}, z ${typeof o.z === "number" ? o.z : "?"}`;
+      xy.textContent = `Top-left: ${floorObjectTopLeftLabel(level, list, o)} · fixed footprint ${fp.width}x${fp.depth}`;
       wrap.appendChild(xy);
 
       const cLabel = document.createElement("label");
@@ -325,55 +362,28 @@ export function mountEditorPropertiesPanel(root, opts) {
       cLabel.appendChild(cIn);
       wrap.appendChild(cLabel);
 
-      let attrs = o.attributes;
-      if (!attrs || typeof attrs !== "object") {
-        o.attributes = {
-          speed: 3,
-          acceleration: 3,
-          trailLength: 4,
-          nitroBars: 3,
-          handling: 3,
-          intelligence: 3,
-        };
-        attrs = o.attributes;
+      const category = ENEMY_CATEGORIES.includes(String(o.category)) ? String(o.category) : "easy";
+      o.category = category;
+      const catLabel = document.createElement("label");
+      catLabel.className = "editor-props__field";
+      catLabel.innerHTML = `<span class="editor-props__label">Category</span>`;
+      const catSel = document.createElement("select");
+      catSel.className = "editor-props__input";
+      for (const opt of ENEMY_CATEGORIES) {
+        const op = document.createElement("option");
+        op.value = opt;
+        op.textContent = opt;
+        if (opt === category) op.selected = true;
+        catSel.appendChild(op);
       }
-      const attrObj = /** @type {Record<string, unknown>} */ (attrs);
-
-      const sub = document.createElement("div");
-      sub.className = "editor-props__subhead";
-      sub.textContent = "Attributes (1–10)";
-      wrap.appendChild(sub);
-
-      for (const key of Object.keys(ENEMY_ATTR_LABELS)) {
-        const lab = ENEMY_ATTR_LABELS[/** @type {keyof typeof ENEMY_ATTR_LABELS} */ (key)];
-        const v = clampInt(attrObj[key], 1, 10);
-        attrObj[key] = v;
-
-        const row = document.createElement("label");
-        row.className = "editor-props__field editor-props__field--slider";
-        row.innerHTML = `<span class="editor-props__label">${escapeHtml(lab)}</span>`;
-        const range = document.createElement("input");
-        range.type = "range";
-        range.min = "1";
-        range.max = "10";
-        range.step = "1";
-        range.value = String(v);
-        range.className = "editor-props__range";
-        const num = document.createElement("span");
-        num.className = "editor-props__range-val";
-        num.textContent = String(v);
-        range.addEventListener("pointerdown", () => beforeMutation?.(), { capture: true });
-        range.addEventListener("input", () => {
-          const n = clampInt(range.value, 1, 10);
-          attrObj[key] = n;
-          num.textContent = String(n);
-          onApply();
-        });
-        range.addEventListener("keydown", (e) => e.stopPropagation());
-        row.appendChild(range);
-        row.appendChild(num);
-        wrap.appendChild(row);
-      }
+      catSel.addEventListener("change", () => {
+        beforeMutation?.();
+        o.category = catSel.value;
+        onApply();
+      });
+      catSel.addEventListener("keydown", (e) => e.stopPropagation());
+      catLabel.appendChild(catSel);
+      wrap.appendChild(catLabel);
 
       const rLabel = document.createElement("label");
       rLabel.className = "editor-props__field";

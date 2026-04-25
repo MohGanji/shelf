@@ -1,0 +1,154 @@
+{
+  "id": "level-5",
+  "name": "Gridlock",
+  "arenaWidth": 280,
+  "arenaDepth": 280,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 127.83,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 140.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -60.87,
+      "z": 77.78,
+      "height": 3,
+      "shape": "square",
+      "width": 36.52,
+      "depth": 62.22
+    },
+    {
+      "type": "building",
+      "x": 36.52,
+      "z": 77.78,
+      "height": 3,
+      "shape": "square",
+      "width": 36.52,
+      "depth": 62.22
+    },
+    {
+      "type": "building",
+      "x": -97.39,
+      "z": -15.56,
+      "height": 3,
+      "shape": "square",
+      "width": 36.52,
+      "depth": 62.22
+    },
+    {
+      "type": "building",
+      "x": 73.04,
+      "z": -15.56,
+      "height": 3,
+      "shape": "square",
+      "width": 36.52,
+      "depth": 62.22
+    },
+    {
+      "type": "building",
+      "x": -60.87,
+      "z": -108.89,
+      "height": 3,
+      "shape": "square",
+      "width": 36.52,
+      "depth": 62.22
+    },
+    {
+      "type": "building",
+      "x": 36.52,
+      "z": -108.89,
+      "height": 3,
+      "shape": "square",
+      "width": 36.52,
+      "depth": 62.22
+    },
+    {
+      "type": "building",
+      "x": -79.13,
+      "z": 31.11,
+      "height": 3,
+      "shape": "triangle",
+      "width": 65.33,
+      "depth": 65.33,
+      "rotation": 1.94
+    },
+    {
+      "type": "building",
+      "x": 54.78,
+      "z": 31.11,
+      "height": 3,
+      "shape": "triangle",
+      "width": 65.33,
+      "depth": 65.33,
+      "rotation": 1.2
+    },
+    {
+      "type": "building",
+      "x": -79.13,
+      "z": -62.23,
+      "height": 3,
+      "shape": "triangle",
+      "width": 65.33,
+      "depth": 65.33,
+      "rotation": 1.2
+    },
+    {
+      "type": "building",
+      "x": 54.78,
+      "z": -62.23,
+      "height": 3,
+      "shape": "triangle",
+      "width": 65.33,
+      "depth": 65.33,
+      "rotation": 1.94
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": -12.17,
+      "z": 0.0,
+      "category": "equippable"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -109.57,
+      "z": 93.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": 85.22,
+      "z": 93.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    }
+  ],
+  "rewards": {
+    "coins": 110,
+    "timeBonusThreshold": 130,
+    "timeBonusCoins": 37
+  }
+}

@@ -7,7 +7,7 @@
     {
       "type": "gate",
       "edge": "south",
-      "position": 100,
+      "position": 100.0,
       "width": 5,
       "role": "entrance",
       "signText": "",
@@ -17,7 +17,7 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 100,
+      "position": 100.0,
       "width": 5,
       "role": "exit",
       "signText": "EXIT",
@@ -25,23 +25,26 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "x": 0.0,
+      "z": -11.11,
+      "height": 3,
+      "shape": "square",
+      "width": 31.58,
+      "depth": 44.44
+    }
+  ],
   "gameObjects": [],
   "powerups": [],
   "enemies": [
     {
-      "x": 40,
-      "z": 70,
-      "rotation": 0,
-      "color": "#FF6600",
-      "attributes": {
-        "speed": 3,
-        "acceleration": 3,
-        "trailLength": 4,
-        "nitroBars": 3,
-        "handling": 3,
-        "intelligence": 2
-      }
+      "x": 0.0,
+      "z": 44.44,
+      "rotation": 0.0,
+      "color": "#FF8A00",
+      "category": "easy"
     }
   ],
   "rewards": {

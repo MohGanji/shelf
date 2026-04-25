@@ -1,0 +1,102 @@
+{
+  "id": "level-7",
+  "name": "Rift Lesson",
+  "arenaWidth": 320,
+  "arenaDepth": 280,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 160.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 160.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": 0.0,
+      "z": 17.5,
+      "height": 3,
+      "shape": "square",
+      "width": 12.8,
+      "depth": 175.0
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "portal",
+      "x": -76.8,
+      "z": 87.5,
+      "rotation": 0.0,
+      "pairId": "7-portal-1",
+      "pairColor": "#7CFFEA"
+    },
+    {
+      "type": "portal",
+      "x": 76.8,
+      "z": 87.5,
+      "rotation": 3.14,
+      "pairId": "7-portal-1",
+      "pairColor": "#7CFFEA"
+    },
+    {
+      "type": "portal",
+      "x": -128.0,
+      "z": -87.5,
+      "rotation": 0.0,
+      "pairId": "7-portal-2",
+      "pairColor": "#FF7CFF"
+    },
+    {
+      "type": "portal",
+      "x": 25.6,
+      "z": -87.5,
+      "rotation": 3.14,
+      "pairId": "7-portal-2",
+      "pairColor": "#FF7CFF"
+    }
+  ],
+  "powerups": [
+    {
+      "type": "trail_extend",
+      "x": -76.8,
+      "z": 17.5,
+      "category": "level_permanent"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -128.0,
+      "z": 87.5,
+      "rotation": 0.0,
+      "color": "#FF8A00",
+      "category": "easy"
+    },
+    {
+      "x": 128.0,
+      "z": 87.5,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    }
+  ],
+  "rewards": {
+    "coins": 140,
+    "timeBonusThreshold": 150,
+    "timeBonusCoins": 43
+  }
+}

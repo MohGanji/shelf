@@ -36,7 +36,6 @@ export function mountEditorPalette(root, opts) {
         { label: "Wall", kind: "wall" },
         { label: "Building — square", kind: "building", meta: { shape: "square" } },
         { label: "Building — triangle", kind: "building", meta: { shape: "triangle" } },
-        { label: "Building — hex", kind: "building", meta: { shape: "hexagon" } },
         { label: "Structure — pylon", kind: "structure", meta: { variant: "pylon" } },
         { label: "Structure — column", kind: "structure", meta: { variant: "column" } },
         { label: "Structure — obelisk", kind: "structure", meta: { variant: "obelisk" } },

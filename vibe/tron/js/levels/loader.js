@@ -6,6 +6,7 @@
 
 import { BUNDLED_CAMPAIGN_LEVEL_FILENAMES } from "./defaults.js";
 import { LOBBY_LEVEL_ID, validateLevel } from "./schema.js";
+import { normalizeLevelForRuntime } from "./footprints.js";
 
 /** Per-level WIP key helpers (alternate prefix vs consolidated `WIP_STORAGE_KEY` store). */
 export { getWipLevelKeyPrefix, wipLevelStorageKey } from "./editor.js";
@@ -136,8 +137,9 @@ export async function loadCampaignLevels(opts = {}) {
         entries.push({ filename, valid: false, errors: v.errors });
         continue;
       }
-      entries.push({ filename, valid: true, level: json });
-      validLevels.push(json);
+      const runtimeLevel = normalizeLevelForRuntime(/** @type {Record<string, unknown>} */ (json));
+      entries.push({ filename, valid: true, level: runtimeLevel });
+      validLevels.push(runtimeLevel);
     } catch (e) {
       console.warn(`[loader] skipping campaign file ${filename}:`, e);
       entries.push({ filename, valid: false, errors: [String(e)] });
@@ -226,7 +228,7 @@ export function getWipLevelValidated(id) {
   const raw = getWipLevel(id);
   if (!raw) return null;
   const v = validateLevel(raw);
-  return v.valid ? { valid: true, level: raw } : { valid: false, errors: v.errors };
+  return v.valid ? { valid: true, level: normalizeLevelForRuntime(raw) } : { valid: false, errors: v.errors };
 }
 
 /**

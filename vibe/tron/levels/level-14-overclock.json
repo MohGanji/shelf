@@ -1,0 +1,144 @@
+{
+  "id": "level-14",
+  "name": "Overclock",
+  "arenaWidth": 440,
+  "arenaDepth": 340,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 204.83,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 220.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -182.07,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 15.17,
+      "depth": 188.89
+    },
+    {
+      "type": "building",
+      "x": 166.9,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 15.17,
+      "depth": 188.89
+    },
+    {
+      "type": "building",
+      "x": -15.17,
+      "z": 37.78,
+      "height": 3,
+      "shape": "square",
+      "width": 166.9,
+      "depth": 37.78
+    },
+    {
+      "type": "building",
+      "x": -91.03,
+      "z": -18.89,
+      "height": 3,
+      "shape": "square",
+      "width": 15.17,
+      "depth": 75.56
+    },
+    {
+      "type": "building",
+      "x": 60.69,
+      "z": -18.89,
+      "height": 3,
+      "shape": "square",
+      "width": 15.17,
+      "depth": 75.56
+    },
+    {
+      "type": "building",
+      "x": -15.17,
+      "z": -37.78,
+      "height": 3,
+      "shape": "square",
+      "width": 136.55,
+      "depth": 37.78
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "x": 113.79,
+      "z": -113.33,
+      "width": 89.51,
+      "depth": 10.92,
+      "rotation": -0.0
+    },
+    {
+      "type": "boost_pad",
+      "x": -98.62,
+      "z": 113.33,
+      "width": 89.51,
+      "depth": 10.92,
+      "rotation": -0.0
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": 91.03,
+      "z": 113.33,
+      "category": "instant"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": -106.21,
+      "z": -113.33,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -182.07,
+      "z": 113.33,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": 166.9,
+      "z": 113.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": -182.07,
+      "z": -113.33,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    }
+  ],
+  "rewards": {
+    "coins": 245,
+    "timeBonusThreshold": 220,
+    "timeBonusCoins": 64
+  }
+}

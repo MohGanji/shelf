@@ -140,16 +140,8 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
     return hitKind;
   }
 
-  /**
-   * @param {number} x
-   * @param {number} z
-   * @param {string} selfId
-   * @param {number} numEdges — current logical edge count for `selfId` (anchors.length - 1)
-   * @param {number} immunitySegments — physical newest segment indices safe for self (use `physicalTrailImmunitySegments` from config)
-   * @returns {TrailCollisionKind}
-   */
-  function evaluateCollision(x, z, selfId, numEdges, immunitySegments) {
-    const { ix, iz } = worldToTile(x, z);
+  function evaluateTileCollision(ix, iz, selfId, numEdges, immunitySegments) {
+    if (ix < 0 || ix > cols - 1 || iz < 0 || iz > rows - 1) return "other-trail";
     const k = key(ix, iz);
     const cell = cells.get(k);
     if (!cell || cell.size === 0) return "clear";
@@ -168,6 +160,26 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
     const cutoff = n - imm;
     if (minSeg < cutoff) return "own-lethal";
     return "clear";
+  }
+
+  /**
+   * @param {number} x
+   * @param {number} z
+   * @param {string} selfId
+   * @param {number} numEdges — current logical edge count for `selfId` (anchors.length - 1)
+   * @param {number} immunitySegments — physical newest segment indices safe for self (use `physicalTrailImmunitySegments` from config)
+   * @returns {TrailCollisionKind}
+   */
+  function evaluateCollision(x, z, selfId, numEdges, immunitySegments) {
+    const { ix, iz } = worldToTile(x, z);
+    return evaluateTileCollision(ix, iz, selfId, numEdges, immunitySegments);
+  }
+
+  function tileToWorldCenter(ix, iz) {
+    return {
+      x: -halfW + (ix + 0.5) * ts,
+      z: -halfD + (iz + 0.5) * ts,
+    };
   }
 
   /**
@@ -270,12 +282,17 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
 
   return {
     worldToTile,
+    tileToWorldCenter,
     stampEdge,
     clear,
     evaluateCollision,
+    evaluateTileCollision,
     evaluateCollisionLine,
     hasTrailAhead,
     nearestHazardDistance,
+    getBounds() {
+      return { cols, rows, tileSize: ts, halfW, halfD };
+    },
     /** Read-only stats for debugging */
     getCellCount() {
       return cells.size;

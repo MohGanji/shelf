@@ -1,5 +1,3 @@
-import { nitroBarsFromAttributeLevel } from "./game/nitroSystem.js";
-
 /**
  * Base gameplay constants and default dev HUD values.
  * Runtime config merges save `devHud` over these defaults (see mergeRuntimeConfig).
@@ -110,7 +108,20 @@ export const DEFAULT_DEV_HUD = {
   /** Additive glow strength (× trail opacity × segment fade; try 0 to disable shell). */
   trailGlowAlpha: 0.18,
   trailFadeSpeed: 1.0,
+  /** Legacy alias migrated into `playerBaseTrailLength`; kept for old saves/internal fallback only. */
   defaultTrailLength: 200,
+  maxSpeed: 120,
+  maxAcceleration: 50,
+  maxHandlingRadPerSec: 5.0,
+  maxNitroBars: 8,
+  playerBaseTrailLength: 200,
+  enemyBaseTrailLength: 200,
+  playerTrailUpgradeMaxPercent: 40,
+  playerBasePercent: 35,
+  enemyEasyPercent: 27,
+  enemyMediumPercent: 47,
+  enemyHardPercent: 75,
+  enemyBossPercent: 93,
   trailExtendAmount: 10,
   nitroCapacityPlusAmount: 1,
   nitroBurstDuration: 0.5,
@@ -159,6 +170,27 @@ export const DEFAULT_DEV_HUD = {
   enginePitch: 1.0,
   nearMissDistance: 1.5,
   gearShiftCount: 5,
+  aiSmartPlannerEnabled: true,
+  aiAvoidOwnTrailEnabled: true,
+  aiAvoidEnemyTrailsEnabled: true,
+  aiAvoidWallsAndBarriersEnabled: true,
+  aiReachabilityEnabled: true,
+  aiTrapAvoidanceEnabled: true,
+  aiInterceptEnabled: true,
+  aiCutoffEnabled: true,
+  aiFlankingEnabled: true,
+  aiPressureTrailsEnabled: true,
+  aiPeerSeparationEnabled: true,
+  aiNitroTacticsEnabled: true,
+  aiBrakeForSafetyEnabled: true,
+  aiDebugScoringEnabled: false,
+  aiDeterministicPlannerEnabled: true,
+  aiSafetyPercent: 85,
+  aiAggressionPercent: 80,
+  aiCutoffPercent: 75,
+  aiPressurePercent: 60,
+  aiLookaheadPercent: 75,
+  aiStabilityPercent: 65,
   aiAggression: 1.0,
   aiReactionTime: 0.5,
   aiAvoidanceRange: 5.0,
@@ -194,12 +226,25 @@ export const POWERUP_COLORS = {
 /** Portal pair palette (plan) */
 export const PORTAL_PAIR_COLORS = ["#ff00ff", "#ffff00", "#00ff88", "#ff4444", "#44aaff"];
 
+/** @type {const} */
+export const ENEMY_CATEGORIES = Object.freeze(["easy", "medium", "hard", "boss"]);
+
 /**
  * @param {Record<string, unknown>} [devHudPatch]
  * @returns {typeof DEFAULT_DEV_HUD}
  */
 export function mergeDevHud(devHudPatch = {}) {
-  return { ...DEFAULT_DEV_HUD, ...devHudPatch };
+  const patch = devHudPatch && typeof devHudPatch === "object" ? devHudPatch : {};
+  const out = { ...DEFAULT_DEV_HUD, ...patch };
+  if (
+    Object.prototype.hasOwnProperty.call(patch, "defaultTrailLength") &&
+    !Object.prototype.hasOwnProperty.call(patch, "playerBaseTrailLength")
+  ) {
+    const legacy = Number(patch.defaultTrailLength);
+    if (Number.isFinite(legacy)) out.playerBaseTrailLength = legacy;
+  }
+  out.defaultTrailLength = out.playerBaseTrailLength;
+  return out;
 }
 
 /**
@@ -333,40 +378,110 @@ export const CONFIG = {
 };
 
 /**
- * @param {number} level — attribute level 1–10
+ * @param {unknown} raw
+ * @param {number} fallback
  * @param {number} min
  * @param {number} max
  */
-function attrScalar(level, min, max) {
-  const lv = Math.max(1, Math.min(10, Math.floor(level)));
-  return min + ((lv - 1) * (max - min)) / 9;
+function numInRange(raw, fallback, min, max) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+/** @param {unknown} raw @param {number} fallback */
+function percent(raw, fallback) {
+  return numInRange(raw, fallback, 0, 100);
+}
+
+/**
+ * @param {unknown} raw
+ * @param {"easy" | "medium" | "hard" | "boss"} [fallback]
+ * @returns {"easy" | "medium" | "hard" | "boss"}
+ */
+export function normalizeEnemyCategory(raw, fallback = "easy") {
+  return raw === "easy" || raw === "medium" || raw === "hard" || raw === "boss"
+    ? raw
+    : fallback;
+}
+
+/**
+ * @param {Partial<typeof DEFAULT_DEV_HUD>} devHud
+ * @param {"easy" | "medium" | "hard" | "boss"} category
+ */
+export function enemyCategoryPercent(devHud, category) {
+  if (category === "boss") return percent(devHud.enemyBossPercent, DEFAULT_DEV_HUD.enemyBossPercent);
+  if (category === "hard") return percent(devHud.enemyHardPercent, DEFAULT_DEV_HUD.enemyHardPercent);
+  if (category === "medium") return percent(devHud.enemyMediumPercent, DEFAULT_DEV_HUD.enemyMediumPercent);
+  return percent(devHud.enemyEasyPercent, DEFAULT_DEV_HUD.enemyEasyPercent);
+}
+
+/**
+ * Player stat level 1 starts at `playerBasePercent`; level 10 reaches 100%.
+ * @param {Partial<typeof DEFAULT_DEV_HUD>} devHud
+ * @param {unknown} level
+ */
+export function playerAttributePercent(devHud, level) {
+  const base = percent(devHud.playerBasePercent, DEFAULT_DEV_HUD.playerBasePercent);
+  const lv = Math.max(1, Math.min(10, Math.floor(Number(level))));
+  return base + ((lv - 1) * (100 - base)) / 9;
+}
+
+/**
+ * @param {Partial<typeof DEFAULT_DEV_HUD>} devHud
+ * @param {unknown} trailLengthLevel
+ */
+export function playerTrailLengthFromAttribute(devHud, trailLengthLevel) {
+  const base = Math.max(4, Math.floor(numInRange(devHud.playerBaseTrailLength, DEFAULT_DEV_HUD.playerBaseTrailLength, 4, 2000)));
+  const maxBonus = percent(devHud.playerTrailUpgradeMaxPercent, DEFAULT_DEV_HUD.playerTrailUpgradeMaxPercent);
+  const lv = Math.max(1, Math.min(10, Math.floor(Number(trailLengthLevel))));
+  const bonusPercent = ((lv - 1) * maxBonus) / 9;
+  return Math.max(base, Math.ceil(base * (1 + bonusPercent / 100)));
+}
+
+/** @param {Partial<typeof DEFAULT_DEV_HUD>} devHud */
+export function enemyBaseTrailLength(devHud) {
+  return Math.max(4, Math.floor(numInRange(devHud.enemyBaseTrailLength, DEFAULT_DEV_HUD.enemyBaseTrailLength, 4, 2000)));
 }
 
 /**
  * Flattened config for arena foundation + physics playtest (P1.2 / P1.6 attributes).
  * @param {ReturnType<typeof mergeRuntimeConfig>} runtime
- * @param {Partial<{ speed: number; acceleration: number; handling: number; nitroBars: number }>} [attributes] — from save; defaults to level 1
+ * @param {Partial<{ speed: number; acceleration: number; handling: number; nitroBars: number; trailLength: number }>} [attributes] — from save; defaults to level 1
  * @param {{ arenaWidth?: number; arenaDepth?: number }} [arenaSize] — from loaded level JSON; defaults to `WORLD` defaults
+ * @param {{ actorType?: "player" | "enemy"; enemyCategory?: "easy" | "medium" | "hard" | "boss" }} [opts]
  */
-export function getArenaPlaytestConfig(runtime, attributes, arenaSize) {
+export function getArenaPlaytestConfig(runtime, attributes, arenaSize, opts = {}) {
   const { world, devHud } = runtime;
   const wallH = devHud.wallHeight ?? world.arenaWallHeight;
   const a = attributes ?? {};
-  const maxMoveSpeed = attrScalar(typeof a.speed === "number" ? a.speed : 1, world.defaultTopSpeed, 120);
-  const acceleration = attrScalar(
-    typeof a.acceleration === "number" ? a.acceleration : 1,
-    world.defaultAcceleration,
-    50,
-  );
-  const baseTurnRate = attrScalar(typeof a.handling === "number" ? a.handling : 1, 2.5, 5.0);
-  const nitroBarCount = nitroBarsFromAttributeLevel(
-    typeof a.nitroBars === "number" ? a.nitroBars : 1,
-  );
-  const baseTrailLen = typeof devHud.defaultTrailLength === "number" ? devHud.defaultTrailLength : 100;
-  /** Trail Length attribute 1–10 → max segment count scales from baseTrailLen to 2.5x baseTrailLen. */
-  const trailMaxSegments = Math.round(
-    attrScalar(typeof a.trailLength === "number" ? a.trailLength : 1, baseTrailLen, baseTrailLen * 2.5),
-  );
+  const actorType = opts.actorType === "enemy" ? "enemy" : "player";
+  const maxSpeed = numInRange(devHud.maxSpeed, DEFAULT_DEV_HUD.maxSpeed, 1, 500);
+  const maxAcceleration = numInRange(devHud.maxAcceleration, DEFAULT_DEV_HUD.maxAcceleration, 1, 250);
+  const maxHandling = numInRange(devHud.maxHandlingRadPerSec, DEFAULT_DEV_HUD.maxHandlingRadPerSec, 0.25, 20);
+  const maxNitro = Math.max(1, Math.floor(numInRange(devHud.maxNitroBars, DEFAULT_DEV_HUD.maxNitroBars, 1, 32)));
+
+  let speedPct;
+  let accelPct;
+  let handlingPct;
+  let nitroPct;
+  let trailMaxSegments;
+  if (actorType === "enemy") {
+    const pct = enemyCategoryPercent(devHud, normalizeEnemyCategory(opts.enemyCategory));
+    speedPct = accelPct = handlingPct = nitroPct = pct;
+    trailMaxSegments = enemyBaseTrailLength(devHud);
+  } else {
+    speedPct = playerAttributePercent(devHud, typeof a.speed === "number" ? a.speed : 1);
+    accelPct = playerAttributePercent(devHud, typeof a.acceleration === "number" ? a.acceleration : 1);
+    handlingPct = playerAttributePercent(devHud, typeof a.handling === "number" ? a.handling : 1);
+    nitroPct = playerAttributePercent(devHud, typeof a.nitroBars === "number" ? a.nitroBars : 1);
+    trailMaxSegments = playerTrailLengthFromAttribute(devHud, typeof a.trailLength === "number" ? a.trailLength : 1);
+  }
+
+  const maxMoveSpeed = maxSpeed * (speedPct / 100);
+  const acceleration = maxAcceleration * (accelPct / 100);
+  const baseTurnRate = maxHandling * (handlingPct / 100);
+  const nitroBarCount = Math.max(1, Math.ceil(maxNitro * (nitroPct / 100)));
 
   const arenaWidth =
     arenaSize && typeof arenaSize.arenaWidth === "number" && Number.isFinite(arenaSize.arenaWidth)

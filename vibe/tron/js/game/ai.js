@@ -304,6 +304,32 @@ function computeEnemyNitroDesire(p) {
     devHud,
   } = p;
 
+  if (devHud.aiNitroTacticsEnabled === false) return false;
+  if (devHud.aiSmartPlannerEnabled !== false) {
+    const smart = smartAiParams(devHud);
+    const wantEscape = dangerFwd && clearF > Math.max(8, devHud.aiAvoidanceRange * 1.15);
+    const chaseWindow = distPlayer > 14 && distPlayer < 105 && huntDist > 4;
+    const speedDeficit = enemySpd < pspd * 1.06 + 8;
+    const wantChase = chaseWindow && speedDeficit && !dangerFwd && !wallNear;
+    const wantRecoverSpeed = enemySpd < 18 && distPlayer > 24 && distPlayer < 100 && !dangerFwd;
+    const now = performance.now();
+    if (typeof userData._aiNitroCooldownUntilMs !== "number") userData._aiNitroCooldownUntilMs = 0;
+    if (now < userData._aiNitroCooldownUntilMs) return false;
+    if (wantEscape && smart.safety > 0.45) {
+      userData._aiNitroCooldownUntilMs = now + 260;
+      return true;
+    }
+    if (wantChase && smart.aggression > 0.28) {
+      userData._aiNitroCooldownUntilMs = now + 320 + (1 - smart.aggression) * 900;
+      return true;
+    }
+    if (wantRecoverSpeed && smart.aggression > 0.62 && smart.safety < 0.96) {
+      userData._aiNitroCooldownUntilMs = now + 850;
+      return true;
+    }
+    return false;
+  }
+
   const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
   const minChase = 12;
   const maxChase = tier === "hard" ? 98 : tier === "medium" ? 86 : 58;
@@ -390,6 +416,169 @@ export function hasDangerousTrailAhead(opts) {
   return false;
 }
 
+/** @param {unknown} raw @param {number} fallback */
+function percent01(raw, fallback) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback / 100;
+  return Math.max(0, Math.min(1, n / 100));
+}
+
+/** @param {import('../config.js').DEFAULT_DEV_HUD} devHud */
+function smartAiParams(devHud) {
+  const safety = percent01(devHud.aiSafetyPercent, 85);
+  const aggression = percent01(devHud.aiAggressionPercent, 80);
+  const cutoff = percent01(devHud.aiCutoffPercent, 75);
+  const pressure = percent01(devHud.aiPressurePercent, 60);
+  const lookahead = percent01(devHud.aiLookaheadPercent, 75);
+  const stability = percent01(devHud.aiStabilityPercent, 65);
+  return {
+    safety,
+    aggression,
+    cutoff,
+    pressure,
+    lookahead,
+    stability,
+    lookaheadTiles: Math.round(5 + lookahead * 17),
+    floodBudget: Math.round(90 + lookahead * 420),
+    projectionDist: 2.5 + lookahead * 7.5,
+  };
+}
+
+/**
+ * @param {object} opts
+ * @param {number} opts.ix
+ * @param {number} opts.iz
+ * @param {string} opts.selfId
+ * @param {number} opts.immunitySegments
+ * @param {boolean} opts.avoidOwnTrail
+ * @param {boolean} opts.avoidEnemyTrails
+ * @param {Array<{ map: { evaluateTileCollision?: Function }; ownerId: string; edgeCount: number }>} opts.sources
+ */
+function isTrailTileBlocked(opts) {
+  const { ix, iz, selfId, immunitySegments, avoidOwnTrail, avoidEnemyTrails, sources } = opts;
+  for (const s of sources) {
+    const map = s.map;
+    if (!map || typeof map.evaluateTileCollision !== "function") continue;
+    const own = s.ownerId === selfId;
+    if (own && !avoidOwnTrail) continue;
+    if (!own && !avoidEnemyTrails) continue;
+    const kind = map.evaluateTileCollision(
+      ix,
+      iz,
+      selfId,
+      own ? s.edgeCount : 0,
+      own ? immunitySegments : 0,
+    );
+    if (kind !== "clear") return true;
+  }
+  return false;
+}
+
+/**
+ * @param {number} x
+ * @param {number} z
+ * @param {number} halfW
+ * @param {number} halfD
+ * @param {number} radius
+ * @param {import('cannon-es').Body[] | undefined} barrierBodies
+ */
+function isSolidPointBlocked(x, z, halfW, halfD, radius, barrierBodies) {
+  if (x <= -halfW + radius || x >= halfW - radius || z <= -halfD + radius || z >= halfD - radius) {
+    return true;
+  }
+  if (!barrierBodies || barrierBodies.length === 0) return false;
+  const inflate = Math.max(0.08, radius * 0.95);
+  for (const b of barrierBodies) {
+    if (!b || b.mass !== 0) continue;
+    const shape = b.shapes[0];
+    if (!(shape instanceof Box)) continue;
+    const he = shape.halfExtents;
+    const c = b.position;
+    if (
+      x >= c.x - he.x - inflate &&
+      x <= c.x + he.x + inflate &&
+      z >= c.z - he.z - inflate &&
+      z <= c.z + he.z + inflate
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * @param {object} opts
+ * @param {{ ix: number; iz: number }} opts.startTile
+ * @param {{ tileToWorldCenter: Function; getBounds: Function }} opts.grid
+ * @param {string} opts.selfId
+ * @param {number} opts.immunitySegments
+ * @param {Array<{ map: { evaluateTileCollision?: Function }; ownerId: string; edgeCount: number }>} opts.sources
+ * @param {number} opts.budget
+ * @param {number} opts.halfW
+ * @param {number} opts.halfD
+ * @param {number} opts.radius
+ * @param {import('cannon-es').Body[] | undefined} opts.barrierBodies
+ * @param {boolean} opts.avoidOwnTrail
+ * @param {boolean} opts.avoidEnemyTrails
+ * @param {boolean} opts.avoidSolids
+ */
+function floodFillReachable(opts) {
+  const {
+    startTile,
+    grid,
+    selfId,
+    immunitySegments,
+    sources,
+    budget,
+    halfW,
+    halfD,
+    radius,
+    barrierBodies,
+    avoidOwnTrail,
+    avoidEnemyTrails,
+    avoidSolids,
+  } = opts;
+  const b = grid.getBounds();
+  if (startTile.ix < 0 || startTile.ix >= b.cols || startTile.iz < 0 || startTile.iz >= b.rows) return 0;
+  const q = [startTile];
+  const seen = new Set([`${startTile.ix},${startTile.iz}`]);
+  let count = 0;
+  for (let qi = 0; qi < q.length && count < budget; qi++) {
+    const t = q[qi];
+    const wpos = grid.tileToWorldCenter(t.ix, t.iz);
+    if (
+      avoidSolids &&
+      isSolidPointBlocked(wpos.x, wpos.z, halfW, halfD, radius, barrierBodies)
+    ) {
+      continue;
+    }
+    if (
+      isTrailTileBlocked({
+        ix: t.ix,
+        iz: t.iz,
+        selfId,
+        immunitySegments,
+        avoidOwnTrail,
+        avoidEnemyTrails,
+        sources,
+      })
+    ) {
+      continue;
+    }
+    count++;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = t.ix + dx;
+      const nz = t.iz + dz;
+      if (nx < 0 || nx >= b.cols || nz < 0 || nz >= b.rows) continue;
+      const key = `${nx},${nz}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      q.push({ ix: nx, iz: nz });
+    }
+  }
+  return count;
+}
+
 /**
  * @param {object} opts
  * @param {import('cannon-es').Body} opts.body
@@ -442,7 +631,7 @@ export function computeEnemyCycleKeys(opts) {
   let predX = playerPos.x + playerVx * leadT;
   let predZ = playerPos.z + playerVz * leadT;
 
-  const flankBase = flankBlendForTier(tier) * agg;
+  const flankBase = devHud.aiFlankingEnabled === false ? 0 : flankBlendForTier(tier) * agg;
   const toPredX = predX - px;
   const toPredZ = predZ - pz;
   const distPred = Math.hypot(toPredX, toPredZ);
@@ -475,7 +664,7 @@ export function computeEnemyCycleKeys(opts) {
 
   const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
   const peerSep =
-    peers.length > 0
+    devHud.aiPeerSeparationEnabled !== false && peers.length > 0
       ? computePeerSeparationSteer({
           px,
           pz,
@@ -565,11 +754,127 @@ export function computeEnemyCycleKeys(opts) {
   const safeR = !dangerR;
   const safeHL = !dangerHL;
   const safeHR = !dangerHR;
+  const distPlayer = Math.hypot(playerPos.x - px, playerPos.z - pz);
 
   /** @type {number} */
   let steer = seekSteer;
+  let brake = false;
 
-  if (dangerFwd || wallNear) {
+  if (devHud.aiSmartPlannerEnabled !== false) {
+    const p = smartAiParams(devHud);
+    const grid = trailSources[0] && trailSources[0].map;
+    const avoidOwnTrail = devHud.aiAvoidOwnTrailEnabled !== false;
+    const avoidEnemyTrails = devHud.aiAvoidEnemyTrailsEnabled !== false;
+    const avoidSolids = devHud.aiAvoidWallsAndBarriersEnabled !== false;
+    const useReachability =
+      devHud.aiReachabilityEnabled !== false &&
+      grid &&
+      typeof grid.worldToTile === "function" &&
+      typeof grid.tileToWorldCenter === "function" &&
+      typeof grid.getBounds === "function";
+    const useTrapAvoidance = devHud.aiTrapAvoidanceEnabled !== false;
+    const useIntercept = devHud.aiInterceptEnabled !== false;
+    const useCutoff = devHud.aiCutoffEnabled !== false;
+    const usePressure = devHud.aiPressureTrailsEnabled !== false;
+    const prevSteer = typeof body.userData.aiLastSmartSteer === "number" ? body.userData.aiLastSmartSteer : 0;
+    const targetX = useIntercept ? predX : playerPos.x;
+    const targetZ = useIntercept ? predZ : playerPos.z;
+    const targetAng = Math.atan2(targetX - px, targetZ - pz);
+    let best = { steer: seekSteer, score: -Infinity, danger: false, reachable: 0 };
+    const candidates = [-1, 0, 1];
+    for (const cand of candidates) {
+      const candHeading = heading + (cand < 0 ? 0.78 : cand > 0 ? -0.78 : 0);
+      const dx = Math.sin(candHeading);
+      const dz = Math.cos(candHeading);
+      const sampleX = px + dx * p.projectionDist;
+      const sampleZ = pz + dz * p.projectionDist;
+      const trailDanger =
+        (avoidOwnTrail || avoidEnemyTrails) &&
+        hasDangerousTrailAhead({
+          x: px,
+          z: pz,
+          heading: candHeading,
+          selfId,
+          immunitySegments: imm,
+          steps: p.lookaheadTiles,
+          halfWidth: halfWTrail,
+          sources: trailSources,
+        });
+      const solidClear = avoidSolids
+        ? raycastSolidClearanceXZ({
+            px,
+            pz,
+            heading: candHeading,
+            halfW,
+            halfD,
+            playerRadius: pr,
+            barrierBodies,
+            maxDist: avoidRange * (1.8 + p.lookahead),
+          })
+        : Infinity;
+      const solidDanger = avoidSolids && solidClear < avoidRange * 0.9;
+      let reachable = p.floodBudget;
+      if (useReachability) {
+        const tile = grid.worldToTile(sampleX, sampleZ);
+        reachable = floodFillReachable({
+          startTile: tile,
+          grid,
+          selfId,
+          immunitySegments: imm,
+          sources: trailSources,
+          budget: p.floodBudget,
+          halfW,
+          halfD,
+          radius: pr,
+          barrierBodies,
+          avoidOwnTrail,
+          avoidEnemyTrails,
+          avoidSolids,
+        });
+      }
+
+      const align = Math.cos(wrapAngle(targetAng - candHeading));
+      const directDist = Math.hypot(targetX - sampleX, targetZ - sampleZ);
+      const directPressure = 1 / (1 + directDist * 0.045);
+      const playerToEnemyNow = Math.hypot(playerPos.x - px, playerPos.z - pz);
+      const playerToCandidate = Math.hypot(playerPos.x - sampleX, playerPos.z - sampleZ);
+      const closing = Math.max(-1, Math.min(1, (playerToEnemyNow - playerToCandidate) / Math.max(1, p.projectionDist)));
+      const cutoffScore = useCutoff ? Math.max(0, closing) * 0.7 + Math.max(0, align) * 0.3 : 0;
+      const pressureScore = usePressure ? directPressure * (0.6 + Math.min(0.4, distPlayer / 120)) : 0;
+      const reachScore = Math.min(1, reachable / Math.max(1, p.floodBudget));
+      const trapPenalty = useTrapAvoidance && reachable < p.floodBudget * 0.18 ? 1 : 0;
+      const dangerPenalty = (trailDanger ? 1 : 0) + (solidDanger ? 0.85 : 0);
+      const stabilityBonus = cand === prevSteer ? p.stability * 0.9 : cand === 0 && prevSteer === 0 ? p.stability * 0.6 : 0;
+
+      let score = 0;
+      score += reachScore * (2.2 + p.safety * 5.5);
+      score += Math.max(0, align) * p.aggression * 3.2;
+      score += cutoffScore * p.cutoff * 3.5;
+      score += pressureScore * p.pressure * 2.2;
+      score += stabilityBonus;
+      score -= dangerPenalty * (5 + p.safety * 12);
+      score -= trapPenalty * (3 + p.safety * 8);
+      if (cand === seekSteer) score += p.aggression * 0.45;
+
+      if (score > best.score) {
+        best = { steer: cand, score, danger: dangerPenalty > 0, reachable };
+      }
+    }
+    steer = best.steer;
+    body.userData.aiLastSmartSteer = steer;
+    if (devHud.aiDebugScoringEnabled) {
+      body.userData.aiSmartScore = best.score;
+      body.userData.aiSmartReachable = best.reachable;
+      body.userData.aiSmartDanger = best.danger;
+    }
+    if (
+      devHud.aiBrakeForSafetyEnabled !== false &&
+      best.danger &&
+      best.reachable < p.floodBudget * 0.12
+    ) {
+      brake = true;
+    }
+  } else if (dangerFwd || wallNear) {
     if (safeL && !safeR) steer = 1;
     else if (safeR && !safeL) steer = -1;
     else if (safeL && safeR) steer = clearL >= clearR ? 1 : -1;
@@ -582,7 +887,6 @@ export function computeEnemyCycleKeys(opts) {
     else steer = seekSteer;
   }
 
-  const distPlayer = Math.hypot(playerPos.x - px, playerPos.z - pz);
   const enemySpd = typeof body.userData.speed === "number" ? body.userData.speed : 0;
   const escapeBlocked = dangerFwd && !safeL && !safeR;
 
@@ -609,9 +913,9 @@ export function computeEnemyCycleKeys(opts) {
   }
 
   return {
-    w: true,
+    w: !brake,
     a: steer < 0,
-    s: false,
+    s: brake,
     d: steer > 0,
     space,
     steer,

@@ -13,8 +13,17 @@ import {
   countDistinctPortalPairs,
   findIncompletePortalPairId,
   PORTAL_PAIR_COLORS,
-  snapTile,
+  setEditorObjectPlacement,
+  snapAuthoringCell,
 } from "./editorLevel.js";
+import {
+  floorObjectInsideAuthoringBounds,
+  floorObjectOccupiedCells,
+  getFloorObjectFootprint,
+  getFloorObjectTopLeft,
+  getFloorObjectWorldCenter,
+  gridTopLeftToWorldCenter,
+} from "./footprints.js";
 
 /**
  * @typedef {{
@@ -38,6 +47,13 @@ function tileInsideArena(ix, iz, aw, ad) {
   const halfW = aw / 2;
   const halfD = ad / 2;
   return Math.abs(ix) < halfW - 1e-6 && Math.abs(iz) < halfD - 1e-6;
+}
+
+/** @param {unknown} h @param {number} fallback */
+function parseOptionalHexColor(h, fallback) {
+  if (typeof h !== "string" || !/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(h)) return fallback;
+  const n = parseInt(h.slice(1), 16);
+  return Number.isFinite(n) ? n : fallback;
 }
 
 /**
@@ -178,9 +194,8 @@ export function mountEditorWorkbench(opts) {
       if (Array.isArray(arr) && arr[exclude.index]) {
         const o = arr[exclude.index];
         if (o && typeof o === "object") {
-          const p = /** @type {Record<string, unknown>} */ (o);
-          if (typeof p.x === "number" && typeof p.z === "number") {
-            occ.delete(`${Math.round(p.x)},${Math.round(p.z)}`);
+          for (const cell of floorObjectOccupiedCells(level, exclude.list, /** @type {Record<string, unknown>} */ (o))) {
+            occ.delete(cell);
           }
         }
       }
@@ -188,17 +203,29 @@ export function mountEditorWorkbench(opts) {
     return occ;
   }
 
-  function canPlaceAt(ix, iz, excludeOccupant) {
-    if (!tileInsideArena(ix, iz, aw(), ad())) return false;
+  function canPlaceObjectAt(list, obj, ix, iz, excludeOccupant) {
+    const test = { ...obj };
+    setEditorObjectPlacement(level, list, test, ix, iz);
+    if (level.schemaVersion !== 2 && !tileInsideArena(ix, iz, aw(), ad())) return false;
+    if (!floorObjectInsideAuthoringBounds(level, list, test)) return false;
     const clear = collectGateClearTileKeys(
       Array.isArray(level.wallObjects) ? level.wallObjects : [],
       aw(),
       ad(),
     );
-    const k = `${ix},${iz}`;
-    if (clear.has(k)) return false;
+    for (const k of floorObjectOccupiedCells(level, list, test)) {
+      if (clear.has(k)) return false;
+      if (level.schemaVersion === 2) {
+        const [gx, gz] = k.split(",").map(Number);
+        const c = gridTopLeftToWorldCenter(level, gx, gz, 1, 1);
+        if (clear.has(`${Math.round(c.x)},${Math.round(c.z)}`)) return false;
+      }
+    }
     const occ = occupiedExcluding(excludeOccupant);
-    return !occ.has(k);
+    for (const k of floorObjectOccupiedCells(level, list, test)) {
+      if (occ.has(k)) return false;
+    }
+    return true;
   }
 
   function rebuild() {
@@ -232,29 +259,36 @@ export function mountEditorWorkbench(opts) {
         if (!b || typeof b !== "object") continue;
         const o = /** @type {Record<string, unknown>} */ (b);
         const t = o.type;
-        const x = o.x;
-        const z = o.z;
+        const c = getFloorObjectWorldCenter(level, "barriers", o);
+        const fp = getFloorObjectFootprint("barriers", o);
+        const x = c.x;
+        const z = c.z;
         if (typeof t !== "string" || typeof x !== "number" || typeof z !== "number") continue;
         let mesh;
-        let color = 0x4488cc;
+        let color = parseOptionalHexColor(o.color, 0x4488cc);
         let h = 0.55;
         if (t === "wall") {
           mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(0.96, 0.65, 0.96),
+            new THREE.BoxGeometry(Math.max(0.2, fp.width - 0.04), 0.65, Math.max(0.2, fp.depth - 0.04)),
             new THREE.MeshStandardMaterial({ color, emissive: 0x002244, emissiveIntensity: 0.35 }),
           );
           mesh.position.set(x, 0.35, z);
         } else if (t === "building") {
           h = typeof o.height === "number" ? Math.max(1, Math.min(5, o.height)) : 2;
-          color = 0x3366aa;
+          color = parseOptionalHexColor(o.color, 0x3366aa);
+          const geo =
+            fp.shape === "triangle"
+              ? new THREE.CylinderGeometry(Math.max(fp.width, fp.depth) * 0.58, Math.max(fp.width, fp.depth) * 0.58, h, 3)
+              : new THREE.BoxGeometry(Math.max(0.2, fp.width - 0.08), h, Math.max(0.2, fp.depth - 0.08));
           mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(0.92, h, 0.92),
+            geo,
             new THREE.MeshStandardMaterial({ color, emissive: 0x001844, emissiveIntensity: 0.4 }),
           );
           mesh.position.set(x, h / 2, z);
+          mesh.rotation.y = typeof o.rotation === "number" ? o.rotation : 0;
         } else {
           mesh = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.25, 0.25, 1.1, 10),
+            new THREE.CylinderGeometry(Math.min(fp.width, fp.depth) * 0.25, Math.min(fp.width, fp.depth) * 0.25, 1.1, 10),
             new THREE.MeshStandardMaterial({ color: 0x5566aa, emissive: 0x001a44, emissiveIntensity: 0.35 }),
           );
           mesh.position.set(x, 0.55, z);
@@ -278,14 +312,17 @@ export function mountEditorWorkbench(opts) {
         if (!g || typeof g !== "object") continue;
         const o = /** @type {Record<string, unknown>} */ (g);
         const typ = o.type;
-        const x = o.x;
-        const z = o.z;
+        const c = getFloorObjectWorldCenter(level, "gameObjects", o);
+        const fp = getFloorObjectFootprint("gameObjects", o);
+        const x = c.x;
+        const z = c.z;
         if (typeof typ !== "string" || typeof x !== "number" || typeof z !== "number") continue;
         let mesh;
         if (typ === "boost_pad") {
+          const color = parseOptionalHexColor(o.color, 0xffcc44);
           mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(0.85, 0.06, 0.85),
-            new THREE.MeshStandardMaterial({ color: 0xffcc44, emissive: 0xaa6600, emissiveIntensity: 0.5 }),
+            new THREE.BoxGeometry(Math.max(0.2, fp.width - 0.12), 0.06, Math.max(0.2, fp.depth - 0.12)),
+            new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5 }),
           );
           mesh.position.set(x, 0.08, z);
         } else {
@@ -320,8 +357,9 @@ export function mountEditorWorkbench(opts) {
         if (!p || typeof p !== "object") continue;
         const o = /** @type {Record<string, unknown>} */ (p);
         const cat = o.category;
-        const x = o.x;
-        const z = o.z;
+        const c = getFloorObjectWorldCenter(level, "powerups", o);
+        const x = c.x;
+        const z = c.z;
         if (typeof x !== "number" || typeof z !== "number") continue;
         let col = 0x00ff66;
         if (cat === "level_permanent") col = 0x0088ff;
@@ -352,8 +390,9 @@ export function mountEditorWorkbench(opts) {
         const e = enemies[i];
         if (!e || typeof e !== "object") continue;
         const o = /** @type {Record<string, unknown>} */ (e);
-        const x = o.x;
-        const z = o.z;
+        const c = getFloorObjectWorldCenter(level, "enemies", o);
+        const x = c.x;
+        const z = c.z;
         if (typeof x !== "number" || typeof z !== "number") continue;
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(0.55, 0.2, 0.85),
@@ -461,136 +500,149 @@ export function mountEditorWorkbench(opts) {
     const o = arr[selection.index];
     if (!o || typeof o !== "object") return;
     const rec = /** @type {Record<string, unknown>} */ (o);
-    if (selection.list === "enemies" || (selection.list === "gameObjects" && rec.type === "portal")) {
-      beforeMutation?.();
+    const rotatable =
+      selection.list === "enemies" ||
+      (selection.list === "gameObjects" && rec.type === "portal") ||
+      (selection.list === "barriers" && rec.type === "building" && rec.shape === "triangle");
+    if (rotatable) {
       const r = typeof rec.rotation === "number" ? rec.rotation : 0;
+      const next = { ...rec, rotation: r + Math.PI / 2 };
+      const pos = getFloorObjectTopLeft(level, selection.list, rec);
+      if (!canPlaceObjectAt(selection.list, next, pos.gridX, pos.gridZ, selection)) return;
+      beforeMutation?.();
       rec.rotation = r + Math.PI / 2;
+      setEditorObjectPlacement(level, selection.list, rec, pos.gridX, pos.gridZ);
       rebuild();
       schedulePersist();
       onSelectionChange?.(selection);
     }
   }
 
+  function paletteObjectPreview(sel) {
+    if (!sel) return null;
+    if (sel.category === "barrier") {
+      if (sel.kind === "wall") return { list: "barriers", obj: { type: "wall" } };
+      if (sel.kind === "building") {
+        const shape =
+          sel.meta && typeof sel.meta === "object" && sel.meta.shape === "triangle"
+              ? "triangle"
+              : "square";
+        return { list: "barriers", obj: { type: "building", height: 2, shape } };
+      }
+      if (sel.kind === "structure") {
+        const variant =
+          sel.meta && typeof sel.meta === "object" && typeof sel.meta.variant === "string"
+            ? sel.meta.variant
+            : "pylon";
+        return {
+          list: "barriers",
+          obj: { type: "structure", variant: variant === "column" || variant === "obelisk" ? variant : "pylon" },
+        };
+      }
+    }
+    if (sel.category === "game_object") {
+      if (sel.kind === "boost_pad") return { list: "gameObjects", obj: { type: "boost_pad" } };
+      if (sel.kind === "portal") return { list: "gameObjects", obj: { type: "portal", rotation: 0 } };
+    }
+    if (sel.category === "powerup") {
+      if (sel.kind === "nitro_recharge") return { list: "powerups", obj: { type: "nitro_recharge", category: "instant" } };
+      if (sel.kind === "trail_extend") return { list: "powerups", obj: { type: "trail_extend", category: "level_permanent" } };
+      if (sel.kind === "nitro_capacity") return { list: "powerups", obj: { type: "nitro_capacity", category: "level_permanent" } };
+      if (sel.kind === "shield") return { list: "powerups", obj: { type: "shield", category: "equippable" } };
+    }
+    if (sel.category === "enemy") {
+      return { list: "enemies", obj: { rotation: 0, color: "#FF6600", category: "easy" } };
+    }
+    return null;
+  }
+
+  function commitPaletteObject(list, obj, ix, iz) {
+    if (!canPlaceObjectAt(list, obj, ix, iz, dragFloor)) return false;
+    const arr = level[list];
+    if (!Array.isArray(arr)) level[list] = [];
+    beforeMutation?.();
+    setEditorObjectPlacement(level, list, obj, ix, iz);
+    /** @type {unknown[]} */ (level[list]).push(obj);
+    rebuild();
+    schedulePersist();
+    return true;
+  }
+
   function placeFromPalette(ix, iz) {
     const sel = getPaletteSelection();
     if (!sel) return;
 
-    const exclude = dragFloor;
-
-    if (!canPlaceAt(ix, iz, exclude)) return;
-
     if (sel.category === "barrier") {
-      if (!Array.isArray(level.barriers)) level.barriers = [];
-      beforeMutation?.();
       const kind = sel.kind;
       if (kind === "wall") {
-        level.barriers.push({ type: "wall", x: ix, z: iz });
+        commitPaletteObject("barriers", { type: "wall" }, ix, iz);
       } else if (kind === "building") {
         const shape =
-          sel.meta && typeof sel.meta === "object" && sel.meta.shape === "hexagon"
-            ? "hexagon"
-            : sel.meta && typeof sel.meta === "object" && sel.meta.shape === "triangle"
+          sel.meta && typeof sel.meta === "object" && sel.meta.shape === "triangle"
               ? "triangle"
               : "square";
-        level.barriers.push({ type: "building", x: ix, z: iz, height: 2, shape });
+        commitPaletteObject("barriers", { type: "building", height: 2, shape }, ix, iz);
       } else if (kind === "structure") {
         const variant =
           sel.meta && typeof sel.meta === "object" && typeof sel.meta.variant === "string"
             ? sel.meta.variant
             : "pylon";
-        level.barriers.push({
+        commitPaletteObject("barriers", {
           type: "structure",
-          x: ix,
-          z: iz,
           variant: variant === "column" || variant === "obelisk" ? variant : "pylon",
-        });
+        }, ix, iz);
       }
-      rebuild();
-      schedulePersist();
       return;
     }
 
     if (sel.category === "game_object") {
-      if (!Array.isArray(level.gameObjects)) level.gameObjects = [];
       if (sel.kind === "boost_pad") {
-        beforeMutation?.();
-        level.gameObjects.push({ type: "boost_pad", x: ix, z: iz });
+        commitPaletteObject("gameObjects", { type: "boost_pad" }, ix, iz);
       } else if (sel.kind === "portal") {
         const incomplete = findIncompletePortalPairId(level);
         if (incomplete) {
-          beforeMutation?.();
-          level.gameObjects.push({
+          commitPaletteObject("gameObjects", {
             type: "portal",
-            x: ix,
-            z: iz,
             rotation: 0,
             pairId: incomplete,
             pairColor: findPairColorForId(level, incomplete) ?? PORTAL_PAIR_COLORS[0],
-          });
+          }, ix, iz);
         } else {
           const n = countDistinctPortalPairs(level);
           if (n >= PORTAL_PAIR_COLORS.length) return;
-          beforeMutation?.();
           const pairId = `p-${Date.now().toString(36)}`;
           const pairColor = PORTAL_PAIR_COLORS[n];
-          level.gameObjects.push({
+          commitPaletteObject("gameObjects", {
             type: "portal",
-            x: ix,
-            z: iz,
             rotation: 0,
             pairId,
             pairColor,
-          });
+          }, ix, iz);
         }
       }
-      rebuild();
-      schedulePersist();
       return;
     }
 
     if (sel.category === "powerup") {
-      if (!Array.isArray(level.powerups)) level.powerups = [];
-      beforeMutation?.();
-      const cat =
-        sel.meta && sel.meta.category === "level_permanent"
-          ? "level_permanent"
-          : sel.meta && sel.meta.category === "equippable"
-            ? "equippable"
-            : "instant";
       const kind = sel.kind;
       if (kind === "nitro_recharge") {
-        level.powerups.push({ type: "nitro_recharge", x: ix, z: iz, category: "instant" });
+        commitPaletteObject("powerups", { type: "nitro_recharge", category: "instant" }, ix, iz);
       } else if (kind === "trail_extend") {
-        level.powerups.push({ type: "trail_extend", x: ix, z: iz, category: "level_permanent" });
+        commitPaletteObject("powerups", { type: "trail_extend", category: "level_permanent" }, ix, iz);
       } else if (kind === "nitro_capacity") {
-        level.powerups.push({ type: "nitro_capacity", x: ix, z: iz, category: "level_permanent" });
+        commitPaletteObject("powerups", { type: "nitro_capacity", category: "level_permanent" }, ix, iz);
       } else if (kind === "shield") {
-        level.powerups.push({ type: "shield", x: ix, z: iz, category: "equippable" });
+        commitPaletteObject("powerups", { type: "shield", category: "equippable" }, ix, iz);
       }
-      rebuild();
-      schedulePersist();
       return;
     }
 
     if (sel.category === "enemy") {
-      if (!Array.isArray(level.enemies)) level.enemies = [];
-      beforeMutation?.();
-      level.enemies.push({
-        x: ix,
-        z: iz,
+      commitPaletteObject("enemies", {
         rotation: 0,
         color: "#FF6600",
-        attributes: {
-          speed: 3,
-          acceleration: 3,
-          trailLength: 4,
-          nitroBars: 3,
-          handling: 3,
-          intelligence: 3,
-        },
-      });
-      rebuild();
-      schedulePersist();
+        category: "easy",
+      }, ix, iz);
     }
   }
 
@@ -617,21 +669,20 @@ export function mountEditorWorkbench(opts) {
     const hit = pickFromRaycast(e.clientX, e.clientY);
 
     if (hit.type === "ground") {
-      const { ix, iz } = snapTile(hit.x, hit.z);
+      const { ix, iz } = snapAuthoringCell(level, hit.x, hit.z);
       const pal = getPaletteSelection();
       if (pal) {
         placeFromPalette(ix, iz);
         return;
       }
       if (selection && selection.type === "floor") {
-        if (canPlaceAt(ix, iz, selection)) {
-          const arr = level[selection.list];
-          if (Array.isArray(arr) && arr[selection.index]) {
-            const o = arr[selection.index];
-            if (o && typeof o === "object") {
+        const arr = level[selection.list];
+        if (Array.isArray(arr) && arr[selection.index]) {
+          const o = arr[selection.index];
+          if (o && typeof o === "object") {
+            if (canPlaceObjectAt(selection.list, /** @type {Record<string, unknown>} */ (o), ix, iz, selection)) {
               beforeMutation?.();
-              /** @type {Record<string, unknown>} */ (o).x = ix;
-              /** @type {Record<string, unknown>} */ (o).z = iz;
+              setEditorObjectPlacement(level, selection.list, /** @type {Record<string, unknown>} */ (o), ix, iz);
               rebuild();
               schedulePersist();
               onSelectionChange?.(selection);
@@ -688,11 +739,17 @@ export function mountEditorWorkbench(opts) {
     const hit = pickFromRaycast(e.clientX, e.clientY);
 
     if (hit.type === "ground") {
-      const { ix, iz } = snapTile(hit.x, hit.z);
-      const ok = pal ? canPlaceAt(ix, iz, null) : false;
+      const { ix, iz } = snapAuthoringCell(level, hit.x, hit.z);
+      const preview = paletteObjectPreview(pal);
+      const ok = preview ? canPlaceObjectAt(preview.list, preview.obj, ix, iz, null) : false;
       if (pal) {
+        const fp = preview ? getFloorObjectFootprint(preview.list, preview.obj) : { width: 1, depth: 1 };
+        const test = preview ? { ...preview.obj } : {};
+        if (preview) setEditorObjectPlacement(level, preview.list, test, ix, iz);
+        const c = preview ? getFloorObjectWorldCenter(level, preview.list, test) : { x: ix, z: iz };
         ghost.visible = true;
-        ghost.position.set(ix, 0.12, iz);
+        ghost.position.set(c.x, 0.12, c.z);
+        ghost.scale.set(fp.width, 1, fp.depth);
         /** @type {THREE.MeshBasicMaterial} */ (ghost.material).color.setHex(ok ? 0x00ff88 : 0xff2222);
         /** @type {THREE.MeshBasicMaterial} */ (ghost.material).opacity = ok ? 0.42 : 0.32;
       } else {
@@ -726,14 +783,13 @@ export function mountEditorWorkbench(opts) {
 
     if (dragFloor && e.buttons === 1) {
       if (hit.type !== "ground") return;
-      const { ix, iz } = snapTile(hit.x, hit.z);
-      if (!canPlaceAt(ix, iz, dragFloor)) return;
+      const { ix, iz } = snapAuthoringCell(level, hit.x, hit.z);
       const arr = level[dragFloor.list];
       if (!Array.isArray(arr)) return;
       const obj = arr[dragFloor.index];
       if (!obj || typeof obj !== "object") return;
-      /** @type {Record<string, unknown>} */ (obj).x = ix;
-      /** @type {Record<string, unknown>} */ (obj).z = iz;
+      if (!canPlaceObjectAt(dragFloor.list, /** @type {Record<string, unknown>} */ (obj), ix, iz, dragFloor)) return;
+      setEditorObjectPlacement(level, dragFloor.list, /** @type {Record<string, unknown>} */ (obj), ix, iz);
       rebuild();
     }
   }

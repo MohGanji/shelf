@@ -1,0 +1,80 @@
+{
+  "id": "level-3",
+  "name": "Crossfire",
+  "arenaWidth": 240,
+  "arenaDepth": 240,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 120.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 120.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": 0.0,
+      "z": -13.33,
+      "height": 3,
+      "shape": "square",
+      "width": 11.43,
+      "depth": 160.0
+    },
+    {
+      "type": "building",
+      "x": -51.43,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 45.71,
+      "depth": 26.67
+    },
+    {
+      "type": "building",
+      "x": 51.43,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 45.71,
+      "depth": 26.67
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "trail_extend",
+      "x": -57.14,
+      "z": -80.0,
+      "category": "level_permanent"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 0.0,
+      "z": 80.0,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    }
+  ],
+  "rewards": {
+    "coins": 80,
+    "timeBonusThreshold": 110,
+    "timeBonusCoins": 31
+  }
+}

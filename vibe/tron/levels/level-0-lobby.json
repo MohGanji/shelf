@@ -1,8 +1,11 @@
 {
   "id": "level-0",
-  "name": "The Lobby",
+  "name": "Stadium Concourse",
+  "schemaVersion": 2,
   "arenaWidth": 400,
-  "arenaDepth": 200,
+  "arenaDepth": 240,
+  "mapWidth": 402,
+  "mapDepth": 242,
   "wallObjects": [
     {
       "type": "gate",
@@ -17,22 +20,22 @@
     {
       "type": "gate",
       "edge": "north",
-      "position": 200,
-      "width": 5,
-      "role": "arena",
-      "signText": "ARENA 1",
-      "locked": false,
-      "destination": "level"
-    },
-    {
-      "type": "gate",
-      "edge": "north",
       "position": 80,
       "width": 5,
       "role": "garage",
       "signText": "GARAGE",
       "locked": false,
       "destination": "garage"
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 200,
+      "width": 5,
+      "role": "arena",
+      "signText": "ARENA 1",
+      "locked": false,
+      "destination": "level"
     },
     {
       "type": "gate",
@@ -48,1056 +51,331 @@
   "barriers": [
     {
       "type": "building",
-      "x": -122,
-      "z": -42,
+      "gridX": 1,
+      "gridZ": 1,
+      "width": 68,
+      "depth": 30,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": -166,
+      "z": -105
     },
     {
       "type": "building",
-      "x": -122,
-      "z": -41,
+      "gridX": 333,
+      "gridZ": 1,
+      "width": 68,
+      "depth": 30,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": 166,
+      "z": -105
     },
     {
       "type": "building",
-      "x": -122,
-      "z": -40,
+      "gridX": 1,
+      "gridZ": 211,
+      "width": 82,
+      "depth": 29,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": -159,
+      "z": 104.5
     },
     {
       "type": "building",
-      "x": -122,
-      "z": -39,
+      "gridX": 319,
+      "gridZ": 211,
+      "width": 82,
+      "depth": 29,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": 159,
+      "z": 104.5
     },
     {
       "type": "building",
-      "x": -122,
-      "z": -38,
+      "gridX": 1,
+      "gridZ": 31,
+      "width": 24,
+      "depth": 62,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": -188,
+      "z": -59
     },
     {
       "type": "building",
-      "x": -121,
-      "z": -42,
+      "gridX": 377,
+      "gridZ": 31,
+      "width": 24,
+      "depth": 62,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": 188,
+      "z": -59
     },
     {
       "type": "building",
-      "x": -121,
-      "z": -41,
+      "gridX": 1,
+      "gridZ": 150,
+      "width": 24,
+      "depth": 61,
       "height": 5,
-      "shape": "square"
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": -188,
+      "z": 59.5
     },
     {
       "type": "building",
-      "x": -121,
-      "z": -40,
+      "gridX": 377,
+      "gridZ": 150,
+      "width": 24,
+      "depth": 61,
       "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -121,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -121,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -120,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -120,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -120,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -120,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -120,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -119,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -119,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -119,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -119,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -119,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -118,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -118,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -118,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -118,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -118,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 118,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 118,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 118,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 118,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 118,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 119,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 119,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 119,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 119,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 119,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 120,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 120,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 120,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 120,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 120,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 121,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 121,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 121,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 121,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 121,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 122,
-      "z": -42,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 122,
-      "z": -41,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 122,
-      "z": -40,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 122,
-      "z": -39,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 122,
-      "z": -38,
-      "height": 5,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -152,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -152,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -152,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -152,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -152,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -151,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -151,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -151,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -151,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -151,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -150,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -150,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -150,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -150,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -150,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -149,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -149,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -149,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -149,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -149,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -148,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -148,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -148,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -148,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -148,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 148,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 148,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 148,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 148,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 148,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 149,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 149,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 149,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 149,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 149,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 150,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 150,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 150,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 150,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 150,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 151,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 151,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 151,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 151,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 151,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 152,
-      "z": 38,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 152,
-      "z": 39,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 152,
-      "z": 40,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 152,
-      "z": 41,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 152,
-      "z": 42,
-      "height": 4,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -82,
-      "z": 58,
+      "shape": "square",
+      "zone": "stadium-mask",
+      "x": 188,
+      "z": 59.5
+    },
+    {
+      "type": "building",
+      "gridX": 31,
+      "gridZ": 190,
+      "width": 54,
+      "depth": 9,
+      "height": 2,
+      "shape": "square",
+      "color": "#ff00ff",
+      "zone": "garage-band",
+      "x": -143,
+      "z": 73.5
+    },
+    {
+      "type": "building",
+      "gridX": 113,
+      "gridZ": 190,
+      "width": 44,
+      "depth": 9,
+      "height": 2,
+      "shape": "square",
+      "color": "#ff00ff",
+      "zone": "garage-band",
+      "x": -66,
+      "z": 73.5
+    },
+    {
+      "type": "building",
+      "gridX": 166,
+      "gridZ": 190,
+      "width": 28,
+      "depth": 9,
+      "height": 2,
+      "shape": "square",
+      "color": "#00e8ff",
+      "zone": "arena-band",
+      "x": -21,
+      "z": 73.5
+    },
+    {
+      "type": "building",
+      "gridX": 209,
+      "gridZ": 190,
+      "width": 28,
+      "depth": 9,
+      "height": 2,
+      "shape": "square",
+      "color": "#00e8ff",
+      "zone": "arena-band",
+      "x": 22,
+      "z": 73.5
+    },
+    {
+      "type": "building",
+      "gridX": 245,
+      "gridZ": 190,
+      "width": 44,
+      "depth": 9,
+      "height": 2,
+      "shape": "square",
+      "color": "#ffe84a",
+      "zone": "architect-band",
+      "x": 66,
+      "z": 73.5
+    },
+    {
+      "type": "building",
+      "gridX": 317,
+      "gridZ": 190,
+      "width": 54,
+      "depth": 9,
+      "height": 2,
+      "shape": "square",
+      "color": "#ffe84a",
+      "zone": "architect-band",
+      "x": 143,
+      "z": 73.5
+    },
+    {
+      "type": "building",
+      "gridX": 70,
+      "gridZ": 68,
+      "width": 34,
+      "depth": 18,
       "height": 3,
-      "shape": "square"
+      "shape": "triangle",
+      "rotation": 0,
+      "color": "#ff00ff",
+      "zone": "left-concourse",
+      "x": -114,
+      "z": -44
     },
     {
       "type": "building",
-      "x": -82,
-      "z": 59,
+      "gridX": 298,
+      "gridZ": 68,
+      "width": 34,
+      "depth": 18,
       "height": 3,
-      "shape": "square"
+      "shape": "triangle",
+      "rotation": 3.14,
+      "color": "#ffe84a",
+      "zone": "right-concourse",
+      "x": 114,
+      "z": -44
     },
     {
       "type": "building",
-      "x": -82,
-      "z": 60,
+      "gridX": 96,
+      "gridZ": 47,
+      "width": 28,
+      "depth": 14,
       "height": 3,
-      "shape": "square"
+      "shape": "triangle",
+      "rotation": 1.57,
+      "zone": "left-inner-mask",
+      "x": -91,
+      "z": -67
     },
     {
       "type": "building",
-      "x": -82,
-      "z": 61,
+      "gridX": 278,
+      "gridZ": 47,
+      "width": 28,
+      "depth": 14,
       "height": 3,
-      "shape": "square"
+      "shape": "triangle",
+      "rotation": 4.71,
+      "zone": "right-inner-mask",
+      "x": 91,
+      "z": -67
     },
     {
       "type": "building",
-      "x": -82,
-      "z": 62,
+      "gridX": 132,
+      "gridZ": 22,
+      "width": 38,
+      "depth": 14,
       "height": 3,
-      "shape": "square"
+      "shape": "square",
+      "color": "#00e8ff",
+      "zone": "center-left-rim",
+      "x": -50,
+      "z": -92
     },
     {
       "type": "building",
-      "x": -81,
-      "z": 58,
+      "gridX": 232,
+      "gridZ": 22,
+      "width": 38,
+      "depth": 14,
       "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -81,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -81,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -81,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -81,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -80,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -80,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -80,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -80,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -80,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -79,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -79,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -79,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -79,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -79,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -78,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -78,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -78,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -78,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": -78,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 78,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 78,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 78,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 78,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 78,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 79,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 79,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 79,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 79,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 79,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 80,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 80,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 80,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 80,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 80,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 81,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 81,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 81,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 81,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 81,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 82,
-      "z": 58,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 82,
-      "z": 59,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 82,
-      "z": 60,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 82,
-      "z": 61,
-      "height": 3,
-      "shape": "square"
-    },
-    {
-      "type": "building",
-      "x": 82,
-      "z": 62,
-      "height": 3,
-      "shape": "square"
+      "shape": "square",
+      "color": "#00e8ff",
+      "zone": "center-right-rim",
+      "x": 50,
+      "z": -92
     }
   ],
-  "gameObjects": [],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "gridX": 128,
+      "gridZ": 150,
+      "width": 28,
+      "depth": 8,
+      "color": "#ff00ff",
+      "x": -59,
+      "z": 33
+    },
+    {
+      "type": "boost_pad",
+      "gridX": 100,
+      "gridZ": 160,
+      "width": 28,
+      "depth": 8,
+      "color": "#ff00ff",
+      "x": -87,
+      "z": 43
+    },
+    {
+      "type": "boost_pad",
+      "gridX": 72,
+      "gridZ": 170,
+      "width": 28,
+      "depth": 8,
+      "color": "#ff00ff",
+      "x": -115,
+      "z": 53
+    },
+    {
+      "type": "boost_pad",
+      "gridX": 187,
+      "gridZ": 150,
+      "width": 28,
+      "depth": 28,
+      "color": "#00e8ff",
+      "x": 0,
+      "z": 43
+    },
+    {
+      "type": "boost_pad",
+      "gridX": 246,
+      "gridZ": 150,
+      "width": 28,
+      "depth": 8,
+      "color": "#ffe84a",
+      "x": 59,
+      "z": 33
+    },
+    {
+      "type": "boost_pad",
+      "gridX": 274,
+      "gridZ": 160,
+      "width": 28,
+      "depth": 8,
+      "color": "#ffe84a",
+      "x": 87,
+      "z": 43
+    },
+    {
+      "type": "boost_pad",
+      "gridX": 302,
+      "gridZ": 170,
+      "width": 28,
+      "depth": 8,
+      "color": "#ffe84a",
+      "x": 115,
+      "z": 53
+    }
+  ],
   "powerups": [],
   "enemies": [],
   "rewards": null

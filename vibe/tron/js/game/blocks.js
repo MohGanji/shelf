@@ -1,6 +1,6 @@
 import * as THREE from "../vendor/three-module.js";
 import { Vec3 } from "../vendor/cannon-es-module.js";
-import { createWallPhysicsBody } from "../engine/physics.js";
+import { createTriangleBarrierBody, createWallPhysicsBody } from "../engine/physics.js";
 
 /**
  * Interior barriers from validated level JSON — visuals + static cannon-es boxes (plan § Arena Object Categories, P5.4).
@@ -18,6 +18,21 @@ function neonBarrierMaterial(baseHex, emissiveHex, neonStrength) {
 }
 
 /**
+ * @param {unknown} color
+ * @param {THREE.Material} fallback
+ * @param {number} neonStrength
+ */
+function materialWithOptionalColor(color, fallback, neonStrength) {
+  if (typeof color !== "string" || !/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(color)) return fallback;
+  const mat = /** @type {THREE.MeshStandardMaterial} */ (fallback).clone();
+  const c = new THREE.Color(color);
+  mat.color = c;
+  mat.emissive = c.clone().multiplyScalar(0.55);
+  mat.emissiveIntensity = Math.max(mat.emissiveIntensity, neonStrength * 0.85);
+  return mat;
+}
+
+/**
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
  */
 function barrierNeon(playCfg) {
@@ -29,12 +44,14 @@ function barrierNeon(playCfg) {
  * @param {import('cannon-es').Material} wallMatRef
  * @param {THREE.Vector3Like} halfExtents
  * @param {THREE.Vector3Like} center
+ * @param {number} [rotationY]
  */
-function addBarrierBox(world, wallMatRef, halfExtents, center) {
+function addBarrierBox(world, wallMatRef, halfExtents, center, rotationY = 0) {
   const body = createWallPhysicsBody({
     halfExtents: new Vec3(halfExtents.x, halfExtents.y, halfExtents.z),
     center: new Vec3(center.x, center.y, center.z),
     wallMatRef,
+    rotationY,
   });
   body.userData.kind = "barrier";
   world.addBody(body);
@@ -43,7 +60,7 @@ function addBarrierBox(world, wallMatRef, halfExtents, center) {
 
 /**
  * @param {unknown} b
- * @returns {{ type: string; x: number; z: number; height?: number; shape?: string; variant?: string } | null}
+ * @returns {{ type: string; x: number; z: number; height?: number; shape?: string; variant?: string; width?: number; depth?: number; rotation?: number; color?: string } | null}
  */
 function coerceBarrier(b) {
   if (!b || typeof b !== "object") return null;
@@ -58,6 +75,10 @@ function coerceBarrier(b) {
   if (typeof o.height === "number" && Number.isFinite(o.height)) out.height = o.height;
   if (typeof o.shape === "string") out.shape = o.shape;
   if (typeof o.variant === "string") out.variant = o.variant;
+  if (typeof o.width === "number" && Number.isFinite(o.width) && o.width > 0) out.width = o.width;
+  if (typeof o.depth === "number" && Number.isFinite(o.depth) && o.depth > 0) out.depth = o.depth;
+  if (typeof o.rotation === "number" && Number.isFinite(o.rotation)) out.rotation = o.rotation;
+  if (typeof o.color === "string") out.color = o.color;
   return out;
 }
 
@@ -110,6 +131,100 @@ function scaleBoxUVs(geo, windowsPerUnit = 1) {
       uv.setXY(i, x * windowsPerUnit, y * windowsPerUnit);
     }
   }
+}
+
+/**
+ * Right-triangle prism in local XZ space, with the right angle in the southwest
+ * corner before `rotation.y` is applied.
+ *
+ * @param {number} w
+ * @param {number} d
+ * @param {number} h
+ */
+function createRightTrianglePrismGeometry(w, d, h) {
+  const x0 = -w / 2;
+  const x1 = w / 2;
+  const z0 = -d / 2;
+  const z1 = d / 2;
+  const y0 = -h / 2;
+  const y1 = h / 2;
+  const A = [x0, y0, z0];
+  const B = [x1, y0, z0];
+  const C = [x0, y0, z1];
+  const D = [x0, y1, z0];
+  const E = [x1, y1, z0];
+  const F = [x0, y1, z1];
+  /** @type {number[]} */
+  const verts = [];
+  /** @type {number[]} */
+  const uvs = [];
+
+  /**
+   * @param {number[]} a
+   * @param {number[]} b
+   * @param {number[]} c
+   * @param {number[]} uvA
+   * @param {number[]} uvB
+   * @param {number[]} uvC
+   */
+  function tri(a, b, c, uvA, uvB, uvC) {
+    verts.push(...a, ...b, ...c);
+    uvs.push(...uvA, ...uvB, ...uvC);
+  }
+
+  /**
+   * @param {number[]} a
+   * @param {number[]} b
+   * @param {number[]} c
+   * @param {number[]} d0
+   * @param {number} uMax
+   * @param {number} vMax
+   */
+  function quad(a, b, c, d0, uMax, vMax) {
+    tri(a, b, c, [0, 0], [0, vMax], [uMax, vMax]);
+    tri(a, c, d0, [0, 0], [uMax, vMax], [uMax, 0]);
+  }
+
+  // Bottom and top triangles.
+  tri(A, C, B, [0, 0], [0, d], [w, 0]);
+  tri(D, F, E, [0, 0], [0, d], [w, 0]);
+  // Vertical rectangular sides: south edge, west edge, and hypotenuse.
+  quad(A, D, E, B, w, h);
+  quad(A, C, F, D, d, h);
+  quad(B, E, F, C, Math.hypot(w, d), h);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts), 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(new Float32Array(uvs), 2));
+  geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+  return geo;
+}
+
+/**
+ * Add a custom right-triangle slide profile so the diagonal edge behaves like a smooth wall.
+ * @param {import('cannon-es').World} world
+ * @param {import('cannon-es').Material} wallMatRef
+ * @param {number} x
+ * @param {number} z
+ * @param {number} y
+ * @param {number} w
+ * @param {number} d
+ * @param {number} h
+ * @param {number} rot
+ * @param {import('cannon-es').Body[]} bodies
+ */
+function addTriangleBarrierBody(world, wallMatRef, x, z, y, w, d, h, rot, bodies) {
+  const body = createTriangleBarrierBody({
+    center: new Vec3(x, y, z),
+    width: w,
+    depth: d,
+    height: h,
+    wallMatRef,
+    rotationY: rot,
+  });
+  world.addBody(body);
+  bodies.push(body);
 }
 
 /** 1-unit tile centers from level JSON (integers expected; rounded for stable keys). */
@@ -259,6 +374,10 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   /** @type {Map<number, Set<string>>} */
   const squareBuildingsByHeight = new Map();
   /** @type {NonNullable<ReturnType<typeof coerceBarrier>>[]} */
+  const explicitWallBoxes = [];
+  /** @type {NonNullable<ReturnType<typeof coerceBarrier>>[]} */
+  const explicitSquareBuildings = [];
+  /** @type {NonNullable<ReturnType<typeof coerceBarrier>>[]} */
   const nonSquareBuildings = [];
   /** @type {NonNullable<ReturnType<typeof coerceBarrier>>[]} */
   const structureList = [];
@@ -268,14 +387,22 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     if (!b) continue;
 
     if (b.type === "wall") {
+      if (b.width || b.depth) {
+        explicitWallBoxes.push(b);
+        continue;
+      }
       wallTileKeys.push(tileKey(b.x, b.z));
       continue;
     }
 
     if (b.type === "building") {
       const h = typeof b.height === "number" ? Math.max(1, Math.min(5, Math.floor(b.height))) : 2;
-      const shape = b.shape === "triangle" || b.shape === "hexagon" ? b.shape : "square";
+      const shape = b.shape === "triangle" ? b.shape : "square";
       if (shape === "square") {
+        if (b.width || b.depth) {
+          explicitSquareBuildings.push(b);
+          continue;
+        }
         if (!squareBuildingsByHeight.has(h)) squareBuildingsByHeight.set(h, new Set());
         squareBuildingsByHeight.get(h).add(tileKey(b.x, b.z));
       } else {
@@ -309,8 +436,56 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     );
   }
 
+  for (const b of explicitWallBoxes) {
+    const w = typeof b.width === "number" ? b.width : 1;
+    const d = typeof b.depth === "number" ? b.depth : 1;
+    const mat = materialWithOptionalColor(b.color, matWall, neon);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, wallH, d), mat);
+    mesh.position.set(b.x, wallH / 2, b.z);
+    mesh.rotation.y = b.rotation ?? 0;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    group.add(mesh);
+    bodies.push(
+      addBarrierBox(
+        world,
+        wallMatRef,
+        { x: w / 2, y: wallH / 2, z: d / 2 },
+        { x: b.x, y: wallH / 2, z: b.z },
+        b.rotation ?? 0,
+      ),
+    );
+  }
+
   const H_MULT = 6;
   const buildingGridStep = playCfg.devHud.buildingGridStep ?? 4;
+
+  for (const b of explicitSquareBuildings) {
+    const h = typeof b.height === "number" ? Math.max(1, Math.min(5, Math.floor(b.height))) : 2;
+    const tallH = h * H_MULT;
+    const w = typeof b.width === "number" ? b.width : 1;
+    const d = typeof b.depth === "number" ? b.depth : 1;
+    const geo = new THREE.BoxGeometry(w, tallH, d);
+    if (style === 0) {
+      scaleBoxUVs(geo, 1.0 / buildingGridStep);
+    }
+    const mat = materialWithOptionalColor(b.color, matBuilding, neon);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(b.x, tallH / 2, b.z);
+    mesh.rotation.y = b.rotation ?? 0;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    group.add(mesh);
+    bodies.push(
+      addBarrierBox(
+        world,
+        wallMatRef,
+        { x: w / 2, y: tallH / 2, z: d / 2 },
+        { x: b.x, y: tallH / 2, z: b.z },
+        b.rotation ?? 0,
+      ),
+    );
+  }
 
   for (const [h, keySet] of squareBuildingsByHeight) {
     const tallH = h * H_MULT;
@@ -365,19 +540,19 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   for (const b of nonSquareBuildings) {
     const h = typeof b.height === "number" ? Math.max(1, Math.min(5, Math.floor(b.height))) : 2;
     const tallH = h * H_MULT;
-    const shape = b.shape === "triangle" || b.shape === "hexagon" ? b.shape : "square";
-    const segs = shape === "triangle" ? 3 : 6;
-    const radius = shape === "triangle" ? 0.55 : 0.52;
-    const geo = new THREE.CylinderGeometry(radius, radius, tallH, segs);
+    const shape = b.shape === "triangle" ? b.shape : "square";
+    const w = typeof b.width === "number" ? b.width : 1;
+    const d = typeof b.depth === "number" ? b.depth : 1;
+    const geo = createRightTrianglePrismGeometry(w, d, tallH);
     if (style === 0) {
       scaleBoxUVs(geo, 1.0 / buildingGridStep);
     }
-    const mesh = new THREE.Mesh(geo, matBuilding);
+    const mat = materialWithOptionalColor(b.color, matBuilding, neon);
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(b.x, tallH / 2, b.z);
+    mesh.rotation.y = b.rotation ?? 0;
     group.add(mesh);
-    bodies.push(
-      addBarrierBox(world, wallMatRef, { x: radius, y: tallH / 2, z: radius }, { x: b.x, y: tallH / 2, z: b.z }),
-    );
+    addTriangleBarrierBody(world, wallMatRef, b.x, b.z, tallH / 2, w, d, tallH, b.rotation ?? 0, bodies);
   }
 
   for (const b of structureList) {

@@ -197,6 +197,21 @@ export function createDevHudController(opts) {
     { key: "wallHeight", label: "Arena wall height", min: 1, max: 8, step: 0.25 },
   ]);
 
+  section("Attribute scaling", [
+    { key: "maxSpeed", label: "Max speed", min: 20, max: 240, step: 1 },
+    { key: "maxAcceleration", label: "Max acceleration", min: 5, max: 120, step: 1 },
+    { key: "maxHandlingRadPerSec", label: "Max handling (rad/s)", min: 1, max: 12, step: 0.05 },
+    { key: "maxNitroBars", label: "Max nitro bars", min: 1, max: 16, step: 1 },
+    { key: "playerBaseTrailLength", label: "Player base trail", min: 20, max: 800, step: 1 },
+    { key: "enemyBaseTrailLength", label: "Enemy base trail", min: 20, max: 800, step: 1 },
+    { key: "playerTrailUpgradeMaxPercent", label: "Trail upgrade max %", min: 0, max: 200, step: 1 },
+    { key: "playerBasePercent", label: "Player base %", min: 1, max: 100, step: 1 },
+    { key: "enemyEasyPercent", label: "Easy enemy %", min: 1, max: 100, step: 1 },
+    { key: "enemyMediumPercent", label: "Medium enemy %", min: 1, max: 100, step: 1 },
+    { key: "enemyHardPercent", label: "Hard enemy %", min: 1, max: 100, step: 1 },
+    { key: "enemyBossPercent", label: "Boss enemy %", min: 1, max: 100, step: 1 },
+  ]);
+
   section("Nitro camera", [
     { key: "nitroFovWiden", label: "FOV widen", kind: "bool" },
     { key: "nitroCameraPullBack", label: "Camera pull-back", kind: "bool" },
@@ -220,7 +235,6 @@ export function createDevHudController(opts) {
   section("Trail", [
     { key: "trailOpacity", label: "Opacity", min: 0.1, max: 1, step: 0.02 },
     { key: "trailFadeSpeed", label: "Fade speed", min: 0.1, max: 5, step: 0.05 },
-    { key: "defaultTrailLength", label: "Default max segments", min: 8, max: 400, step: 1 },
     { key: "trailExtendAmount", label: "Trail extend pickup +", min: 1, max: 50, step: 1 },
     { key: "trailImmunitySegments", label: "Self-immunity segments", min: 0, max: 24, step: 1 },
     { key: "trailGlowThickMul", label: "Glow width ×", min: 1, max: 4, step: 0.02 },
@@ -272,9 +286,27 @@ export function createDevHudController(opts) {
   ]);
 
   section("AI", [
-    { key: "aiAggression", label: "Aggression", min: 0.2, max: 3, step: 0.05 },
-    { key: "aiReactionTime", label: "Reaction time (s)", min: 0.04, max: 1.5, step: 0.02 },
-    { key: "aiAvoidanceRange", label: "Avoidance range", min: 2, max: 22, step: 0.25 },
+    { key: "aiSmartPlannerEnabled", label: "Smart planner", kind: "bool" },
+    { key: "aiAvoidOwnTrailEnabled", label: "Avoid own trail", kind: "bool" },
+    { key: "aiAvoidEnemyTrailsEnabled", label: "Avoid other trails", kind: "bool" },
+    { key: "aiAvoidWallsAndBarriersEnabled", label: "Avoid walls/barriers", kind: "bool" },
+    { key: "aiReachabilityEnabled", label: "Flood-fill safety", kind: "bool" },
+    { key: "aiTrapAvoidanceEnabled", label: "Trap avoidance", kind: "bool" },
+    { key: "aiInterceptEnabled", label: "Intercept player", kind: "bool" },
+    { key: "aiCutoffEnabled", label: "Cutoff behavior", kind: "bool" },
+    { key: "aiFlankingEnabled", label: "Flanking", kind: "bool" },
+    { key: "aiPressureTrailsEnabled", label: "Trail pressure", kind: "bool" },
+    { key: "aiPeerSeparationEnabled", label: "Peer separation", kind: "bool" },
+    { key: "aiNitroTacticsEnabled", label: "Smart nitro", kind: "bool" },
+    { key: "aiBrakeForSafetyEnabled", label: "Brake for safety", kind: "bool" },
+    { key: "aiDebugScoringEnabled", label: "Debug scoring", kind: "bool" },
+    { key: "aiDeterministicPlannerEnabled", label: "Deterministic planner", kind: "bool" },
+    { key: "aiSafetyPercent", label: "Safety %", min: 0, max: 100, step: 1 },
+    { key: "aiAggressionPercent", label: "Aggression %", min: 0, max: 100, step: 1 },
+    { key: "aiCutoffPercent", label: "Cutoff %", min: 0, max: 100, step: 1 },
+    { key: "aiPressurePercent", label: "Pressure %", min: 0, max: 100, step: 1 },
+    { key: "aiLookaheadPercent", label: "Lookahead %", min: 0, max: 100, step: 1 },
+    { key: "aiStabilityPercent", label: "Stability %", min: 0, max: 100, step: 1 },
   ]);
 
   section("Near-miss", [

@@ -1,0 +1,96 @@
+{
+  "id": "level-4",
+  "name": "Sidewinder",
+  "arenaWidth": 280,
+  "arenaDepth": 220,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 140.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 140.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -36.52,
+      "z": 73.33,
+      "height": 3,
+      "shape": "square",
+      "width": 85.22,
+      "depth": 24.44
+    },
+    {
+      "type": "building",
+      "x": 36.52,
+      "z": 24.44,
+      "height": 3,
+      "shape": "square",
+      "width": 85.22,
+      "depth": 24.44
+    },
+    {
+      "type": "building",
+      "x": -36.52,
+      "z": -24.44,
+      "height": 3,
+      "shape": "square",
+      "width": 85.22,
+      "depth": 24.44
+    },
+    {
+      "type": "building",
+      "x": 36.52,
+      "z": -73.33,
+      "height": 3,
+      "shape": "square",
+      "width": 85.22,
+      "depth": 24.44
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": 97.39,
+      "z": -48.89,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 97.39,
+      "z": 73.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": -133.91,
+      "z": 48.89,
+      "rotation": 0.0,
+      "color": "#FF8A00",
+      "category": "easy"
+    }
+  ],
+  "rewards": {
+    "coins": 95,
+    "timeBonusThreshold": 120,
+    "timeBonusCoins": 34
+  }
+}

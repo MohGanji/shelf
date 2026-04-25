@@ -1,0 +1,182 @@
+{
+  "id": "level-6",
+  "name": "Split Lane",
+  "arenaWidth": 320,
+  "arenaDepth": 260,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 160.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 160.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": 83.2,
+      "z": 86.67,
+      "height": 3,
+      "shape": "square",
+      "width": 25.6,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": 51.2,
+      "z": 57.78,
+      "height": 3,
+      "shape": "square",
+      "width": 38.4,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": 12.8,
+      "z": 28.89,
+      "height": 3,
+      "shape": "square",
+      "width": 38.4,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": -25.6,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 38.4,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": -64.0,
+      "z": -28.89,
+      "height": 3,
+      "shape": "square",
+      "width": 38.4,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": -102.4,
+      "z": -57.78,
+      "height": 3,
+      "shape": "square",
+      "width": 38.4,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": -134.4,
+      "z": -86.67,
+      "height": 3,
+      "shape": "square",
+      "width": 25.6,
+      "depth": 28.89
+    },
+    {
+      "type": "building",
+      "x": 67.2,
+      "z": 72.22,
+      "height": 3,
+      "shape": "triangle",
+      "width": 30.33,
+      "depth": 30.33,
+      "rotation": 2.41
+    },
+    {
+      "type": "building",
+      "x": 32.0,
+      "z": 43.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 30.33,
+      "depth": 30.33,
+      "rotation": 2.5
+    },
+    {
+      "type": "building",
+      "x": -6.4,
+      "z": 14.45,
+      "height": 3,
+      "shape": "triangle",
+      "width": 30.33,
+      "depth": 30.33,
+      "rotation": 2.5
+    },
+    {
+      "type": "building",
+      "x": -44.8,
+      "z": -14.45,
+      "height": 3,
+      "shape": "triangle",
+      "width": 30.33,
+      "depth": 30.33,
+      "rotation": 2.5
+    },
+    {
+      "type": "building",
+      "x": -83.2,
+      "z": -43.34,
+      "height": 3,
+      "shape": "triangle",
+      "width": 30.33,
+      "depth": 30.33,
+      "rotation": 2.5
+    },
+    {
+      "type": "building",
+      "x": -118.4,
+      "z": -72.22,
+      "height": 3,
+      "shape": "triangle",
+      "width": 30.33,
+      "depth": 30.33,
+      "rotation": 2.41
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": -102.4,
+      "z": 86.67,
+      "category": "instant"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": 89.6,
+      "z": -57.78,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 140.8,
+      "z": 86.67,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    }
+  ],
+  "rewards": {
+    "coins": 125,
+    "timeBonusThreshold": 140,
+    "timeBonusCoins": 40
+  }
+}

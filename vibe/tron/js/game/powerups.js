@@ -30,7 +30,10 @@ export function getPowerupCategory(type) {
 }
 
 /** Horizontal distance (units) from cycle center to pickup to collect. */
-const PICKUP_RADIUS = 1.12;
+const PICKUP_RADIUS = 1.65;
+
+/** Powerups should read as roughly 2x2 floor pickups in campaign maps. */
+const POWERUP_FOOTPRINT = 2.0;
 
 /** P3.7 — pickup burst lifetime (seconds). */
 const PICKUP_BURST_DURATION = 0.38;
@@ -43,15 +46,15 @@ const PICKUP_BURST_DURATION = 0.38;
 function createPowerupGeometryForType(type) {
   switch (type) {
     case "nitro_recharge":
-      return { geo: new THREE.IcosahedronGeometry(0.34, 1), visual: "orb" };
+      return { geo: new THREE.IcosahedronGeometry(0.62, 1), visual: "orb" };
     case "trail_extend":
-      return { geo: new THREE.CylinderGeometry(0.17, 0.2, 0.86, 10), visual: "column" };
+      return { geo: new THREE.CylinderGeometry(0.31, 0.36, 1.2, 10), visual: "column" };
     case "nitro_capacity":
-      return { geo: new THREE.DodecahedronGeometry(0.39, 0), visual: "poly" };
+      return { geo: new THREE.DodecahedronGeometry(0.7, 0), visual: "poly" };
     case "shield":
-      return { geo: new THREE.TorusGeometry(0.3, 0.085, 12, 40), visual: "torus" };
+      return { geo: new THREE.TorusGeometry(0.58, 0.16, 12, 40), visual: "torus" };
     default:
-      return { geo: new THREE.IcosahedronGeometry(0.36, 0), visual: "orb" };
+      return { geo: new THREE.IcosahedronGeometry(0.65, 0), visual: "orb" };
   }
 }
 
@@ -246,27 +249,43 @@ export function createCampaignPowerupField(opts) {
     mesh.castShadow = false;
     mesh.receiveShadow = false;
     const node = new THREE.Group();
-    node.position.set(x, 0.65, z);
+    node.position.set(x, 0.78, z);
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(POWERUP_FOOTPRINT, 0.06, POWERUP_FOOTPRINT),
+      new THREE.MeshStandardMaterial({
+        color: 0x071118,
+        emissive: em,
+        emissiveIntensity: 0.22 * (devHud.neonIntensity ?? 1),
+        metalness: 0.25,
+        roughness: 0.45,
+        transparent: true,
+        opacity: 0.88,
+      }),
+    );
+    base.position.y = -0.7;
+    base.castShadow = false;
+    base.receiveShadow = true;
+    node.add(base);
     node.add(mesh);
 
     /** @type {THREE.Mesh[]} */
     const accents = [];
     if (type === "nitro_recharge") {
       const orbit = new THREE.Mesh(
-        new THREE.TorusGeometry(0.52, 0.022, 8, 40),
+        new THREE.TorusGeometry(0.95, 0.035, 8, 40),
         mat,
       );
       orbit.rotation.x = Math.PI / 2;
       node.add(orbit);
       accents.push(orbit);
     } else if (type === "trail_extend") {
-      const belt = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.018, 8, 28), mat);
+      const belt = new THREE.Mesh(new THREE.TorusGeometry(0.74, 0.03, 8, 28), mat);
       belt.rotation.x = Math.PI / 2;
       node.add(belt);
       accents.push(belt);
     } else if (type === "nitro_capacity") {
-      const spark = new THREE.Mesh(new THREE.TetrahedronGeometry(0.14, 0), mat);
-      spark.position.set(0.28, 0.26, 0.1);
+      const spark = new THREE.Mesh(new THREE.TetrahedronGeometry(0.24, 0), mat);
+      spark.position.set(0.5, 0.42, 0.18);
       node.add(spark);
       accents.push(spark);
     }
@@ -320,7 +339,7 @@ export function createCampaignPowerupField(opts) {
 
       inst.phase += dt * 1.85;
       const bob = Math.sin(inst.phase * 2.08) * 0.1 + Math.cos(inst.phase * 0.71) * 0.028;
-      inst.node.position.y = 0.65 + bob;
+      inst.node.position.y = 0.78 + bob;
 
       const v = inst.visual;
       if (v === "torus") {
@@ -419,6 +438,15 @@ export function createCampaignPowerupField(opts) {
     scene.remove(root);
     for (const i of instances) {
       i.mesh.geometry.dispose();
+      const children = i.node.children;
+      for (let c = 0; c < children.length; c++) {
+        const ch = children[c];
+        if (ch instanceof THREE.Mesh && ch !== i.mesh && !i.accents.includes(ch)) {
+          ch.geometry.dispose();
+          const m = ch.material;
+          if (m && !Array.isArray(m) && "dispose" in m) /** @type {THREE.Material} */ (m).dispose();
+        }
+      }
       for (const a of i.accents) {
         a.geometry.dispose();
       }

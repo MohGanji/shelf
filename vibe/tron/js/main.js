@@ -47,7 +47,7 @@ import {
 import { createLightCycle, preloadLightCycleAsset } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
-import { createNitroState, isNitroBurstActive } from "./game/nitroSystem.js";
+import { clampNitroCapacity, createNitroState, isNitroBurstActive } from "./game/nitroSystem.js";
 import { createGameplayParticles, hexColorToInt } from "./game/particles.js";
 import { createBoostPadField, createPortalField } from "./game/objects.js";
 import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
@@ -1105,14 +1105,53 @@ async function main() {
     updateEquipHud();
   }
 
+  const statDevHudKeys = new Set([
+    "defaultTrailLength",
+    "maxSpeed",
+    "maxAcceleration",
+    "maxHandlingRadPerSec",
+    "maxNitroBars",
+    "playerBaseTrailLength",
+    "enemyBaseTrailLength",
+    "playerTrailUpgradeMaxPercent",
+    "playerBasePercent",
+    "enemyEasyPercent",
+    "enemyMediumPercent",
+    "enemyHardPercent",
+    "enemyBossPercent",
+  ]);
+
+  function patchTouchesStats(patch) {
+    return Object.keys(patch).some((k) => statDevHudKeys.has(k));
+  }
+
+  function syncRuntimeStatConfigs() {
+    const nextPlayerCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
+    for (const k of ["maxMoveSpeed", "acceleration", "baseTurnRate", "nitroBarCount", "trailMaxSegments"]) {
+      playCfg[k] = nextPlayerCfg[k];
+      playerDriveCfg[k] = nextPlayerCfg[k];
+    }
+    trailWall.setMaxSegments(playCfg.trailMaxSegments + levelTrailExtendBonus);
+    clampNitroCapacity(nitroState, effectivePlayerNitroMax());
+    for (const e of enemyRoster.list) {
+      const nextEnemyCfg = getArenaPlaytestConfig(runtime, {}, arenaSizeFromCampaign, {
+        actorType: "enemy",
+        enemyCategory: e.category,
+      });
+      for (const k of ["maxMoveSpeed", "acceleration", "baseTurnRate", "nitroBarCount", "trailMaxSegments"]) {
+        e.playCfg[k] = nextEnemyCfg[k];
+      }
+      e.trail.setMaxSegments(e.playCfg.trailMaxSegments);
+      clampNitroCapacity(e.nitroState, e.playCfg.nitroBarCount);
+    }
+  }
+
   createDevHudController({
     devHud,
     applyDevHud: (patch) => {
       game.applyDevHud(patch);
-      if (Object.prototype.hasOwnProperty.call(patch, "defaultTrailLength")) {
-        const newCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
-        playCfg.trailMaxSegments = newCfg.trailMaxSegments;
-        trailWall.setMaxSegments(playCfg.trailMaxSegments + levelTrailExtendBonus);
+      if (patchTouchesStats(patch)) {
+        syncRuntimeStatConfigs();
       }
       if (Object.prototype.hasOwnProperty.call(patch, "lobbyMusicVariant")) {
         audio.setMusicLobbyUrl(getLobbyMusicUrl(devHud));
@@ -1256,6 +1295,9 @@ async function main() {
       devHud,
       onBoost: () => {
         audio.playBoostPadWhoosh();
+      },
+      onNitroBurstStart: () => {
+        audio.playNitroBurstWhoosh();
       },
     });
     tickPlayerShieldFsm(dt);

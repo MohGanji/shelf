@@ -170,16 +170,128 @@ export function createFloorBody(cfg, floorMat) {
 }
 
 /** Static perimeter wall (vertical slide response handled in attachWallSlide). */
-export function createWallPhysicsBody({ halfExtents, center, wallMatRef }) {
+export function createWallPhysicsBody({ halfExtents, center, wallMatRef, rotationY = 0 }) {
   const shape = new Box(halfExtents);
   const body = new Body({ mass: 0, material: wallMatRef });
   body.userData = {};
   body.addShape(shape);
   body.position.copy(center);
+  if (Number.isFinite(rotationY) && rotationY !== 0) {
+    body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), rotationY);
+  }
   body.userData.kind = "arenaWall";
   body.collisionFilterGroup = COLLISION_GROUP_ARENA_SOLID;
   body.collisionFilterMask = COLLISION_GROUP_CYCLE;
   return body;
+}
+
+export function createTriangleBarrierBody({ center, width, depth, height, wallMatRef, rotationY = 0 }) {
+  const body = new Body({ mass: 0, material: wallMatRef });
+  body.userData = {
+    kind: "triangleBarrier",
+    triangleBarrier: {
+      width,
+      depth,
+      height,
+    },
+  };
+  body.position.copy(center);
+  if (Number.isFinite(rotationY) && rotationY !== 0) {
+    body.quaternion.setFromAxisAngle(new Vec3(0, 1, 0), rotationY);
+  }
+  body.collisionFilterGroup = COLLISION_GROUP_ARENA_SOLID;
+  body.collisionFilterMask = COLLISION_GROUP_CYCLE;
+  return body;
+}
+
+/**
+ * @param {import('cannon-es').Quaternion} q
+ */
+function yawFromQuaternion(q) {
+  return Math.atan2(2 * (q.w * q.y + q.x * q.z), 1 - 2 * (q.y * q.y + q.z * q.z));
+}
+
+/**
+ * Project the oriented cycle box onto a barrier's local X/Z axes.
+ *
+ * @param {number} cycleHeading
+ * @param {number} barrierYaw
+ * @param {number} halfW
+ * @param {number} halfL
+ */
+function cycleHalfExtentsInBarrierLocal(cycleHeading, barrierYaw, halfW, halfL) {
+  const ch = Math.cos(cycleHeading);
+  const sh = Math.sin(cycleHeading);
+  const cb = Math.cos(barrierYaw);
+  const sb = Math.sin(barrierYaw);
+  let hx = 0;
+  let hz = 0;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      const lx = sx * halfW;
+      const lz = sz * halfL;
+      const wx = lx * ch + lz * sh;
+      const wz = -lx * sh + lz * ch;
+      const bx = wx * cb - wz * sb;
+      const bz = wx * sb + wz * cb;
+      hx = Math.max(hx, Math.abs(bx));
+      hz = Math.max(hz, Math.abs(bz));
+    }
+  }
+  return { hx, hz };
+}
+
+function cycleSupportInBarrierLocal(cycleHeading, barrierYaw, nx, nz, halfW, halfL) {
+  const rel = cycleHeading - barrierYaw;
+  const axisX = { x: Math.cos(rel), z: -Math.sin(rel) };
+  const axisZ = { x: Math.sin(rel), z: Math.cos(rel) };
+  return Math.abs(nx * axisX.x + nz * axisX.z) * halfW + Math.abs(nx * axisZ.x + nz * axisZ.z) * halfL;
+}
+
+function handleTriangleBarrierSlide(playerBody, body, cfg, heading, halfW, halfL) {
+  const tri = body.userData?.triangleBarrier;
+  if (!tri || typeof tri.width !== "number" || typeof tri.depth !== "number") return false;
+  const p = playerBody.position;
+  const c = body.position;
+  const barrierYaw = yawFromQuaternion(body.quaternion);
+  const cb = Math.cos(barrierYaw);
+  const sb = Math.sin(barrierYaw);
+  const dxw = p.x - c.x;
+  const dzw = p.z - c.z;
+  const localX = dxw * cb - dzw * sb;
+  const localZ = dxw * sb + dzw * cb;
+  const w = tri.width;
+  const d = tri.depth;
+  const x0 = -w / 2;
+  const x1 = w / 2;
+  const z0 = -d / 2;
+  const z1 = d / 2;
+  const hypLen = Math.hypot(w, d) || 1;
+  const edges = [
+    { nx: 0, nz: -1, px: x0, pz: z0 },
+    { nx: -1, nz: 0, px: x0, pz: z1 },
+    { nx: d / hypLen, nz: w / hypLen, px: x1, pz: z0 },
+  ];
+
+  let best = null;
+  for (const e of edges) {
+    const support = cycleSupportInBarrierLocal(heading, barrierYaw, e.nx, e.nz, halfW, halfL);
+    const signed = e.nx * (localX - e.px) + e.nz * (localZ - e.pz);
+    if (signed > support + 0.02) return false;
+    const penetration = support - signed;
+    if (!best || penetration < best.penetration) best = { ...e, penetration };
+  }
+  if (!best) return false;
+
+  const nx = best.nx * cb + best.nz * sb;
+  const nz = -best.nx * sb + best.nz * cb;
+  const push = Math.max(0, best.penetration) + 0.012;
+  if (push > 0.012) {
+    p.x += nx * push;
+    p.z += nz * push;
+  }
+  applyWallSlideVelocity(playerBody, new Vec3(-nx, 0, -nz), cfg);
+  return true;
 }
 
 /**
@@ -319,16 +431,60 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
  */
 export function applyContinuousBarrierSlide(playerBody, barrierBodies, cfg) {
   if (!barrierBodies || barrierBodies.length === 0) return;
-  const r = cfg.playerRadius;
   const p = playerBody.position;
+  const heading = typeof playerBody.userData?.heading === "number" ? playerBody.userData.heading : 0;
+  const halfW = typeof cfg.cycleHalfWidth === "number" && Number.isFinite(cfg.cycleHalfWidth) ? cfg.cycleHalfWidth : 0;
+  const halfL = typeof cfg.cycleHalfLength === "number" && Number.isFinite(cfg.cycleHalfLength) ? cfg.cycleHalfLength : 0;
+  const useCycleBox = halfW > 0 && halfL > 0;
+  const fallbackR = typeof cfg.playerRadius === "number" && Number.isFinite(cfg.playerRadius) ? cfg.playerRadius : 0.5;
 
   for (const boxBody of barrierBodies) {
     if (!boxBody || boxBody.mass !== 0) continue;
+    if (useCycleBox && boxBody.userData?.kind === "triangleBarrier") {
+      handleTriangleBarrierSlide(playerBody, boxBody, cfg, heading, halfW, halfL);
+      continue;
+    }
     const shape = boxBody.shapes[0];
     if (!(shape instanceof Box)) continue;
 
     const he = shape.halfExtents;
     const c = boxBody.position;
+    const barrierYaw = yawFromQuaternion(boxBody.quaternion);
+
+    if (useCycleBox) {
+      const cb = Math.cos(barrierYaw);
+      const sb = Math.sin(barrierYaw);
+      const dxw = p.x - c.x;
+      const dzw = p.z - c.z;
+      const localX = dxw * cb - dzw * sb;
+      const localZ = dxw * sb + dzw * cb;
+      const cycle = cycleHalfExtentsInBarrierLocal(heading, barrierYaw, halfW, halfL);
+      const expandedX = he.x + cycle.hx;
+      const expandedZ = he.z + cycle.hz;
+      const overlapX = expandedX - Math.abs(localX);
+      const overlapZ = expandedZ - Math.abs(localZ);
+      if (overlapX < -0.02 || overlapZ < -0.02) continue;
+
+      let nxLocal = 0;
+      let nzLocal = 0;
+      let push = 0;
+      if (overlapX < overlapZ) {
+        nxLocal = localX >= 0 ? 1 : -1;
+        push = Math.max(0, overlapX) + 0.012;
+      } else {
+        nzLocal = localZ >= 0 ? 1 : -1;
+        push = Math.max(0, overlapZ) + 0.012;
+      }
+
+      const nx = nxLocal * cb + nzLocal * sb;
+      const nz = -nxLocal * sb + nzLocal * cb;
+      if (push > 0.012) {
+        p.x += nx * push;
+        p.z += nz * push;
+      }
+      applyWallSlideVelocity(playerBody, new Vec3(-nx, 0, -nz), cfg);
+      continue;
+    }
 
     const qx = clamp(p.x, c.x - he.x, c.x + he.x);
     const qy = clamp(p.y, c.y - he.y, c.y + he.y);
@@ -363,14 +519,14 @@ export function applyContinuousBarrierSlide(playerBody, barrierBodies, cfg) {
       dist = 1;
     }
 
-    if (dist > r + 0.02) continue;
+    if (dist > fallbackR + 0.02) continue;
 
     const nx = dx / dist;
     const ny = dy / dist;
     const nz = dz / dist;
 
-    if (dist < r - 1e-5) {
-      const push = r - dist + 0.012;
+    if (dist < fallbackR - 1e-5) {
+      const push = fallbackR - dist + 0.012;
       p.x += nx * push;
       p.y += ny * push;
       p.z += nz * push;

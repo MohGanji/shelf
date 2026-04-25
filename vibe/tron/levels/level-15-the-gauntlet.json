@@ -1,0 +1,129 @@
+{
+  "id": "level-15",
+  "name": "The Gauntlet",
+  "arenaWidth": 380,
+  "arenaDepth": 460,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 190.0,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 190.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -16.52,
+      "z": 153.33,
+      "height": 3,
+      "shape": "square",
+      "width": 49.57,
+      "depth": 51.11
+    },
+    {
+      "type": "building",
+      "x": -132.17,
+      "z": 102.22,
+      "height": 3,
+      "shape": "square",
+      "width": 82.61,
+      "depth": 51.11
+    },
+    {
+      "type": "building",
+      "x": 99.13,
+      "z": 102.22,
+      "height": 3,
+      "shape": "square",
+      "width": 82.61,
+      "depth": 51.11
+    },
+    {
+      "type": "building",
+      "x": -99.13,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 82.61,
+      "depth": 51.11
+    },
+    {
+      "type": "building",
+      "x": 115.65,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 49.57,
+      "depth": 51.11
+    },
+    {
+      "type": "building",
+      "x": -49.57,
+      "z": -51.11,
+      "height": 3,
+      "shape": "square",
+      "width": 49.57,
+      "depth": 51.11
+    },
+    {
+      "type": "building",
+      "x": 66.09,
+      "z": -51.11,
+      "height": 3,
+      "shape": "square",
+      "width": 82.61,
+      "depth": 51.11
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": -115.65,
+      "z": 153.33,
+      "category": "equippable"
+    },
+    {
+      "type": "trail_extend",
+      "x": -66.09,
+      "z": -153.33,
+      "category": "level_permanent"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 115.65,
+      "z": 153.33,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": 0.0,
+      "z": 51.11,
+      "rotation": 0.0,
+      "color": "#B266FF",
+      "category": "boss"
+    }
+  ],
+  "rewards": {
+    "coins": 260,
+    "timeBonusThreshold": 230,
+    "timeBonusCoins": 67
+  }
+}

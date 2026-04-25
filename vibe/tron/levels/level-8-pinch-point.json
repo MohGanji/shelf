@@ -1,0 +1,195 @@
+{
+  "id": "level-8",
+  "name": "Pinch Point",
+  "arenaWidth": 300,
+  "arenaDepth": 360,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 163.04,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 163.04,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -104.35,
+      "z": 160.0,
+      "height": 3,
+      "shape": "square",
+      "width": 91.3,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 110.87,
+      "z": 160.0,
+      "height": 3,
+      "shape": "square",
+      "width": 52.17,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": -130.43,
+      "z": 120.0,
+      "height": 3,
+      "shape": "square",
+      "width": 39.13,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 123.91,
+      "z": 100.0,
+      "height": 3,
+      "shape": "square",
+      "width": 26.09,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": -136.96,
+      "z": -40.0,
+      "height": 3,
+      "shape": "square",
+      "width": 26.09,
+      "depth": 280.0
+    },
+    {
+      "type": "building",
+      "x": 104.35,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 13.04,
+      "depth": 200.0
+    },
+    {
+      "type": "building",
+      "x": -104.35,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 39.13,
+      "depth": 120.0
+    },
+    {
+      "type": "building",
+      "x": 78.26,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 39.13,
+      "depth": 120.0
+    },
+    {
+      "type": "building",
+      "x": 117.39,
+      "z": -60.0,
+      "height": 3,
+      "shape": "square",
+      "width": 13.04,
+      "depth": 240.0
+    },
+    {
+      "type": "building",
+      "x": -71.74,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 26.09,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 45.65,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 26.09,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 130.43,
+      "z": -120.0,
+      "height": 3,
+      "shape": "square",
+      "width": 13.04,
+      "depth": 120.0
+    },
+    {
+      "type": "building",
+      "x": -117.39,
+      "z": -140.0,
+      "height": 3,
+      "shape": "square",
+      "width": 13.04,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": -84.78,
+      "z": -160.0,
+      "height": 3,
+      "shape": "square",
+      "width": 52.17,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 97.83,
+      "z": -160.0,
+      "height": 3,
+      "shape": "square",
+      "width": 26.09,
+      "depth": 40.0
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": -13.04,
+      "z": 0.0,
+      "category": "equippable"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -78.26,
+      "z": 120.0,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": 78.26,
+      "z": 120.0,
+      "rotation": 0.0,
+      "color": "#FF8A00",
+      "category": "easy"
+    }
+  ],
+  "rewards": {
+    "coins": 155,
+    "timeBonusThreshold": 160,
+    "timeBonusCoins": 46
+  }
+}

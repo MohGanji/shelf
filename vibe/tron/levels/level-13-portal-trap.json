@@ -1,0 +1,237 @@
+{
+  "id": "level-13",
+  "name": "Portal Trap",
+  "arenaWidth": 420,
+  "arenaDepth": 380,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 195.52,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 210.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -123.1,
+      "z": 168.89,
+      "height": 3,
+      "shape": "square",
+      "width": 173.79,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": 123.1,
+      "z": 168.89,
+      "height": 3,
+      "shape": "square",
+      "width": 173.79,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": -144.83,
+      "z": 126.67,
+      "height": 3,
+      "shape": "square",
+      "width": 130.34,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": 173.79,
+      "z": 105.56,
+      "height": 3,
+      "shape": "square",
+      "width": 72.41,
+      "depth": 84.44
+    },
+    {
+      "type": "building",
+      "x": -166.55,
+      "z": 84.44,
+      "height": 3,
+      "shape": "square",
+      "width": 86.9,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": 0.0,
+      "z": 21.11,
+      "height": 3,
+      "shape": "square",
+      "width": 14.48,
+      "depth": 168.89
+    },
+    {
+      "type": "building",
+      "x": -181.03,
+      "z": 42.22,
+      "height": 3,
+      "shape": "square",
+      "width": 57.93,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": -14.48,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 14.48,
+      "depth": 126.67
+    },
+    {
+      "type": "building",
+      "x": 14.48,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 14.48,
+      "depth": 126.67
+    },
+    {
+      "type": "building",
+      "x": 188.28,
+      "z": 42.22,
+      "height": 3,
+      "shape": "square",
+      "width": 43.45,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": -195.52,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.97,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": -28.97,
+      "z": -21.11,
+      "height": 3,
+      "shape": "square",
+      "width": 14.48,
+      "depth": 84.44
+    },
+    {
+      "type": "building",
+      "x": 28.97,
+      "z": -21.11,
+      "height": 3,
+      "shape": "square",
+      "width": 14.48,
+      "depth": 84.44
+    },
+    {
+      "type": "building",
+      "x": 195.52,
+      "z": -84.44,
+      "height": 3,
+      "shape": "square",
+      "width": 28.97,
+      "depth": 211.11
+    },
+    {
+      "type": "building",
+      "x": -50.69,
+      "z": -42.22,
+      "height": 3,
+      "shape": "square",
+      "width": 28.97,
+      "depth": 42.22
+    },
+    {
+      "type": "building",
+      "x": 166.55,
+      "z": -147.78,
+      "height": 3,
+      "shape": "square",
+      "width": 28.97,
+      "depth": 84.44
+    },
+    {
+      "type": "building",
+      "x": 94.14,
+      "z": -168.89,
+      "height": 3,
+      "shape": "square",
+      "width": 115.86,
+      "depth": 42.22
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "portal",
+      "x": 101.38,
+      "z": 126.67,
+      "rotation": 0.0,
+      "pairId": "13-portal-1",
+      "pairColor": "#7CFFEA"
+    },
+    {
+      "type": "portal",
+      "x": -130.34,
+      "z": -84.44,
+      "rotation": 3.14,
+      "pairId": "13-portal-1",
+      "pairColor": "#7CFFEA"
+    }
+  ],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": 115.86,
+      "z": 0.0,
+      "category": "equippable"
+    }
+  ],
+  "enemies": [
+    {
+      "x": 57.93,
+      "z": 126.67,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    },
+    {
+      "x": -173.79,
+      "z": -84.44,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": -57.93,
+      "z": -126.67,
+      "rotation": 0.0,
+      "color": "#FF3D7F",
+      "category": "medium"
+    }
+  ],
+  "rewards": {
+    "coins": 230,
+    "timeBonusThreshold": 210,
+    "timeBonusCoins": 61
+  }
+}

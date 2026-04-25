@@ -1,6 +1,6 @@
 /**
  * Non-barrier arena objects: boost pads, portals (plan § Game Objects).
- * Boost pads — P3.5: visuals, global cooldown per pad, free 1-bar-equivalent nitro burst.
+ * Boost pads — P3.5: visuals, continuous pad-zone nitro sustain.
  * Portals — P3.6: paired warp, one-sided back wall, trail detach + exit immunity, shared pair cooldown.
  */
 
@@ -23,6 +23,13 @@ export function isGameObjectType(t) {
   return t === "boost_pad" || t === "portal";
 }
 
+/** @param {unknown} h @param {number} fallback */
+function parseOptionalHexColor(h, fallback) {
+  if (typeof h !== "string" || !/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(h)) return fallback;
+  const n = parseInt(h.slice(1), 16);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 /** Horizontal clearance from pad center to trigger (matches ~2.4 u floor panel). */
 const BOOST_PAD_TRIGGER_RADIUS = 1.35;
 
@@ -35,10 +42,11 @@ const BOOST_PAD_TRIGGER_RADIUS = 1.35;
  * @property {import('./enemies.js').CampaignEnemyEntity[]} enemies
  * @property {import('../config.js').DEFAULT_DEV_HUD} devHud
  * @property {() => void} onBoost — SFX once when a pad fires (player or enemy)
+ * @property {() => void} [onNitroBurstStart] — same presentation cue as held nitro
  */
 
 /**
- * Spawns boost pad meshes from `level.gameObjects` and handles ride-over + shared cooldown.
+ * Spawns boost pad meshes from `level.gameObjects` and sustains nitro while a cycle rides over a pad.
  *
  * @param {object} opts
  * @param {import('three').Scene} opts.scene
@@ -56,11 +64,15 @@ export function createBoostPadField(opts) {
    * @typedef {object} PadInst
    * @property {number} x
    * @property {number} z
+   * @property {number} width
+   * @property {number} depth
+   * @property {number} colorHex
    * @property {THREE.Group} node
    * @property {THREE.Mesh} mesh
    * @property {THREE.MeshStandardMaterial} mat
    * @property {number} baseEmissive
-   * @property {number} cooldownUntilMs
+   * @property {boolean} playerInside
+   * @property {Set<string>} enemyInsideIds
    */
   /** @type {PadInst[]} */
   const instances = [];
@@ -88,9 +100,12 @@ export function createBoostPadField(opts) {
     if (/** @type {unknown} */ (g).type !== "boost_pad") continue;
     const x = typeof g.x === "number" ? g.x : 0;
     const z = typeof g.z === "number" ? g.z : 0;
+    const width = typeof g.width === "number" && Number.isFinite(g.width) && g.width > 0 ? g.width : 2.4;
+    const depth = typeof g.depth === "number" && Number.isFinite(g.depth) && g.depth > 0 ? g.depth : 2.4;
+    const colorHex = parseOptionalHexColor(/** @type {Record<string, unknown>} */ (g).color, 0x55eeff);
 
-    const geo = new THREE.BoxGeometry(2.4, 0.07, 2.4);
-    const em = 0x55eeff;
+    const geo = new THREE.BoxGeometry(width, 0.07, depth);
+    const em = colorHex;
     const mat = new THREE.MeshStandardMaterial({
       color: 0x0a1a22,
       emissive: em,
@@ -106,9 +121,9 @@ export function createBoostPadField(opts) {
     mesh.receiveShadow = true;
 
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.85, 1.15, 32),
+      new THREE.RingGeometry(Math.min(width, depth) * 0.28, Math.min(width, depth) * 0.42, 32),
       new THREE.MeshBasicMaterial({
-        color: 0x00ffff,
+        color: em,
         transparent: true,
         opacity: 0.35 + gridLine * 0.25,
         side: THREE.DoubleSide,
@@ -125,11 +140,15 @@ export function createBoostPadField(opts) {
     instances.push({
       x,
       z,
+      width,
+      depth,
+      colorHex,
       node,
       mesh,
       mat,
       baseEmissive: 0.75,
-      cooldownUntilMs: 0,
+      playerInside: false,
+      enemyInsideIds: new Set(),
     });
     root.add(node);
   }
@@ -137,55 +156,63 @@ export function createBoostPadField(opts) {
   scene.add(root);
 
   /**
-   * @param {number} _dt
+   * @param {number} dt
    * @param {BoostPadTickContext} ctx
    */
-  function tick(_dt, ctx) {
-    const { isLobby, levelStarted, playerBody, nitroState, enemies, devHud: hud, onBoost } = ctx;
-    if (isLobby || !levelStarted) return;
+  function tick(dt, ctx) {
+    const { isLobby, levelStarted, playerBody, nitroState, enemies, devHud: hud, onBoost, onNitroBurstStart } = ctx;
+    if (!isLobby && !levelStarted) return;
 
     const burstBase = typeof hud.nitroBurstDuration === "number" ? hud.nitroBurstDuration : 0.5;
     const str = typeof hud.boostPadStrength === "number" ? hud.boostPadStrength : 1;
     const burstDur = Math.max(0.05, burstBase * str);
-    const coolSec = typeof hud.specialObjectCooldown === "number" ? hud.specialObjectCooldown : 5;
-    const coolMs = Math.max(0.2, coolSec) * 1000;
+    const sustainDur = Math.max(0.1, Math.min(burstDur, dt * 2 + 0.08));
     const nMul = hud.neonIntensity ?? 1;
 
-    const now = performance.now();
-
     for (const inst of instances) {
-      const cooling = now < inst.cooldownUntilMs;
-      inst.mat.emissiveIntensity = (cooling ? inst.baseEmissive * 0.2 : inst.baseEmissive) * nMul;
-
-      if (cooling) continue;
-
-      let fired = false;
-
       const px = playerBody.position.x;
       const pz = playerBody.position.z;
-      if (Math.hypot(px - inst.x, pz - inst.z) < BOOST_PAD_TRIGGER_RADIUS) {
-        applyBoostPadBurst(nitroState, burstDur);
-        fired = true;
+      const playerInsideNow = isInsideBoostPad(px, pz, inst);
+      const playerEntered = playerInsideNow && !inst.playerInside;
+      inst.playerInside = playerInsideNow;
+      if (playerInsideNow) {
+        applyBoostPadBurst(nitroState, sustainDur);
       }
 
-      if (!fired) {
-        for (const e of enemies) {
-          if (e.eliminated) continue;
-          const ex = e.body.position.x;
-          const ez = e.body.position.z;
-          if (Math.hypot(ex - inst.x, ez - inst.z) < BOOST_PAD_TRIGGER_RADIUS) {
-            applyBoostPadBurst(e.nitroState, burstDur);
-            fired = true;
-            break;
-          }
+      let enemyEntered = false;
+      const nextEnemyInside = new Set();
+      for (const e of enemies) {
+        if (e.eliminated) continue;
+        const ex = e.body.position.x;
+        const ez = e.body.position.z;
+        if (isInsideBoostPad(ex, ez, inst)) {
+          nextEnemyInside.add(e.id);
+          if (!inst.enemyInsideIds.has(e.id)) enemyEntered = true;
+          applyBoostPadBurst(e.nitroState, sustainDur);
         }
       }
+      inst.enemyInsideIds = nextEnemyInside;
 
-      if (fired) {
-        inst.cooldownUntilMs = now + coolMs;
+      const occupied = playerInsideNow || nextEnemyInside.size > 0;
+      inst.mat.emissiveIntensity = inst.baseEmissive * (occupied ? 1.35 : 1) * nMul;
+
+      if (playerEntered || enemyEntered) {
         onBoost();
+        if (playerEntered) onNitroBurstStart?.();
       }
     }
+  }
+
+  /**
+   * @param {number} wx
+   * @param {number} wz
+   * @param {PadInst} inst
+   */
+  function isInsideBoostPad(wx, wz, inst) {
+    return (
+      Math.abs(wx - inst.x) <= inst.width / 2 + BOOST_PAD_TRIGGER_RADIUS * 0.2 &&
+      Math.abs(wz - inst.z) <= inst.depth / 2 + BOOST_PAD_TRIGGER_RADIUS * 0.2
+    );
   }
 
   function dispose() {

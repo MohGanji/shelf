@@ -1,0 +1,183 @@
+{
+  "id": "level-11",
+  "name": "Neon Sprawl",
+  "arenaWidth": 380,
+  "arenaDepth": 360,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 175.93,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 190.0,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -133.7,
+      "z": 100.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": -42.22,
+      "z": 120.0,
+      "height": 3,
+      "shape": "square",
+      "width": 42.22,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 91.48,
+      "z": 100.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": 28.15,
+      "z": 80.0,
+      "height": 3,
+      "shape": "square",
+      "width": 42.22,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": -77.41,
+      "z": 20.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": 161.85,
+      "z": 40.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": -147.78,
+      "z": -20.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": 70.37,
+      "z": -20.0,
+      "height": 3,
+      "shape": "square",
+      "width": 42.22,
+      "depth": 80.0
+    },
+    {
+      "type": "building",
+      "x": 147.78,
+      "z": 0.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": -70.37,
+      "z": -80.0,
+      "height": 3,
+      "shape": "square",
+      "width": 42.22,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": -7.04,
+      "z": -80.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 147.78,
+      "z": -80.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 40.0
+    },
+    {
+      "type": "building",
+      "x": 63.33,
+      "z": -120.0,
+      "height": 3,
+      "shape": "square",
+      "width": 28.15,
+      "depth": 40.0
+    }
+  ],
+  "gameObjects": [],
+  "powerups": [
+    {
+      "type": "shield",
+      "x": -14.07,
+      "z": 0.0,
+      "category": "equippable"
+    },
+    {
+      "type": "nitro_recharge",
+      "x": -126.67,
+      "z": -120.0,
+      "category": "instant"
+    }
+  ],
+  "enemies": [
+    {
+      "x": -182.96,
+      "z": 120.0,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    },
+    {
+      "x": 154.81,
+      "z": 120.0,
+      "rotation": 0.0,
+      "color": "#00E5FF",
+      "category": "hard"
+    }
+  ],
+  "rewards": {
+    "coins": 200,
+    "timeBonusThreshold": 190,
+    "timeBonusCoins": 55
+  }
+}

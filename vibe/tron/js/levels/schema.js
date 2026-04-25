@@ -3,6 +3,13 @@
  * @module levels/schema
  */
 
+import {
+  LEVEL_SCHEMA_VERSION_V2,
+  floorObjectInsideAuthoringBounds,
+  floorObjectOccupiedCells,
+  getFloorObjectFootprint,
+} from "./footprints.js";
+
 /** Minimum arena width/depth in units (tiles). */
 export const MIN_ARENA_SIZE = 40;
 
@@ -14,12 +21,12 @@ export const LOBBY_LEVEL_ID = "level-0";
 
 /** Default lobby dimensions from the plan. */
 export const LOBBY_ARENA_WIDTH = 400;
-export const LOBBY_ARENA_DEPTH = 200;
+export const LOBBY_ARENA_DEPTH = 240;
 
 const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "architect"]);
 const EDGES = new Set(["north", "south", "east", "west"]);
 const BARRIER_TYPES = new Set(["wall", "building", "structure"]);
-const BUILDING_SHAPES = new Set(["square", "triangle", "hexagon"]);
+const BUILDING_SHAPES = new Set(["square", "triangle"]);
 const STRUCTURE_VARIANTS = new Set(["pylon", "column", "obelisk"]);
 const COSMETIC_VARIANTS = new Set(["panel_a", "panel_b", "panel_c"]);
 const GAME_OBJECT_TYPES = new Set(["boost_pad", "portal"]);
@@ -29,7 +36,8 @@ const POWERUP_TYPES = new Map([
   ["nitro_capacity", "level_permanent"],
   ["shield", "equippable"],
 ]);
-const ENEMY_ATTR_KEYS = ["speed", "acceleration", "trailLength", "nitroBars", "handling", "intelligence"];
+const ENEMY_CATEGORIES = new Set(["easy", "medium", "hard", "boss"]);
+const LEGACY_ENEMY_ATTR_KEYS = ["speed", "acceleration", "trailLength", "nitroBars", "handling", "intelligence"];
 
 const HEX_COLOR = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/;
 
@@ -102,6 +110,10 @@ export function validateLevel(json) {
   expectNonEmptyString("id", json.id, errors);
   expectNonEmptyString("name", json.name, errors);
 
+  if (json.schemaVersion !== undefined && json.schemaVersion !== LEVEL_SCHEMA_VERSION_V2) {
+    errors.push(`schemaVersion must be ${LEVEL_SCHEMA_VERSION_V2} when provided`);
+  }
+
   const arenaWidth = json.arenaWidth;
   const arenaDepth = json.arenaDepth;
   expectFiniteNumber("arenaWidth", arenaWidth, errors);
@@ -111,6 +123,16 @@ export function validateLevel(json) {
   }
   if (isFiniteNumber(arenaDepth) && arenaDepth < MIN_ARENA_SIZE) {
     errors.push(`arenaDepth must be >= ${MIN_ARENA_SIZE}`);
+  }
+  if (json.schemaVersion === LEVEL_SCHEMA_VERSION_V2) {
+    expectFiniteNumber("mapWidth", json.mapWidth, errors);
+    expectFiniteNumber("mapDepth", json.mapDepth, errors);
+    if (isFiniteNumber(json.mapWidth) && isFiniteNumber(arenaWidth) && json.mapWidth < arenaWidth + 2) {
+      errors.push("mapWidth must include the 1-tile wall on both sides (arenaWidth + 2 or larger)");
+    }
+    if (isFiniteNumber(json.mapDepth) && isFiniteNumber(arenaDepth) && json.mapDepth < arenaDepth + 2) {
+      errors.push("mapDepth must include the 1-tile wall on both sides (arenaDepth + 2 or larger)");
+    }
   }
 
   const lobby = json.id === LOBBY_LEVEL_ID;
@@ -143,7 +165,7 @@ export function validateLevel(json) {
     validateBarriers(json.barriers, errors);
   }
   if (Array.isArray(json.gameObjects)) {
-    validateGameObjects(json.gameObjects, errors);
+    validateGameObjects(json.gameObjects, errors, json.schemaVersion === LEVEL_SCHEMA_VERSION_V2);
   }
   if (Array.isArray(json.powerups)) {
     validatePowerups(json.powerups, errors);
@@ -165,6 +187,70 @@ export function validateLevel(json) {
     }
   }
 
+  if (json.schemaVersion === LEVEL_SCHEMA_VERSION_V2) {
+    validateV2FloorFootprints(/** @type {Record<string, unknown>} */ (json), errors);
+  } else {
+    validateLegacyDuplicateFloorTiles(/** @type {Record<string, unknown>} */ (json), errors);
+  }
+
+  return errors.length === 0 ? { valid: true, errors: [] } : { valid: false, errors };
+}
+
+/**
+ * @param {Record<string, unknown>} r
+ * @param {string[]} errors
+ */
+function validateRewards(r, errors) {
+  expectFiniteNumber("rewards.coins", r.coins, errors);
+  expectFiniteNumber("rewards.timeBonusThreshold", r.timeBonusThreshold, errors);
+  expectFiniteNumber("rewards.timeBonusCoins", r.timeBonusCoins, errors);
+}
+
+/**
+ * @param {Record<string, unknown>} level
+ * @param {string[]} errors
+ */
+function validateV2FloorFootprints(level, errors) {
+  /** @type {{ list: string; arr: unknown[] }[]} */
+  const groups = [
+    { list: "barriers", arr: Array.isArray(level.barriers) ? level.barriers : [] },
+    { list: "gameObjects", arr: Array.isArray(level.gameObjects) ? level.gameObjects : [] },
+    { list: "powerups", arr: Array.isArray(level.powerups) ? level.powerups : [] },
+    { list: "enemies", arr: Array.isArray(level.enemies) ? level.enemies : [] },
+  ];
+  const seen = new Map();
+  for (const { list, arr } of groups) {
+    for (let i = 0; i < arr.length; i++) {
+      const o = arr[i];
+      if (!isPlainObject(o)) continue;
+      const path = `${list}[${i}]`;
+      if (!isFiniteNumber(o.gridX) || !Number.isInteger(o.gridX)) {
+        errors.push(`${path}.gridX must be an integer top-left grid coordinate for schemaVersion ${LEVEL_SCHEMA_VERSION_V2}`);
+      }
+      if (!isFiniteNumber(o.gridZ) || !Number.isInteger(o.gridZ)) {
+        errors.push(`${path}.gridZ must be an integer top-left grid coordinate for schemaVersion ${LEVEL_SCHEMA_VERSION_V2}`);
+      }
+      if (!isFiniteNumber(o.gridX) || !isFiniteNumber(o.gridZ)) continue;
+      if (!floorObjectInsideAuthoringBounds(level, list, o)) {
+        const fp = getFloorObjectFootprint(list, o);
+        errors.push(`${path} footprint ${fp.width}x${fp.depth} must stay inside the playable map interior`);
+      }
+      for (const cell of floorObjectOccupiedCells(level, list, o)) {
+        if (seen.has(cell)) {
+          errors.push(`Duplicate floor footprint cell (${cell}): ${seen.get(cell)} and ${path}`);
+        } else {
+          seen.set(cell, path);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @param {Record<string, unknown>} json
+ * @param {string[]} errors
+ */
+function validateLegacyDuplicateFloorTiles(json, errors) {
   /** @type {{ x: number, z: number, kind: string }[]} */
   const floorKeys = [];
   if (Array.isArray(json.barriers)) {
@@ -208,18 +294,6 @@ export function validateLevel(json) {
       seen.set(key, kind);
     }
   }
-
-  return errors.length === 0 ? { valid: true, errors: [] } : { valid: false, errors };
-}
-
-/**
- * @param {Record<string, unknown>} r
- * @param {string[]} errors
- */
-function validateRewards(r, errors) {
-  expectFiniteNumber("rewards.coins", r.coins, errors);
-  expectFiniteNumber("rewards.timeBonusThreshold", r.timeBonusThreshold, errors);
-  expectFiniteNumber("rewards.timeBonusCoins", r.timeBonusCoins, errors);
 }
 
 /**
@@ -359,6 +433,9 @@ function validateBarriers(barriers, errors) {
     }
     expectFiniteNumber(`${path}.x`, b.x, errors);
     expectFiniteNumber(`${path}.z`, b.z, errors);
+    validateOptionalBarrierSpan(`${path}.width`, b.width, errors);
+    validateOptionalBarrierSpan(`${path}.depth`, b.depth, errors);
+    validateOptionalFiniteNumber(`${path}.rotation`, b.rotation, errors);
     if (type === "building") {
       const h = b.height;
       if (!isFiniteNumber(h) || !Number.isInteger(h) || h < 1 || h > 5) {
@@ -366,7 +443,7 @@ function validateBarriers(barriers, errors) {
       }
       const shape = b.shape;
       if (typeof shape !== "string" || !BUILDING_SHAPES.has(shape)) {
-        errors.push(`${path}.shape must be one of: square, triangle, hexagon`);
+        errors.push(`${path}.shape must be one of: square, triangle`);
       }
     }
     if (type === "structure") {
@@ -379,10 +456,35 @@ function validateBarriers(barriers, errors) {
 }
 
 /**
- * @param {unknown[]} gameObjects
+ * @param {string} path
+ * @param {unknown} v
  * @param {string[]} errors
  */
-function validateGameObjects(gameObjects, errors) {
+function validateOptionalBarrierSpan(path, v, errors) {
+  if (v === undefined) return;
+  if (!isFiniteNumber(v) || v <= 0) {
+    errors.push(`${path} must be a positive finite number when provided`);
+  }
+}
+
+/**
+ * @param {string} path
+ * @param {unknown} v
+ * @param {string[]} errors
+ */
+function validateOptionalFiniteNumber(path, v, errors) {
+  if (v === undefined) return;
+  if (!isFiniteNumber(v)) {
+    errors.push(`${path} must be a finite number when provided`);
+  }
+}
+
+/**
+ * @param {unknown[]} gameObjects
+ * @param {string[]} errors
+ * @param {boolean} v2
+ */
+function validateGameObjects(gameObjects, errors, v2) {
   /** @type {Map<string, number>} */
   const pairCounts = new Map();
   for (let i = 0; i < gameObjects.length; i++) {
@@ -399,6 +501,15 @@ function validateGameObjects(gameObjects, errors) {
     }
     expectFiniteNumber(`${path}.x`, g.x, errors);
     expectFiniteNumber(`${path}.z`, g.z, errors);
+    if (type === "boost_pad") {
+      validateOptionalBarrierSpan(`${path}.width`, g.width, errors);
+      validateOptionalBarrierSpan(`${path}.depth`, g.depth, errors);
+      if (v2 && g.rotation !== undefined) {
+        errors.push(`${path}.rotation is not supported for v2 boost pads; use axis-aligned rectangular footprints`);
+      } else {
+        validateOptionalFiniteNumber(`${path}.rotation`, g.rotation, errors);
+      }
+    }
     if (type === "portal") {
       expectFiniteNumber(`${path}.rotation`, g.rotation, errors);
       const pairId = g.pairId;
@@ -469,20 +580,25 @@ function validateEnemies(enemies, errors) {
     if (typeof color !== "string" || !HEX_COLOR.test(color)) {
       errors.push(`${path}.color must be a CSS hex color (e.g. #FF6600)`);
     }
+    if (typeof e.category !== "string" || !ENEMY_CATEGORIES.has(e.category)) {
+      errors.push(`${path}.category must be one of: easy, medium, hard, boss`);
+    }
     const attrs = e.attributes;
-    if (!isPlainObject(attrs)) {
-      errors.push(`${path}.attributes must be an object`);
-      continue;
-    }
-    for (const key of ENEMY_ATTR_KEYS) {
-      const v = attrs[key];
-      if (!isFiniteNumber(v) || !Number.isInteger(v) || v < 1 || v > 10) {
-        errors.push(`${path}.attributes.${key} must be an integer from 1 to 10`);
+    if (attrs !== undefined) {
+      if (!isPlainObject(attrs)) {
+        errors.push(`${path}.attributes must be an object when provided`);
+        continue;
       }
-    }
-    for (const k of Object.keys(attrs)) {
-      if (!ENEMY_ATTR_KEYS.includes(k)) {
-        errors.push(`${path}.attributes has unknown key "${k}"`);
+      for (const key of LEGACY_ENEMY_ATTR_KEYS) {
+        const v = attrs[key];
+        if (v !== undefined && (!isFiniteNumber(v) || !Number.isInteger(v) || v < 1 || v > 10)) {
+          errors.push(`${path}.attributes.${key} must be an integer from 1 to 10`);
+        }
+      }
+      for (const k of Object.keys(attrs)) {
+        if (!LEGACY_ENEMY_ATTR_KEYS.includes(k)) {
+          errors.push(`${path}.attributes has unknown key "${k}"`);
+        }
       }
     }
   }

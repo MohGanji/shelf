@@ -32,35 +32,48 @@ const TMP = new Vec3();
 const TMP2 = new Vec3();
 
 /**
- * Axis-aligned footprint on XZ for a static cannon box (handles rotation).
+ * Rotated XZ corners for a static cannon box.
  * @param {import("cannon-es").Body} body
- * @returns {{ minX: number; maxX: number; minZ: number; maxZ: number } | null}
+ * @returns {{ x: number; z: number }[] | null}
  */
-export function barrierFootprintXZ(body) {
+export function barrierCornersXZ(body) {
   const sh = body.shapes[0];
   if (!(sh instanceof Box)) return null;
   const he = sh.halfExtents;
   const q = body.quaternion;
   const o = body.position;
-  const corners = [
+  const localCorners = [
     [-he.x, -he.z],
     [he.x, -he.z],
     [he.x, he.z],
     [-he.x, he.z],
   ];
+  const corners = [];
+  for (const [lx, lz] of localCorners) {
+    TMP.set(lx, 0, lz);
+    q.vmult(TMP, TMP2);
+    corners.push({ x: o.x + TMP2.x, z: o.z + TMP2.z });
+  }
+  return corners;
+}
+
+/**
+ * Axis-aligned footprint on XZ for a static cannon box (handles rotation).
+ * @param {import("cannon-es").Body} body
+ * @returns {{ minX: number; maxX: number; minZ: number; maxZ: number } | null}
+ */
+export function barrierFootprintXZ(body) {
+  const corners = barrierCornersXZ(body);
+  if (!corners) return null;
   let minX = Infinity;
   let maxX = -Infinity;
   let minZ = Infinity;
   let maxZ = -Infinity;
-  for (const [lx, lz] of corners) {
-    TMP.set(lx, 0, lz);
-    q.vmult(TMP, TMP2);
-    const wx = o.x + TMP2.x;
-    const wz = o.z + TMP2.z;
-    if (wx < minX) minX = wx;
-    if (wx > maxX) maxX = wx;
-    if (wz < minZ) minZ = wz;
-    if (wz > maxZ) maxZ = wz;
+  for (const c of corners) {
+    if (c.x < minX) minX = c.x;
+    if (c.x > maxX) maxX = c.x;
+    if (c.z < minZ) minZ = c.z;
+    if (c.z > maxZ) maxZ = c.z;
   }
   return { minX, maxX, minZ, maxZ };
 }
@@ -126,8 +139,8 @@ export function createArenaMinimapRenderer(canvas) {
       const ch = cssH;
 
       /**
-       * World XZ → canvas; +Z is top (north-up). Mirror horizontal so east/west match the chase camera
-       * (otherwise left/right on the minimap feel inverted vs the 3D view).
+       * World XZ → canvas; +Z is top (north-up). Mirror X so live movement matches
+       * the chase-camera steering feel: a left turn moves left on the minimap.
        * @param {number} wx
        * @param {number} wz
        */
@@ -149,16 +162,21 @@ export function createArenaMinimapRenderer(canvas) {
         ctx.fillStyle = "rgba(200, 210, 220, 0.42)";
         for (const b of barriers) {
           if (!b || b.mass !== 0) continue;
-          const fp = barrierFootprintXZ(b);
-          if (!fp) continue;
-          const [x0, y0] = toCanvas(fp.minX, fp.minZ);
-          const [x1, y1] = toCanvas(fp.maxX, fp.maxZ);
-          const left = Math.min(x0, x1);
-          const top = Math.min(y0, y1);
-          const w = Math.abs(x1 - x0);
-          const h = Math.abs(y1 - y0);
-          if (w < 0.5 && h < 0.5) continue;
-          ctx.fillRect(left, top, Math.max(w, 1), Math.max(h, 1));
+          const corners = barrierCornersXZ(b);
+          if (!corners) continue;
+          const pts = corners.map((c) => toCanvas(c.x, c.z));
+          const minX = Math.min(...pts.map((p) => p[0]));
+          const maxX = Math.max(...pts.map((p) => p[0]));
+          const minY = Math.min(...pts.map((p) => p[1]));
+          const maxY = Math.max(...pts.map((p) => p[1]));
+          if (maxX - minX < 0.5 && maxY - minY < 0.5) continue;
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0], pts[0][1]);
+          for (let i = 1; i < pts.length; i++) {
+            ctx.lineTo(pts[i][0], pts[i][1]);
+          }
+          ctx.closePath();
+          ctx.fill();
         }
       }
 
