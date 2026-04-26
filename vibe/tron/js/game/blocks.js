@@ -31,6 +31,12 @@ function neonBarrierMaterial(baseHex, emissiveHex, neonStrength) {
 function materialWithOptionalColor(color, fallback, neonStrength) {
   if (typeof color !== "string" || !/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(color)) return fallback;
   const mat = /** @type {THREE.MeshStandardMaterial} */ (fallback).clone();
+  /** `MeshStandardMaterial.clone`/`copy` omit `onBeforeCompile` and `customProgramCacheKey` (three r160). */
+  const map = mat.emissiveMap;
+  if (map && map.userData && map.userData.sharedBuildingFacadeAtlas) {
+    mat.onBeforeCompile = fallback.onBeforeCompile;
+    mat.customProgramCacheKey = fallback.customProgramCacheKey;
+  }
   const c = new THREE.Color(color);
   mat.color = c;
   mat.emissive = c.clone().multiplyScalar(0.55);

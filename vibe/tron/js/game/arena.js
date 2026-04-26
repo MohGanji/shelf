@@ -71,6 +71,77 @@ function createArenaFloorMicroTextures() {
   };
 }
 
+/**
+ * Procedural emissive tile (one `lineStep` × `lineStep` world unit cell): dark deck + faint inner grid + corner brackets.
+ * Tuned subtle so bloom stays controlled; used on all floor tiers (pairs with line overlay).
+ * @param {THREE.Color} gridLineColor
+ * @returns {THREE.CanvasTexture}
+ */
+function createArenaFloorTronEmissiveMap(gridLineColor) {
+  const S = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
+  const c = gridLineColor.clone();
+  const lr = Math.round(c.r * 255);
+  const lg = Math.round(c.g * 255);
+  const lb = Math.round(c.b * 255);
+
+  ctx.fillStyle = "rgb(5,9,15)";
+  ctx.fillRect(0, 0, S, S);
+
+  const sub = 4;
+  ctx.lineCap = "square";
+  for (let i = 1; i < sub; i++) {
+    const t = (S * i) / sub;
+    ctx.strokeStyle = `rgba(${lr},${lg},${lb},0.11)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(t + 0.5, 0);
+    ctx.lineTo(t + 0.5, S);
+    ctx.moveTo(0, t + 0.5);
+    ctx.lineTo(S, t + 0.5);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = `rgba(${lr},${lg},${lb},0.38)`;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1.5, 1.5, S - 3, S - 3);
+
+  const L = 13;
+  ctx.strokeStyle = `rgba(${lr},${lg},${lb},0.28)`;
+  ctx.lineWidth = 1.5;
+  const corners = [
+    [0, 0, 1, 1],
+    [S, 0, -1, 1],
+    [0, S, 1, -1],
+    [S, S, -1, -1],
+  ];
+  for (const [cx, cy, sx, sy] of corners) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sx * (L - 0.5), cy + 0.5 * sy);
+    ctx.lineTo(cx + 0.5 * sx, cy + 0.5 * sy);
+    ctx.lineTo(cx + 0.5 * sx, cy + sy * (L - 0.5));
+    ctx.stroke();
+  }
+
+  const g = ctx.createRadialGradient(S * 0.5, S * 0.5, 0, S * 0.5, S * 0.5, S * 0.72);
+  g.addColorStop(0, "rgba(0, 8, 14, 0.22)");
+  g.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  return tex;
+}
+
 function makePanelMaterial(colorHex, emissive, neon) {
   return new THREE.MeshStandardMaterial({
     color: colorHex,
@@ -104,7 +175,7 @@ function disposeWallMeshGroup(group) {
  * @param {import('three').Scene} scene
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} cfg
  * @param {ReturnType<typeof openGateGapsByEdge> | null | undefined} [gapsByEdge]
- * @param {'off' | 'basic' | 'rich'} [floorDetail] — graphics tier `arenaFloorDetail`
+ * @param {'off' | 'basic' | 'rich'} [floorDetail] — graphics tier `arenaFloorDetail` (`off` = Tron emissive deck only; `basic`/`rich` add micro normal/roughness).
  */
 export function buildArenaVisuals(scene, cfg, gapsByEdge, floorDetail = "off") {
   const group = new THREE.Group();
@@ -113,22 +184,29 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge, floorDetail = "off") {
   const h = cfg.arenaWallHeight;
   const neon = 0.35 + cfg.devHud.neonIntensity * 0.45;
   const gridBoost = 0.25 + cfg.devHud.gridBrightness * 0.55;
+  const floorLineStep = getFloorGridLineStep(cfg.devHud);
+  const gridLineCol = new THREE.Color(cfg.colors.gridLine ?? 0x00e8ff);
+  /** Tron deck emissive map on all tiers; keep multiplier modest so bloom stays controlled. */
+  const floorEmissiveMul = 0.04;
 
   const floorGeo = new THREE.PlaneGeometry(cfg.arenaWidth, cfg.arenaDepth);
   const floorMat = new THREE.MeshStandardMaterial({
     color: cfg.colors.gridFloor,
-    emissive: new THREE.Color(cfg.colors.gridLine).multiplyScalar(0.055),
+    emissive: gridLineCol.clone().multiplyScalar(floorEmissiveMul),
+    emissiveIntensity: 1,
     metalness: 0.12,
     roughness: 0.82,
   });
-  if (floorDetail === "basic" || floorDetail === "rich") {
-    if (typeof scene.userData._disposeArenaFloorMicroTex === "function") {
-      try {
-        scene.userData._disposeArenaFloorMicroTex();
-      } catch {
-        /* ignore */
-      }
+
+  if (typeof scene.userData._disposeArenaFloorMicroTex === "function") {
+    try {
+      scene.userData._disposeArenaFloorMicroTex();
+    } catch {
+      /* ignore */
     }
+  }
+
+  if (floorDetail === "basic" || floorDetail === "rich") {
     const tx = createArenaFloorMicroTextures();
     floorMat.normalMap = tx.normalMap;
     floorMat.normalScale = new THREE.Vector2(0.2, 0.2);
@@ -137,7 +215,24 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge, floorDetail = "off") {
     const rep = Math.max(28, Math.round((cfg.arenaWidth + cfg.arenaDepth) * 0.055));
     tx.normalMap.repeat.set(rep, rep);
     tx.roughnessMap.repeat.set(rep, rep);
-    scene.userData._disposeArenaFloorMicroTex = tx.dispose;
+
+    const emTex = createArenaFloorTronEmissiveMap(gridLineCol);
+    floorMat.emissiveMap = emTex;
+    emTex.repeat.set(cfg.arenaWidth / floorLineStep, cfg.arenaDepth / floorLineStep);
+
+    scene.userData._disposeArenaFloorMicroTex = () => {
+      tx.dispose();
+      emTex.dispose();
+    };
+
+    floorMat.metalness = 0.15;
+    floorMat.roughness = Math.min(0.8, floorMat.roughness);
+  } else {
+    const emTex = createArenaFloorTronEmissiveMap(gridLineCol);
+    floorMat.emissiveMap = emTex;
+    emTex.repeat.set(cfg.arenaWidth / floorLineStep, cfg.arenaDepth / floorLineStep);
+    scene.userData._disposeArenaFloorMicroTex = () => emTex.dispose();
+    floorMat.metalness = 0.13;
   }
   if (floorDetail === "rich") {
     floorMat.userData.emissiveIntensityBase = floorMat.emissiveIntensity;

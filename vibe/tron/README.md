@@ -1,4 +1,4 @@
-# Tron
+# Tron: Cyber Cycles
 
 Implementation tracks `plans/plan-2026-04-09-tron-light-cycles.md`.
 
