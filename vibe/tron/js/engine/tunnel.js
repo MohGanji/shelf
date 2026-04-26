@@ -1,7 +1,11 @@
 import * as THREE from "../vendor/three-module.js";
-import { CONFIG, getTunnelGridLineStep } from "../config.js";
+import { CONFIG } from "../config.js";
+import { attachFacadeAtlasEmissiveShader, getBuildingFacadeEmissiveMap } from "./facadeEmissiveAtlas.js";
 
 let tunnelBlocksInput = false;
+
+/** Macro façade tiles around the tunnel cylinder (higher = more “building” blocks in view). */
+const TUNNEL_FACADE_TILE_DENSITY = 5.5;
 
 /** Fired on `window` when a tunnel session starts or ends — `detail.active` true while flying. */
 export const TUNNEL_SESSION_EVENT = 'tron-tunnel-session';
@@ -19,48 +23,18 @@ function dispatchTunnelSession(active) {
   );
 }
 
-/**
- * @param {Partial<import("../config.js").DEFAULT_DEV_HUD> | null | undefined} devHud
- */
-function createGridTextures(devHud) {
-  const size = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0a0a1e';
-  ctx.fillRect(0, 0, size, size);
-  ctx.strokeStyle = '#00ffff';
-  ctx.lineWidth = 2;
-  /** Base 32px × `tunnelGridLineStep` from dev HUD (default matches floor spacing). */
-  const step = 32 * getTunnelGridLineStep(devHud);
-  for (let i = 0; i <= size; i += step) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i, size);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, i);
-    ctx.lineTo(size, i);
-    ctx.stroke();
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(CONFIG.tunnelGridRepeatU, CONFIG.tunnelGridRepeatV);
-  return tex;
-}
-
 function disposeObject3D(root) {
   root.traverse((obj) => {
     if (obj.geometry) obj.geometry.dispose();
     if (obj.material) {
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
       for (const m of mats) {
+        if (m.emissiveMap && m.emissiveMap.userData && m.emissiveMap.userData.sharedBuildingFacadeAtlas) {
+          m.emissiveMap = null;
+        }
         for (const key of Object.keys(m)) {
           const val = m[key];
-          if (val && typeof val.dispose === 'function' && val !== m) val.dispose();
+          if (val && typeof val.dispose === "function" && val !== m) val.dispose();
         }
         m.dispose();
       }
@@ -111,16 +85,20 @@ export function playTunnel(renderer, onComplete, options = {}) {
 
     const radius = CONFIG.tunnelRadius;
     const length = CONFIG.tunnelLength;
-    const gridMap = createGridTextures(options.devHud);
+    const facadeMap = getBuildingFacadeEmissiveMap();
 
     const mat = new THREE.MeshStandardMaterial({
-      emissiveMap: gridMap,
-      color: 0x050818,
-      emissive: 0xaaddff,
-      emissiveIntensity: 1.15,
-      metalness: 0.4,
-      roughness: 0.42,
+      emissiveMap: facadeMap,
+      color: 0x060a14,
+      emissive: 0x55c8e8,
+      emissiveIntensity: 0.92,
+      metalness: 0.44,
+      roughness: 0.48,
       side: THREE.BackSide,
+    });
+    attachFacadeAtlasEmissiveShader(mat, {
+      programSuffix: "tunnel",
+      tileDensity: TUNNEL_FACADE_TILE_DENSITY,
     });
 
     const cylinder = new THREE.CylinderGeometry(
@@ -171,8 +149,8 @@ export function playTunnel(renderer, onComplete, options = {}) {
       camera.position.z = z;
       camera.lookAt(0, 0, z + 12);
 
-      gridMap.offset.y -= 0.45 * dt;
-      gridMap.offset.x -= 0.1 * dt;
+      facadeMap.offset.y -= 0.22 * dt;
+      facadeMap.offset.x -= 0.05 * dt;
 
       inner.position.z = z;
 
