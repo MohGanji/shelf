@@ -260,6 +260,9 @@ function createProceduralMusicBuffer(sampleRate, durationSec, kind) {
   return buf;
 }
 
+/** Keep music below gameplay SFX while preserving user-facing slider values. */
+const MUSIC_BUS_TRIM = 0.58;
+
 /**
  * Gear shift thresholds — plan: ~10%, ~25%, ~45%, ~70%, ~100% for 5 gears; equal splits for other counts.
  * @param {number} count
@@ -284,7 +287,22 @@ function gearBandIndex(ratio, thresholds) {
   for (let i = 0; i < thresholds.length; i += 1) {
     if (r < thresholds[i]) return i;
   }
-  return thresholds.length;
+  return Math.max(0, thresholds.length - 1);
+}
+
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v));
+}
+
+/**
+ * @param {number} ratio 0..1
+ * @param {number} band
+ * @param {number[]} thresholds
+ */
+function gearProgressInBand(ratio, band, thresholds) {
+  const lo = band <= 0 ? 0 : thresholds[band - 1] ?? 0;
+  const hi = thresholds[band] ?? 1;
+  return clamp01((ratio - lo) / Math.max(0.001, hi - lo));
 }
 
 /**
@@ -308,6 +326,10 @@ export function createAudioEngine(options = {}) {
       ? options.musicGameplayUrl
       : "";
 
+  function effectiveMusicVolume() {
+    return Math.max(0, musicVolume) * MUSIC_BUS_TRIM;
+  }
+
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) {
     return createNoopEngine();
@@ -319,7 +341,7 @@ export function createAudioEngine(options = {}) {
   masterGain.connect(ctx.destination);
 
   const musicGain = ctx.createGain();
-  musicGain.gain.value = musicVolume;
+  musicGain.gain.value = effectiveMusicVolume();
   musicGain.connect(masterGain);
 
   const sfxGain = ctx.createGain();
@@ -435,11 +457,16 @@ export function createAudioEngine(options = {}) {
     }
   }
 
-  /** P8.4 — Engine layer state (idle hum + moving whine + gear chunks). */
+  /** P8.4 — Engine layer state (idle hum + moving whine + drag-style gear shifts). */
   let engineGearBand = -1;
   /** @type {{ mix: GainNode; idle: OscillatorNode; main: OscillatorNode; idleG: GainNode; mainG: GainNode } | null} */
   let engineNodes = null;
   let engineLfoPhase = 0;
+  let engineShiftStart = -1;
+  let engineShiftUntil = -1;
+  let engineShiftDepth = 0;
+  let engineLastShiftAt = -1;
+  let enginePrevSpeed = null;
 
   function ensureEngineGraph() {
     if (engineNodes || !ctx) return engineNodes;
@@ -471,23 +498,74 @@ export function createAudioEngine(options = {}) {
     return engineNodes;
   }
 
-  function playEngineGearChunk() {
+  /**
+   * Drag-racing shift transient: low driveline thunk, clutch click, and a brief air/electric unload.
+   * @param {object} opts
+   * @param {number} [opts.load] 0..1
+   * @param {number} [opts.gear]
+   */
+  function playEngineGearShift(opts = {}) {
     if (!ctx) return;
     const t0 = ctx.currentTime;
-    const amp = Math.max(0, sfxGain.gain.value) * 0.12;
-    const o = ctx.createOscillator();
-    o.type = "square";
-    o.frequency.setValueAtTime(240, t0);
-    o.frequency.exponentialRampToValueAtTime(48, t0 + 0.055);
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(amp, t0 + 0.002);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.085);
-    o.connect(g);
-    g.connect(sfxGain);
+    const load = clamp01(typeof opts.load === "number" ? opts.load : 0.65);
+    const gear = Math.max(1, Math.floor(typeof opts.gear === "number" ? opts.gear : 1));
+    const amp = Math.max(0, sfxVolume) * (0.72 + load * 0.55);
+
+    const thunk = ctx.createOscillator();
+    thunk.type = "triangle";
+    thunk.frequency.setValueAtTime(74 + gear * 5, t0);
+    thunk.frequency.exponentialRampToValueAtTime(34, t0 + 0.075);
+    const thunkG = ctx.createGain();
+    thunkG.gain.setValueAtTime(0.0001, t0);
+    thunkG.gain.exponentialRampToValueAtTime(0.13 * amp, t0 + 0.004);
+    thunkG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.105);
+    thunk.connect(thunkG);
+    thunkG.connect(sfxGain);
+
+    const frames = Math.max(256, Math.floor(ctx.sampleRate * 0.045));
+    const noiseBuf = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const nd = noiseBuf.getChannelData(0);
+    for (let i = 0; i < frames; i += 1) {
+      nd[i] = (Math.random() * 2 - 1) * (1 - i / frames);
+    }
+
+    const click = ctx.createBufferSource();
+    click.buffer = noiseBuf;
+    const clickBp = ctx.createBiquadFilter();
+    clickBp.type = "bandpass";
+    clickBp.frequency.setValueAtTime(1250, t0);
+    clickBp.frequency.exponentialRampToValueAtTime(520, t0 + 0.035);
+    clickBp.Q.value = 2.4;
+    const clickG = ctx.createGain();
+    clickG.gain.setValueAtTime(0.0001, t0);
+    clickG.gain.exponentialRampToValueAtTime(0.055 * amp, t0 + 0.002);
+    clickG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.045);
+    click.connect(clickBp);
+    clickBp.connect(clickG);
+    clickG.connect(sfxGain);
+
+    const unload = ctx.createBufferSource();
+    unload.buffer = noiseBuf;
+    const unloadBp = ctx.createBiquadFilter();
+    unloadBp.type = "bandpass";
+    unloadBp.frequency.setValueAtTime(420 + load * 180, t0);
+    unloadBp.frequency.exponentialRampToValueAtTime(980 + load * 380, t0 + 0.075);
+    unloadBp.Q.value = 0.55;
+    const unloadG = ctx.createGain();
+    unloadG.gain.setValueAtTime(0.0001, t0);
+    unloadG.gain.exponentialRampToValueAtTime(0.022 * amp, t0 + 0.01);
+    unloadG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.085);
+    unload.connect(unloadBp);
+    unloadBp.connect(unloadG);
+    unloadG.connect(sfxGain);
+
     try {
-      o.start(t0);
-      o.stop(t0 + 0.1);
+      thunk.start(t0);
+      thunk.stop(t0 + 0.12);
+      click.start(t0);
+      click.stop(t0 + 0.055);
+      unload.start(t0 + 0.01);
+      unload.stop(t0 + 0.105);
     } catch {
       /* ignore */
     }
@@ -502,6 +580,10 @@ export function createAudioEngine(options = {}) {
    * @param {number} [opts.speedRatioDenominator] — e.g. top speed × nitro cap for 0..1 ratio
    * @param {number} [opts.enginePitch] — devHud `enginePitch`
    * @param {number} [opts.gearShiftCount] — devHud `gearShiftCount`
+   * @param {number} [opts.acceleration] — configured forward acceleration, for load-normalized shift intensity
+   * @param {boolean} [opts.throttle]
+   * @param {boolean} [opts.braking]
+   * @param {boolean} [opts.nitroActive]
    */
   function tickEngineSound(opts = {}) {
     if (!ctx) return;
@@ -512,6 +594,10 @@ export function createAudioEngine(options = {}) {
       speedRatioDenominator = 72,
       enginePitch = 1,
       gearShiftCount = 5,
+      acceleration = 0,
+      throttle = false,
+      braking = false,
+      nitroActive = false,
     } = opts;
     const gGraph = ensureEngineGraph();
     if (!gGraph) return;
@@ -519,6 +605,11 @@ export function createAudioEngine(options = {}) {
     if (!active) {
       engineGearBand = -1;
       engineLfoPhase = 0;
+      engineShiftStart = -1;
+      engineShiftUntil = -1;
+      engineShiftDepth = 0;
+      engineLastShiftAt = -1;
+      enginePrevSpeed = null;
       gGraph.mix.gain.setTargetAtTime(0, t, 0.035);
       return;
     }
@@ -526,29 +617,64 @@ export function createAudioEngine(options = {}) {
     const pitch = typeof enginePitch === "number" && enginePitch > 0 ? enginePitch : 1;
     const denom = Math.max(0.001, speedRatioDenominator);
     const ratio = Math.max(0, Math.min(1, Math.abs(speed) / denom));
+    const spd = Math.abs(speed);
+    const prevSpd = typeof enginePrevSpeed === "number" ? Math.abs(enginePrevSpeed) : spd;
+    const measuredAccel = dt > 0 ? Math.max(0, (spd - prevSpd) / dt) : 0;
+    const accelRef =
+      typeof acceleration === "number" && Number.isFinite(acceleration) && acceleration > 0
+        ? acceleration
+        : denom * 0.9;
+    const accelLoad = clamp01(measuredAccel / Math.max(1, accelRef));
+    const driverLoad = braking ? 0 : (throttle ? 0.7 : 0.18) + (nitroActive ? 0.3 : 0);
+    const load = clamp01(Math.max(accelLoad, driverLoad));
     const th = getGearThresholds(
       typeof gearShiftCount === "number" && Number.isFinite(gearShiftCount) ? gearShiftCount : 5,
     );
     const band = gearBandIndex(ratio, th);
-    if (engineGearBand >= 0 && band > engineGearBand) {
-      playEngineGearChunk();
+    const now = t;
+    const upshiftThreshold = th[Math.min(engineGearBand, th.length - 1)] ?? ratio;
+    const clearedShiftDeadband = ratio > upshiftThreshold + 0.006;
+    if (
+      engineGearBand >= 0 &&
+      band > engineGearBand &&
+      clearedShiftDeadband &&
+      now - engineLastShiftAt > 0.16 &&
+      load > 0.12
+    ) {
+      engineLastShiftAt = now;
+      engineShiftStart = now;
+      engineShiftUntil = now + 0.135;
+      engineShiftDepth = 0.12 + load * 0.18;
+      playEngineGearShift({ load, gear: band + 1 });
     }
     engineGearBand = band;
+    enginePrevSpeed = speed;
 
     engineLfoPhase += dt * 5.2;
     const idleFlutter = 0.86 + 0.14 * Math.sin(engineLfoPhase);
-    const spd = Math.abs(speed);
     const nearIdle = spd < 2.2;
     const idleVol = (nearIdle ? 0.038 : 0.012) * idleFlutter;
-    const moveCore = Math.pow(ratio, 0.88) * 0.092;
-    const topWhine = ratio > 0.88 ? 0.045 * ((ratio - 0.88) / 0.12) : 0;
-    const mainVol = Math.min(0.14, moveCore + topWhine);
+    const gearProgress = gearProgressInBand(ratio, band, th);
+    const rpm = clamp01(0.28 + gearProgress * 0.68 + load * 0.08);
+    const topLoad = rpm > 0.84 ? ((rpm - 0.84) / 0.16) * (0.55 + load * 0.45) : 0;
+    const topWhine = rpm > 0.9 ? 0.022 * ((rpm - 0.9) / 0.1) : 0;
+    const moveCore = Math.pow(ratio, 0.55) * (0.052 + load * 0.038);
+    let mainVol = Math.min(0.148, moveCore + topWhine + topLoad * 0.026);
 
-    const fMain = (86 + Math.pow(ratio, 1.16) * 410 * pitch) * (ratio > 0.9 ? 1.05 : 1);
-    const fIdle = 55 + 8 * pitch;
+    let shiftDip = 0;
+    if (now < engineShiftUntil && engineShiftStart >= 0) {
+      const u = clamp01((now - engineShiftStart) / Math.max(0.001, engineShiftUntil - engineShiftStart));
+      shiftDip = Math.sin(Math.PI * u) * engineShiftDepth;
+      mainVol *= 1 - shiftDip * 0.7;
+    }
+
+    const fMain =
+      (92 + Math.pow(clamp01(rpm - shiftDip), 1.04) * 380 * pitch + topLoad * 18) *
+      (nitroActive ? 1.04 : 1);
+    const fIdle = 62 + 8 * pitch;
 
     gGraph.idle.frequency.setTargetAtTime(fIdle, t, 0.025);
-    gGraph.main.frequency.setTargetAtTime(fMain, t, 0.03);
+    gGraph.main.frequency.setTargetAtTime(fMain, t, now < engineShiftUntil ? 0.012 : 0.04);
     gGraph.idleG.gain.setTargetAtTime(idleVol, t, 0.045);
     gGraph.mainG.gain.setTargetAtTime(mainVol, t, 0.038);
     gGraph.mix.gain.setTargetAtTime(1, t, 0.04);
@@ -559,7 +685,7 @@ export function createAudioEngine(options = {}) {
    */
   function duckMusicForDerezSfx() {
     const t0 = ctx.currentTime;
-    const base = musicVolume;
+    const base = effectiveMusicVolume();
     let g = base;
     try {
       g = musicGain.gain.value;
@@ -721,7 +847,7 @@ export function createAudioEngine(options = {}) {
       }
       if (v.music != null) {
         musicVolume = v.music;
-        musicGain.gain.value = v.music;
+        musicGain.gain.value = effectiveMusicVolume();
       }
       if (v.sfx != null) {
         sfxVolume = v.sfx;

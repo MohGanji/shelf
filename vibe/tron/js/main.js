@@ -505,8 +505,6 @@ async function main() {
   playerCycle.root.rotation.y = spawnHeading;
   game.scene.add(playerCycle.root);
 
-  /** P8.5 — throttle trail tinks (spawn is dense; callback is also strided in trail.js). */
-  let lastTrailTinkMs = 0;
   const trailWall = createTrailWallSystem({
     color: save.player.cycleColor ?? "#00FFFF",
     devHud,
@@ -515,12 +513,6 @@ async function main() {
     arenaWidth: playCfg.arenaWidth,
     arenaDepth: playCfg.arenaDepth,
     ownerId: "player",
-    onNewSegment: () => {
-      const now = performance.now();
-      if (now - lastTrailTinkMs < 120) return;
-      lastTrailTinkMs = now;
-      audio.playTrailSegmentTink();
-    },
   });
   game.scene.add(trailWall.root);
 
@@ -1701,6 +1693,10 @@ async function main() {
       speedRatioDenominator: playerDriveCfg.maxMoveSpeed * nitroCapMul,
       enginePitch: typeof devHud.enginePitch === "number" ? devHud.enginePitch : 1,
       gearShiftCount: typeof devHud.gearShiftCount === "number" ? devHud.gearShiftCount : 5,
+      acceleration: playerDriveCfg.acceleration,
+      throttle: arenaKeys.w,
+      braking: arenaKeys.s,
+      nitroActive: nitroOn,
     });
 
     const raw = nitroOn ? 1 : 0;
