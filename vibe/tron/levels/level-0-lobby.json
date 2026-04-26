@@ -182,7 +182,6 @@
       "depth": 30,
       "height": 3,
       "shape": "square",
-      "color": "#00e8ff",
       "zone": "center-left-rim",
       "x": -50,
       "z": -84
@@ -195,7 +194,6 @@
       "depth": 30,
       "height": 3,
       "shape": "square",
-      "color": "#00e8ff",
       "zone": "center-right-rim",
       "x": 50,
       "z": -84
