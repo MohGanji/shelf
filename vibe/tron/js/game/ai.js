@@ -2,6 +2,9 @@
  * Enemy AI (plan Phase 4): P4.2 steering — tile-map trail lookahead + solid (arena/barrier) ray checks.
  * P4.3 — hunting: intercept (trail-cut lead), tiered flanking, aggression + reaction-time smoothing.
  * P4.4 — self-preservation: `aiAvoidanceRange` for wall rays + peer separation; `aiReactionTime` smooths combined hunt + peer steer.
+ * Evasion throttle: brake is “slow enough to carve,” not “stop.” Planner scores gas vs brake per steer;
+ * a minimum-speed floor + rearm hysteresis keeps enemies off zero in pinches unless impact is imminent.
+ * While braking in hazard, steer is forced non-zero when needed so S always pairs with A/D (sharp carve).
  */
 
 import { Box } from "../vendor/cannon-es-module.js";
@@ -425,12 +428,12 @@ function percent01(raw, fallback) {
 
 /** @param {import('../config.js').DEFAULT_DEV_HUD} devHud */
 function smartAiParams(devHud) {
-  const safety = percent01(devHud.aiSafetyPercent, 85);
-  const aggression = percent01(devHud.aiAggressionPercent, 80);
-  const cutoff = percent01(devHud.aiCutoffPercent, 75);
-  const pressure = percent01(devHud.aiPressurePercent, 60);
-  const lookahead = percent01(devHud.aiLookaheadPercent, 75);
-  const stability = percent01(devHud.aiStabilityPercent, 65);
+  const safety = percent01(devHud.aiSafetyPercent, 95);
+  const aggression = percent01(devHud.aiAggressionPercent, 90);
+  const cutoff = percent01(devHud.aiCutoffPercent, 95);
+  const pressure = percent01(devHud.aiPressurePercent, 95);
+  const lookahead = percent01(devHud.aiLookaheadPercent, 90);
+  const stability = percent01(devHud.aiStabilityPercent, 40);
   return {
     safety,
     aggression,
@@ -577,6 +580,46 @@ function floodFillReachable(opts) {
     }
   }
   return count;
+}
+
+/**
+ * Unifies brake + gas for pinch escape: brake only bleeds speed down to a floor, then W is required
+ * so the cycle keeps rolling while steering. Rearm hysteresis avoids brake↔gas flicker at the boundary.
+ * @param {import('cannon-es').Body} body
+ * @param {object} o
+ * @param {boolean} o.wantBrake
+ * @param {boolean} o.hazard
+ * @param {boolean} o.imminent — true = allow full brake even near zero speed
+ * @param {number} o.enemySpd
+ * @param {number} o.topSpeed
+ * @param {import('../config.js').DEFAULT_DEV_HUD} o.devHud
+ */
+function applyAiEvasionThrottle(body, o) {
+  const { wantBrake, hazard, imminent, enemySpd, topSpeed, devHud } = o;
+  const u = body.userData;
+  const floorPct = aiHudNumber(devHud.aiEvasionMinSpeedPct, 19, 10, 85) / 100;
+  const rearmExtraPct = aiHudNumber(devHud.aiEvasionBrakeRearmPct, 6.5, 2, 18) / 100;
+  const minSpd = topSpeed * floorPct;
+  const rearmSpd = minSpd + topSpeed * rearmExtraPct;
+
+  if (!hazard || imminent) {
+    u._aiEvasionCanBrake = true;
+    return wantBrake;
+  }
+
+  if (typeof u._aiEvasionCanBrake !== "boolean") u._aiEvasionCanBrake = true;
+  if (enemySpd <= minSpd) u._aiEvasionCanBrake = false;
+  else if (enemySpd >= rearmSpd) u._aiEvasionCanBrake = true;
+
+  if (wantBrake && !u._aiEvasionCanBrake) return false;
+  return wantBrake;
+}
+
+/** @param {unknown} raw @param {number} def @param {number} min @param {number} max */
+function aiHudNumber(raw, def, min, max) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return def;
+  return Math.max(min, Math.min(max, n));
 }
 
 /**
@@ -755,6 +798,8 @@ export function computeEnemyCycleKeys(opts) {
   const safeHL = !dangerHL;
   const safeHR = !dangerHR;
   const distPlayer = Math.hypot(playerPos.x - px, playerPos.z - pz);
+  const enemySpdEarly = typeof body.userData.speed === "number" ? body.userData.speed : 0;
+  const topSpeed = playCfg.maxMoveSpeed;
 
   /** @type {number} */
   let steer = seekSteer;
@@ -776,88 +821,161 @@ export function computeEnemyCycleKeys(opts) {
     const useIntercept = devHud.aiInterceptEnabled !== false;
     const useCutoff = devHud.aiCutoffEnabled !== false;
     const usePressure = devHud.aiPressureTrailsEnabled !== false;
+    const evasionMinFrac = aiHudNumber(devHud.aiEvasionMinSpeedPct, 19, 10, 85) / 100;
     const prevSteer = typeof body.userData.aiLastSmartSteer === "number" ? body.userData.aiLastSmartSteer : 0;
     const targetX = useIntercept ? predX : playerPos.x;
     const targetZ = useIntercept ? predZ : playerPos.z;
     const targetAng = Math.atan2(targetX - px, targetZ - pz);
-    let best = { steer: seekSteer, score: -Infinity, danger: false, reachable: 0 };
+    /** Player along our forward axis (+ = player ahead of us, − = behind). */
+    const playerAlongFwd =
+      (playerPos.x - px) * Math.sin(heading) + (playerPos.z - pz) * Math.cos(heading);
+    let best = {
+      steer: seekSteer,
+      score: -Infinity,
+      danger: false,
+      reachable: 0,
+      useBrake: false,
+    };
+    const nitroBurstActive = nitroState && nitroState.burstRemaining > 1e-5;
+    const brakeChoices = nitroBurstActive ? [false] : [false, true];
     const candidates = [-1, 0, 1];
     for (const cand of candidates) {
-      const candHeading = heading + (cand < 0 ? 0.78 : cand > 0 ? -0.78 : 0);
-      const dx = Math.sin(candHeading);
-      const dz = Math.cos(candHeading);
-      const sampleX = px + dx * p.projectionDist;
-      const sampleZ = pz + dz * p.projectionDist;
-      const trailDanger =
-        (avoidOwnTrail || avoidEnemyTrails) &&
-        hasDangerousTrailAhead({
-          x: px,
-          z: pz,
-          heading: candHeading,
-          selfId,
-          immunitySegments: imm,
-          steps: p.lookaheadTiles,
-          halfWidth: halfWTrail,
-          sources: trailSources,
-        });
-      const solidClear = avoidSolids
-        ? raycastSolidClearanceXZ({
-            px,
-            pz,
+      for (const useBrake of brakeChoices) {
+        const candHeading = heading + (cand < 0 ? 0.78 : cand > 0 ? -0.78 : 0);
+        const dx = Math.sin(candHeading);
+        const dz = Math.cos(candHeading);
+        const spdFactor = Math.min(1, enemySpdEarly / Math.max(0.01, topSpeed));
+        const projMul =
+          useBrake ? 0.55 + (1 - spdFactor) * 0.22 : 1;
+        const sampleDist = p.projectionDist * projMul;
+        const sampleX = px + dx * sampleDist;
+        const sampleZ = pz + dz * sampleDist;
+        const trailSteps = Math.max(
+          3,
+          Math.floor(p.lookaheadTiles * (useBrake ? 0.78 : 1)),
+        );
+        const trailDanger =
+          (avoidOwnTrail || avoidEnemyTrails) &&
+          hasDangerousTrailAhead({
+            x: px,
+            z: pz,
             heading: candHeading,
+            selfId,
+            immunitySegments: imm,
+            steps: trailSteps,
+            halfWidth: halfWTrail,
+            sources: trailSources,
+          });
+        const solidClear = avoidSolids
+          ? raycastSolidClearanceXZ({
+              px,
+              pz,
+              heading: candHeading,
+              halfW,
+              halfD,
+              playerRadius: pr,
+              barrierBodies,
+              maxDist: avoidRange * (1.8 + p.lookahead),
+            })
+          : Infinity;
+        const solidDanger = avoidSolids && solidClear < avoidRange * 0.9;
+        let reachable = p.floodBudget;
+        if (useReachability) {
+          const tile = grid.worldToTile(sampleX, sampleZ);
+          reachable = floodFillReachable({
+            startTile: tile,
+            grid,
+            selfId,
+            immunitySegments: imm,
+            sources: trailSources,
+            budget: p.floodBudget,
             halfW,
             halfD,
-            playerRadius: pr,
+            radius: pr,
             barrierBodies,
-            maxDist: avoidRange * (1.8 + p.lookahead),
-          })
-        : Infinity;
-      const solidDanger = avoidSolids && solidClear < avoidRange * 0.9;
-      let reachable = p.floodBudget;
-      if (useReachability) {
-        const tile = grid.worldToTile(sampleX, sampleZ);
-        reachable = floodFillReachable({
-          startTile: tile,
-          grid,
-          selfId,
-          immunitySegments: imm,
-          sources: trailSources,
-          budget: p.floodBudget,
-          halfW,
-          halfD,
-          radius: pr,
-          barrierBodies,
-          avoidOwnTrail,
-          avoidEnemyTrails,
-          avoidSolids,
-        });
-      }
+            avoidOwnTrail,
+            avoidEnemyTrails,
+            avoidSolids,
+          });
+        }
 
-      const align = Math.cos(wrapAngle(targetAng - candHeading));
-      const directDist = Math.hypot(targetX - sampleX, targetZ - sampleZ);
-      const directPressure = 1 / (1 + directDist * 0.045);
-      const playerToEnemyNow = Math.hypot(playerPos.x - px, playerPos.z - pz);
-      const playerToCandidate = Math.hypot(playerPos.x - sampleX, playerPos.z - sampleZ);
-      const closing = Math.max(-1, Math.min(1, (playerToEnemyNow - playerToCandidate) / Math.max(1, p.projectionDist)));
-      const cutoffScore = useCutoff ? Math.max(0, closing) * 0.7 + Math.max(0, align) * 0.3 : 0;
-      const pressureScore = usePressure ? directPressure * (0.6 + Math.min(0.4, distPlayer / 120)) : 0;
-      const reachScore = Math.min(1, reachable / Math.max(1, p.floodBudget));
-      const trapPenalty = useTrapAvoidance && reachable < p.floodBudget * 0.18 ? 1 : 0;
-      const dangerPenalty = (trailDanger ? 1 : 0) + (solidDanger ? 0.85 : 0);
-      const stabilityBonus = cand === prevSteer ? p.stability * 0.9 : cand === 0 && prevSteer === 0 ? p.stability * 0.6 : 0;
+        const align = Math.cos(wrapAngle(targetAng - candHeading));
+        const directDist = Math.hypot(targetX - sampleX, targetZ - sampleZ);
+        const directPressure = 1 / (1 + directDist * 0.045);
+        const playerToEnemyNow = Math.hypot(playerPos.x - px, playerPos.z - pz);
+        const playerToCandidate = Math.hypot(playerPos.x - sampleX, playerPos.z - sampleZ);
+        const closing = Math.max(
+          -1,
+          Math.min(1, (playerToEnemyNow - playerToCandidate) / Math.max(1, sampleDist)),
+        );
+        const cutoffScore = useCutoff ? Math.max(0, closing) * 0.7 + Math.max(0, align) * 0.3 : 0;
+        const pressureScore = usePressure ? directPressure * (0.6 + Math.min(0.4, distPlayer / 120)) : 0;
+        const reachScore = Math.min(1, reachable / Math.max(1, p.floodBudget));
+        const trapPenalty = useTrapAvoidance && reachable < p.floodBudget * 0.18 ? 1 : 0;
+        let dangerPenalty = (trailDanger ? 1 : 0) + (solidDanger ? 0.85 : 0);
+        if (useBrake && enemySpdEarly > topSpeed * 0.22) {
+          dangerPenalty *= 0.86;
+        }
+        const stabilityBonus = cand === prevSteer ? p.stability * 0.9 : cand === 0 && prevSteer === 0 ? p.stability * 0.6 : 0;
 
-      let score = 0;
-      score += reachScore * (2.2 + p.safety * 5.5);
-      score += Math.max(0, align) * p.aggression * 3.2;
-      score += cutoffScore * p.cutoff * 3.5;
-      score += pressureScore * p.pressure * 2.2;
-      score += stabilityBonus;
-      score -= dangerPenalty * (5 + p.safety * 12);
-      score -= trapPenalty * (3 + p.safety * 8);
-      if (cand === seekSteer) score += p.aggression * 0.45;
+        let score = 0;
+        score += reachScore * (2.2 + p.safety * 5.5);
+        score += Math.max(0, align) * p.aggression * 3.2;
+        score += cutoffScore * p.cutoff * 3.5;
+        score += pressureScore * p.pressure * 2.2;
+        score += stabilityBonus;
+        score -= dangerPenalty * (5 + p.safety * 12);
+        score -= trapPenalty * (3 + p.safety * 8);
+        if (cand === seekSteer) score += p.aggression * 0.45;
 
-      if (score > best.score) {
-        best = { steer: cand, score, danger: dangerPenalty > 0, reachable };
+        if (useBrake && enemySpdEarly <= topSpeed * (evasionMinFrac + 0.035)) {
+          score -= 4.0 + p.safety * 0.6;
+        }
+
+        if (useBrake) {
+          const pinch = reachable < p.floodBudget * (0.22 + p.safety * 0.06);
+          const needSlow =
+            wallNear ||
+            dangerFwd ||
+            dangerL ||
+            dangerR ||
+            clearF < avoidRange * 1.15;
+          if (pinch) {
+            score += 1.15 + p.aggression * 1.1 + p.safety * 0.95;
+          }
+          if (needSlow && enemySpdEarly > topSpeed * 0.28) {
+            score += 0.65 + spdFactor * (0.85 + p.safety * 0.7);
+          }
+          if (
+            useCutoff &&
+            playerAlongFwd < -4 &&
+            distPlayer < 92 &&
+            distPlayer > 10 &&
+            enemySpdEarly > topSpeed * 0.34 &&
+            Math.abs(wrapAngle(Math.atan2(playerPos.x - px, playerPos.z - pz) - candHeading)) < 1.05
+          ) {
+            score += p.cutoff * p.aggression * 1.65;
+          }
+          const wasteful =
+            distPlayer > 78 &&
+            !wallNear &&
+            !dangerFwd &&
+            !trailDanger &&
+            reachable > p.floodBudget * 0.42;
+          if (wasteful) {
+            score -= 1.05 * (1.45 - p.aggression * 0.55);
+          }
+        }
+
+        if (score > best.score) {
+          best = {
+            steer: cand,
+            score,
+            danger: dangerPenalty > 0,
+            reachable,
+            useBrake: useBrake,
+          };
+        }
       }
     }
     steer = best.steer;
@@ -866,13 +984,17 @@ export function computeEnemyCycleKeys(opts) {
       body.userData.aiSmartScore = best.score;
       body.userData.aiSmartReachable = best.reachable;
       body.userData.aiSmartDanger = best.danger;
+      body.userData.aiSmartBrakePlanner = best.useBrake;
     }
-    if (
-      devHud.aiBrakeForSafetyEnabled !== false &&
-      best.danger &&
-      best.reachable < p.floodBudget * 0.12
-    ) {
-      brake = true;
+    if (devHud.aiBrakeForSafetyEnabled !== false) {
+      brake = best.useBrake;
+      if (
+        !brake &&
+        best.danger &&
+        best.reachable < p.floodBudget * 0.12
+      ) {
+        brake = true;
+      }
     }
   } else if (dangerFwd || wallNear) {
     if (safeL && !safeR) steer = 1;
@@ -889,6 +1011,56 @@ export function computeEnemyCycleKeys(opts) {
 
   const enemySpd = typeof body.userData.speed === "number" ? body.userData.speed : 0;
   const escapeBlocked = dangerFwd && !safeL && !safeR;
+
+  /** Speed×reaction horizon (cf. Armagetron `Speed * Delay`): brake to buy turn radius before impact. */
+  if (
+    devHud.aiBrakeForSafetyEnabled !== false &&
+    !(nitroState && nitroState.burstRemaining > 1e-5)
+  ) {
+    const reactH = Math.max(0.04, devHud.aiReactionTime);
+    const stopDist = enemySpd * reactH * 1.45 + pr * 0.35;
+    if (!brake && clearF < stopDist && clearF < avoidRange * 1.85 && enemySpd > topSpeed * 0.18) {
+      brake = true;
+    }
+    if (!brake && escapeBlocked && enemySpd > topSpeed * 0.12) {
+      brake = true;
+    }
+  }
+
+  const hazardBrake =
+    dangerFwd || wallNear || dangerL || dangerR || escapeBlocked;
+  /** Only skip the gas pulse when a solid impact is truly close (not merely “trail uneasy”). */
+  const imminentHit =
+    clearF < pr * 2.85 + enemySpd * Math.max(0.04, dt) * 2.4 ||
+    (dangerFwd && clearF < 5.8 && enemySpd > topSpeed * 0.36);
+  if (
+    devHud.aiBrakeForSafetyEnabled !== false &&
+    !(nitroState && nitroState.burstRemaining > 1e-5)
+  ) {
+    brake = applyAiEvasionThrottle(body, {
+      wantBrake: brake,
+      hazard: hazardBrake,
+      imminent: imminentHit,
+      enemySpd,
+      topSpeed,
+      devHud,
+    });
+  }
+
+  if (brake && hazardBrake && steer === 0) {
+    const sm =
+      typeof body.userData.aiSteerSmoothed === "number" ? body.userData.aiSteerSmoothed : 0;
+    if (Math.abs(sm) > 0.055) {
+      steer = sm > 0 ? 1 : -1;
+    } else if (seekSteer !== 0) {
+      steer = seekSteer;
+    } else if (safeL && !safeR) steer = 1;
+    else if (safeR && !safeL) steer = -1;
+    else if (safeL && safeR) steer = clearL >= clearR ? 1 : -1;
+    else if (safeHL && !safeHR) steer = 1;
+    else if (safeHR && !safeHL) steer = -1;
+    else steer = clearL >= clearR ? 1 : -1;
+  }
 
   /** P4.5 — nitro Space: chain while bursting; otherwise tiered desire. */
   let space = false;
@@ -910,6 +1082,10 @@ export function computeEnemyCycleKeys(opts) {
       dt,
       devHud,
     });
+  }
+
+  if (devHud.aiDebugScoringEnabled) {
+    body.userData.aiSmartBrake = brake;
   }
 
   return {

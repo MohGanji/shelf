@@ -212,7 +212,7 @@ export function createCampaignEnemyEntities(opts) {
     if (u.equipSlot !== "shield") return false;
     if (u.shieldPhase !== "none") return false;
     const side = dangerL || dangerR;
-    const safety = typeof hud.aiSafetyPercent === "number" ? Math.max(0, Math.min(100, hud.aiSafetyPercent)) / 100 : 0.85;
+    const safety = typeof hud.aiSafetyPercent === "number" ? Math.max(0, Math.min(100, hud.aiSafetyPercent)) / 100 : 0.95;
     const pressure = typeof hud.aiPressurePercent === "number" ? Math.max(0, Math.min(100, hud.aiPressurePercent)) / 100 : 0.6;
     return (
       dangerFwd ||
@@ -271,6 +271,7 @@ export function createCampaignEnemyEntities(opts) {
         e.body.userData.speed = 0;
         e.body.userData.aiSteer = 0;
         e.body.userData.aiSteerSmoothed = 0;
+        e.body.userData.aiBraking = false;
       } else {
         const ai = computeEnemyCycleKeys({
           body: e.body,
@@ -297,6 +298,7 @@ export function createCampaignEnemyEntities(opts) {
           space: ai.space,
         };
         e.body.userData.aiSteer = ai.steer;
+        e.body.userData.aiBraking = !!ai.s;
 
         const deployShield = shouldEnemyDeployShield({
           dangerFwd: ai.dangerFwd,
@@ -445,8 +447,8 @@ export function updateEnemyCycleMeshes(list, dt) {
     e.cycle.update(dt, {
       speed: spd,
       steer: st,
-      accelerating: spd > 0.5,
-      braking: false,
+      accelerating: spd > 0.5 && !e.body.userData.aiBraking,
+      braking: !!e.body.userData.aiBraking,
       nitroBurstStrength: nitroVis,
       shieldBubbleMode,
     });

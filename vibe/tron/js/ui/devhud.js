@@ -310,6 +310,8 @@ export function createDevHudController(opts) {
     { key: "aiPressurePercent", label: "Pressure %", min: 0, max: 100, step: 1 },
     { key: "aiLookaheadPercent", label: "Lookahead %", min: 0, max: 100, step: 1 },
     { key: "aiStabilityPercent", label: "Stability %", min: 0, max: 100, step: 1 },
+    { key: "aiEvasionMinSpeedPct", label: "AI evasion min speed %", min: 10, max: 85, step: 1 },
+    { key: "aiEvasionBrakeRearmPct", label: "AI brake rearm gap %", min: 2, max: 18, step: 0.5 },
   ]);
 
   section("Near-miss", [
