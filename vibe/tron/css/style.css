@@ -2194,7 +2194,7 @@ body {
   color: rgba(120, 200, 255, 0.78);
 }
 
-/* P9.2 — Developer HUD (`.` toggle): live devHud sliders, persists to save */
+/* P9.2 — Developer HUD (`.` toggle): live devHud sliders (session-only, not in localStorage) */
 /* z-index above `.tron-destination` (45), editor shells (46), and editor return chip (55) so it stays usable in Garage / Architect. */
 .dev-hud {
   position: fixed;

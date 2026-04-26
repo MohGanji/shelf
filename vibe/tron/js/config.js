@@ -1,6 +1,6 @@
 /**
  * Base gameplay constants and default dev HUD values.
- * Runtime config merges save `devHud` over these defaults (see mergeRuntimeConfig).
+ * Runtime `devHud` starts from defaults; Advanced tuning is not loaded from the player save.
  */
 
 /**
@@ -81,7 +81,7 @@ export const TRON_COLORS = {
   enemyCycle: 0xff6600,
 };
 
-/** Default dev HUD keys — override chain: config defaults ← save devHud (plan save schema) */
+/** Default dev HUD keys — in-memory tuning only; save file stores schema defaults (see normalizePlayerSave) */
 export const DEFAULT_DEV_HUD = {
   bloomIntensity: 0.95,
   /** UnrealBloomPass radius — reference-style “selective bloom” often pairs with higher threshold. */
@@ -347,7 +347,7 @@ export function getGameplayMusicUrl(devHud) {
 }
 
 /**
- * Merged gameplay config: static `WORLD` plus devHud overrides from save (plan § Config Override Chain).
+ * Merged gameplay config: static `WORLD` plus merged `devHud` (in-memory; boot uses defaults, not the save file).
  *
  * @typedef {{ world: typeof WORLD; devHud: ReturnType<typeof mergeDevHud> }} RuntimeConfig
  */
@@ -364,14 +364,14 @@ export function mergeRuntimeConfig(devHud = {}) {
 }
 
 /**
- * Boot-time helper: load merged runtime from normalized player save (`save.devHud` is partial overrides).
+ * Boot-time helper: builds merged runtime with default dev HUD (save does not apply tuning across sessions).
  * All gameplay should use this object (or `getArenaPlaytestConfig`) — not raw `DEFAULT_DEV_HUD` / `WORLD` alone.
  *
- * @param {{ devHud?: Record<string, unknown> }} playerSave
+ * @param {{ devHud?: Record<string, unknown> }} [_playerSave] — unused; kept for call-site stability
  * @returns {RuntimeConfig}
  */
-export function createRuntimeFromPlayerSave(playerSave) {
-  return mergeRuntimeConfig(playerSave?.devHud ?? {});
+export function createRuntimeFromPlayerSave(_playerSave) {
+  return mergeRuntimeConfig({});
 }
 
 /** Full-screen tunnel transition (BOOT / gates) — see `engine/tunnel.js` */

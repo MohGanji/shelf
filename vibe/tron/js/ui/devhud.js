@@ -1,6 +1,6 @@
 /**
  * Developer HUD (`.` key) — live `devHud` sliders + toggles (plan P9.2).
- * Mutates the same `devHud` object as gameplay; calls `applyDevHud` + `persist` on change.
+ * Mutates the same `devHud` object as gameplay; calls `applyDevHud` + `persist` on change (`persist` is a no-op: tuning is session-only, not in localStorage).
  */
 
 import { DEFAULT_DEV_HUD, mergeDevHud } from "../config.js";
@@ -56,7 +56,7 @@ export function createDevHudController(opts) {
   headerTop.appendChild(resetBtn);
   const hint = document.createElement("div");
   hint.className = "dev-hud__hint";
-  hint.textContent = "Press . to hide · optional settings persist in your save";
+  hint.textContent = "Press . to hide · tuning lasts until you refresh the page";
   header.appendChild(headerTop);
   header.appendChild(hint);
 

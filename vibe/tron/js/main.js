@@ -6,7 +6,6 @@ import {
   getGameplayMusicUrl,
   createRuntimeFromPlayerSave,
   getArenaPlaytestConfig,
-  mergeDevHud,
 } from "./config.js";
 import { GameMode, isArenaRideableMode } from "./gameState.js";
 import { createChaseCamera } from "./engine/camera.js";
@@ -269,16 +268,13 @@ async function main() {
   const game = createGameRenderer(canvas, { devHud: runtime.devHud, graphicsProfile });
   setBootProgress(bootEls, 86);
 
-  const devHud = runtime.devHud; // single mutable runtime HUD — keep in sync with save via persistDevHudToSave
+  const devHud = runtime.devHud; // session-only: Advanced tuning is not written to localStorage (refresh restores defaults)
 
   /** Refreshes Garage coin UI when dev HUD grants coins (bound in `mountGarageDestinationScreen`). */
   let devEconomyUiRefresh = () => {};
 
-  /** Persist full merged devHud so keyboard tweaks survive reload (plan § Config Override Chain). */
-  function persistDevHudToSave() {
-    save.devHud = mergeDevHud({ ...devHud });
-    persistSave(save);
-  }
+  /** No-op: dev HUD (and same-store visual sliders) are session-only; do not merge into `save` or `persistSave`. */
+  function persistDevHudToSave() {}
 
   const durationMs = CONFIG.tunnelBootSeconds * 1000;
   const rampT0 = performance.now();
@@ -932,7 +928,7 @@ async function main() {
   }
 
   /**
-   * P7.6 — settings sliders persist to save; visual toggles persist via devHud merge.
+   * P7.6 — volume sliders persist; bloom / CRT (dev HUD) are session-only like Advanced tuning.
    * @param {Event} e
    */
   function onPauseSettingsInput(e) {
@@ -945,7 +941,6 @@ async function main() {
       const on = t.checked;
       devHud.crtScanlines = on;
       game.applyDevHud({ crtScanlines: on });
-      persistDevHudToSave();
       return;
     }
 
@@ -954,7 +949,6 @@ async function main() {
       if (!Number.isFinite(v)) return;
       devHud.bloomIntensity = v;
       game.applyDevHud({ bloomIntensity: v });
-      persistDevHudToSave();
       return;
     }
 

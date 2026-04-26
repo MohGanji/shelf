@@ -48,7 +48,7 @@ export function sanitizeNeonHex(raw, fallback = DEFAULT_NEON_HEX) {
  * @property {number} settings.musicVolume
  * @property {number} settings.sfxVolume
  * @property {number} settings.ambientVolume
- * @property {Record<string, number|boolean>} devHud — merged dev HUD (defaults + save overrides)
+ * @property {Record<string, number|boolean>} devHud — stored as defaults; Advanced tuning (Dev HUD) is session-only
  * @property {boolean} controlsShown — first-time controls overlay dismissed
  */
 
@@ -190,7 +190,8 @@ export function normalizePlayerSave(raw) {
       sfxVolume: vol(settingsIn.sfxVolume, d.settings.sfxVolume),
       ambientVolume: vol(settingsIn.ambientVolume, d.settings.ambientVolume),
     },
-    devHud: mergeDevHud(o.devHud && typeof o.devHud === "object" ? /** @type {Record<string, unknown>} */ (o.devHud) : {}),
+    // Never apply `o.devHud` from disk (old or new saves). Dev HUD is session-only; this strips legacy persisted tuning on every load.
+    devHud: mergeDevHud({}),
     controlsShown: Boolean(o.controlsShown),
   };
   clampProgressToLinearIntegrity(out);
@@ -291,9 +292,14 @@ export function persistSave(save) {
   saveToStorage(save);
 }
 
-/** @param {Partial<typeof DEFAULT_DEV_HUD>} patch */
+/**
+ * @param {PlayerSave} save
+ * @param {Partial<import("../config.js").DEFAULT_DEV_HUD>} patch
+ * Dev HUD is session-only and not written to localStorage; this is a no-op (API retained).
+ */
 export function mergeDevHudIntoSave(save, patch) {
-  save.devHud = mergeDevHud({ ...save.devHud, ...patch });
+  void save;
+  void patch;
 }
 
 /** @param {PlayerSave} save @param {boolean} shown */
