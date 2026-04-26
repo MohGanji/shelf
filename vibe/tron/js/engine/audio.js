@@ -1246,6 +1246,9 @@ export function createAudioEngine(options = {}) {
     playNearMissWhoosh() {
       if (!ctx) return;
       const t0 = ctx.currentTime;
+      const v = Math.max(0, sfxVolume);
+      /** ~line up with a strong single SFX layer (e.g. derez core); was 0.075 and masked by music. */
+      const peak = 0.28 * v;
       const noiseDur = 0.13;
       const n = 2048;
       const buf = ctx.createBuffer(1, n, ctx.sampleRate);
@@ -1262,7 +1265,7 @@ export function createAudioEngine(options = {}) {
       bp.Q.value = 2.4;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.075 * sfxVolume, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(peak, t0 + 0.01);
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + noiseDur);
       noise.connect(bp);
       bp.connect(g);

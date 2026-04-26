@@ -1586,6 +1586,14 @@ async function main() {
       if (!e.eliminated) syncCyclePhysicsYaw(e.body);
     }
 
+    const preStepPlayerPos = { x: playerBody.position.x, z: playerBody.position.z };
+    const preStepEnemyPositions = new Map();
+    for (const e of enemyRoster.list) {
+      if (!e.eliminated) {
+        preStepEnemyPositions.set(e.id, { x: e.body.position.x, z: e.body.position.z });
+      }
+    }
+
     world.step(step, dt, 10);
 
     syncCyclePhysicsYaw(playerBody);
@@ -1716,8 +1724,8 @@ async function main() {
 
     const playerTrailHit = tryTrailHitOnBody(
       playerBody,
-      playerBody.previousPosition.x,
-      playerBody.previousPosition.z,
+      preStepPlayerPos.x,
+      preStepPlayerPos.z,
       px,
       pz,
       "player",
@@ -1742,10 +1750,14 @@ async function main() {
     } else {
       for (const e of enemyRoster.list) {
         if (e.eliminated) continue;
+        const p0 = preStepEnemyPositions.get(e.id) ?? {
+          x: e.body.previousPosition.x,
+          z: e.body.previousPosition.z,
+        };
         const ht = tryTrailHitOnBody(
           e.body,
-          e.body.previousPosition.x,
-          e.body.previousPosition.z,
+          p0.x,
+          p0.z,
           e.body.position.x,
           e.body.position.z,
           e.id,

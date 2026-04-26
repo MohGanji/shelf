@@ -332,7 +332,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
           }
         }
       }
-      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
+      if (!skip) {
+        const target = -arenaHalfW + pad;
+        const push = target - minX;
+        if (push > 0) p.x += push;
+        applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
+      }
     }
     if (maxX >= arenaHalfW - pad) {
       let skip = false;
@@ -344,7 +349,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
           }
         }
       }
-      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
+      if (!skip) {
+        const target = arenaHalfW - pad;
+        const push = maxX - target;
+        if (push > 0) p.x -= push;
+        applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
+      }
     }
     if (minZ <= -arenaHalfD + pad) {
       let skip = false;
@@ -356,7 +366,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
           }
         }
       }
-      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
+      if (!skip) {
+        const target = -arenaHalfD + pad;
+        const push = target - minZ;
+        if (push > 0) p.z += push;
+        applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
+      }
     }
     if (maxZ >= arenaHalfD - pad) {
       let skip = false;
@@ -368,7 +383,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
           }
         }
       }
-      if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+      if (!skip) {
+        const target = arenaHalfD - pad;
+        const push = maxZ - target;
+        if (push > 0) p.z -= push;
+        applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+      }
     }
     return;
   }
@@ -383,7 +403,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
         }
       }
     }
-    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
+    if (!skip) {
+      const target = -arenaHalfW + pad;
+      const push = target - (p.x - r);
+      if (push > 0) p.x += push;
+      applyWallSlideVelocity(playerBody, new Vec3(-1, 0, 0), cfg);
+    }
   }
   if (p.x + r >= arenaHalfW - pad) {
     let skip = false;
@@ -395,7 +420,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
         }
       }
     }
-    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
+    if (!skip) {
+      const target = arenaHalfW - pad;
+      const push = (p.x + r) - target;
+      if (push > 0) p.x -= push;
+      applyWallSlideVelocity(playerBody, new Vec3(1, 0, 0), cfg);
+    }
   }
   if (p.z - r <= -arenaHalfD + pad) {
     let skip = false;
@@ -407,7 +437,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
         }
       }
     }
-    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
+    if (!skip) {
+      const target = -arenaHalfD + pad;
+      const push = target - (p.z - r);
+      if (push > 0) p.z += push;
+      applyWallSlideVelocity(playerBody, new Vec3(0, 0, -1), cfg);
+    }
   }
   if (p.z + r >= arenaHalfD - pad) {
     let skip = false;
@@ -419,7 +454,12 @@ export function applyContinuousArenaWallSlide(playerBody, cfg, openFootprints) {
         }
       }
     }
-    if (!skip) applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+    if (!skip) {
+      const target = arenaHalfD - pad;
+      const push = (p.z + r) - target;
+      if (push > 0) p.z -= push;
+      applyWallSlideVelocity(playerBody, new Vec3(0, 0, 1), cfg);
+    }
   }
 }
 
