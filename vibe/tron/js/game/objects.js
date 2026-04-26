@@ -324,10 +324,12 @@ function portalExitRightXZ(levelRotY) {
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {(from: PortalEndpoint, to: PortalEndpoint) => void} [opts.onPortalWarp] — P9.3 warp particles
  * @param {() => void} [opts.onPlayerWarp] — e.g. snap chase camera; called right after a successful **player** warp
+ * @param {boolean} [opts.portalVisualDetail] — additive inner shell + stronger idle pulse (high graphics tier)
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PortalFieldTickContext) => void; dispose: () => void }}
  */
 export function createPortalField(opts) {
   const { scene, world, wallMat, playCfg, devHud } = opts;
+  const portalVisualDetail = opts.portalVisualDetail === true;
   const onPortalWarp = opts.onPortalWarp;
   const onPlayerWarp = opts.onPlayerWarp;
   const raw = opts.gameObjects;
@@ -342,6 +344,9 @@ export function createPortalField(opts) {
 
   /** @type {Map<string, number>} */
   const pairCooldownUntilMs = new Map();
+
+  /** @type {THREE.Mesh[]} */
+  const portalRingMeshes = [];
 
   const spawnY =
     typeof playCfg.playerSpawnY === "number" && Number.isFinite(playCfg.playerSpawnY)
@@ -421,8 +426,25 @@ export function createPortalField(opts) {
       );
       ring.rotation.set(0, Math.PI / 2, 0);
       ring.position.y = major + minor;
+      ring.userData.portalRingPhase = portalRingMeshes.length * 0.73;
+      portalRingMeshes.push(ring);
 
       node.add(ring);
+      if (portalVisualDetail) {
+        const shell = new THREE.Mesh(
+          new THREE.TorusGeometry(major * 1.045, minor * 0.62, 12, 56),
+          new THREE.MeshBasicMaterial({
+            color: em,
+            transparent: true,
+            opacity: 0.2,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          }),
+        );
+        shell.rotation.copy(ring.rotation);
+        shell.position.copy(ring.position);
+        node.add(shell);
+      }
       root.add(node);
 
       const exitFwd = portalExitForwardXZ(ep.rotation);
@@ -506,6 +528,15 @@ export function createPortalField(opts) {
   function tick(_dt, ctx) {
     const { levelStarted, playerBody, enemies, devHud: hud, detachPlayerTrail, detachEnemyTrail, onPortalSound } =
       ctx;
+
+    const ph = performance.now() * 0.001;
+    const amp = portalVisualDetail ? 0.052 : 0.032;
+    for (const ring of portalRingMeshes) {
+      const off = typeof ring.userData.portalRingPhase === "number" ? ring.userData.portalRingPhase : 0;
+      const s = 1 + amp * Math.sin(ph * 2.35 + off);
+      ring.scale.setScalar(s);
+    }
+
     // Match boost pads: lobby has levelStarted true at load; campaign stays off until first W.
     if (!levelStarted) return;
 
@@ -577,10 +608,13 @@ export function createPortalField(opts) {
 
   /** P9.4 — portal endpoint positions for minimap. */
   function getMinimapPortals() {
-    /** @type {{ x: number; z: number }[]} */
+    /** @type {{ x: number; z: number; kind: 'portal' }[]} */
     const out = [];
     for (const pair of pairs) {
-      out.push({ x: pair.a.x, z: pair.a.z }, { x: pair.b.x, z: pair.b.z });
+      out.push(
+        { x: pair.a.x, z: pair.a.z, kind: /** @type {const} */ ("portal") },
+        { x: pair.b.x, z: pair.b.z, kind: /** @type {const} */ ("portal") },
+      );
     }
     return out;
   }

@@ -13,6 +13,64 @@ import {
 
 /** @typedef {import("./gates.js").WallEdge} PerimeterEdge — perimeter rebuild uses same edge keys as gates */
 
+/**
+ * Procedural tiling normal + roughness (no external assets). Disposed via `scene.userData._disposeArenaFloorMicroTex` when rebuilding.
+ * @returns {{ normalMap: THREE.CanvasTexture; roughnessMap: THREE.CanvasTexture; dispose(): void }}
+ */
+function createArenaFloorMicroTextures() {
+  const n = 144;
+  const cn = document.createElement("canvas");
+  cn.width = n;
+  cn.height = n;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (cn.getContext("2d"));
+  const id = ctx.createImageData(n, n);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const i = (y * n + x) * 4;
+      const nx = (Math.random() - 0.5) * 44;
+      const ny = (Math.random() - 0.5) * 44;
+      id.data[i] = Math.max(0, Math.min(255, 128 + nx));
+      id.data[i + 1] = Math.max(0, Math.min(255, 128 + ny));
+      id.data[i + 2] = 255;
+      id.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(id, 0, 0);
+  const normalMap = new THREE.CanvasTexture(cn);
+  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+  normalMap.anisotropy = 4;
+
+  const r = 96;
+  const cr = document.createElement("canvas");
+  cr.width = r;
+  cr.height = r;
+  const ctxr = /** @type {CanvasRenderingContext2D} */ (cr.getContext("2d"));
+  const idr = ctxr.createImageData(r, r);
+  for (let y = 0; y < r; y++) {
+    for (let x = 0; x < r; x++) {
+      const i = (y * r + x) * 4;
+      const v = 200 + (Math.random() - 0.5) * 55;
+      idr.data[i] = v;
+      idr.data[i + 1] = v;
+      idr.data[i + 2] = v;
+      idr.data[i + 3] = 255;
+    }
+  }
+  ctxr.putImageData(idr, 0, 0);
+  const roughnessMap = new THREE.CanvasTexture(cr);
+  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
+  roughnessMap.anisotropy = 4;
+
+  return {
+    normalMap,
+    roughnessMap,
+    dispose() {
+      normalMap.dispose();
+      roughnessMap.dispose();
+    },
+  };
+}
+
 function makePanelMaterial(colorHex, emissive, neon) {
   return new THREE.MeshStandardMaterial({
     color: colorHex,
@@ -46,8 +104,9 @@ function disposeWallMeshGroup(group) {
  * @param {import('three').Scene} scene
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} cfg
  * @param {ReturnType<typeof openGateGapsByEdge> | null | undefined} [gapsByEdge]
+ * @param {'off' | 'basic' | 'rich'} [floorDetail] — graphics tier `arenaFloorDetail`
  */
-export function buildArenaVisuals(scene, cfg, gapsByEdge) {
+export function buildArenaVisuals(scene, cfg, gapsByEdge, floorDetail = "off") {
   const group = new THREE.Group();
   const halfW = cfg.arenaWidth / 2;
   const halfD = cfg.arenaDepth / 2;
@@ -62,6 +121,27 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge) {
     metalness: 0.12,
     roughness: 0.82,
   });
+  if (floorDetail === "basic" || floorDetail === "rich") {
+    if (typeof scene.userData._disposeArenaFloorMicroTex === "function") {
+      try {
+        scene.userData._disposeArenaFloorMicroTex();
+      } catch {
+        /* ignore */
+      }
+    }
+    const tx = createArenaFloorMicroTextures();
+    floorMat.normalMap = tx.normalMap;
+    floorMat.normalScale = new THREE.Vector2(0.2, 0.2);
+    floorMat.roughnessMap = tx.roughnessMap;
+    floorMat.roughness = 0.78;
+    const rep = Math.max(28, Math.round((cfg.arenaWidth + cfg.arenaDepth) * 0.055));
+    tx.normalMap.repeat.set(rep, rep);
+    tx.roughnessMap.repeat.set(rep, rep);
+    scene.userData._disposeArenaFloorMicroTex = tx.dispose;
+  }
+  if (floorDetail === "rich") {
+    floorMat.userData.emissiveIntensityBase = floorMat.emissiveIntensity;
+  }
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
   group.add(floor);
@@ -368,14 +448,16 @@ export function runtimeUnlockCampaignExitGate(scene, world, playCfg, wallMat) {
  * @param {import('cannon-es').Material} floorMat
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
  * @param {Record<string, unknown> | null} [level] — validated campaign level; attached to `scene.userData.campaignLevel`
+ * @param {import('../engine/graphicsProfile.js').GraphicsProfile | null} [graphicsProfile]
  */
-export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, playCfg, level = null) {
+export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, playCfg, level = null, graphicsProfile = null) {
   const gates =
     level && Array.isArray(level.wallObjects) ? extractGatesFromWallObjects(level.wallObjects) : [];
   const visualGaps = openGateGapsByEdge(gates, { includeLockedEntrance: true });
   const physicsGaps = openGateGapsByEdge(gates, { includeLockedEntrance: false });
 
-  const vis = buildArenaVisuals(scene, playCfg, visualGaps);
+  const floorDetail = graphicsProfile?.arenaFloorDetail ?? "off";
+  const vis = buildArenaVisuals(scene, playCfg, visualGaps, floorDetail);
   const wallBodiesByEdge = buildArenaPhysics(world, wallMat, floorMat, playCfg, physicsGaps);
 
   /** First entry in `vis.materials` is the arena floor — used for PMREM env (P9.6). */
@@ -596,6 +678,74 @@ export function applyArenaFloorEnvMap(renderer, floorMat, playCfg, scene = null)
 
   pmrem.dispose();
   /** Keep `rt` alive — `floorMat.envMap` references its texture. */
+  for (const ch of [...envScene.children]) {
+    envScene.remove(ch);
+    if (ch instanceof THREE.Mesh) {
+      ch.geometry?.dispose();
+      const mats = Array.isArray(ch.material) ? ch.material : [ch.material];
+      for (const m of mats) m?.dispose();
+    }
+  }
+}
+
+/**
+ * Garage showroom: one-shot PMREM so plate / cycle metal reads closer to in-arena PBR.
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.Object3D} root
+ */
+export function applyShowroomEnvMap(renderer, root) {
+  if (!renderer || !root) return;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0x03060c);
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(28, 28, 14),
+    new THREE.MeshStandardMaterial({
+      color: 0x070a12,
+      side: THREE.BackSide,
+      metalness: 0.08,
+      roughness: 0.92,
+    }),
+  );
+  envScene.add(dome);
+  const accent = new THREE.Color(0x00ddff);
+  for (let i = 0; i < 6; i++) {
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 3.5, 18),
+      new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        emissive: accent,
+        emissiveIntensity: 1.65,
+        metalness: 0.2,
+        roughness: 0.48,
+      }),
+    );
+    const ang = (i / 6) * Math.PI * 2;
+    strip.position.set(Math.cos(ang) * 11, 1.8, Math.sin(ang) * 11);
+    strip.lookAt(0, 1.8, 0);
+    envScene.add(strip);
+  }
+  const k = new THREE.PointLight(accent, 160, 0, 2);
+  k.position.set(7, 7, 5);
+  envScene.add(k);
+  const rt = pmrem.fromScene(envScene, 0.06);
+  const tex = rt.texture;
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m || !("envMap" in m) || !("metalness" in m)) continue;
+      const std = /** @type {THREE.MeshStandardMaterial} */ (m);
+      if (std.transparent === true && std.depthWrite === false) continue;
+      std.envMap = tex;
+      const cur = std.envMapIntensity;
+      if (typeof cur !== "number" || cur <= 0) {
+        std.envMapIntensity = 1;
+      }
+      std.needsUpdate = true;
+    }
+  });
+  pmrem.dispose();
   for (const ch of [...envScene.children]) {
     envScene.remove(ch);
     if (ch instanceof THREE.Mesh) {

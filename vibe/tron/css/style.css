@@ -271,6 +271,7 @@ body {
 .cycle-hud__speed {
   font-weight: 700;
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
 .cycle-hud__unit {
@@ -313,6 +314,13 @@ body {
   font-weight: 600;
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
+}
+
+.cycle-hud__timer--warn {
+  color: rgba(255, 210, 120, 0.95);
+  text-shadow:
+    0 0 10px rgba(255, 180, 80, 0.55),
+    0 1px 3px rgba(0, 0, 0, 0.85);
 }
 
 .nitro-bar-strip {
@@ -1387,11 +1395,13 @@ body {
   flex-shrink: 0;
   object-fit: contain;
   vertical-align: middle;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 240, 0.45)) drop-shadow(0 0 1px rgba(0, 200, 255, 0.35));
 }
 
 .neon-coin-icon--header {
   width: 20px;
   height: 20px;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 240, 0.5)) drop-shadow(0 0 2px rgba(120, 255, 255, 0.35));
 }
 
 /* P6.1 — editor: canvas-first chrome */

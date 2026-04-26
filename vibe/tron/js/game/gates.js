@@ -574,6 +574,22 @@ function buildSingleGateGroup(g, playCfg) {
   const neonMesh = new THREE.Mesh(neonGeo, neonMat);
   group.add(neonMesh);
 
+  try {
+    const edgeLines = new THREE.LineSegments(
+      new THREE.EdgesGeometry(neonGeo, 32),
+      new THREE.LineBasicMaterial({
+        color: emissiveHex,
+        transparent: true,
+        opacity: open ? 0.48 : 0.26,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    group.add(edgeLines);
+  } catch {
+    /* ignore — degenerate geometry on odd gate sizes */
+  }
+
   if (g.signText && g.signText.trim() !== "") {
     const tex = makeSignTexture(
       g.signText,

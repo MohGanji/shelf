@@ -7,6 +7,7 @@ import * as THREE from "../vendor/three-module.js";
 import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js";
 
 import { CYCLE_BOUNDS, WORLD, getFloorGridLineStep, mergeDevHud } from "../config.js";
+import { applyShowroomEnvMap } from "../game/arena.js";
 import { createLightCycle } from "../game/cycle.js";
 import { isExoticNeonToken, normalizePlayerNeonColor, writeExoticTrailEmissive } from "../game/neonCosmetic.js";
 
@@ -257,6 +258,8 @@ export function mountGarageShowroom(opts) {
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
   camera.position.set(4.6, 2.5, 4.6);
   camera.lookAt(0, 0.45, 0);
+
+  applyShowroomEnvMap(renderer, scene);
 
   let rafId = 0;
   let lastMs = 0;

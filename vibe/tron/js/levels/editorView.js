@@ -7,9 +7,10 @@ import * as THREE from "../vendor/three-module.js";
 
 import { WORLD } from "../config.js";
 
-const GRID_MAIN = 0x00a8c8;
+/** Align with campaign palette (`config.js` gridLine / gridFloor family). */
+const GRID_MAIN = 0x00e8ff;
 const GRID_SEC = 0x1a2a44;
-const FLOOR_COLOR = 0x0c1018;
+const FLOOR_COLOR = 0x020611;
 
 /**
  * @param {{ renderer: THREE.WebGLRenderer; canvas: HTMLCanvasElement; arenaWidth?: number; arenaDepth?: number; mapWidth?: number; mapDepth?: number; devHud?: Partial<import("../config.js").DEFAULT_DEV_HUD> }} opts

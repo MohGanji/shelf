@@ -91,6 +91,36 @@ const CrtScanlineShader = {
   `,
 };
 
+/** Cheap vignette + animated grain (tier-gated). */
+const FilmGradeShader = {
+  name: "FilmGradeShader",
+  uniforms: {
+    tDiffuse: { value: null },
+    uVignette: { value: 0.35 },
+    uGrain: { value: 0.04 },
+    uTime: { value: 0 },
+  },
+  vertexShader: CopyShader.vertexShader,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float uVignette;
+    uniform float uGrain;
+    uniform float uTime;
+    varying vec2 vUv;
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec2 dc = vUv - 0.5;
+      float vig = 1.0 - dot(dc, dc) * uVignette * 1.45;
+      vig = clamp(vig, 0.0, 1.0);
+      float n = (hash(vUv * 1200.0 + uTime * 3.7) - 0.5) * uGrain;
+      gl_FragColor = vec4(c.rgb * vig + n, c.a);
+    }
+  `,
+};
+
 /**
  * Bloom, chromatic aberration, CRT scanlines, OutputPass tone mapping / color space.
  * Matches three.js r160 post-processing patterns (RenderPass → UnrealBloomPass → … → OutputPass).
@@ -99,7 +129,7 @@ const CrtScanlineShader = {
  * @param {import('three').Scene} scene
  * @param {import('three').Camera} camera
  * @param {Partial<typeof DEFAULT_DEV_HUD>} [devHud]
- * @param {{ bloomResolutionScale?: number }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
+ * @param {{ bloomResolutionScale?: number; postFilmStrength?: number }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
  */
 export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpts = {}) {
   const hud = { ...DEFAULT_DEV_HUD, ...devHud };
@@ -129,6 +159,15 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   const nitroPass = new ShaderPass(NitroRadialBlurShader);
   nitroPass.material.uniforms.uStrength.value = 0;
 
+  const filmStrength =
+    typeof postOpts.postFilmStrength === "number" && Number.isFinite(postOpts.postFilmStrength)
+      ? Math.max(0, postOpts.postFilmStrength)
+      : 0;
+  const filmPass = new ShaderPass(FilmGradeShader);
+  filmPass.material.uniforms.uVignette.value = filmStrength > 0 ? 0.22 + filmStrength * 0.65 : 0;
+  filmPass.material.uniforms.uGrain.value = filmStrength > 0 ? 0.018 + filmStrength * 0.07 : 0;
+  filmPass.enabled = filmStrength > 0.001;
+
   const outputPass = new OutputPass();
 
   const composer = new EffectComposer(renderer);
@@ -137,6 +176,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   composer.addPass(gradePass);
   composer.addPass(crtPass);
   composer.addPass(nitroPass);
+  composer.addPass(filmPass);
   composer.addPass(outputPass);
 
   function syncFog() {
@@ -190,6 +230,9 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
       crtPass.material.uniforms.uResolution.value.set(fullW, fullH);
     },
     render() {
+      if (filmPass.enabled) {
+        filmPass.material.uniforms.uTime.value = performance.now() * 0.001;
+      }
       composer.render();
     },
     applyDevHud,
@@ -201,6 +244,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
       gradePass.dispose();
       crtPass.dispose();
       nitroPass.dispose();
+      filmPass.dispose();
       outputPass.dispose();
     },
   };

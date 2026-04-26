@@ -5,7 +5,19 @@
 
 /** @typedef {'high' | 'medium' | 'low'} GraphicsTier */
 
-/** @typedef {{ tier: GraphicsTier; maxPixelRatio: number; bloomResolutionScale: number; minimapMinIntervalMs: number }} GraphicsProfile */
+/**
+ * @typedef {{
+ *   tier: GraphicsTier;
+ *   maxPixelRatio: number;
+ *   bloomResolutionScale: number;
+ *   minimapMinIntervalMs: number;
+ *   minimapResolutionScale: number;
+ *   arenaFloorDetail: 'off' | 'basic' | 'rich';
+ *   postFilmStrength: number;
+ *   pickupVisualDetail: boolean;
+ *   portalVisualDetail: boolean;
+ * }} GraphicsProfile
+ */
 
 /**
  * Safari desktop (not Chrome/Fx/Edge on iOS/macOS) — post stack + bloom tend to be heavier per pixel.
@@ -61,13 +73,40 @@ export function getGraphicsProfile() {
 
   const rawDpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
-  /** @type {{ maxPixelRatio: number; bloomResolutionScale: number; minimapMinIntervalMs: number }} */
+  /** @type {{ maxPixelRatio: number; bloomResolutionScale: number; minimapMinIntervalMs: number; minimapResolutionScale: number; arenaFloorDetail: 'off' | 'basic' | 'rich'; postFilmStrength: number; pickupVisualDetail: boolean; portalVisualDetail: boolean }} */
   const byTier =
     tier === "low"
-      ? { maxPixelRatio: 1, bloomResolutionScale: 0.5, minimapMinIntervalMs: 80 }
+      ? {
+          maxPixelRatio: 1,
+          bloomResolutionScale: 0.5,
+          minimapMinIntervalMs: 80,
+          minimapResolutionScale: 1,
+          arenaFloorDetail: "off",
+          postFilmStrength: 0,
+          pickupVisualDetail: false,
+          portalVisualDetail: false,
+        }
       : tier === "medium"
-        ? { maxPixelRatio: 1.5, bloomResolutionScale: 0.65, minimapMinIntervalMs: 50 }
-        : { maxPixelRatio: 2, bloomResolutionScale: 1, minimapMinIntervalMs: 0 };
+        ? {
+            maxPixelRatio: 1.5,
+            bloomResolutionScale: 0.65,
+            minimapMinIntervalMs: 50,
+            minimapResolutionScale: 2,
+            arenaFloorDetail: "basic",
+            postFilmStrength: 0.1,
+            pickupVisualDetail: true,
+            portalVisualDetail: false,
+          }
+        : {
+            maxPixelRatio: 2,
+            bloomResolutionScale: 1,
+            minimapMinIntervalMs: 0,
+            minimapResolutionScale: 2,
+            arenaFloorDetail: "rich",
+            postFilmStrength: 0.18,
+            pickupVisualDetail: true,
+            portalVisualDetail: true,
+          };
 
   let maxPixelRatio = byTier.maxPixelRatio;
   if (Number.isFinite(forcedDpr) && forcedDpr > 0) {
@@ -81,6 +120,11 @@ export function getGraphicsProfile() {
     maxPixelRatio,
     bloomResolutionScale: byTier.bloomResolutionScale,
     minimapMinIntervalMs: byTier.minimapMinIntervalMs,
+    minimapResolutionScale: byTier.minimapResolutionScale,
+    arenaFloorDetail: byTier.arenaFloorDetail,
+    postFilmStrength: byTier.postFilmStrength,
+    pickupVisualDetail: byTier.pickupVisualDetail,
+    portalVisualDetail: byTier.portalVisualDetail,
   };
   return cached;
 }

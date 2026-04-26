@@ -12,9 +12,9 @@ function neonBarrierMaterial(baseHex, emissiveHex, neonStrength) {
   return new THREE.MeshStandardMaterial({
     color: baseHex,
     emissive: emissiveHex,
-    emissiveIntensity: neonStrength,
+    emissiveIntensity: neonStrength * 1.08,
     metalness: 0.25,
-    roughness: 0.42,
+    roughness: 0.38,
   });
 }
 
@@ -86,32 +86,195 @@ function coerceBarrier(b) {
   return out;
 }
 
-let windowTexCache = null;
-function getWindowTexture() {
-  if (windowTexCache) return windowTexCache;
+/** Shared façade emissive atlas (N×N cells, each a distinct micro-pattern). */
+let buildingFacadeEmissiveCache = null;
+
+const FACADE_ATLAS_CELLS = 4;
+const FACADE_VARIANT_COUNT = FACADE_ATLAS_CELLS * FACADE_ATLAS_CELLS;
+
+/** @param {number} seed */
+function facadeMulberry32(seed) {
+  return () => {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * One façade “tile” of micro windows (lit/dark panes, spandrels). Uses `rng` so atlas cells differ.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} ox
+ * @param {number} oy
+ * @param {number} W
+ * @param {number} H
+ * @param {() => number} rng
+ */
+function drawFacadeMicroPattern(ctx, ox, oy, W, H, rng) {
+  ctx.fillStyle = "#010306";
+  ctx.fillRect(ox, oy, W, H);
+
+  const cols = 3;
+  const rows = 5;
+  const cw = W / cols;
+  const ch = H / rows;
+  const accentCol = Math.floor(rng() * cols);
+
+  /** @param {number} x @param {number} y @param {number} ww @param {number} hh @param {number} level 0–1 */
+  function pane(x, y, ww, hh, level) {
+    const a = 0.09 + level * 0.72;
+    const r = Math.floor(6 + a * 190);
+    const g = Math.floor(8 + a * 210);
+    const b = Math.floor(12 + a * 235);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x, y, ww, hh);
+  }
+
+  for (let row = 0; row < rows; row++) {
+    const spandrel = row === Math.floor(rows / 2);
+    for (let col = 0; col < cols; col++) {
+      const x = ox + col * cw;
+      const y = oy + row * ch;
+      const inset = 3.15;
+      const pw = cw - inset * 2;
+      const ph = spandrel ? ch * 0.28 : ch - inset * 2;
+      const py = spandrel ? y + ch * 0.62 + inset * 0.5 : y + inset;
+
+      if (spandrel) {
+        ctx.fillStyle = "rgba(2, 6, 12, 0.95)";
+        ctx.fillRect(x + inset, y + inset, pw, ch * 0.55);
+      }
+
+      const accent = col === accentCol && !spandrel;
+      if (accent) {
+        pane(x + inset, py, pw, ph, 0.44 + rng() * 0.34);
+      } else if (rng() < 0.4) {
+        pane(x + inset, py, pw, ph, 0.02 + rng() * 0.08);
+      } else {
+        pane(x + inset, py, pw, ph, 0.14 + rng() * 0.62);
+      }
+    }
+  }
+
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.78)";
+  ctx.lineWidth = 2.15;
+  for (let i = 0; i <= cols; i++) {
+    ctx.beginPath();
+    ctx.moveTo(ox + i * cw, oy);
+    ctx.lineTo(ox + i * cw, oy + H);
+    ctx.stroke();
+  }
+  for (let j = 0; j <= rows; j++) {
+    ctx.beginPath();
+    ctx.moveTo(ox, oy + j * ch);
+    ctx.lineTo(ox + W, oy + j * ch);
+    ctx.stroke();
+  }
+}
+
+/**
+ * Procedural emissive atlas: each cell is a full micro-pattern; fragment shader picks a cell per macro UV tile.
+ * @returns {THREE.CanvasTexture}
+ */
+function getBuildingFacadeEmissiveMap() {
+  if (buildingFacadeEmissiveCache) return buildingFacadeEmissiveCache;
+  const atlasPx = 512;
+  const cellPx = atlasPx / FACADE_ATLAS_CELLS;
   const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 128;
-  const ctx = canvas.getContext("2d");
-  
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, 128, 128);
-  
-  ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(0, 0, 128, 128);
-  
-  ctx.beginPath();
-  ctx.moveTo(0, 64);
-  ctx.lineTo(128, 64);
-  ctx.stroke();
-  
-  windowTexCache = new THREE.CanvasTexture(canvas);
-  windowTexCache.wrapS = THREE.RepeatWrapping;
-  windowTexCache.wrapT = THREE.RepeatWrapping;
-  windowTexCache.magFilter = THREE.LinearFilter;
-  windowTexCache.minFilter = THREE.LinearMipmapLinearFilter;
-  return windowTexCache;
+  canvas.width = atlasPx;
+  canvas.height = atlasPx;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
+
+  let variant = 0;
+  for (let row = 0; row < FACADE_ATLAS_CELLS; row++) {
+    for (let col = 0; col < FACADE_ATLAS_CELLS; col++) {
+      const ox = col * cellPx;
+      const oy = row * cellPx;
+      const rng = facadeMulberry32(0x9e3779b9 + variant * 0x85ebca6b);
+      drawFacadeMicroPattern(ctx, ox, oy, cellPx, cellPx, rng);
+      variant++;
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.needsUpdate = true;
+  buildingFacadeEmissiveCache = tex;
+  return tex;
+}
+
+/** Uniforms shared by all façade materials (atlas macro shuffle). */
+const buildingFacadeShaderUniforms = {
+  uFacadeAtlasDim: { value: new THREE.Vector2(FACADE_ATLAS_CELLS, FACADE_ATLAS_CELLS) },
+  uFacadeVariantCount: { value: FACADE_VARIANT_COUNT },
+  /** Lower = larger macro tiles on the mesh (less repeated “blocks” across the façade). */
+  uFacadeTileDensity: { value: 0.52 },
+};
+
+/**
+ * @param {THREE.MeshStandardMaterial} mat
+ */
+function attachBuildingFacadeAtlasShader(mat) {
+  mat.customProgramCacheKey = function customProgramCacheKey() {
+    return "building_facade_atlas_v1";
+  };
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uFacadeAtlasDim = buildingFacadeShaderUniforms.uFacadeAtlasDim;
+    shader.uniforms.uFacadeVariantCount = buildingFacadeShaderUniforms.uFacadeVariantCount;
+    shader.uniforms.uFacadeTileDensity = buildingFacadeShaderUniforms.uFacadeTileDensity;
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <emissivemap_pars_fragment>",
+      `#include <emissivemap_pars_fragment>
+#ifdef USE_EMISSIVEMAP
+uniform vec2 uFacadeAtlasDim;
+uniform float uFacadeVariantCount;
+uniform float uFacadeTileDensity;
+#endif`,
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <emissivemap_fragment>",
+      `#ifdef USE_EMISSIVEMAP
+	vec2 _facT = vEmissiveMapUv * uFacadeTileDensity;
+	vec2 _facCell = floor(_facT);
+	vec2 _facFr = fract(_facT);
+	float _facH = fract(sin(dot(_facCell, vec2(12.9898, 78.233))) * 43758.5453);
+	float _facIx = min(uFacadeVariantCount - 1.0, floor(_facH * uFacadeVariantCount));
+	float _facAx = mod(_facIx, uFacadeAtlasDim.x);
+	float _facAy = floor(_facIx / uFacadeAtlasDim.x);
+	vec2 _facAtlasUv = (vec2(_facAx, _facAy) + _facFr) / uFacadeAtlasDim;
+	vec4 emissiveColor = texture2D( emissiveMap, _facAtlasUv );
+	totalEmissiveRadiance *= emissiveColor.rgb;
+#endif`,
+    );
+  };
+}
+
+/**
+ * PBR material for `building` meshes — façade-like (not a mirror slab). Env map is assigned later via `applyArenaFloorEnvMap` (arena.js).
+ * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
+ */
+function createBuildingFacadeMaterial(playCfg) {
+  const neon = barrierNeon(playCfg);
+  const lineCol = new THREE.Color(playCfg.colors?.gridLine ?? 0x00e8ff);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x0a1522,
+    emissive: lineCol,
+    emissiveMap: getBuildingFacadeEmissiveMap(),
+    emissiveIntensity: 0.24 + neon * 0.38,
+    metalness: 0.46,
+    roughness: 0.48,
+    envMapIntensity: 0.58,
+  });
+  attachBuildingFacadeAtlasShader(mat);
+  return mat;
 }
 
 function scaleBoxUVs(geo, windowsPerUnit = 1) {
@@ -337,22 +500,8 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   const style = playCfg.devHud.buildingGlitchStyle ?? 0;
   
   let matBuilding;
-  if (style === 0 && scene.userData.arenaFloorMaterial) {
-    // Style 0: Exact same material as the floor (cloned so we can tweak if needed)
-    matBuilding = scene.userData.arenaFloorMaterial.clone();
-    // three.js clones userData via JSON — never keep scene/texture refs there
-    matBuilding.userData = {};
-
-    // Add a window texture to make it look like a skyscraper
-    const tex = getWindowTexture();
-    matBuilding.emissiveMap = tex;
-    matBuilding.emissive = new THREE.Color(playCfg.colors.gridLine);
-    matBuilding.emissiveIntensity = neon * 0.6;
-    
-    // Make it glossy and reflective like the cycle body
-    matBuilding.metalness = 1.0;
-    matBuilding.roughness = 0.05;
-    matBuilding.envMapIntensity = 2.5;
+  if (style === 0) {
+    matBuilding = createBuildingFacadeMaterial(playCfg);
   } else if (style === 1) {
     // Style 1: Pure wireframe glitch
     matBuilding = new THREE.MeshStandardMaterial({

@@ -355,7 +355,7 @@ async function main() {
   applyArenaStageEnvironment(game, playCfg);
 
   const { world, wallMat, floorMat, playerMat } = createPhysicsWorld();
-  buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel);
+  buildArenaFromCampaignLevel(game.scene, world, wallMat, floorMat, playCfg, activeCampaignLevel, graphicsProfile);
 
   const arenaFloorMat = game.scene.userData.arenaFloorMaterial;
   if (arenaFloorMat) applyArenaFloorEnvMap(game.renderer, arenaFloorMat, playCfg, game.scene);
@@ -618,6 +618,7 @@ async function main() {
     powerups: activeCampaignLevel && Array.isArray(activeCampaignLevel.powerups) ? activeCampaignLevel.powerups : [],
     devHud,
     spawnPickupBurst: gameplayParticles.spawnPickupBurst,
+    pickupVisualDetail: graphicsProfile.pickupVisualDetail,
   });
 
   const boostPadField = createBoostPadField({
@@ -633,6 +634,7 @@ async function main() {
     gameObjects: activeCampaignLevel && Array.isArray(activeCampaignLevel.gameObjects) ? activeCampaignLevel.gameObjects : [],
     playCfg,
     devHud,
+    portalVisualDetail: graphicsProfile.portalVisualDetail,
     onPortalWarp: (from, to) => {
       gameplayParticles.spawnPortalWarp(from, to);
     },
@@ -657,6 +659,7 @@ async function main() {
   const minimapEl = document.getElementById("hud-minimap");
   const minimapRenderer = createArenaMinimapRenderer(
     minimapEl instanceof HTMLCanvasElement ? minimapEl : null,
+    { internalScale: graphicsProfile.minimapResolutionScale },
   );
   let lastMinimapDrawMs = 0;
 
@@ -1274,7 +1277,16 @@ async function main() {
   const step = 1 / playCfg.physicsHz;
   /** Hide bottom welcome strip once the player is moving (hub + arena tips). */
   let hubWelcomeBannerVisible = true;
-  game.setOnFrame(({ dt }) => {
+  game.setOnFrame(({ t, dt }) => {
+    const floorMat = game.scene.userData.arenaFloorMaterial;
+    if (
+      floorMat &&
+      floorMat.userData &&
+      typeof floorMat.userData.emissiveIntensityBase === "number"
+    ) {
+      const b = floorMat.userData.emissiveIntensityBase;
+      floorMat.emissiveIntensity = b * (0.92 + 0.08 * Math.sin(t * 2.15));
+    }
     if (playerDerezPhase === "imploding") {
       const durationSec = Math.max(0.4, devHud.derezSequenceSeconds ?? 2);
       const elapsed = (performance.now() - playerDerezT0Ms) / 1000;
@@ -1666,6 +1678,16 @@ async function main() {
     if (hudTimerEl && !isLobby) {
       const elapsedSec = getLevelElapsedSecExcludingPauses();
       hudTimerEl.textContent = formatHudMmSs(elapsedSec);
+      const rewards =
+        activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
+          ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
+          : null;
+      const timeTh =
+        rewards && typeof rewards.timeBonusThreshold === "number" && Number.isFinite(rewards.timeBonusThreshold)
+          ? rewards.timeBonusThreshold
+          : 0;
+      const warn = timeTh > 0 && elapsedSec > timeTh * 0.88;
+      hudTimerEl.classList.toggle("cycle-hud__timer--warn", warn);
     }
     if (hudTrailEl) {
       hudTrailEl.textContent = String(trailWall.getActiveSegmentCount());

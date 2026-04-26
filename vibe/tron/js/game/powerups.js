@@ -82,10 +82,12 @@ function createPowerupGeometryForType(type) {
  * @param {unknown[] | null | undefined} opts.powerups — `level.powerups` from validated JSON
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {(wx: number, wy: number, wz: number, em: number, neon: number) => void} [opts.spawnPickupBurst] — P9.3 shared particles
- * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PowerupFieldTickContext) => void; dispose: () => void }}
+ * @param {boolean} [opts.pickupVisualDetail] — emissive pulse on meshes (mid/high graphics tier)
+ * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PowerupFieldTickContext) => void; dispose: () => void; getMinimapPickups: () => { x: number; z: number; kind: 'pickup' }[] }}
  */
 export function createCampaignPowerupField(opts) {
   const { scene, devHud } = opts;
+  const pickupVisualDetail = opts.pickupVisualDetail === true;
   const externalPickupBurst = opts.spawnPickupBurst;
   const raw = opts.powerups;
   const root = new THREE.Group();
@@ -109,6 +111,9 @@ export function createCampaignPowerupField(opts) {
    * @property {boolean} gone — level_permanent consumed
    * @property {boolean} hidden — respawning (instant / equippable)
    * @property {number} respawnAtMs
+   * @property {number} baseMeshEmissive
+   * @property {number} basePlateEmissive
+   * @property {THREE.MeshStandardMaterial | null} basePlateMat
    */
 
   /** @type {{ t: number; group: THREE.Group; geo: THREE.BufferGeometry; vel: Float32Array; mat: THREE.PointsMaterial }[]} */
@@ -207,6 +212,9 @@ export function createCampaignPowerupField(opts) {
           tickPickupBursts(typeof dt === "number" ? dt : 0);
         }
       },
+      getMinimapPickups() {
+        return [];
+      },
       dispose() {
         for (const b of pickupBursts) {
           scene.remove(b.group);
@@ -252,18 +260,16 @@ export function createCampaignPowerupField(opts) {
     mesh.receiveShadow = false;
     const node = new THREE.Group();
     node.position.set(x, 0.78, z);
-    const base = new THREE.Mesh(
-      new THREE.BoxGeometry(POWERUP_FOOTPRINT, 0.06, POWERUP_FOOTPRINT),
-      new THREE.MeshStandardMaterial({
-        color: 0x071118,
-        emissive: em,
-        emissiveIntensity: 0.22 * (devHud.neonIntensity ?? 1),
-        metalness: 0.25,
-        roughness: 0.45,
-        transparent: true,
-        opacity: 0.88,
-      }),
-    );
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: 0x071118,
+      emissive: em,
+      emissiveIntensity: 0.22 * (devHud.neonIntensity ?? 1),
+      metalness: 0.25,
+      roughness: 0.45,
+      transparent: true,
+      opacity: 0.88,
+    });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(POWERUP_FOOTPRINT, 0.06, POWERUP_FOOTPRINT), baseMat);
     base.position.y = -0.7;
     base.castShadow = false;
     base.receiveShadow = true;
@@ -306,6 +312,9 @@ export function createCampaignPowerupField(opts) {
       gone: false,
       hidden: false,
       respawnAtMs: 0,
+      baseMeshEmissive: mat.emissiveIntensity,
+      basePlateEmissive: baseMat.emissiveIntensity,
+      basePlateMat,
     });
     root.add(node);
   }
@@ -365,6 +374,17 @@ export function createCampaignPowerupField(opts) {
         } else if (inst.type === "nitro_capacity") {
           a.rotation.x += dt * 2.1;
           a.rotation.y += dt * 1.6;
+        }
+      }
+
+      if (pickupVisualDetail) {
+        const pulse = 0.9 + 0.1 * Math.sin(inst.phase * 2.15);
+        const m = /** @type {THREE.MeshStandardMaterial} */ (inst.mesh.material);
+        if (m && typeof inst.baseMeshEmissive === "number") {
+          m.emissiveIntensity = inst.baseMeshEmissive * pulse;
+        }
+        if (inst.basePlateMat && typeof inst.basePlateEmissive === "number") {
+          inst.basePlateMat.emissiveIntensity = inst.basePlateEmissive * (0.88 + 0.12 * pulse);
         }
       }
 
@@ -460,11 +480,11 @@ export function createCampaignPowerupField(opts) {
     instances.length = 0;
   }
 
-  /** P9.4 — active pickup tiles for minimap (hollow circles). */
+  /** P9.4 — active pickup tiles for minimap. */
   function getMinimapPickups() {
     return instances
       .filter((i) => !i.gone && !i.hidden)
-      .map((i) => ({ x: i.x, z: i.z }));
+      .map((i) => ({ x: i.x, z: i.z, kind: /** @type {const} */ ("pickup") }));
   }
 
   return { root, tick, dispose, getMinimapPickups };

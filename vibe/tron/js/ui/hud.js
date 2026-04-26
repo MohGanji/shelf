@@ -26,7 +26,7 @@ import { Box, Vec3 } from "../vendor/cannon-es-module.js";
  * @property {import("cannon-es").Body[] | undefined} barrierBodies
  * @property {{ x0: number; x1: number; z0: number; z1: number; role: string; open: boolean }[]} [gates]
  * @property {{ x0: number; x1: number; z0: number; z1: number; color: string }[]} [boostPadRects] — world XZ AABBs, filled
- * @property {{ x: number; z: number }[]} itemPoints — power-ups, portals (hollow circles)
+ * @property {{ x: number; z: number; kind?: 'pickup' | 'portal' }[]} itemPoints — power-ups vs portals (distinct glyphs)
  */
 
 const TMP = new Vec3();
@@ -91,9 +91,10 @@ export function barrierFootprintXZ(body) {
 /**
  * P9.4 — corner minimap: arena aspect, trails as lines, barriers as filled polys, boost pads as filled neon rects, pickups/portals as hollow circles.
  * @param {HTMLCanvasElement | null} canvas
+ * @param {{ internalScale?: number }} [opts] — multiply backing-store resolution (mid/high graphics tier)
  * @returns {{ draw: (frame: MinimapFrame) => void; dispose: () => void }}
  */
-export function createArenaMinimapRenderer(canvas) {
+export function createArenaMinimapRenderer(canvas, opts = {}) {
   if (!canvas) {
     return {
       draw() {},
@@ -108,6 +109,11 @@ export function createArenaMinimapRenderer(canvas) {
       dispose() {},
     };
   }
+
+  const internalScale =
+    typeof opts.internalScale === "number" && Number.isFinite(opts.internalScale)
+      ? Math.max(1, Math.min(2, opts.internalScale))
+      : 1;
 
   let lastAw = 0;
   let lastAd = 0;
@@ -125,7 +131,10 @@ export function createArenaMinimapRenderer(canvas) {
         return;
       }
 
-      const dpr = typeof window !== "undefined" ? Math.min(2, window.devicePixelRatio || 1) : 1;
+      const dpr =
+        typeof window !== "undefined"
+          ? Math.min(2, (window.devicePixelRatio || 1) * internalScale)
+          : internalScale;
       const cssW = arenaWidth >= arenaDepth ? 152 : Math.round(152 * (arenaWidth / arenaDepth));
       const cssH = arenaDepth > arenaWidth ? 152 : Math.round(152 * (arenaDepth / arenaWidth));
       if (lastAw !== arenaWidth || lastAd !== arenaDepth) {
@@ -251,14 +260,38 @@ export function createArenaMinimapRenderer(canvas) {
         ctx.globalAlpha = 1;
       }
 
-      ctx.strokeStyle = "rgba(160, 255, 240, 0.75)";
       ctx.lineWidth = 1;
       for (const p of frame.itemPoints ?? []) {
         const [cx, cy] = toCanvas(p.x, p.z);
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3.2, 0, Math.PI * 2);
-        ctx.stroke();
+        const kind = p.kind === "portal" ? "portal" : "pickup";
+        if (kind === "portal") {
+          ctx.strokeStyle = "rgba(255, 100, 255, 0.88)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3.4, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(255, 180, 255, 0.45)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2.1, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          const s = 2.85;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(Math.PI / 4);
+          ctx.fillStyle = "rgba(120, 255, 220, 0.88)";
+          ctx.fillRect(-s * 0.5, -s * 0.5, s, s);
+          ctx.strokeStyle = "rgba(200, 255, 250, 0.55)";
+          ctx.strokeRect(-s * 0.5, -s * 0.5, s, s);
+          ctx.restore();
+        }
       }
+
+      ctx.fillStyle = "rgba(140, 200, 220, 0.5)";
+      ctx.font = "9px ui-monospace, monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("◆ pick-up", 4, ch - 4);
+      ctx.fillText("○ portal", 4, ch - 14);
 
       function drawDot(wx, wz, fill, radius = 3) {
         const [cx, cy] = toCanvas(wx, wz);
