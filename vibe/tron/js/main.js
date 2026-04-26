@@ -55,8 +55,10 @@ import { cosmeticColorToCssHex } from "./game/neonCosmetic.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
   applyEnemyWallAndBarrierSlide,
+  beginEnemyCinematicElimination,
   createCampaignEnemyEntities,
   eliminateCampaignEnemy,
+  endEnemyCinematicDerez,
   syncEnemyHeadingSpeed,
   updateEnemyCycleMeshes,
   updateEnemyTrails,
@@ -112,6 +114,49 @@ function setBootProgress(els, pct) {
   const clamped = Math.max(0, Math.min(100, pct));
   els.fill.style.width = `${clamped}%`;
   els.label.setAttribute("aria-valuenow", String(Math.round(clamped)));
+}
+
+/** 0–1 → smooth 0–1 (enemy kill-cam, etc.) */
+function smoothstep01(t) {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Third-person frame for the rival cycle: offset back along player→enemy and slightly to the side (not overhead).
+ * @param {import('./vendor/three-module.js').Vector3} outPos
+ * @param {import('./vendor/three-module.js').Vector3} outLook
+ * @param {number} playerX
+ * @param {number} playerZ
+ * @param {number} baseY
+ * @param {{ x: number; y: number; z: number; heading: number }} snap
+ */
+function computeEnemyKillCamEndFrame(outPos, outLook, playerX, playerZ, baseY, snap) {
+  const ex = snap.x;
+  const ey = baseY;
+  const ez = snap.z;
+  const dx = ex - playerX;
+  const dz = ez - playerZ;
+  const dist = Math.hypot(dx, dz);
+  if (dist < 0.2) {
+    outPos.set(ex, ey + 2.2, ez + 6.5);
+    outLook.set(ex, ey + 0.4, ez);
+    return;
+  }
+  const ux = dx / dist;
+  const uz = dz / dist;
+  const h = 2.2;
+  const back = 6.8;
+  const side = 1.15;
+  const perpX = -uz;
+  const perpZ = ux;
+  outPos.set(
+    ex - ux * back + perpX * side,
+    ey + h,
+    ez - uz * back + perpZ * side,
+  );
+  outLook.set(ex, ey + 0.4, ez);
 }
 
 async function main() {
@@ -682,6 +727,28 @@ async function main() {
   let lastNearMissMs = 0;
   /** P8.5 — throttle wall-hit SFX while sliding along perimeter / barriers. */
   let lastWallHitSfxMs = 0;
+  const enemyKillApproachFrom = new THREE.Vector3();
+  const enemyKillTo = new THREE.Vector3();
+  const enemyKillLFrom = new THREE.Vector3();
+  const enemyKillLTo = new THREE.Vector3();
+  const enemyKillRetFrom = new THREE.Vector3();
+  const enemyKillRetTo = new THREE.Vector3();
+  const enemyKillRetLook = new THREE.Vector3();
+  const enemyKillCamLerp = new THREE.Vector3();
+  const enemyKillLookLerp = new THREE.Vector3();
+  /**
+   * Opponent kill-cam (separate from player derez): approach → implode+SFX → return; sim frozen.
+   * @type {null | {
+   *   entity: import('./game/enemies.js').CampaignEnemyEntity;
+   *   phase: 'approach' | 'implode' | 'return';
+   *   keyframed: boolean;
+   *   phaseStartMs: number;
+   *   implodeSfxDone: boolean;
+   *   returnFov0: number;
+   *   returnFov1: number;
+   * }}
+   */
+  let enemyDerezState = null;
 
   function beginPlayerDerezSequence() {
     if (playerDerezPhase !== "alive") return;
@@ -1258,20 +1325,33 @@ async function main() {
   syncArenaHud();
 
   /**
-   * P9.3 — particle burst at enemy elimination (trail / cycle contact).
+   * P9.3 — particle burst at enemy elimination (trail / cycle contact);
+   * first elimination in a stretch runs a slow-mo kill-cam; stacked kills in that window are instant.
    * @param {import('cannon-es').World} w
    * @param {import('./game/enemies.js').CampaignEnemyEntity} e
    */
   function eliminateEnemyWithParticles(w, e) {
-    if (!e.eliminated) {
+    if (e.eliminated) return;
+    if (enemyDerezState) {
       gameplayParticles.spawnDerezBurst(
         e.body.position.x,
         playCfg.playerSpawnY,
         e.body.position.z,
         e.color,
       );
+      eliminateCampaignEnemy(w, e);
+      return;
     }
-    eliminateCampaignEnemy(w, e);
+    beginEnemyCinematicElimination(w, e);
+    enemyDerezState = {
+      entity: e,
+      phase: "approach",
+      keyframed: false,
+      phaseStartMs: 0,
+      implodeSfxDone: false,
+      returnFov0: devHud.cameraBaseFov,
+      returnFov1: devHud.cameraBaseFov,
+    };
   }
 
   const step = 1 / playCfg.physicsHz;
@@ -1325,6 +1405,106 @@ async function main() {
       }
       gameplayParticles.tick(dt, {});
       return;
+    }
+
+    if (enemyDerezState) {
+      const d = /** @type {NonNullable<typeof enemyDerezState>} */ (enemyDerezState);
+      const e = d.entity;
+      const snap = e.derezSnapshot;
+      if (e.cinematicDerezActive && snap) {
+        const now = performance.now();
+        if (!d.keyframed) {
+          d.keyframed = true;
+          d.phaseStartMs = now;
+          enemyKillApproachFrom.copy(game.camera.position);
+          const px = playerBody.position.x;
+          const pz = playerBody.position.z;
+          const pBase = playCfg.playerSpawnY;
+          enemyKillLFrom.set(px, pBase + 0.4, pz);
+          computeEnemyKillCamEndFrame(enemyKillTo, enemyKillLTo, px, pz, pBase, snap);
+        }
+
+        const approachSec = Math.max(0.12, devHud.enemyKillApproachSec ?? 0.85);
+        const implodeSec = Math.max(0.08, devHud.enemyKillImplodeSec ?? 0.72);
+        const returnSec = Math.max(0.08, devHud.enemyKillReturnSec ?? 0.6);
+
+        audio.tickEngineSound({ active: false, dt });
+        game.postPipeline.setNitroFx({ strength: 0 });
+        if (speedLineEl) {
+          speedLineEl.style.opacity = "0";
+        }
+
+        if (d.phase === "approach") {
+          const tRaw = (now - d.phaseStartMs) / (approachSec * 1000);
+          const p = smoothstep01(tRaw);
+          enemyKillCamLerp.lerpVectors(enemyKillApproachFrom, enemyKillTo, p);
+          enemyKillLookLerp.lerpVectors(enemyKillLFrom, enemyKillLTo, p);
+          game.camera.position.copy(enemyKillCamLerp);
+          game.camera.lookAt(enemyKillLookLerp);
+          game.camera.fov = devHud.cameraBaseFov;
+          game.camera.updateProjectionMatrix();
+          if (tRaw >= 1) {
+            d.phase = "implode";
+            d.phaseStartMs = now;
+          }
+        } else if (d.phase === "implode") {
+          if (!d.implodeSfxDone) {
+            d.implodeSfxDone = true;
+            gameplayParticles.spawnDerezBurst(
+              snap.x,
+              playCfg.playerSpawnY,
+              snap.z,
+              e.color,
+            );
+            audio.playEnemyDerezShatter();
+          }
+          const tRaw = (now - d.phaseStartMs) / (implodeSec * 1000);
+          const visU = Math.min(1, tRaw);
+          e.cycle.updateDerezImplosion(dt, visU);
+          game.camera.position.copy(enemyKillTo);
+          game.camera.lookAt(enemyKillLTo);
+          game.camera.fov = devHud.cameraBaseFov;
+          game.camera.updateProjectionMatrix();
+          if (tRaw >= 1) {
+            d.phase = "return";
+            d.phaseStartMs = now;
+            enemyKillRetFrom.copy(game.camera.position);
+            d.returnFov0 = game.camera.fov;
+            d.returnFov1 = chase.computeChaseFrame(enemyKillRetTo, enemyKillRetLook, {
+              playerPos: playerCycle.root.position,
+              playerVel: playerBody.velocity,
+              keys: arenaKeys,
+              nitroStrength: nitroVis,
+              playerHeading: playerBody.userData.heading,
+            });
+          }
+        } else {
+          const tRaw = (now - d.phaseStartMs) / (returnSec * 1000);
+          const p = smoothstep01(tRaw);
+          enemyKillCamLerp.lerpVectors(enemyKillRetFrom, enemyKillRetTo, p);
+          enemyKillLookLerp.lerpVectors(enemyKillLTo, enemyKillRetLook, p);
+          game.camera.position.copy(enemyKillCamLerp);
+          game.camera.lookAt(enemyKillLookLerp);
+          game.camera.fov = d.returnFov0 + p * (d.returnFov1 - d.returnFov0);
+          game.camera.updateProjectionMatrix();
+          if (tRaw >= 1) {
+            endEnemyCinematicDerez(e);
+            enemyDerezState = null;
+            chase.snapToGameplayChase({
+              playerPos: playerCycle.root.position,
+              playerVel: playerBody.velocity,
+              keys: arenaKeys,
+              nitroStrength: nitroVis,
+              playerHeading: playerBody.userData.heading,
+            });
+            game.postPipeline.setNitroFx({ strength: 0 });
+          }
+        }
+
+        gameplayParticles.tick(dt, {});
+        return;
+      }
+      enemyDerezState = null;
     }
 
     if (playerDerezPhase !== "alive") {

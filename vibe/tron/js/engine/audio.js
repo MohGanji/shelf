@@ -554,6 +554,146 @@ export function createAudioEngine(options = {}) {
     gGraph.mix.gain.setTargetAtTime(1, t, 0.04);
   }
 
+  /**
+   * Briefly dip music so derez hits read above the bed (sfx stays on normal bus).
+   */
+  function duckMusicForDerezSfx() {
+    const t0 = ctx.currentTime;
+    const base = musicVolume;
+    let g = base;
+    try {
+      g = musicGain.gain.value;
+    } catch {
+      g = base;
+    }
+    try {
+      musicGain.gain.cancelScheduledValues(t0);
+    } catch {
+      /* ignore */
+    }
+    musicGain.gain.setValueAtTime(g, t0);
+    musicGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, base * 0.16), t0 + 0.05);
+    musicGain.gain.exponentialRampToValueAtTime(base, t0 + 0.5);
+  }
+
+  /**
+   * @param {"player" | "opponent"} kind
+   */
+  function playDerezShatterCore(kind) {
+    if (!ctx) return;
+    duckMusicForDerezSfx();
+    const t0 = ctx.currentTime;
+    const isOpp = kind === "opponent";
+    const v = Math.max(0, sfxVolume);
+    const bus = ctx.createGain();
+    bus.gain.value = 0.92;
+    bus.connect(sfxGain);
+    const durM = isOpp ? 0.48 : 0.62;
+    const hi0 = isOpp ? 4100 : 3200;
+    const nF = 8192;
+    const buf = ctx.createBuffer(1, nF, ctx.sampleRate);
+    const dch = buf.getChannelData(0);
+    for (let i = 0; i < nF; i += 1) {
+      dch[i] = (Math.random() * 2 - 1) * (1 - i / nF);
+    }
+
+    // Layer A — main crackle (band-swept noise)
+    const a = ctx.createBufferSource();
+    a.buffer = buf;
+    const aBp = ctx.createBiquadFilter();
+    aBp.type = "bandpass";
+    aBp.frequency.setValueAtTime(hi0, t0);
+    aBp.frequency.exponentialRampToValueAtTime(140, t0 + durM);
+    aBp.Q.value = 0.68;
+    const aG = ctx.createGain();
+    aG.gain.setValueAtTime(0.0001, t0);
+    aG.gain.exponentialRampToValueAtTime(0.36 * v, t0 + 0.02);
+    aG.gain.exponentialRampToValueAtTime(0.0001, t0 + durM);
+    a.connect(aBp);
+    aBp.connect(aG);
+    aG.connect(bus);
+
+    // Layer B — sub “vacuum” rumble
+    const b = ctx.createBufferSource();
+    b.buffer = buf;
+    const bL = ctx.createBiquadFilter();
+    bL.type = "lowpass";
+    bL.frequency.setValueAtTime(420, t0);
+    bL.frequency.exponentialRampToValueAtTime(60, t0 + 0.24);
+    const bG = ctx.createGain();
+    bG.gain.setValueAtTime(0.0001, t0);
+    bG.gain.exponentialRampToValueAtTime(0.22 * v, t0 + 0.04);
+    bG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.34);
+    b.connect(bL);
+    bL.connect(bG);
+    bG.connect(bus);
+
+    // Layer C — air / glass air (high shelf noise)
+    const c = ctx.createBufferSource();
+    c.buffer = buf;
+    const cH = ctx.createBiquadFilter();
+    cH.type = "highpass";
+    cH.frequency.value = 2000;
+    const cG = ctx.createGain();
+    cG.gain.setValueAtTime(0.0001, t0);
+    cG.gain.exponentialRampToValueAtTime(0.12 * v, t0 + 0.01);
+    cG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    c.connect(cH);
+    cH.connect(cG);
+    cG.connect(bus);
+
+    // Layer D — digital “tear” (triangle, pitch dive)
+    const tr = ctx.createOscillator();
+    tr.type = "triangle";
+    tr.frequency.setValueAtTime(380, t0);
+    tr.frequency.exponentialRampToValueAtTime(40, t0 + 0.3);
+    const tG = ctx.createGain();
+    tG.gain.setValueAtTime(0.0001, t0);
+    tG.gain.exponentialRampToValueAtTime(0.1 * v, t0 + 0.01);
+    tG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+    const tLp = ctx.createBiquadFilter();
+    tLp.type = "lowpass";
+    tLp.frequency.setValueAtTime(6200, t0);
+    tr.connect(tG);
+    tG.connect(tLp);
+    tLp.connect(bus);
+
+    // Layer E — glass partials
+    const baseF = isOpp ? 1045 : 880;
+    /** @type {OscillatorNode[]} */
+    const chimeOscs = [];
+    for (let p = 0; p < 3; p += 1) {
+      const o = ctx.createOscillator();
+      o.type = "sine";
+      o.frequency.setValueAtTime(baseF * (1 + 0.2 * p), t0);
+      o.frequency.exponentialRampToValueAtTime(120 + p * 40, t0 + 0.32);
+      const oG = ctx.createGain();
+      oG.gain.setValueAtTime(0.0001, t0);
+      oG.gain.exponentialRampToValueAtTime(0.06 * v * 0.55 ** p, t0 + 0.04);
+      oG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.36);
+      o.connect(oG);
+      oG.connect(bus);
+      chimeOscs.push(o);
+    }
+
+    try {
+      a.start(t0);
+      a.stop(t0 + durM + 0.04);
+      b.start(t0);
+      b.stop(t0 + 0.35);
+      c.start(t0);
+      c.stop(t0 + 0.22);
+      tr.start(t0);
+      tr.stop(t0 + 0.34);
+      for (const o of chimeOscs) {
+        o.start(t0);
+        o.stop(t0 + 0.38);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   return {
     context: ctx,
     autoplay,
@@ -765,51 +905,18 @@ export function createAudioEngine(options = {}) {
       }
     },
 
-    /** Digital shatter — filtered noise + glassy tones (plan P2.4; no asset file). */
+    /**
+     * Player death derez — see `playDerezShatterCore` (multi-layer, music duck, loud vs bed).
+     */
     playDerezShatter() {
-      if (!ctx) return;
-      const t0 = ctx.currentTime;
-      const dur = 0.55;
-      const n = 4096;
-      const buf = ctx.createBuffer(1, n, ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < n; i++) {
-        data[i] = (Math.random() * 2 - 1) * (1 - i / n);
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buf;
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.frequency.setValueAtTime(2400, t0);
-      bp.frequency.exponentialRampToValueAtTime(400, t0 + dur);
-      bp.Q.value = 0.85;
-      const ng = ctx.createGain();
-      ng.gain.setValueAtTime(0.0001, t0);
-      ng.gain.exponentialRampToValueAtTime(0.22 * sfxVolume, t0 + 0.02);
-      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      noise.connect(bp);
-      bp.connect(ng);
-      ng.connect(sfxGain);
+      playDerezShatterCore("player");
+    },
 
-      const osc = ctx.createOscillator();
-      osc.type = "sawtooth";
-      osc.frequency.setValueAtTime(880, t0);
-      osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.35);
-      const og = ctx.createGain();
-      og.gain.setValueAtTime(0.0001, t0);
-      og.gain.exponentialRampToValueAtTime(0.06 * sfxVolume, t0 + 0.01);
-      og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
-      osc.connect(og);
-      og.connect(sfxGain);
-
-      try {
-        noise.start(t0);
-        noise.stop(t0 + dur + 0.05);
-        osc.start(t0);
-        osc.stop(t0 + 0.42);
-      } catch {
-        /* ignore */
-      }
+    /**
+     * Opponent derez (kill-cam) — same core, slightly brighter + shorter.
+     */
+    playEnemyDerezShatter() {
+      playDerezShatterCore("opponent");
     },
 
     /** Instant power-up (green) — quick ascending chime (plan P3.1). */
@@ -1310,6 +1417,7 @@ function createNoopEngine() {
     loadBuffer: async () => null,
     playNitroEmptyBuzz: () => {},
     playDerezShatter: () => {},
+    playEnemyDerezShatter: () => {},
     playPowerupPickupInstant: () => {},
     playPowerupPickupLevelPermanent: () => {},
     playPowerupPickupEquippable: () => {},

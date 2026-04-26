@@ -25,6 +25,8 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @property {"easy" | "medium" | "hard" | "boss"} category
  * @property {string} color — cycle / trail hex (minimap, UI)
  * @property {boolean} [eliminated] — P2.3 combat: trail or cycle derez
+ * @property {boolean} [cinematicDerezActive] — P2.6: awaiting implosion; mesh still in scene, body removed
+ * @property {{ x: number; y: number; z: number; heading: number } | null} [derezSnapshot] — frozen pose for camera + VFX
  */
 
 /**
@@ -332,12 +334,52 @@ export function createCampaignEnemyEntities(opts) {
 export function eliminateCampaignEnemy(world, e) {
   if (e.eliminated) return;
   e.eliminated = true;
+  e.cinematicDerezActive = false;
+  e.derezSnapshot = null;
   e.body.userData.tronEliminated = true;
   e.body.userData.shieldPhase = "none";
   e.body.userData.shieldActive = false;
   e.body.userData.equipSlot = undefined;
   e.trail.clear();
   world.removeBody(e.body);
+  e.cycle.root.visible = false;
+}
+
+/**
+ * Cinematic death: same removal as `eliminateCampaignEnemy` but keep the cycle mesh for implosion.
+ * @param {import('cannon-es').World} world
+ * @param {CampaignEnemyEntity} e
+ */
+export function beginEnemyCinematicElimination(world, e) {
+  if (e.eliminated) return;
+  e.eliminated = true;
+  e.cinematicDerezActive = true;
+  e.body.userData.tronEliminated = true;
+  e.body.userData.shieldPhase = "none";
+  e.body.userData.shieldActive = false;
+  e.body.userData.equipSlot = undefined;
+  e.derezSnapshot = {
+    x: e.body.position.x,
+    y: e.body.position.y,
+    z: e.body.position.z,
+    heading: e.body.userData.heading ?? 0,
+  };
+  e.trail.clear();
+  world.removeBody(e.body);
+  e.cycle.root.position.set(
+    e.derezSnapshot.x,
+    e.derezSnapshot.y,
+    e.derezSnapshot.z,
+  );
+  e.cycle.root.rotation.y = e.derezSnapshot.heading;
+}
+
+/**
+ * @param {CampaignEnemyEntity} e
+ */
+export function endEnemyCinematicDerez(e) {
+  e.cinematicDerezActive = false;
+  e.derezSnapshot = null;
   e.cycle.root.visible = false;
 }
 

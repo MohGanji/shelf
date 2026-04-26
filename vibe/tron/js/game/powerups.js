@@ -314,7 +314,7 @@ export function createCampaignPowerupField(opts) {
       respawnAtMs: 0,
       baseMeshEmissive: mat.emissiveIntensity,
       basePlateEmissive: baseMat.emissiveIntensity,
-      basePlateMat,
+      basePlateMat: baseMat,
     });
     root.add(node);
   }

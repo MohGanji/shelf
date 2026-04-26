@@ -15,9 +15,99 @@ export function createChaseCamera(camera, devHud) {
   const right = new THREE.Vector3(1, 0, 0);
   const up = new THREE.Vector3(0, 1, 0);
   const tmp = new THREE.Vector3();
+  const tmpDesired = new THREE.Vector3();
+  const tmpLook = new THREE.Vector3();
 
   let smoothFov = devHud.cameraBaseFov;
   let spawned = false;
+
+  /**
+   * Instant chase “ideal” (plan § kill-cam return): no smoothing — matches normal chase endpoint math.
+   * @param {THREE.Vector3} outPos
+   * @param {THREE.Vector3} outLook
+   * @param {object} p
+   * @param {THREE.Vector3} p.playerPos
+   * @param {import("cannon-es").Vec3} p.playerVel
+   * @param {{ w?: boolean; a?: boolean; s?: boolean; d?: boolean }} p.keys
+   * @param {number} p.nitroStrength
+   * @param {number} [p.playerHeading]
+   * @returns {number} targetFov
+   */
+  function computeChaseFrame(
+    outPos,
+    outLook,
+    { playerPos, playerVel, keys, nitroStrength, playerHeading },
+  ) {
+    const vx = playerVel.x;
+    const vz = playerVel.z;
+    const hs = Math.hypot(vx, vz);
+
+    let ix = 0;
+    let iz = 0;
+    if (keys && keys.w) iz -= 1;
+    if (keys && keys.s) iz += 1;
+    if (keys && keys.a) ix -= 1;
+    if (keys && keys.d) ix += 1;
+    const intentLen = Math.hypot(ix, iz);
+
+    const head =
+      typeof playerHeading === "number" && Number.isFinite(playerHeading) ? playerHeading : null;
+
+    if (hs > 0.2) {
+      forward.set(vx / hs, 0, vz / hs);
+    } else if (head != null) {
+      forward.set(Math.sin(head), 0, Math.cos(head));
+    } else if (intentLen > 1e-5) {
+      forward.set(ix / intentLen, 0, iz / intentLen);
+    }
+
+    right.set(-forward.z, 0, forward.x);
+    if (right.lengthSq() > 1e-8) right.normalize();
+
+    const steer = (keys && keys.a ? 1 : 0) - (keys && keys.d ? 1 : 0);
+
+    const n = Math.max(0, Math.min(1, nitroStrength));
+    const dist =
+      devHud.cameraDistance +
+      (devHud.nitroCameraPullBack ? n * devHud.nitroPullBackAdd : 0);
+
+    outPos
+      .copy(playerPos)
+      .addScaledVector(forward, -dist)
+      .addScaledVector(up, devHud.cameraHeight)
+      .addScaledVector(right, steer * devHud.cameraTurnOffset * 0.2);
+
+    outLook
+      .copy(playerPos)
+      .addScaledVector(forward, devHud.cameraLookAhead)
+      .addScaledVector(right, steer * devHud.cameraTurnOffset * 0.35);
+
+    return (
+      devHud.cameraBaseFov +
+      (devHud.nitroFovWiden ? n * devHud.nitroFovAdd : 0)
+    );
+  }
+
+  /**
+   * Re-sync internal smoother after a temporary override (e.g. enemy kill-cam).
+   * @param {object} p
+   * @param {THREE.Vector3} p.playerPos
+   * @param {import("cannon-es").Vec3} p.playerVel
+   * @param {{ w?: boolean; a?: boolean; s?: boolean; d?: boolean }} p.keys
+   * @param {number} p.nitroStrength
+   * @param {number} [p.playerHeading]
+   */
+  function snapToGameplayChase(p) {
+    const targetFov = computeChaseFrame(tmpDesired, tmpLook, p);
+    smoothPos.copy(tmpDesired);
+    smoothLook.copy(tmpLook);
+    camera.position.copy(smoothPos);
+    camera.lookAt(smoothLook);
+    smoothFov = targetFov;
+    camera.fov = smoothFov;
+    camera.updateProjectionMatrix();
+    spawned = true;
+  }
 
   /**
    * @param {THREE.Vector3} playerPos
@@ -25,7 +115,7 @@ export function createChaseCamera(camera, devHud) {
    * @param {{ w?: boolean; a?: boolean; s?: boolean; d?: boolean }} keys
    * @param {number} nitroStrength 0–1 (visual / burst strength)
    * @param {number} [playerHeading] — yaw (rad), same as `body.userData.heading`; keeps chase behind the cycle at low speed
-   * @param {{ active: true; playerPos: THREE.Vector3; elapsedSec: number; playerHeading: number } | { active?: false }} [derez]
+   * @param {{ active: true; playerPos: THREE.Vector3; elapsedSec: number; playerHeading: number } | { active?: false }} [derez] — **player** derez only (overhead / shake)
    */
   function update(dt, { playerPos, playerVel, keys, nitroStrength, playerHeading, derez }) {
     if (dt <= 0) return;
@@ -78,66 +168,28 @@ export function createChaseCamera(camera, devHud) {
       return;
     }
 
-    const vx = playerVel.x;
-    const vz = playerVel.z;
-    const hs = Math.hypot(vx, vz);
-
-    let ix = 0;
-    let iz = 0;
-    if (keys.w) iz -= 1;
-    if (keys.s) iz += 1;
-    if (keys.a) ix -= 1;
-    if (keys.d) ix += 1;
-    const intentLen = Math.hypot(ix, iz);
-
-    const head =
-      typeof playerHeading === "number" && Number.isFinite(playerHeading) ? playerHeading : null;
-
-    if (hs > 0.2) {
-      forward.set(vx / hs, 0, vz / hs);
-    } else if (head != null) {
-      forward.set(Math.sin(head), 0, Math.cos(head));
-    } else if (intentLen > 1e-5) {
-      forward.set(ix / intentLen, 0, iz / intentLen);
-    }
-
-    right.set(-forward.z, 0, forward.x);
-    if (right.lengthSq() > 1e-8) right.normalize();
-
-    const steer = (keys.a ? 1 : 0) - (keys.d ? 1 : 0);
+    const targetFov = computeChaseFrame(tmpDesired, tmpLook, {
+      playerPos,
+      playerVel,
+      keys: keys || {},
+      nitroStrength,
+      playerHeading,
+    });
 
     const n = Math.max(0, Math.min(1, nitroStrength));
-    const dist =
-      devHud.cameraDistance +
-      (devHud.nitroCameraPullBack ? n * devHud.nitroPullBackAdd : 0);
-
-    const desiredPos = tmp
-      .copy(playerPos)
-      .addScaledVector(forward, -dist)
-      .addScaledVector(up, devHud.cameraHeight)
-      .addScaledVector(right, steer * devHud.cameraTurnOffset * 0.2);
-
-    const look = new THREE.Vector3()
-      .copy(playerPos)
-      .addScaledVector(forward, devHud.cameraLookAhead)
-      .addScaledVector(right, steer * devHud.cameraTurnOffset * 0.35);
-
     const k = 1 - Math.exp(-devHud.cameraDamping * 22 * dt);
     if (!spawned) {
-      smoothPos.copy(desiredPos);
-      smoothLook.copy(look);
+      smoothPos.copy(tmpDesired);
+      smoothLook.copy(tmpLook);
       spawned = true;
     } else {
-      smoothPos.lerp(desiredPos, k);
-      smoothLook.lerp(look, k);
+      smoothPos.lerp(tmpDesired, k);
+      smoothLook.lerp(tmpLook, k);
     }
 
     camera.position.copy(smoothPos);
     camera.lookAt(smoothLook);
 
-    const targetFov =
-      devHud.cameraBaseFov +
-      (devHud.nitroFovWiden ? n * devHud.nitroFovAdd : 0);
     const fk = 1 - Math.exp(-10 * dt);
     smoothFov += (targetFov - smoothFov) * fk;
     camera.fov = smoothFov;
@@ -169,5 +221,5 @@ export function createChaseCamera(camera, devHud) {
     spawned = true;
   }
 
-  return { update, spawnAt };
+  return { update, spawnAt, snapToGameplayChase, computeChaseFrame };
 }

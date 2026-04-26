@@ -158,6 +158,10 @@ export const DEFAULT_DEV_HUD = {
   derezSequenceSeconds: 2.0,
   /** Overhead camera height above cycle center during player derez. */
   derezOverheadHeight: 28,
+  /** Opponent elim kill-cam: real-time segments (simulation frozen; separate from player derez). */
+  enemyKillApproachSec: 0.85,
+  enemyKillImplodeSec: 0.72,
+  enemyKillReturnSec: 0.6,
   portalWarpIntensity: 0.5,
   specialObjectCooldown: 5.0,
   shieldDuration: 5.0,

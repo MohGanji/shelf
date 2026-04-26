@@ -250,6 +250,9 @@ export function createDevHudController(opts) {
     { key: "derezGlitchFlash", label: "Glitch flash", kind: "bool" },
     { key: "derezSequenceSeconds", label: "Sequence length (s)", min: 0.4, max: 6, step: 0.1 },
     { key: "derezOverheadHeight", label: "Overhead height", min: 6, max: 60, step: 1 },
+    { key: "enemyKillApproachSec", label: "Enemy cam approach (s)", min: 0.2, max: 3, step: 0.05 },
+    { key: "enemyKillImplodeSec", label: "Enemy cam implode (s)", min: 0.15, max: 3, step: 0.05 },
+    { key: "enemyKillReturnSec", label: "Enemy cam return (s)", min: 0.1, max: 3, step: 0.05 },
   ]);
 
   section("Portal", [

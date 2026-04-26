@@ -11,6 +11,29 @@ import {
   writeExoticCyclePalettePrimary,
 } from "./neonCosmetic.js";
 
+/**
+ * Derez implosion: uniform collapse with late vertical crush + slight sink.
+ * All orientation from u (idempotent) — no dt-spun “turntable” look.
+ * @param {THREE.Object3D} animationRoot
+ * @param {number} u
+ */
+function applyDerezImplosionPose(animationRoot, u) {
+  const c = THREE.MathUtils.clamp(u, 0, 1);
+  const t = 1 - c;
+  const collapse = t * t * t * (1.0 + 0.45 * c);
+  const s = Math.max(0.003, collapse);
+  const late = c > 0.48 ? ((c - 0.48) / 0.52) ** 1.25 : 0;
+  const yCrush = 1 - 0.5 * late;
+  animationRoot.scale.set(s, s * yCrush, s);
+  const damp = t * t;
+  animationRoot.rotation.set(
+    damp * 0.2 * Math.sin(c * 4.8),
+    damp * 0.22 * Math.sin(c * 3.4 + 0.2),
+    damp * 0.12 * Math.sin(c * 4.1),
+  );
+  animationRoot.position.y = -0.35 * c * c;
+}
+
 export { preloadLightCycleAsset } from "./cycleAssetLoader.js";
 
 /**
@@ -770,18 +793,14 @@ export function createProceduralLightCycle(options = {}) {
   }
 
   /**
-   * Player derez implosion (plan P2.4): shrink + spin + emissive spike, then fade.
+   * Player derez implosion (plan P2.4): collapse + emissive spike (see `applyDerezImplosionPose`).
    * @param {number} dt
    * @param {number} u — progress 0–1 through derez sequence
    */
   function updateDerezImplosion(dt, u) {
     if (dt <= 0) return;
     const clamped = THREE.MathUtils.clamp(u, 0, 1);
-    const shrink = Math.max(0.02, 1 - Math.pow(clamped, 1.35));
-    animationRoot.scale.setScalar(shrink);
-    animationRoot.rotation.y += dt * (6 + clamped * 24);
-    animationRoot.rotation.x += dt * (2 + clamped * 8) * Math.sin(clamped * 20);
-    animationRoot.rotation.z = Math.sin(clamped * 18) * 0.45 * (1 - clamped);
+    applyDerezImplosionPose(animationRoot, clamped);
 
     const emissivePulse = clamped < 0.22 ? 1 + (1 - clamped / 0.22) * 2.2 : (1 - clamped) * 0.9;
     const n = neonScale();
@@ -1090,11 +1109,7 @@ function createAssetBasedLightCycle(options = {}) {
   function updateDerezImplosion(dt, u) {
     if (dt <= 0) return;
     const clamped = THREE.MathUtils.clamp(u, 0, 1);
-    const shrink = Math.max(0.02, 1 - Math.pow(clamped, 1.35));
-    animationRoot.scale.setScalar(shrink);
-    animationRoot.rotation.y += dt * (6 + clamped * 24);
-    animationRoot.rotation.x += dt * (2 + clamped * 8) * Math.sin(clamped * 20);
-    animationRoot.rotation.z = Math.sin(clamped * 18) * 0.45 * (1 - clamped);
+    applyDerezImplosionPose(animationRoot, clamped);
 
     const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
     const emissivePulse = clamped < 0.22 ? 1 + (1 - clamped / 0.22) * 2.2 : (1 - clamped) * 0.9;
