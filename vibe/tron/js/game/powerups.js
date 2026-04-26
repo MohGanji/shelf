@@ -82,7 +82,7 @@ function createPowerupGeometryForType(type) {
  * @param {unknown[] | null | undefined} opts.powerups — `level.powerups` from validated JSON
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {(wx: number, wy: number, wz: number, em: number, neon: number) => void} [opts.spawnPickupBurst] — P9.3 shared particles
- * @param {boolean} [opts.pickupVisualDetail] — emissive pulse on meshes (mid/high graphics tier)
+ * @param {boolean} [opts.pickupVisualDetail] — emissive pulse on meshes (when enabled by graphics profile)
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PowerupFieldTickContext) => void; dispose: () => void; getMinimapPickups: () => { x: number; z: number; kind: 'pickup' }[] }}
  */
 export function createCampaignPowerupField(opts) {

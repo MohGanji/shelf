@@ -324,7 +324,7 @@ function portalExitRightXZ(levelRotY) {
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {(from: PortalEndpoint, to: PortalEndpoint) => void} [opts.onPortalWarp] — P9.3 warp particles
  * @param {() => void} [opts.onPlayerWarp] — e.g. snap chase camera; called right after a successful **player** warp
- * @param {boolean} [opts.portalVisualDetail] — additive inner shell + stronger idle pulse (high graphics tier)
+ * @param {boolean} [opts.portalVisualDetail] — additive inner shell + stronger idle pulse (when enabled by graphics profile)
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PortalFieldTickContext) => void; dispose: () => void }}
  */
 export function createPortalField(opts) {

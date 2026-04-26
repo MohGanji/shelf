@@ -68,10 +68,10 @@
   "handle_links": "preferred",
   "shortcuts": [
     {
-      "name": "Play (best quality)",
-      "short_name": "Quality",
-      "description": "Max graphics quality (?perf=high)",
-      "url": "./?perf=high",
+      "name": "Play (balanced)",
+      "short_name": "Balanced",
+      "description": "Default graphics quality (?perf=medium)",
+      "url": "./?perf=medium",
       "icons": [
         {
           "src": "./assets/favicon/android-chrome-192x192.png",

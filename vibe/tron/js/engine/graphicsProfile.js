@@ -1,9 +1,10 @@
 /**
  * Cross-browser performance defaults (P10.2): adaptive pixel ratio, cheaper bloom, HUD minimap cadence.
- * Override with URL: `?perf=low|medium|high` or `?dpr=1` (caps device pixel ratio).
+ * Override with URL: `?perf=low|medium` or `?dpr=1` (caps device pixel ratio).
+ * Default tier is **medium**; heuristics may choose **low** on constrained devices.
  */
 
-/** @typedef {'high' | 'medium' | 'low'} GraphicsTier */
+/** @typedef {'medium' | 'low'} GraphicsTier */
 
 /**
  * @typedef {{
@@ -31,10 +32,10 @@ function isLikelyDesktopSafari() {
  * @returns {GraphicsTier}
  */
 function detectTier() {
-  if (typeof window === "undefined") return "high";
+  if (typeof window === "undefined") return "medium";
   const params = new URLSearchParams(window.location.search);
   const perf = params.get("perf");
-  if (perf === "low" || perf === "medium" || perf === "high") return perf;
+  if (perf === "low" || perf === "medium") return perf;
 
   let score = 0;
   try {
@@ -51,8 +52,7 @@ function detectTier() {
   if (isLikelyDesktopSafari()) score += 1;
 
   if (score >= 4) return "low";
-  if (score >= 2) return "medium";
-  return "high";
+  return "medium";
 }
 
 /** @type {GraphicsProfile | null} */
@@ -86,27 +86,16 @@ export function getGraphicsProfile() {
           pickupVisualDetail: false,
           portalVisualDetail: false,
         }
-      : tier === "medium"
-        ? {
-            maxPixelRatio: 1.5,
-            bloomResolutionScale: 0.65,
-            minimapMinIntervalMs: 50,
-            minimapResolutionScale: 2,
-            arenaFloorDetail: "basic",
-            postFilmStrength: 0.1,
-            pickupVisualDetail: true,
-            portalVisualDetail: false,
-          }
-        : {
-            maxPixelRatio: 2,
-            bloomResolutionScale: 1,
-            minimapMinIntervalMs: 0,
-            minimapResolutionScale: 2,
-            arenaFloorDetail: "rich",
-            postFilmStrength: 0.18,
-            pickupVisualDetail: true,
-            portalVisualDetail: true,
-          };
+      : {
+          maxPixelRatio: 1.5,
+          bloomResolutionScale: 0.65,
+          minimapMinIntervalMs: 50,
+          minimapResolutionScale: 2,
+          arenaFloorDetail: "basic",
+          postFilmStrength: 0.1,
+          pickupVisualDetail: true,
+          portalVisualDetail: false,
+        };
 
   let maxPixelRatio = byTier.maxPixelRatio;
   if (Number.isFinite(forcedDpr) && forcedDpr > 0) {

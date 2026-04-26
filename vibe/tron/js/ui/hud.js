@@ -91,7 +91,7 @@ export function barrierFootprintXZ(body) {
 /**
  * P9.4 — corner minimap: arena aspect, trails as lines, barriers as filled polys, boost pads as filled neon rects, pickups/portals as hollow circles.
  * @param {HTMLCanvasElement | null} canvas
- * @param {{ internalScale?: number }} [opts] — multiply backing-store resolution (mid/high graphics tier)
+ * @param {{ internalScale?: number }} [opts] — multiply backing-store resolution (non-low graphics profile)
  * @returns {{ draw: (frame: MinimapFrame) => void; dispose: () => void }}
  */
 export function createArenaMinimapRenderer(canvas, opts = {}) {
