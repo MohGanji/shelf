@@ -49,7 +49,6 @@ export function mountEditorPalette(root, opts) {
       ])}
       ${renderCategory("Level-permanent", "powerup", [
         { label: "Trail Extend", kind: "trail_extend", meta: { category: "level_permanent" } },
-        { label: "Nitro Capacity+", kind: "nitro_capacity", meta: { category: "level_permanent" } },
       ])}
       ${renderCategory("Equippable", "powerup", [
         { label: "Shield", kind: "shield", meta: { category: "equippable" } },

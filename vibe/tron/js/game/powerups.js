@@ -11,12 +11,18 @@ export { POWERUP_COLORS };
 
 /** @typedef {"instant" | "level_permanent" | "equippable"} PowerupCategory */
 
+/** One-line copy for the pickup feedback toast (not shown for enemies). */
+const PICKUP_NOTIFY_COPY = Object.freeze({
+  nitro_recharge: { title: "Nitro refilled" },
+  trail_extend: { title: "Trail extended" },
+  shield: { title: "Shield ready" },
+});
+
 /** Maps level JSON `type` string → category (aligned with `levels/schema.js`). */
 export const POWERUP_TYPE_CATEGORY = Object.freeze(
   /** @type {Readonly<Record<string, PowerupCategory>>} */ ({
     nitro_recharge: "instant",
     trail_extend: "level_permanent",
-    nitro_capacity: "level_permanent",
     shield: "equippable",
   }),
 );
@@ -41,23 +47,205 @@ const POWERUP_FOOTPRINT = 2.0;
 const PICKUP_BURST_DURATION = 0.38;
 
 /**
- * Distinct silhouette per JSON `type` (same category can differ by shape).
  * @param {string} type
- * @returns {{ geo: THREE.BufferGeometry; visual: "orb" | "column" | "poly" | "torus" }}
+ * @param {number} em — emissive (hex) from category
+ * @param {import('../config.js').DEFAULT_DEV_HUD} devHud
+ * @returns {{ spin: THREE.Group; visual: "nitro" | "trail" | "shield" | "default"; emissiveMats: THREE.MeshStandardMaterial[] }}
  */
-function createPowerupGeometryForType(type) {
-  switch (type) {
-    case "nitro_recharge":
-      return { geo: new THREE.IcosahedronGeometry(1.02, 1), visual: "orb" };
-    case "trail_extend":
-      return { geo: new THREE.CylinderGeometry(0.31, 0.36, 1.2, 10), visual: "column" };
-    case "nitro_capacity":
-      return { geo: new THREE.DodecahedronGeometry(0.7, 0), visual: "poly" };
-    case "shield":
-      return { geo: new THREE.TorusGeometry(0.88, 0.22, 14, 48), visual: "torus" };
-    default:
-      return { geo: new THREE.IcosahedronGeometry(0.65, 0), visual: "orb" };
+function buildPowerupSpinGroup(type, em, devHud) {
+  const ei = 0.85 * (devHud.neonIntensity ?? 1);
+  const emissiveMats = [];
+  function std(opt) {
+    const m = new THREE.MeshStandardMaterial({
+      color: opt.color,
+      emissive: opt.emissive ?? 0x000000,
+      emissiveIntensity: typeof opt.emissiveIntensity === "number" ? opt.emissiveIntensity : ei,
+      metalness: opt.metalness ?? 0.35,
+      roughness: opt.roughness ?? 0.25,
+      transparent: opt.transparent === true,
+      opacity: typeof opt.opacity === "number" ? opt.opacity : 1,
+      side: opt.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+    });
+    if (opt.trackEmissive) emissiveMats.push(m);
+    return m;
   }
+
+  const spin = new THREE.Group();
+  if (type === "nitro_recharge") {
+    const cyan = 0x1ec8e8;
+    const bandCol = 0xf0f4f7;
+    const labelCol = 0xff7700;
+    for (const sx of [-0.36, 0.36]) {
+      const tankM = std({
+        color: cyan,
+        emissive: em,
+        emissiveIntensity: ei,
+        trackEmissive: true,
+        metalness: 0.45,
+        roughness: 0.2,
+      });
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.36, 0.9, 18), tankM);
+      tank.position.set(sx, 0, 0);
+      spin.add(tank);
+      for (const y of [0.3, -0.28]) {
+        const bandM = std({
+          color: bandCol,
+          emissive: 0x445566,
+          emissiveIntensity: ei * 0.35,
+          trackEmissive: true,
+          metalness: 0.2,
+          roughness: 0.4,
+        });
+        const band = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.4, 0.4, 0.06, 20, 1, true),
+          bandM,
+        );
+        band.position.set(sx, y, 0);
+        spin.add(band);
+      }
+      const capM = std({
+        color: 0x88aacc,
+        emissive: 0x223344,
+        emissiveIntensity: ei * 0.25,
+        trackEmissive: true,
+        metalness: 0.2,
+        roughness: 0.4,
+      });
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.1, 0.12, 8), capM);
+      cap.position.set(sx, 0.5, 0);
+      spin.add(cap);
+    }
+    for (const sx of [-0.36, 0.36]) {
+      const labelM = std({
+        color: labelCol,
+        emissive: 0x663000,
+        emissiveIntensity: ei * 0.55,
+        trackEmissive: true,
+        metalness: 0.15,
+        roughness: 0.5,
+        doubleSide: true,
+      });
+      const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.42), labelM);
+      plate.position.set(sx, 0.04, 0.37);
+      spin.add(plate);
+      for (let c = 0; c < 3; c++) {
+        const chevM = std({
+          color: 0xffcc00,
+          emissive: 0xaa6600,
+          emissiveIntensity: ei * 0.4,
+          trackEmissive: true,
+          metalness: 0.1,
+          roughness: 0.45,
+        });
+        const tri = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.12, 3), chevM);
+        tri.rotation.z = Math.PI;
+        tri.rotation.x = 0.08;
+        tri.position.set(sx, -0.1 + c * 0.12, 0.38);
+        spin.add(tri);
+      }
+    }
+    /* ~2× vertical presence vs width (footprint stays 2×2 in XZ). */
+    spin.scale.set(1, 2.02, 1);
+    spin.position.y = 0.52;
+    return { spin, visual: "nitro", emissiveMats };
+  }
+  if (type === "shield") {
+    const sh = new THREE.Shape();
+    sh.moveTo(0, 0.86);
+    sh.lineTo(0.7, 0.48);
+    sh.quadraticCurveTo(0.8, 0, 0.7, -0.52);
+    sh.lineTo(0, -0.92);
+    sh.lineTo(-0.7, -0.52);
+    sh.quadraticCurveTo(-0.8, 0, -0.7, 0.48);
+    sh.closePath();
+    const ext = new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2 });
+    ext.center();
+    const frameM = std({
+      color: 0xff3ddb,
+      emissive: 0xff00aa,
+      emissiveIntensity: ei * 1.15,
+      trackEmissive: true,
+      metalness: 0.35,
+      roughness: 0.25,
+      doubleSide: true,
+    });
+    const faceM = std({
+      color: 0xfffde8,
+      emissive: 0x00fff6,
+      emissiveIntensity: ei * 1.35,
+      trackEmissive: true,
+      metalness: 0.05,
+      roughness: 0.18,
+      doubleSide: true,
+    });
+    const frame = new THREE.Mesh(ext, frameM);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 1.0), faceM);
+    face.position.z = 0.07;
+    const g = new THREE.Group();
+    g.add(frame);
+    g.add(face);
+    g.scale.setScalar(1.15);
+    g.rotation.x = 0.12;
+    g.rotation.y = 0.22;
+    g.position.y = 0.58;
+    spin.add(g);
+    for (const off of [0, 0.4, -0.4]) {
+      const gem = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 10, 10),
+        std({
+          color: 0xffee44,
+          emissive: 0xffcc00,
+          emissiveIntensity: ei * 1.1,
+          trackEmissive: true,
+          metalness: 0.25,
+          roughness: 0.22,
+        }),
+      );
+      gem.position.set(off * 0.65, 0.5 - Math.abs(off) * 0.1, 0.14);
+      g.add(gem);
+    }
+    spin.position.y = 0.12;
+    return { spin, visual: "shield", emissiveMats };
+  }
+  if (type === "trail_extend") {
+    /* Standing S in the XY plane (rises with Y); thin in Z for a wall-like drift strip. Plinth is the shared 2×2 node base. */
+    const driftPts = (ox, oz) => [
+      new THREE.Vector3(0.02 + ox, 0.1, oz),
+      new THREE.Vector3(0.2 + ox, 0.32, oz),
+      new THREE.Vector3(-0.16 + ox, 0.48, oz),
+      new THREE.Vector3(0.18 + ox, 0.64, oz),
+      new THREE.Vector3(-0.05 + ox, 0.82, oz),
+    ];
+    for (const [ox, oz] of [
+      [0, 0],
+      [0.1, 0.08],
+    ]) {
+      const curve = new THREE.CatmullRomCurve3(driftPts(ox, oz), false, "centripetal", 0.55);
+      const trackM = std({
+        color: 0x0d2620,
+        emissive: em,
+        emissiveIntensity: ei * 1.18,
+        trackEmissive: true,
+        metalness: 0.04,
+        roughness: 0.9,
+        doubleSide: true,
+      });
+      const geom = new THREE.TubeGeometry(curve, 64, 0.048, 6, false);
+      const tr = new THREE.Mesh(geom, trackM);
+      tr.scale.set(0.9, 1, 0.24);
+      spin.add(tr);
+    }
+    /* Same height treatment as nitro: ~2× vertical on the footprint, lifted above the plinth. */
+    spin.scale.set(1, 2.02, 1);
+    spin.position.y = 0.5;
+    return { spin, visual: "trail", emissiveMats };
+  }
+  const fallback = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.7, 0),
+    std({ color: em, emissive: em, emissiveIntensity: ei, trackEmissive: true }),
+  );
+  spin.add(fallback);
+  return { spin, visual: "default", emissiveMats };
 }
 
 /**
@@ -71,9 +259,9 @@ function createPowerupGeometryForType(type) {
  * @property {object} apply
  * @property {(type: 'nitro_recharge') => void} apply.onPlayerNitroRecharge
  * @property {(type: 'trail_extend') => void} apply.onPlayerTrailExtend
- * @property {(type: 'nitro_capacity') => void} apply.onPlayerNitroCapacity
  * @property {(type: 'shield') => void} apply.onPlayerShield
  * @property {(enemy: import('./enemies.js').CampaignEnemyEntity, type: 'nitro_recharge' | 'shield') => void} apply.onEnemyPickup
+ * @property {(info: { type: string; title: string }) => void} [onPickupNotify]
  */
 
 /**
@@ -104,14 +292,14 @@ export function createCampaignPowerupField(opts) {
    * @property {number} z
    * @property {number} emissive — hex number for burst color
    * @property {THREE.Group} node
-   * @property {THREE.Mesh} mesh
-   * @property {THREE.Mesh[]} accents — extra rings / belts (shared material with `mesh`)
-   * @property {"orb" | "column" | "poly" | "torus"} visual
+   * @property {THREE.Object3D} spin — main pickup icon (tanks, shield, drift marks)
+   * @property {"nitro" | "trail" | "shield" | "default"} visual
    * @property {number} phase
    * @property {boolean} gone — level_permanent consumed
    * @property {boolean} hidden — respawning (instant / equippable)
    * @property {number} respawnAtMs
-   * @property {number} baseMeshEmissive
+   * @property {number[]} emissiveBases
+   * @property {THREE.MeshStandardMaterial[]} emissiveMats
    * @property {number} basePlateEmissive
    * @property {THREE.MeshStandardMaterial | null} basePlateMat
    */
@@ -244,20 +432,20 @@ export function createCampaignPowerupField(opts) {
     const x = typeof p.x === "number" ? p.x : 0;
     const z = typeof p.z === "number" ? p.z : 0;
 
-    const { geo, visual } = createPowerupGeometryForType(type);
     const em = emissiveHex(cat);
-    const mat = new THREE.MeshStandardMaterial({
-      color: em,
-      emissive: em,
-      emissiveIntensity: 0.85 * (devHud.neonIntensity ?? 1),
-      metalness: 0.35,
-      roughness: 0.25,
-      transparent: cat === "equippable",
-      opacity: cat === "equippable" ? 0.92 : 1,
+    const { spin, visual, emissiveMats } = buildPowerupSpinGroup(type, em, devHud);
+    spin.traverse((ch) => {
+      if (ch instanceof THREE.Mesh) {
+        ch.castShadow = false;
+        ch.receiveShadow = false;
+        if (cat === "equippable" && ch.material && !Array.isArray(ch.material)) {
+          const m = /** @type {THREE.MeshStandardMaterial} */ (ch.material);
+          m.transparent = true;
+          m.opacity = 0.95;
+        }
+      }
     });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
+    const emissiveBases = emissiveMats.map((m) => m.emissiveIntensity);
     const node = new THREE.Group();
     node.position.set(x, 0.78, z);
     const baseMat = new THREE.MeshStandardMaterial({
@@ -274,29 +462,7 @@ export function createCampaignPowerupField(opts) {
     base.castShadow = false;
     base.receiveShadow = true;
     node.add(base);
-    node.add(mesh);
-
-    /** @type {THREE.Mesh[]} */
-    const accents = [];
-    if (type === "nitro_recharge") {
-      const orbit = new THREE.Mesh(
-        new THREE.TorusGeometry(1.2, 0.045, 10, 44),
-        mat,
-      );
-      orbit.rotation.x = Math.PI / 2;
-      node.add(orbit);
-      accents.push(orbit);
-    } else if (type === "trail_extend") {
-      const belt = new THREE.Mesh(new THREE.TorusGeometry(0.74, 0.03, 8, 28), mat);
-      belt.rotation.x = Math.PI / 2;
-      node.add(belt);
-      accents.push(belt);
-    } else if (type === "nitro_capacity") {
-      const spark = new THREE.Mesh(new THREE.TetrahedronGeometry(0.24, 0), mat);
-      spark.position.set(0.5, 0.42, 0.18);
-      node.add(spark);
-      accents.push(spark);
-    }
+    node.add(spin);
 
     instances.push({
       type,
@@ -305,14 +471,14 @@ export function createCampaignPowerupField(opts) {
       z,
       emissive: em,
       node,
-      mesh,
-      accents,
+      spin,
       visual,
       phase: i * 1.17,
       gone: false,
       hidden: false,
       respawnAtMs: 0,
-      baseMeshEmissive: mat.emissiveIntensity,
+      emissiveBases,
+      emissiveMats,
       basePlateEmissive: baseMat.emissiveIntensity,
       basePlateMat: baseMat,
     });
@@ -330,7 +496,7 @@ export function createCampaignPowerupField(opts) {
       tickPickupBursts(dt);
     }
 
-    const { isLobby, levelStarted, playerBody, enemies, onPickupSound, apply } = ctx;
+    const { isLobby, levelStarted, playerBody, enemies, onPickupSound, onPickupNotify, apply } = ctx;
     const neon = typeof devHud.neonIntensity === "number" ? devHud.neonIntensity : 1;
 
     const canPlayerPick = isLobby || levelStarted;
@@ -353,35 +519,27 @@ export function createCampaignPowerupField(opts) {
       inst.node.position.y = 0.78 + bob;
 
       const v = inst.visual;
-      if (v === "torus") {
-        inst.mesh.rotation.x = Math.PI / 2.12;
-        inst.mesh.rotation.y += dt * 1.42;
-        inst.mesh.rotation.z += dt * 0.55;
-      } else if (v === "column") {
-        inst.mesh.rotation.y += dt * 1.25;
-      } else if (v === "poly") {
-        inst.mesh.rotation.y += dt * 1.05;
-        inst.mesh.rotation.x += dt * 0.42;
-        inst.mesh.rotation.z += dt * 0.28;
+      if (v === "shield") {
+        inst.spin.rotation.x = Math.sin(inst.phase * 0.6) * 0.1 + 0.08;
+        inst.spin.rotation.y += dt * 0.9;
+        inst.spin.rotation.z = Math.sin(inst.phase * 0.45) * 0.06;
+      } else if (v === "trail") {
+        inst.spin.rotation.y += dt * 0.45;
+        inst.spin.rotation.x = 0.14;
+      } else if (v === "nitro") {
+        inst.spin.rotation.y += dt * 0.55;
+        inst.spin.rotation.x = Math.sin(inst.phase * 1.0) * 0.1;
       } else {
-        inst.mesh.rotation.y += dt * 1.22;
-        inst.mesh.rotation.x = Math.sin(inst.phase * 1.1) * 0.12;
-      }
-
-      for (const a of inst.accents) {
-        if (inst.type === "nitro_recharge" || inst.type === "trail_extend") {
-          a.rotation.z += dt * (inst.type === "nitro_recharge" ? 2.35 : 1.65);
-        } else if (inst.type === "nitro_capacity") {
-          a.rotation.x += dt * 2.1;
-          a.rotation.y += dt * 1.6;
-        }
+        inst.spin.rotation.y += dt * 1.15;
+        inst.spin.rotation.x = Math.sin(inst.phase * 1.1) * 0.12;
       }
 
       if (pickupVisualDetail) {
         const pulse = 0.9 + 0.1 * Math.sin(inst.phase * 2.15);
-        const m = /** @type {THREE.MeshStandardMaterial} */ (inst.mesh.material);
-        if (m && typeof inst.baseMeshEmissive === "number") {
-          m.emissiveIntensity = inst.baseMeshEmissive * pulse;
+        for (let j = 0; j < inst.emissiveMats.length; j++) {
+          const m = inst.emissiveMats[j];
+          const b = inst.emissiveBases[j];
+          if (m && typeof b === "number") m.emissiveIntensity = b * pulse;
         }
         if (inst.basePlateMat && typeof inst.basePlateEmissive === "number") {
           inst.basePlateMat.emissiveIntensity = inst.basePlateEmissive * (0.88 + 0.12 * pulse);
@@ -398,7 +556,6 @@ export function createCampaignPowerupField(opts) {
         spawnPickupBurst(inst.x, inst.node.position.y, inst.z, inst.emissive, neon);
         if (inst.category === "level_permanent") {
           if (inst.type === "trail_extend") apply.onPlayerTrailExtend();
-          else if (inst.type === "nitro_capacity") apply.onPlayerNitroCapacity();
           onPickupSound("level_permanent");
         } else if (inst.category === "instant") {
           if (inst.type === "nitro_recharge") apply.onPlayerNitroRecharge();
@@ -406,6 +563,10 @@ export function createCampaignPowerupField(opts) {
         } else if (inst.type === "shield") {
           apply.onPlayerShield();
           onPickupSound("equippable");
+        }
+        const n = PICKUP_NOTIFY_COPY[/** @type {keyof typeof PICKUP_NOTIFY_COPY} */ (inst.type)];
+        if (n && typeof onPickupNotify === "function") {
+          onPickupNotify({ type: inst.type, title: n.title });
         }
         scheduleRespawnOrConsume(inst, devHud);
         continue;
@@ -461,21 +622,13 @@ export function createCampaignPowerupField(opts) {
     pickupBursts.length = 0;
     scene.remove(root);
     for (const i of instances) {
-      i.mesh.geometry.dispose();
-      const children = i.node.children;
-      for (let c = 0; c < children.length; c++) {
-        const ch = children[c];
-        if (ch instanceof THREE.Mesh && ch !== i.mesh && !i.accents.includes(ch)) {
-          ch.geometry.dispose();
-          const m = ch.material;
-          if (m && !Array.isArray(m) && "dispose" in m) /** @type {THREE.Material} */ (m).dispose();
+      i.node.traverse((ch) => {
+        if (ch instanceof THREE.Mesh) {
+          ch.geometry?.dispose();
+          const mat = ch.material;
+          if (mat && !Array.isArray(mat) && "dispose" in mat) /** @type {THREE.Material} */ (mat).dispose();
         }
-      }
-      for (const a of i.accents) {
-        a.geometry.dispose();
-      }
-      const m = i.mesh.material;
-      if (m && !Array.isArray(m) && "dispose" in m) /** @type {THREE.Material} */ (m).dispose();
+      });
     }
     instances.length = 0;
   }

@@ -4,6 +4,43 @@ import { CYCLE_BOUNDS, WORLD } from "../config.js";
 import { isExoticNeonToken, writeExoticTrailEmissive } from "./neonCosmetic.js";
 import { createTrailTileMap } from "./trailTileMap.js";
 
+/** Mottled 1:1 emissive map so trails read as rubber smudge / tread instead of a flat bar. */
+let driftEmissiveMap = /** @type {THREE.Texture | null} */ (null);
+function getDriftEmissiveMap() {
+  if (driftEmissiveMap) return driftEmissiveMap;
+  const c = document.createElement("canvas");
+  c.width = 128;
+  c.height = 128;
+  const g = c.getContext("2d");
+  if (!g) return null;
+  g.fillStyle = "#ffffff";
+  g.fillRect(0, 0, 128, 128);
+  for (let i = 0; i < 4200; i++) {
+    const x = Math.random() * 128;
+    const y = Math.random() * 128;
+    g.fillStyle = `rgba(0,0,0,${0.1 + Math.random() * 0.22})`;
+    g.fillRect(x, y, 1.4, 1.4);
+  }
+  g.globalAlpha = 0.4;
+  g.strokeStyle = "rgba(0,0,0,0.35)";
+  g.lineWidth = 1.1;
+  for (let s = -40; s < 180; s += 5) {
+    g.beginPath();
+    g.moveTo(s, 0);
+    g.lineTo(s + 48, 128);
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3.2, 5.5);
+  if ("SRGBColorSpace" in THREE) {
+    /** @type {import('three').Texture} */ (tex).colorSpace = THREE.SRGBColorSpace;
+  }
+  driftEmissiveMap = tex;
+  return tex;
+}
+
 /** @typedef {typeof WORLD} WorldConstants */
 
 /**
@@ -94,8 +131,9 @@ export function createTrailWallSystem(options) {
     color: 0x000000,
     emissive: color.clone(),
     emissiveIntensity: 0.95 * devHud.neonIntensity,
-    metalness: 0,
-    roughness: 1,
+    metalness: 0.08,
+    roughness: 0.92,
+    emissiveMap: getDriftEmissiveMap() ?? undefined,
     transparent: true,
     opacity: devHud.trailOpacity,
     depthWrite: false,

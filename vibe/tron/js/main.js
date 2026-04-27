@@ -50,6 +50,7 @@ import { clampNitroCapacity, createNitroState, isNitroBurstActive } from "./game
 import { createGameplayParticles, hexColorToInt } from "./game/particles.js";
 import { createBoostPadField, createPortalField } from "./game/objects.js";
 import { createCampaignPowerupField, refillNitroBars } from "./game/powerups.js";
+import { createPickupFeedback } from "./ui/pickupFeedback.js";
 import { cosmeticColorToCssHex } from "./game/neonCosmetic.js";
 import { createTrailWallSystem } from "./game/trail.js";
 import {
@@ -387,11 +388,9 @@ async function main() {
   const playerDriveCfg = { ...playCfg };
   /** Trail Length attribute cap + Trail Extend pickups (P3.3) — segments. */
   let levelTrailExtendBonus = 0;
-  /** Nitro Bars attribute cap + Nitro Capacity+ pickups (P3.3) — discrete bars. */
-  let levelExtraNitroBars = 0;
 
   function effectivePlayerNitroMax() {
-    return playCfg.nitroBarCount + levelExtraNitroBars;
+    return playCfg.nitroBarCount;
   }
 
   applyArenaStageEnvironment(game, playCfg);
@@ -722,6 +721,7 @@ async function main() {
   const hudEquipIcon = document.getElementById("hud-equip-icon");
   const hudEquipE = document.getElementById("hud-equip-e");
   const hudEquipWrap = document.getElementById("hud-equip-wrap");
+  const pickupFeedback = createPickupFeedback(document.getElementById("pickup-feedback"));
 
   const derezOverlay = document.getElementById("derez-overlay");
   /** @type {'alive' | 'imploding' | 'tunnel'} */
@@ -1671,6 +1671,9 @@ async function main() {
         else if (cat === "level_permanent") audio.playPowerupPickupLevelPermanent();
         else audio.playPowerupPickupEquippable();
       },
+      onPickupNotify: (info) => {
+        pickupFeedback.show({ title: info.title });
+      },
       apply: {
         onPlayerNitroRecharge: () => {
           refillNitroBars(nitroState, effectivePlayerNitroMax());
@@ -1678,12 +1681,6 @@ async function main() {
         onPlayerTrailExtend: () => {
           levelTrailExtendBonus += typeof devHud.trailExtendAmount === "number" ? devHud.trailExtendAmount : 10;
           trailWall.setMaxSegments(playCfg.trailMaxSegments + levelTrailExtendBonus);
-        },
-        onPlayerNitroCapacity: () => {
-          const add =
-            typeof devHud.nitroCapacityPlusAmount === "number" ? devHud.nitroCapacityPlusAmount : 1;
-          levelExtraNitroBars += add;
-          refillNitroBars(nitroState, effectivePlayerNitroMax());
         },
         onPlayerShield: () => {
           assignPlayerShieldPickup();

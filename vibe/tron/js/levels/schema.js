@@ -37,7 +37,6 @@ const GAME_OBJECT_TYPES = new Set(["boost_pad", "portal"]);
 const POWERUP_TYPES = new Map([
   ["nitro_recharge", "instant"],
   ["trail_extend", "level_permanent"],
-  ["nitro_capacity", "level_permanent"],
   ["shield", "equippable"],
 ]);
 const ENEMY_CATEGORIES = new Set(["easy", "medium", "hard", "boss"]);
@@ -581,7 +580,7 @@ function validatePowerups(powerups, errors) {
     }
     const type = p.type;
     if (typeof type !== "string" || !POWERUP_TYPES.has(type)) {
-      errors.push(`${path}.type must be one of: nitro_recharge, trail_extend, nitro_capacity, shield`);
+      errors.push(`${path}.type must be one of: nitro_recharge, trail_extend, shield`);
       continue;
     }
     expectFiniteNumber(`${path}.x`, p.x, errors);

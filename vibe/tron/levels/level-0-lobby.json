@@ -303,7 +303,32 @@
       "z": 23.5
     }
   ],
-  "powerups": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "x": -32,
+      "z": -8,
+      "category": "instant",
+      "gridX": 168,
+      "gridZ": 67
+    },
+    {
+      "type": "trail_extend",
+      "x": 0,
+      "z": -8,
+      "category": "level_permanent",
+      "gridX": 200,
+      "gridZ": 67
+    },
+    {
+      "type": "shield",
+      "x": 32,
+      "z": -8,
+      "category": "equippable",
+      "gridX": 232,
+      "gridZ": 67
+    }
+  ],
   "enemies": [],
   "rewards": null
 }

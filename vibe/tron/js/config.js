@@ -123,7 +123,6 @@ export const DEFAULT_DEV_HUD = {
   enemyHardPercent: 77,
   enemyBossPercent: 93,
   trailExtendAmount: 10,
-  nitroCapacityPlusAmount: 1,
   nitroBurstDuration: 0.5,
   nitroSpeedReturnTime: 0.25,
   shieldDeployTime: 0.15,
@@ -225,7 +224,8 @@ export const DEFAULT_DEV_HUD = {
 /** Power-up palette (plan § Power-up color coding) */
 export const POWERUP_COLORS = {
   instant: "#00ff66",
-  levelPermanent: "#0088ff",
+  /** Trail extend & other level-permanent pickups — mint/teal (reads vs floor, distinct from nitro green / shield). */
+  levelPermanent: "#35f0c0",
   equippable: "#cc00ff",
 };
 

@@ -483,7 +483,7 @@ export function mountEditorWorkbench(opts) {
         const z = c.z;
         if (typeof x !== "number" || typeof z !== "number") continue;
         let col = 0x00ff66;
-        if (cat === "level_permanent") col = 0x0088ff;
+        if (cat === "level_permanent") col = 0x35f0c0;
         if (cat === "equippable") col = 0xcc00ff;
         const mat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.45 });
         const wx = Math.max(0.2, fpP.width - 0.1);
@@ -670,7 +670,6 @@ export function mountEditorWorkbench(opts) {
     if (sel.category === "powerup") {
       if (sel.kind === "nitro_recharge") return { list: "powerups", obj: { type: "nitro_recharge", category: "instant" } };
       if (sel.kind === "trail_extend") return { list: "powerups", obj: { type: "trail_extend", category: "level_permanent" } };
-      if (sel.kind === "nitro_capacity") return { list: "powerups", obj: { type: "nitro_capacity", category: "level_permanent" } };
       if (sel.kind === "shield") return { list: "powerups", obj: { type: "shield", category: "equippable" } };
     }
     if (sel.category === "enemy") {
@@ -770,8 +769,6 @@ export function mountEditorWorkbench(opts) {
         commitPaletteObject("powerups", { type: "nitro_recharge", category: "instant" }, ix, iz);
       } else if (kind === "trail_extend") {
         commitPaletteObject("powerups", { type: "trail_extend", category: "level_permanent" }, ix, iz);
-      } else if (kind === "nitro_capacity") {
-        commitPaletteObject("powerups", { type: "nitro_capacity", category: "level_permanent" }, ix, iz);
       } else if (kind === "shield") {
         commitPaletteObject("powerups", { type: "shield", category: "equippable" }, ix, iz);
       }

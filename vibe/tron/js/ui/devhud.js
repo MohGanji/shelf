@@ -263,7 +263,6 @@ export function createDevHudController(opts) {
   section("Cooldowns / power-ups", [
     { key: "specialObjectCooldown", label: "Boost/portal cooldown (s)", min: 0.5, max: 30, step: 0.5 },
     { key: "powerupRespawnTime", label: "Power-up respawn (s)", min: 1, max: 90, step: 1 },
-    { key: "nitroCapacityPlusAmount", label: "Nitro capacity+ bars", min: 1, max: 6, step: 1 },
   ]);
 
   section("Gameplay", [
