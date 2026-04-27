@@ -1,0 +1,122 @@
+{
+  "id": "daily-2026-05-14",
+  "name": "Daily — Circuit 17",
+  "arenaWidth": 612,
+  "arenaDepth": 612,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 306,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 306,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": 57,
+      "z": -111.2,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 364,
+      "gridZ": 194
+    },
+    {
+      "x": 63.7,
+      "z": -33.6,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 370,
+      "gridZ": 272
+    },
+    {
+      "x": 118.1,
+      "z": 14.8,
+      "rotation": 0,
+      "color": "#00FF88",
+      "category": "medium",
+      "gridX": 425,
+      "gridZ": 320
+    },
+    {
+      "x": 48.9,
+      "z": 44.3,
+      "rotation": 0,
+      "color": "#FFAA00",
+      "category": "medium",
+      "gridX": 355,
+      "gridZ": 350
+    },
+    {
+      "x": 25.2,
+      "z": 110.2,
+      "rotation": 0,
+      "color": "#AA66FF",
+      "category": "hard",
+      "gridX": 332,
+      "gridZ": 416
+    },
+    {
+      "x": -22.6,
+      "z": 55.6,
+      "rotation": 0,
+      "color": "#FF4488",
+      "category": "hard",
+      "gridX": 284,
+      "gridZ": 361
+    },
+    {
+      "x": -89.9,
+      "z": 58.1,
+      "rotation": 0,
+      "color": "#44AAFF",
+      "category": "boss",
+      "gridX": 217,
+      "gridZ": 364
+    },
+    {
+      "x": -54,
+      "z": -2,
+      "rotation": 0,
+      "color": "#FFCC00",
+      "category": "easy",
+      "gridX": 253,
+      "gridZ": 304
+    },
+    {
+      "x": -80.5,
+      "z": -61,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 226,
+      "gridZ": 245
+    }
+  ],
+  "rewards": {
+    "coins": 60,
+    "timeBonusThreshold": 156,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 614,
+  "mapDepth": 614
+}

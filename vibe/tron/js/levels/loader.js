@@ -350,3 +350,100 @@ export function selectPlaytestCampaignLevel(validLevels, _save) {
   }
   return fallback;
 }
+
+/** First-run tutorial (not in campaign manifest). */
+export const TUTORIAL_LEVEL_FILENAME = "level-tutorial.json";
+
+/**
+ * `daily-YYYY-MM-DD.json` filenames that ship with the repo (editor “Open level”).
+ * Dailies stay out of the linear campaign manifest list.
+ * @returns {string[]}
+ */
+export function getBundledDailyLevelFilenames() {
+  const start = new Date(2026, 3, 27);
+  const out = [];
+  for (let i = 0; i < 31; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    out.push(`daily-${y}-${m}-${day}.json`);
+  }
+  return out;
+}
+
+/**
+ * Tutorial + bundled daily files for the level editor picker (optional; avoids duplicating entries already in manifest).
+ * @returns {string[]}
+ */
+export function getEditorSupplementaryFilenames() {
+  return [TUTORIAL_LEVEL_FILENAME, ...getBundledDailyLevelFilenames()];
+}
+
+/**
+ * @param {Date} [d]
+ * @returns {string} YYYY-MM-DD in local time
+ */
+export function getLocalYyyyMmDd(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * @param {string} filename — e.g. `level-tutorial.json` or `daily-2026-04-28.json`
+ * @param {string} [campaignBase] — default `./levels/`
+ * @param {{ signal?: AbortSignal }} [opts]
+ * @returns {Promise<Record<string, unknown> | null>}
+ */
+export async function fetchLevelByFilename(filename, campaignBase = DEFAULT_CAMPAIGN_BASE, opts = {}) {
+  const base = campaignBase.endsWith("/") ? campaignBase : `${campaignBase}/`;
+  const url = `${base}${filename.replace(/^\//, "")}`;
+  const signal = opts.signal;
+  try {
+    const res = await fetch(url, { signal });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const v = validateLevel(data);
+    if (!v.valid) {
+      console.warn(`[loader] ${filename} validation failed:`, v.errors);
+      return null;
+    }
+    return normalizeLevelForRuntime(/** @type {Record<string, unknown>} */ (data));
+  } catch (e) {
+    console.warn(`[loader] ${filename} load error:`, e);
+    return null;
+  }
+}
+
+/**
+ * Light probe for `daily-${ymd}.json` (name only for lobby; full load at gate). Missing file ⇒ no daily map today.
+ * @param {string} ymd — `YYYY-MM-DD`
+ * @param {string} [campaignBase]
+ * @param {{ signal?: AbortSignal }} [opts]
+ * @returns {Promise<{ hasMap: boolean; displayName: string }>}
+ */
+export async function fetchDailyLobbyMeta(ymd, campaignBase = DEFAULT_CAMPAIGN_BASE, opts = {}) {
+  const base = campaignBase.endsWith("/") ? campaignBase : `${campaignBase}/`;
+  const key = typeof ymd === "string" ? ymd.trim() : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return { hasMap: false, displayName: "" };
+  const fn = `daily-${key}.json`;
+  const url = `${base}${fn}`;
+  const signal = opts.signal;
+  try {
+    const res = await fetch(url, { signal });
+    if (!res.ok) return { hasMap: false, displayName: "" };
+    const data = await res.json();
+    const v = validateLevel(data);
+    if (!v.valid) {
+      console.warn(`[loader] ${fn} invalid:`, v.errors);
+      return { hasMap: false, displayName: "" };
+    }
+    const name = typeof data.name === "string" && data.name.trim() !== "" ? data.name.trim() : "Daily Arena";
+    return { hasMap: true, displayName: name };
+  } catch (e) {
+    console.warn(`[loader] daily meta ${ymd} (${fn}):`, e);
+    return { hasMap: false, displayName: "" };
+  }
+}

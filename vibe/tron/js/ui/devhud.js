@@ -167,6 +167,11 @@ export function createDevHudController(opts) {
     { key: "fogDensity", label: "Fog density", min: 0, max: 0.06, step: 0.001 },
   ]);
 
+  section("Navigation", [
+    { key: "beaconMode", label: "Beacon style (0=col · 1=ring · 2=stack)", min: 0, max: 2, step: 1 },
+    { key: "beaconStrength", label: "Beacon strength", min: 0, max: 2, step: 0.05 },
+  ]);
+
   section("Camera", [
     { key: "cameraDistance", label: "Distance", min: 2, max: 24, step: 0.25 },
     { key: "cameraHeight", label: "Height", min: 1, max: 16, step: 0.25 },
@@ -220,6 +225,7 @@ export function createDevHudController(opts) {
   ]);
 
   section("Nitro / boost / shield", [
+    { key: "tutorialNitroJuice", label: "Tutorial nitro VFX mult", min: 0.5, max: 2.5, step: 0.05 },
     { key: "nitroBurstDuration", label: "Burst duration (s)", min: 0.1, max: 2, step: 0.05 },
     { key: "nitroSpeedReturnTime", label: "Speed return (s)", min: 0.05, max: 2, step: 0.05 },
     { key: "nitroBarRechargeTime", label: "Bar recharge (s)", min: 0.5, max: 30, step: 0.5 },
@@ -244,6 +250,7 @@ export function createDevHudController(opts) {
   ]);
 
   section("Derez", [
+    { key: "eliminationStingEnabled", label: "Enemy elim. extra sting", kind: "bool" },
     { key: "derezSlowMo", label: "Slow-mo", kind: "bool" },
     { key: "derezCameraOverhead", label: "Overhead cam", kind: "bool" },
     { key: "derezCameraShake", label: "Camera shake", kind: "bool" },
@@ -271,6 +278,28 @@ export function createDevHudController(opts) {
   ]);
 
   section("Audio", [
+    { key: "audioPreviewStingEnabled", label: "UI preview sting on first input", kind: "bool" },
+    {
+      key: "sfxNitroPreset",
+      label: "Nitro preset (0 Vent · 1 Turbine · 2 Ether · 3 Sub · 4 Thin)",
+      min: 0,
+      max: 4,
+      step: 1,
+    },
+    {
+      key: "sfxDerezPreset",
+      label: "Derez preset (0 Shards · 1 Pulse · 2 Thunder · 3 Arcade · 4 Soft)",
+      min: 0,
+      max: 4,
+      step: 1,
+    },
+    { key: "trailProximityBedEnabled", label: "Trail proximity bed", kind: "bool" },
+    { key: "trailProximityFalloffDistance", label: "Trail proximity falloff (units)", min: 8, max: 56, step: 1 },
+    { key: "trailProximityMaxGain", label: "Trail bed max gain", min: 0, max: 0.55, step: 0.02 },
+    { key: "musicDuckEnabled", label: "Tension music duck", kind: "bool" },
+    { key: "musicDuckMaxDb", label: "Music duck max dB", min: 0, max: 12, step: 0.25 },
+    { key: "enemyEngineBedEnabled", label: "Enemy proximity engine bed", kind: "bool" },
+    { key: "enemyEngineMaxGain", label: "Enemy bed max gain", min: 0, max: 0.8, step: 0.02 },
     { key: "musicCrossfadeDuration", label: "Music crossfade (s)", min: 0, max: 6, step: 0.1 },
     {
       key: "lobbyMusicVariant",
@@ -316,6 +345,11 @@ export function createDevHudController(opts) {
 
   section("Near-miss", [
     { key: "nearMissDistance", label: "Near-miss distance", min: 0.2, max: 6, step: 0.05 },
+    {
+      key: "nearMissWhooshWhenEnemyEngine",
+      label: "Whoosh vs enemy bed (on = reduce whoosh when close)",
+      kind: "bool",
+    },
   ]);
 
   if (typeof grantDevCoins === "function") {

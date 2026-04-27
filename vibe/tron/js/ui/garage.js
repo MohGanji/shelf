@@ -8,7 +8,13 @@ import {
   getArenaPlaytestConfig,
   mergeDevHud,
 } from "../config.js";
-import { DEFAULT_CAMPAIGN_BASE, loadCampaignManifest, upsertWipLevel } from "../levels/loader.js";
+import {
+  DEFAULT_CAMPAIGN_BASE,
+  getEditorSupplementaryFilenames,
+  loadCampaignManifest,
+  TUTORIAL_LEVEL_FILENAME,
+  upsertWipLevel,
+} from "../levels/loader.js";
 import { persistSave, spendCoins, unlockCosmeticColor } from "../data/savedata.js";
 import { clampAttributeLevel } from "../game/attributes.js";
 import {
@@ -806,7 +812,18 @@ export function mountEditorDestinationScreen(opts) {
   /** @param {string} filename */
   function campaignFilenameLabel(filename) {
     if (filename === "level-0-lobby.json") return "Lobby";
+    if (filename === TUTORIAL_LEVEL_FILENAME) return "First-run tutorial";
+    const dm = /^daily-(\d{4}-\d{2}-\d{2})\.json$/i.exec(filename);
+    if (dm) return `Daily arena (${dm[1]})`;
     return filename.replace(/\.json$/i, "").replace(/^level-(\d+)-/i, "Arena $1 — ").replace(/-/g, " ");
+  }
+
+  /** @param {string} filename */
+  function editorOpenKindBadge(filename) {
+    if (filename === "level-0-lobby.json") return "Lobby";
+    if (filename === TUTORIAL_LEVEL_FILENAME) return "Tutorial";
+    if (/^daily-\d{4}-\d{2}-\d{2}\.json$/i.test(filename)) return "Daily";
+    return "Campaign";
   }
 
   /** @param {string} filename */
@@ -852,7 +869,7 @@ export function mountEditorDestinationScreen(opts) {
   async function openExistingLevelDialog() {
     setOpenLevelError("");
     if (openLevelList) {
-      openLevelList.innerHTML = '<p class="editor-open-level-dialog__lead">Loading campaign levels...</p>';
+      openLevelList.innerHTML = '<p class="editor-open-level-dialog__lead">Loading levels...</p>';
     }
     if (openLevelDialog) {
       try {
@@ -861,30 +878,40 @@ export function mountEditorDestinationScreen(opts) {
         /* already open */
       }
     }
-    let manifest;
+    let manifest = [];
     try {
       manifest = await loadCampaignManifest();
     } catch {
       manifest = [];
     }
+    const supplementary = getEditorSupplementaryFilenames();
+    const seen = new Set(manifest);
+    /** @type {string[]} */
+    const ordered = [...manifest];
+    for (const f of supplementary) {
+      if (!seen.has(f)) {
+        seen.add(f);
+        ordered.push(f);
+      }
+    }
     if (!openLevelList) return;
-    if (!manifest.length) {
-      openLevelList.innerHTML = '<p class="editor-open-level-dialog__lead">No campaign levels found.</p>';
+    if (!ordered.length) {
+      openLevelList.innerHTML = '<p class="editor-open-level-dialog__lead">No bundled levels found.</p>';
       return;
     }
     openLevelList.replaceChildren();
-    for (const filename of manifest) {
+    for (const filename of ordered) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "editor-open-level-dialog__item";
       btn.setAttribute("role", "option");
-      const kind = filename === "level-0-lobby.json" ? "Lobby" : "Campaign";
+      const kind = editorOpenKindBadge(filename);
       btn.innerHTML = `
         <span>
           <span class="editor-open-level-dialog__item-title">${escapeHtml(campaignFilenameLabel(filename))}</span>
           <span class="editor-open-level-dialog__item-meta">${escapeHtml(filename)}</span>
         </span>
-        <span class="editor-open-level-dialog__item-kind">${kind}</span>
+        <span class="editor-open-level-dialog__item-kind">${escapeHtml(kind)}</span>
       `;
       btn.addEventListener("click", () => void openCampaignFilename(filename));
       openLevelList.appendChild(btn);

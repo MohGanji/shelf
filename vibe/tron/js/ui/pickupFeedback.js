@@ -1,5 +1,5 @@
 /**
- * Brief top-center message when the player collects a power-up.
+ * Brief toast beside the HUD equip slot when the player collects a power-up.
  */
 
 const DEFAULT_MS = 2400;

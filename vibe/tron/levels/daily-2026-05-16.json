@@ -1,0 +1,59 @@
+{
+  "id": "daily-2026-05-16",
+  "name": "Daily — Circuit 19",
+  "arenaWidth": 626,
+  "arenaDepth": 626,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 313,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 313,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": 128.4,
+      "z": 41.7,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 442,
+      "gridZ": 354
+    },
+    {
+      "x": -81.7,
+      "z": 6.5,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 232,
+      "gridZ": 319
+    }
+  ],
+  "rewards": {
+    "coins": 32,
+    "timeBonusThreshold": 158,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 628,
+  "mapDepth": 628
+}

@@ -220,49 +220,53 @@ body {
   mix-blend-mode: screen;
 }
 
+/* Beside equip slot — same HUD chrome as cycle-hud (see .cycle-hud__equip-feedback-row) */
 .pickup-feedback {
   pointer-events: none;
-  position: fixed;
-  top: max(20px, env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%) translateY(-16px);
-  z-index: 40;
+  position: relative;
+  flex: 1 1 120px;
+  min-width: 0;
+  top: auto;
+  left: auto;
+  transform: translateX(-5px);
+  z-index: 1;
   opacity: 0;
-  max-width: min(420px, 92vw);
-  text-align: center;
+  max-width: min(300px, 48vw);
+  text-align: left;
   transition:
-    opacity 0.28s ease,
-    transform 0.38s cubic-bezier(0.2, 0.9, 0.25, 1);
+    opacity 0.24s ease,
+    transform 0.32s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 
 .pickup-feedback--visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(0);
 }
 
 .pickup-feedback__inner {
-  padding: 10px 20px 12px;
+  padding: 6px 11px 7px;
   font-family: "Orbitron", sans-serif;
   background: linear-gradient(
     165deg,
     rgba(6, 18, 32, 0.92) 0%,
     rgba(8, 28, 48, 0.88) 100%
   );
-  border: 1px solid rgba(0, 255, 255, 0.28);
-  border-radius: 10px;
+  border: 1px solid rgba(0, 255, 255, 0.26);
+  border-radius: 8px;
   box-shadow:
-    0 4px 28px rgba(0, 0, 0, 0.55),
-    0 0 22px rgba(0, 220, 255, 0.12);
+    0 2px 16px rgba(0, 0, 0, 0.45),
+    0 0 14px rgba(0, 220, 255, 0.1);
   backdrop-filter: blur(8px);
 }
 
 .pickup-feedback__title {
-  margin: 0 0 4px;
-  font-size: 1.05rem;
+  margin: 0;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
   color: rgba(220, 255, 255, 0.98);
-  text-shadow: 0 0 18px rgba(0, 220, 255, 0.35);
+  text-shadow: 0 0 14px rgba(0, 220, 255, 0.3);
 }
 
 .pickup-feedback__sub {
@@ -398,6 +402,20 @@ body {
 .nitro-bar-seg--recharge {
   opacity: 0.55;
   filter: saturate(0.65);
+}
+
+/* Equip icon + pickup line toast (nitro / shield / trail messages share this row) */
+.cycle-hud__equip-feedback-row {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.cycle-hud__equip-feedback-row .cycle-hud__equip {
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 /* H1 — equippable slot: icon + subtle E (plan HUD spec) */
@@ -800,16 +818,38 @@ body {
   display: none;
 }
 
-/** Hub welcome / arena tips — ~3/5 down the viewport (third horizontal fifth) */
+/** Hub welcome / arena tips — same band as the minimap (bottom) so the cycle reads first. */
 #lobby-placeholder.state-banner {
-  bottom: auto;
-  top: 60%;
+  top: auto;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
   left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: min(36rem, calc(100vw - 40px));
+  transform: translateX(-50%);
+  max-width: min(32rem, calc(100vw - 200px));
   text-align: center;
   z-index: 20;
   line-height: 1.45;
+  font-size: 0.88rem;
+  padding: 6px 14px;
+}
+
+#lobby-placeholder .state-banner__welcome {
+  margin: 0 0 6px;
+  font-family: "Orbitron", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  color: rgba(210, 245, 255, 0.98);
+  text-shadow: 0 0 14px rgba(0, 220, 255, 0.28);
+}
+
+#lobby-placeholder .state-banner__detail {
+  margin: 0;
+}
+
+#lobby-placeholder .state-banner__hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.92;
 }
 
 .derez-overlay {
@@ -2509,4 +2549,22 @@ body {
   height: 1rem;
   accent-color: #00d4e8;
   justify-self: end;
+}
+
+/* Pickup ghost: travels toward bottom-left HUD corner, then vanishes (attention cue; world burst unchanged). */
+.pickup-hud-flight {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 72;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 240, 0.45));
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.pickup-hud-flight img {
+  display: block;
+  width: min(96px, 24vmin);
+  height: min(96px, 24vmin);
 }

@@ -53,7 +53,7 @@ const BOOST_PAD_TRIGGER_RADIUS = 1.35;
  * @param {import('three').Scene} opts.scene
  * @param {unknown[] | null | undefined} opts.gameObjects
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
- * @returns {{ root: THREE.Group; tick: (dt: number, ctx: BoostPadTickContext) => void; dispose: () => void }}
+ * @returns {{ root: THREE.Group; tick: (dt: number, ctx: BoostPadTickContext) => boolean; dispose: () => void }}
  */
 export function createBoostPadField(opts) {
   const { scene, devHud } = opts;
@@ -82,7 +82,9 @@ export function createBoostPadField(opts) {
     scene.add(root);
     return {
       root,
-      tick() {},
+      tick() {
+        return false;
+      },
       getMinimapBoostPads() {
         return [];
       },
@@ -159,10 +161,11 @@ export function createBoostPadField(opts) {
   /**
    * @param {number} dt
    * @param {BoostPadTickContext} ctx
+   * @returns {boolean} player overlapping any boost pad this frame (for sustained nitro/boost audio).
    */
   function tick(dt, ctx) {
     const { isLobby, levelStarted, playerBody, nitroState, enemies, devHud: hud, onBoost, onNitroBurstStart } = ctx;
-    if (!isLobby && !levelStarted) return;
+    if (!isLobby && !levelStarted) return false;
 
     const burstBase = typeof hud.nitroBurstDuration === "number" ? hud.nitroBurstDuration : 0.5;
     const str = typeof hud.boostPadStrength === "number" ? hud.boostPadStrength : 1;
@@ -170,6 +173,7 @@ export function createBoostPadField(opts) {
     const sustainDur = Math.max(0.1, Math.min(burstDur, dt * 2 + 0.08));
     const nMul = hud.neonIntensity ?? 1;
 
+    let playerOverBoostPad = false;
     for (const inst of instances) {
       const px = playerBody.position.x;
       const pz = playerBody.position.z;
@@ -177,6 +181,7 @@ export function createBoostPadField(opts) {
       const playerEntered = playerInsideNow && !inst.playerInside;
       inst.playerInside = playerInsideNow;
       if (playerInsideNow) {
+        playerOverBoostPad = true;
         applyBoostPadBurst(nitroState, sustainDur);
       }
 
@@ -202,6 +207,7 @@ export function createBoostPadField(opts) {
         if (playerEntered) onNitroBurstStart?.();
       }
     }
+    return playerOverBoostPad;
   }
 
   /**

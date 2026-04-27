@@ -1,0 +1,68 @@
+{
+  "id": "daily-2026-05-26",
+  "name": "Daily — Circuit 29",
+  "arenaWidth": 696,
+  "arenaDepth": 696,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 348,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 348,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": -84.8,
+      "z": 5.7,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 264,
+      "gridZ": 353
+    },
+    {
+      "x": 25.6,
+      "z": -129.5,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 374,
+      "gridZ": 218
+    },
+    {
+      "x": 70.9,
+      "z": 34.9,
+      "rotation": 0,
+      "color": "#00FF88",
+      "category": "medium",
+      "gridX": 419,
+      "gridZ": 382
+    }
+  ],
+  "rewards": {
+    "coins": 36,
+    "timeBonusThreshold": 168,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 698,
+  "mapDepth": 698
+}

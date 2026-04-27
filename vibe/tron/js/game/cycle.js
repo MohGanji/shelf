@@ -34,6 +34,35 @@ function applyDerezImplosionPose(animationRoot, u) {
   animationRoot.position.y = -0.35 * c * c;
 }
 
+/**
+ * Derez “shard smash”: brief swell / wobble then rapid collapse — reads like shattering vs quietly shrinking.
+ * @param {THREE.Object3D} animationRoot
+ * @param {number} u
+ */
+function applyDerezShardSmashPose(animationRoot, u) {
+  const c = THREE.MathUtils.clamp(u, 0, 1);
+  let s;
+  if (c < 0.18) {
+    const p = c / 0.18;
+    s = 1 + 0.34 * Math.sin(p * Math.PI);
+  } else if (c < 0.52) {
+    const p = (c - 0.18) / 0.34;
+    const q = 1 - p;
+    s = Math.max(0.004, 1.22 * q * q * q);
+  } else {
+    s = 0.004;
+  }
+  const squash = c < 0.52 ? 1 - 0.46 * (c / 0.52) : 0.38;
+  animationRoot.scale.set(s, s * squash, s);
+  const wobble = c < 0.46 ? (1 - c / 0.46) ** 1.85 : 0;
+  animationRoot.rotation.set(
+    wobble * 0.62 * Math.sin(c * 41),
+    wobble * 0.72 * Math.sin(c * 33 + 0.35),
+    wobble * 0.48 * Math.sin(c * 39),
+  );
+  animationRoot.position.y = -0.38 * c * c;
+}
+
 export { preloadLightCycleAsset } from "./cycleAssetLoader.js";
 
 /**
@@ -793,6 +822,29 @@ export function createProceduralLightCycle(options = {}) {
   }
 
   /**
+   * Enemy kill-cam — smash / shard burst pose + brighter spike (pairs with cube shard particles).
+   * @param {number} dt
+   * @param {number} u — progress 0–1 through implode phase
+   */
+  function updateDerezShardSmash(dt, u) {
+    if (dt <= 0) return;
+    const clamped = THREE.MathUtils.clamp(u, 0, 1);
+    applyDerezShardSmashPose(animationRoot, clamped);
+
+    const emissivePulse =
+      clamped < 0.22 ? 1 + (1 - clamped / 0.22) * 5.2 : Math.max(0.06, (1 - clamped) ** 1.08 * 1.05);
+    const n = neonScale();
+    bodyMat.emissiveIntensity = EMISSIVE.hull * n * emissivePulse;
+    stripMatStrong.emissiveIntensity = EMISSIVE.stripStrong * n * emissivePulse;
+    stripMatSoft.emissiveIntensity = EMISSIVE.stripSoft * n * emissivePulse;
+    wheelGlowMat.emissiveIntensity = EMISSIVE.wheelNeon * n * emissivePulse;
+    underglowMat.emissiveIntensity = EMISSIVE.underglow * n * emissivePulse;
+    rearAccentMat.emissiveIntensity = EMISSIVE.rearSlot * n * emissivePulse;
+    glassMat.emissiveIntensity = EMISSIVE.glass * n * emissivePulse;
+    syncTronRim(emissivePulse, n);
+  }
+
+  /**
    * Player derez implosion (plan P2.4): collapse + emissive spike (see `applyDerezImplosionPose`).
    * @param {number} dt
    * @param {number} u — progress 0–1 through derez sequence
@@ -848,6 +900,7 @@ export function createProceduralLightCycle(options = {}) {
     getDevHud: () => devHud,
     update,
     updateDerezImplosion,
+    updateDerezShardSmash,
     dispose,
   };
 }
@@ -1120,6 +1173,21 @@ function createAssetBasedLightCycle(options = {}) {
     }
   }
 
+  function updateDerezShardSmash(dt, u) {
+    if (dt <= 0) return;
+    const clamped = THREE.MathUtils.clamp(u, 0, 1);
+    applyDerezShardSmashPose(animationRoot, clamped);
+
+    const nScale = typeof devHud.cycleNeonIntensity === "number" ? devHud.cycleNeonIntensity : 1.0;
+    const emissivePulse =
+      clamped < 0.22 ? 1 + (1 - clamped / 0.22) * 5.2 : Math.max(0.06, (1 - clamped) ** 1.08 * 1.05);
+    for (const m of tintMaterials) {
+      if (m._baseEmissiveIntensity !== undefined) {
+        m.emissiveIntensity = m._baseEmissiveIntensity * nScale * emissivePulse * 1.35;
+      }
+    }
+  }
+
   function dispose() {
     streakGeo.dispose();
     streakMat.dispose();
@@ -1149,6 +1217,7 @@ function createAssetBasedLightCycle(options = {}) {
     getDevHud: () => devHud,
     update,
     updateDerezImplosion,
+    updateDerezShardSmash,
     dispose,
   };
 }

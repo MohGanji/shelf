@@ -24,7 +24,7 @@ export const LOBBY_LEVEL_ID = "level-0";
 export const LOBBY_ARENA_WIDTH = 400;
 export const LOBBY_ARENA_DEPTH = 150;
 
-const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer", "vibejam"]);
+const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer", "vibejam", "daily"]);
 const EDGES = new Set(["north", "south", "east", "west"]);
 const BARRIER_TYPES = new Set(["wall", "building", "structure"]);
 const BUILDING_SHAPES = new Set(["square", "triangle"]);
@@ -326,7 +326,7 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
       }
       const role = wo.role;
       if (typeof role !== "string" || !GATE_ROLES.has(role)) {
-        errors.push(`${path}.role must be one of: entrance, exit, arena, garage, multiplayer, vibejam`);
+        errors.push(`${path}.role must be one of: entrance, exit, arena, garage, multiplayer, vibejam, daily`);
       } else {
         roleCounts[role] = (roleCounts[role] ?? 0) + 1;
         if (role === "vibejam" && !lobby) {
@@ -378,7 +378,7 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
     if ((roleCounts.vibejam ?? 0) !== 1) {
       errors.push(`Lobby must have exactly one vibejam gate (found ${roleCounts.vibejam ?? 0})`);
     }
-    const need = ["arena", "garage", "multiplayer"];
+    const need = ["arena", "garage", "multiplayer", "daily"];
     for (const r of need) {
       if ((roleCounts[r] ?? 0) !== 1) {
         errors.push(`Lobby must have exactly one gate with role "${r}" (found ${roleCounts[r] ?? 0})`);
@@ -394,7 +394,7 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
     if ((roleCounts.exit ?? 0) !== 1) {
       errors.push(`Non-lobby levels must have exactly one exit gate (found ${roleCounts.exit ?? 0})`);
     }
-    for (const r of ["arena", "garage", "multiplayer"]) {
+    for (const r of ["arena", "garage", "multiplayer", "daily"]) {
       if ((roleCounts[r] ?? 0) !== 0) {
         errors.push(`Non-lobby levels must not include lobby-only gate role "${r}"`);
       }
@@ -428,6 +428,10 @@ function validateGateDestination(path, gate, errors) {
   }
   if (role === "multiplayer") {
     if (dest !== null) errors.push(`${path}.destination must be null for multiplayer gates until multiplayer is implemented`);
+    return;
+  }
+  if (role === "daily") {
+    if (dest !== null) errors.push(`${path}.destination must be null for daily gates`);
   }
 }
 

@@ -1,0 +1,113 @@
+{
+  "id": "level-tutorial",
+  "name": "First Run",
+  "arenaWidth": 200,
+  "arenaDepth": 200,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 100,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 100,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [
+    {
+      "type": "building",
+      "x": -83,
+      "z": 83,
+      "height": 4,
+      "shape": "triangle",
+      "width": 32,
+      "depth": 32,
+      "rotation": 1.5707963267948966,
+      "gridX": 2,
+      "gridZ": 168,
+      "triangleQuarter": 1
+    },
+    {
+      "type": "building",
+      "x": 83,
+      "z": 83,
+      "height": 4,
+      "shape": "triangle",
+      "width": 32,
+      "depth": 32,
+      "rotation": 3.141592653589793,
+      "gridX": 168,
+      "gridZ": 168,
+      "triangleQuarter": 2
+    },
+    {
+      "type": "building",
+      "x": -83,
+      "z": -83,
+      "height": 4,
+      "shape": "triangle",
+      "width": 32,
+      "depth": 32,
+      "rotation": 0,
+      "gridX": 2,
+      "gridZ": 2,
+      "triangleQuarter": 0
+    },
+    {
+      "type": "building",
+      "x": 83,
+      "z": -83,
+      "height": 4,
+      "shape": "triangle",
+      "width": 32,
+      "depth": 32,
+      "rotation": 4.71238898038469,
+      "gridX": 168,
+      "gridZ": 2,
+      "triangleQuarter": 3
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "x": 6,
+      "z": 6,
+      "width": 16,
+      "depth": 16,
+      "gridX": 99,
+      "gridZ": 99
+    }
+  ],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": 32,
+      "z": 78,
+      "rotation": 3.14159,
+      "color": "#FF8A00",
+      "category": "easy",
+      "gridX": 132,
+      "gridZ": 178
+    }
+  ],
+  "rewards": {
+    "coins": 0,
+    "timeBonusThreshold": 0,
+    "timeBonusCoins": 0
+  },
+  "schemaVersion": 2,
+  "mapWidth": 202,
+  "mapDepth": 202
+}

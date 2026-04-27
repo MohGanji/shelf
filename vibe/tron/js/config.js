@@ -156,12 +156,12 @@ export const DEFAULT_DEV_HUD = {
   derezCameraShake: true,
   derezGlitchFlash: true,
   /** Wall-clock seconds for player derez implosion before tunnel (plan P2.4). */
-  derezSequenceSeconds: 2.0,
+  derezSequenceSeconds: 2.45,
   /** Overhead camera height above cycle center during player derez. */
   derezOverheadHeight: 28,
   /** Opponent elim kill-cam: real-time segments (simulation frozen; separate from player derez). */
   enemyKillApproachSec: 0.85,
-  enemyKillImplodeSec: 0.72,
+  enemyKillImplodeSec: 1.08,
   enemyKillReturnSec: 0.6,
   portalWarpIntensity: 0.5,
   specialObjectCooldown: 5.0,
@@ -221,6 +221,33 @@ export const DEFAULT_DEV_HUD = {
   nitroFovAdd: 17.0,
   /** Extra camera distance (units) during nitro when `nitroCameraPullBack` is true. */
   nitroPullBackAdd: 8.0,
+  /** 0 = column, 1 = ground ring, 2 = stacked rings. */
+  beaconMode: 0,
+  beaconStrength: 1.0,
+  audioPreviewStingEnabled: true,
+  musicDuckEnabled: true,
+  musicDuckMaxDb: 4,
+  enemyEngineBedEnabled: true,
+  enemyEngineMaxGain: 0.44,
+  nearMissWhooshWhenEnemyEngine: true,
+  /**
+   * Nitro/boost sustained + burst timbre preset (Dev HUD).
+   * 0=Vent hiss · 1=Turbine LF · 2=Ether whistle · 3=Sub cannon · 4=Thin air.
+   */
+  sfxNitroPreset: 1,
+  /**
+   * Player/opponent derez death preset (Dev HUD).
+   * 0=Layered shards · 1=Pulse cascade · 2=Thunder dissolve · 3=Arcade shear · 4=Soft implode.
+   */
+  sfxDerezPreset: 0,
+  /** Distance falloff for trail proximity bed (world units); nearer trails read louder. */
+  trailProximityFalloffDistance: 30,
+  /** Trail proximity audio bed — quieter default than enemy engine proximity. */
+  trailProximityBedEnabled: true,
+  trailProximityMaxGain: 0.22,
+  eliminationStingEnabled: true,
+  /** Nitro VFX / post multiplier in first-run tutorial (1 = default). */
+  tutorialNitroJuice: 1.35,
 };
 
 /** Power-up palette (plan § Power-up color coding) */

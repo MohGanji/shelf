@@ -63,6 +63,11 @@ export function createGameplayParticles(opts) {
   /** @type {{ t: number; group: THREE.Group; geo: THREE.BufferGeometry; vel: Float32Array; mat: THREE.PointsMaterial; dur: number }[]} */
   const bursts = [];
 
+  /** Neon cube shards — kill-cam derez (instanced meshes). */
+  /** @type {{ t: number; group: THREE.Group; mesh: THREE.InstancedMesh; geo: THREE.BoxGeometry; mat: THREE.MeshBasicMaterial; pos: Float32Array; vel: Float32Array; eul: Float32Array; eulVel: Float32Array; scl: Float32Array; dur: number }[]} */
+  const shardBursts = [];
+  const shardDummy = new THREE.Object3D();
+
   const NITRO_CAP = 520;
   const nitroPos = new Float32Array(NITRO_CAP * 3);
   const nitroVel = new Float32Array(NITRO_CAP * 3);
@@ -134,8 +139,9 @@ export function createGameplayParticles(opts) {
    * @param {number} y
    * @param {number} z
    * @param {string | number} color — `#rrggbb` or packed hex
+   * @param {{ particleCount?: number }} [burstOpts]
    */
-  function spawnDerezBurst(x, y, z, color) {
+  function spawnDerezBurst(x, y, z, color, burstOpts) {
     const base =
       typeof color === "string"
         ? hexColorToInt(color)
@@ -143,7 +149,10 @@ export function createGameplayParticles(opts) {
           ? color
           : 0xff6600;
     const br = intToRgb(base);
-    const n = 96;
+    const n =
+      burstOpts && typeof burstOpts.particleCount === "number" && Number.isFinite(burstOpts.particleCount)
+        ? Math.max(12, Math.min(160, Math.floor(burstOpts.particleCount)))
+        : 96;
     const positions = new Float32Array(n * 3);
     const velocities = new Float32Array(n * 3);
     const colors = new Float32Array(n * 3);
@@ -182,6 +191,78 @@ export function createGameplayParticles(opts) {
     group.add(pts);
     scene.add(group);
     bursts.push({ t: 0, group, geo, vel: velocities, mat, dur: 0.52 });
+  }
+
+  /**
+   * Tron-style derez VFX — volumetric neon cubes bursting outward (enemy kill-cam primary read).
+   *
+   * @param {number} wx
+   * @param {number} wy
+   * @param {number} wz
+   * @param {string | number} color
+   * @param {{ count?: number; duration?: number }} [opts]
+   */
+  function spawnDerezCubeShards(wx, wy, wz, color, opts = {}) {
+    const base =
+      typeof color === "string"
+        ? hexColorToInt(color)
+        : typeof color === "number" && Number.isFinite(color)
+          ? color
+          : 0xff6600;
+    const count = Math.min(280, Math.max(18, Math.floor(opts.count ?? 200)));
+    const dur = typeof opts.duration === "number" && Number.isFinite(opts.duration) ? Math.max(0.75, opts.duration) : 1.42;
+
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 1,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    mat.color.setHex(((base >>> 0) & 0xffffff) >>> 0);
+
+    const mesh = new THREE.InstancedMesh(geo, mat, count);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.frustumCulled = false;
+
+    const pos = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
+    const eul = new Float32Array(count * 3);
+    const eulVel = new Float32Array(count * 3);
+    const scl = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 1.05;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.45;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 1.05;
+
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const sp = 4.2 + Math.random() * 7.5;
+      vel[i * 3] = Math.sin(phi) * Math.cos(theta) * sp;
+      vel[i * 3 + 1] = Math.abs(Math.cos(phi)) * sp * 0.62 + 2.4 + Math.random() * 2.8;
+      vel[i * 3 + 2] = Math.sin(phi) * Math.sin(theta) * sp;
+
+      eulVel[i * 3] = (Math.random() - 0.5) * 16;
+      eulVel[i * 3 + 1] = (Math.random() - 0.5) * 16;
+      eulVel[i * 3 + 2] = (Math.random() - 0.5) * 16;
+
+      scl[i] = 0.052 + Math.random() * 0.13;
+
+      shardDummy.position.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+      shardDummy.rotation.set(0, 0, 0);
+      shardDummy.scale.setScalar(scl[i]);
+      shardDummy.updateMatrix();
+      mesh.setMatrixAt(i, shardDummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+
+    const group = new THREE.Group();
+    group.position.set(wx, wy, wz);
+    group.add(mesh);
+    scene.add(group);
+
+    shardBursts.push({ t: 0, group, mesh, geo, mat, pos, vel, eul, eulVel, scl, dur });
   }
 
   /**
@@ -421,6 +502,36 @@ export function createGameplayParticles(opts) {
       }
     }
 
+    const gShard = 11.5;
+    for (let i = shardBursts.length - 1; i >= 0; i--) {
+      const s = shardBursts[i];
+      s.t += dt;
+      const mc = s.mesh.count;
+      for (let k = 0; k < mc; k++) {
+        s.pos[k * 3] += s.vel[k * 3] * dt;
+        s.pos[k * 3 + 1] += s.vel[k * 3 + 1] * dt;
+        s.pos[k * 3 + 2] += s.vel[k * 3 + 2] * dt;
+        s.vel[k * 3 + 1] -= gShard * dt;
+        s.eul[k * 3] += s.eulVel[k * 3] * dt;
+        s.eul[k * 3 + 1] += s.eulVel[k * 3 + 1] * dt;
+        s.eul[k * 3 + 2] += s.eulVel[k * 3 + 2] * dt;
+        shardDummy.position.set(s.pos[k * 3], s.pos[k * 3 + 1], s.pos[k * 3 + 2]);
+        shardDummy.rotation.set(s.eul[k * 3], s.eul[k * 3 + 1], s.eul[k * 3 + 2]);
+        shardDummy.scale.setScalar(s.scl[k]);
+        shardDummy.updateMatrix();
+        s.mesh.setMatrixAt(k, shardDummy.matrix);
+      }
+      s.mesh.instanceMatrix.needsUpdate = true;
+      const u = s.t / s.dur;
+      s.mat.opacity = Math.max(0, 1 - u ** 1.85);
+      if (s.t >= s.dur) {
+        scene.remove(s.group);
+        s.geo.dispose();
+        s.mat.dispose();
+        shardBursts.splice(i, 1);
+      }
+    }
+
     if (nitroCount > 0) {
       let i = 0;
       while (i < nitroCount) {
@@ -487,6 +598,13 @@ export function createGameplayParticles(opts) {
   }
 
   function dispose() {
+    for (let i = shardBursts.length - 1; i >= 0; i--) {
+      const s = shardBursts[i];
+      scene.remove(s.group);
+      s.geo.dispose();
+      s.mat.dispose();
+      shardBursts.splice(i, 1);
+    }
     for (let i = bursts.length - 1; i >= 0; i--) {
       const b = bursts[i];
       scene.remove(b.group);
@@ -503,6 +621,7 @@ export function createGameplayParticles(opts) {
     tick,
     spawnPickupBurst,
     spawnDerezBurst,
+    spawnDerezCubeShards,
     spawnPortalWarp,
     spawnShieldShatter,
     dispose,

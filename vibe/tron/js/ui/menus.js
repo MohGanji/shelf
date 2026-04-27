@@ -89,13 +89,20 @@ export function createPauseMenuController(opts) {
 }
 
 /**
- * P7.5 — Auto-show on first lobby entry (`controlsShown` false). Blocks cycle input until dismissed.
- * @param {{ save: import("../data/savedata.js").PlayerSave }} opts
+ * P7.5 — Auto-show once (`controlsShown` false): first-run **tutorial** arena by default flow,
+ * or **lobby** for migrated saves / anyone who reaches hub without having dismissed yet.
+ * Blocks cycle input until dismissed.
+ * @param {{
+ *   save: import("../data/savedata.js").PlayerSave;
+ *   venue?: "tutorial" | "lobby";
+ * }} opts
  * @returns {{ dispose(): void } | null}
  */
 export function showFirstVisitControlsOverlayIfNeeded(opts) {
-  const { save } = opts;
+  const { save, venue = "lobby" } = opts;
   if (save.controlsShown) return null;
+  /** First-run combat tutorial (`tutorialCleared` still false): overlay belongs on tutorial, not lobby. */
+  if (venue === "lobby" && save.tutorialCleared === false) return null;
 
   const root = document.getElementById("controls-overlay");
   const dismissBtn = document.getElementById("controls-overlay-dismiss");

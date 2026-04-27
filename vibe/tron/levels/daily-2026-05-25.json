@@ -1,0 +1,59 @@
+{
+  "id": "daily-2026-05-25",
+  "name": "Daily — Circuit 28",
+  "arenaWidth": 689,
+  "arenaDepth": 689,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 344.5,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 344.5,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": -79.9,
+      "z": 3,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 265,
+      "gridZ": 347
+    },
+    {
+      "x": 115.4,
+      "z": -53,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 460,
+      "gridZ": 291
+    }
+  ],
+  "rewards": {
+    "coins": 32,
+    "timeBonusThreshold": 167,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 691,
+  "mapDepth": 691
+}

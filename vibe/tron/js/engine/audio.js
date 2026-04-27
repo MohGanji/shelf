@@ -363,6 +363,10 @@ export function createAudioEngine(options = {}) {
 
   let musicStarted = false;
 
+  /** Dev HUD — procedural nitro/derez variant indices (synced via {@link syncDevAudioPresets}). */
+  let sfxNitroPresetIndex = 0;
+  let sfxDerezPresetIndex = 0;
+
   /** @type {{ lobby: AudioBuffer; gameplay: AudioBuffer } | null} */
   let proceduralMusicBuffers = null;
 
@@ -457,9 +461,10 @@ export function createAudioEngine(options = {}) {
     }
   }
 
-  /** P8.4 — Engine layer state (idle hum + moving whine + drag-style gear shifts). */
+  /** P8.4 — Engine layer state (procedural drag-style gear shifts + saw engine). */
   let engineGearBand = -1;
-  /** @type {{ mix: GainNode; idle: OscillatorNode; main: OscillatorNode; idleG: GainNode; mainG: GainNode } | null} */
+  /** Player: saw → fixed warm lowpass — same topology & pitch law as proximity enemy bed (see `applyDynamicMix`). */
+  /** @type {{ mix: GainNode; core: OscillatorNode; lp: BiquadFilterNode; coreG: GainNode } | null} */
   let engineNodes = null;
   let engineLfoPhase = 0;
   let engineShiftStart = -1;
@@ -473,28 +478,25 @@ export function createAudioEngine(options = {}) {
     const mix = ctx.createGain();
     mix.gain.value = 0;
     mix.connect(sfxGain);
-    const idle = ctx.createOscillator();
-    idle.type = "sine";
-    idle.frequency.value = 62;
-    const idleG = ctx.createGain();
-    idleG.gain.value = 0;
-    idle.connect(idleG);
-    idleG.connect(mix);
-    const main = ctx.createOscillator();
-    main.type = "triangle";
-    main.frequency.value = 110;
-    const mainG = ctx.createGain();
-    mainG.gain.value = 0;
-    main.connect(mainG);
-    mainG.connect(mix);
+    const core = ctx.createOscillator();
+    core.type = "sawtooth";
+    core.frequency.value = 110;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 520;
+    lp.Q.value = 0.78;
+    const coreG = ctx.createGain();
+    coreG.gain.value = 0;
+    core.connect(lp);
+    lp.connect(coreG);
+    coreG.connect(mix);
     const t = ctx.currentTime;
     try {
-      idle.start(t);
-      main.start(t);
+      core.start(t);
     } catch {
       return null;
     }
-    engineNodes = { mix, idle, main, idleG, mainG };
+    engineNodes = { mix, core, lp, coreG };
     return engineNodes;
   }
 
@@ -509,7 +511,7 @@ export function createAudioEngine(options = {}) {
     const t0 = ctx.currentTime;
     const load = clamp01(typeof opts.load === "number" ? opts.load : 0.65);
     const gear = Math.max(1, Math.floor(typeof opts.gear === "number" ? opts.gear : 1));
-    const amp = Math.max(0, sfxVolume) * (0.72 + load * 0.55);
+    const amp = Math.max(0, sfxVolume) * (0.9 + load * 0.62);
 
     const thunk = ctx.createOscillator();
     thunk.type = "triangle";
@@ -610,6 +612,7 @@ export function createAudioEngine(options = {}) {
       engineShiftDepth = 0;
       engineLastShiftAt = -1;
       enginePrevSpeed = null;
+      gGraph.coreG.gain.setTargetAtTime(0, t, 0.035);
       gGraph.mix.gain.setTargetAtTime(0, t, 0.035);
       return;
     }
@@ -625,7 +628,10 @@ export function createAudioEngine(options = {}) {
         ? acceleration
         : denom * 0.9;
     const accelLoad = clamp01(measuredAccel / Math.max(1, accelRef));
-    const driverLoad = braking ? 0 : (throttle ? 0.7 : 0.18) + (nitroActive ? 0.3 : 0);
+    /** Without throttle, tie idle motor character to road speed so parked grids stay quiet (still loud under throttle). */
+    const idleEase =
+      spd < 3 && !throttle && !nitroActive && !braking ? clamp01(spd / 6) : 1;
+    const driverLoad = braking ? 0 : (throttle ? 0.7 : 0.18 * idleEase) + (nitroActive ? 0.3 : 0);
     const load = clamp01(Math.max(accelLoad, driverLoad));
     const th = getGearThresholds(
       typeof gearShiftCount === "number" && Number.isFinite(gearShiftCount) ? gearShiftCount : 5,
@@ -650,40 +656,52 @@ export function createAudioEngine(options = {}) {
     engineGearBand = band;
     enginePrevSpeed = speed;
 
-    engineLfoPhase += dt * 5.2;
-    const idleFlutter = 0.86 + 0.14 * Math.sin(engineLfoPhase);
-    const nearIdle = spd < 2.2;
-    const idleVol = (nearIdle ? 0.038 : 0.012) * idleFlutter;
     const gearProgress = gearProgressInBand(ratio, band, th);
-    const rpm = clamp01(0.28 + gearProgress * 0.68 + load * 0.08);
-    const topLoad = rpm > 0.84 ? ((rpm - 0.84) / 0.16) * (0.55 + load * 0.45) : 0;
-    const topWhine = rpm > 0.9 ? 0.022 * ((rpm - 0.9) / 0.1) : 0;
-    const moveCore = Math.pow(ratio, 0.55) * (0.052 + load * 0.038);
-    let mainVol = Math.min(0.148, moveCore + topWhine + topLoad * 0.026);
+
+    engineLfoPhase += dt * 5.2;
+    const idleFlutter = 0.88 + 0.12 * Math.sin(engineLfoPhase);
+    const nearIdle = spd < 2.2;
+    const drive = clamp01(ratio);
 
     let shiftDip = 0;
+    let mainVol = Math.pow(drive, 0.58) * (0.098 + load * 0.058);
+    if (nearIdle) mainVol += 0.015 * clamp01(spd / 3);
+    mainVol = Math.min(0.26, mainVol * idleFlutter * 1.1);
     if (now < engineShiftUntil && engineShiftStart >= 0) {
       const u = clamp01((now - engineShiftStart) / Math.max(0.001, engineShiftUntil - engineShiftStart));
       shiftDip = Math.sin(Math.PI * u) * engineShiftDepth;
-      mainVol *= 1 - shiftDip * 0.7;
+      mainVol *= 1 - shiftDip * 0.55;
     }
 
-    const fMain =
-      (92 + Math.pow(clamp01(rpm - shiftDip), 1.04) * 380 * pitch + topLoad * 18) *
-      (nitroActive ? 1.04 : 1);
-    const fIdle = 62 + 8 * pitch;
+    /**
+     * Continuous road-speed sweep (matches proximity character) +
+     * RPM climb within each gear band (so revs rise toward upshift, not a single smooth ramp).
+     */
+    const nitMul = nitroActive ? 1.045 : 1;
+    const speedHz = Math.pow(drive, 0.9) * 240 * pitch;
+    const rpm01 = clamp01(0.24 + gearProgress * 0.72 + load * 0.08);
+    const rpmHz = Math.pow(Math.max(0.02, rpm01 - shiftDip * 0.42), 1.05) * 88 * pitch;
+    const nearRedline =
+      gearProgress > 0.82 ? Math.pow((gearProgress - 0.82) / 0.18, 1.15) * (12 + load * 22) : 0;
+    let fHz = (88 + speedHz * 0.82 + rpmHz + nearRedline) * nitMul;
+    if (shiftDip > 0) fHz *= 1 - shiftDip * 0.1;
+    if (nearIdle && spd < 1.25) {
+      fHz *= 0.94 + 0.06 * idleFlutter;
+    }
 
-    gGraph.idle.frequency.setTargetAtTime(fIdle, t, 0.025);
-    gGraph.main.frequency.setTargetAtTime(fMain, t, now < engineShiftUntil ? 0.012 : 0.04);
-    gGraph.idleG.gain.setTargetAtTime(idleVol, t, 0.045);
-    gGraph.mainG.gain.setTargetAtTime(mainVol, t, 0.038);
+    /** Fixed mellow LP (proximity timbre). */
+    gGraph.lp.frequency.setTargetAtTime(520, t, 0.06);
+
+    gGraph.core.frequency.setTargetAtTime(fHz, t, now < engineShiftUntil ? 0.022 : 0.065);
+    gGraph.coreG.gain.setTargetAtTime(Math.min(0.198, mainVol), t, 0.045);
     gGraph.mix.gain.setTargetAtTime(1, t, 0.04);
   }
 
   /**
    * Briefly dip music so derez hits read above the bed (sfx stays on normal bus).
    */
-  function duckMusicForDerezSfx() {
+  /** @param {"player" | "opponent" | undefined} [kind] — opponent kills duck slightly longer so hits sit above the bed. */
+  function duckMusicForDerezSfx(kind) {
     const t0 = ctx.currentTime;
     const base = effectiveMusicVolume();
     let g = base;
@@ -698,25 +716,37 @@ export function createAudioEngine(options = {}) {
       /* ignore */
     }
     musicGain.gain.setValueAtTime(g, t0);
-    musicGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, base * 0.16), t0 + 0.05);
-    musicGain.gain.exponentialRampToValueAtTime(base, t0 + 0.5);
+    musicGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, base * 0.08), t0 + 0.055);
+    const recover =
+      kind === "opponent" ? 2.82 : kind === "player" ? 2.42 : 2.38;
+    musicGain.gain.exponentialRampToValueAtTime(base, t0 + recover);
+  }
+
+  /**
+   * @param {unknown} devHud
+   */
+  function syncDevAudioPresets(devHud) {
+    if (!devHud || typeof devHud !== "object") return;
+    const nn = Math.floor(Number(/** @type {{ sfxNitroPreset?: unknown }} */ (devHud).sfxNitroPreset));
+    sfxNitroPresetIndex = Number.isFinite(nn) ? Math.max(0, Math.min(4, nn)) : 0;
+    const dd = Math.floor(Number(/** @type {{ sfxDerezPreset?: unknown }} */ (devHud).sfxDerezPreset));
+    sfxDerezPresetIndex = Number.isFinite(dd) ? Math.max(0, Math.min(4, dd)) : 0;
   }
 
   /**
    * @param {"player" | "opponent"} kind
    */
-  function playDerezShatterCore(kind) {
+  function playDerezPreset0Shards(kind) {
     if (!ctx) return;
-    duckMusicForDerezSfx();
     const t0 = ctx.currentTime;
     const isOpp = kind === "opponent";
-    const v = Math.max(0, sfxVolume);
+    const v = Math.max(0, sfxVolume) * (isOpp ? 1.55 : 1.34);
     const bus = ctx.createGain();
-    bus.gain.value = 0.92;
+    bus.gain.value = 1;
     bus.connect(sfxGain);
-    const durM = isOpp ? 0.48 : 0.62;
-    const hi0 = isOpp ? 4100 : 3200;
-    const nF = 8192;
+    const durM = isOpp ? 1.86 : 1.92;
+    const hi0 = isOpp ? 5600 : 4200;
+    const nF = 16384;
     const buf = ctx.createBuffer(1, nF, ctx.sampleRate);
     const dch = buf.getChannelData(0);
     for (let i = 0; i < nF; i += 1) {
@@ -729,11 +759,11 @@ export function createAudioEngine(options = {}) {
     const aBp = ctx.createBiquadFilter();
     aBp.type = "bandpass";
     aBp.frequency.setValueAtTime(hi0, t0);
-    aBp.frequency.exponentialRampToValueAtTime(140, t0 + durM);
-    aBp.Q.value = 0.68;
+    aBp.frequency.exponentialRampToValueAtTime(130, t0 + durM);
+    aBp.Q.value = 0.72;
     const aG = ctx.createGain();
     aG.gain.setValueAtTime(0.0001, t0);
-    aG.gain.exponentialRampToValueAtTime(0.36 * v, t0 + 0.02);
+    aG.gain.exponentialRampToValueAtTime((isOpp ? 0.6 : 0.48) * v, t0 + 0.065);
     aG.gain.exponentialRampToValueAtTime(0.0001, t0 + durM);
     a.connect(aBp);
     aBp.connect(aG);
@@ -744,12 +774,12 @@ export function createAudioEngine(options = {}) {
     b.buffer = buf;
     const bL = ctx.createBiquadFilter();
     bL.type = "lowpass";
-    bL.frequency.setValueAtTime(420, t0);
-    bL.frequency.exponentialRampToValueAtTime(60, t0 + 0.24);
+    bL.frequency.setValueAtTime(520, t0);
+    bL.frequency.exponentialRampToValueAtTime(52, t0 + 0.72);
     const bG = ctx.createGain();
     bG.gain.setValueAtTime(0.0001, t0);
-    bG.gain.exponentialRampToValueAtTime(0.22 * v, t0 + 0.04);
-    bG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.34);
+    bG.gain.exponentialRampToValueAtTime((isOpp ? 0.48 : 0.38) * v, t0 + 0.055);
+    bG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.88);
     b.connect(bL);
     bL.connect(bG);
     bG.connect(bus);
@@ -759,11 +789,11 @@ export function createAudioEngine(options = {}) {
     c.buffer = buf;
     const cH = ctx.createBiquadFilter();
     cH.type = "highpass";
-    cH.frequency.value = 2000;
+    cH.frequency.value = 2100;
     const cG = ctx.createGain();
     cG.gain.setValueAtTime(0.0001, t0);
-    cG.gain.exponentialRampToValueAtTime(0.12 * v, t0 + 0.01);
-    cG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    cG.gain.exponentialRampToValueAtTime((isOpp ? 0.3 : 0.22) * v, t0 + 0.02);
+    cG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.56);
     c.connect(cH);
     cH.connect(cG);
     cG.connect(bus);
@@ -771,52 +801,1109 @@ export function createAudioEngine(options = {}) {
     // Layer D — digital “tear” (triangle, pitch dive)
     const tr = ctx.createOscillator();
     tr.type = "triangle";
-    tr.frequency.setValueAtTime(380, t0);
-    tr.frequency.exponentialRampToValueAtTime(40, t0 + 0.3);
+    tr.frequency.setValueAtTime(420, t0);
+    tr.frequency.exponentialRampToValueAtTime(36, t0 + 0.76);
     const tG = ctx.createGain();
     tG.gain.setValueAtTime(0.0001, t0);
-    tG.gain.exponentialRampToValueAtTime(0.1 * v, t0 + 0.01);
-    tG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+    tG.gain.exponentialRampToValueAtTime((isOpp ? 0.24 : 0.17) * v, t0 + 0.022);
+    tG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.82);
     const tLp = ctx.createBiquadFilter();
     tLp.type = "lowpass";
-    tLp.frequency.setValueAtTime(6200, t0);
+    tLp.frequency.setValueAtTime(6800, t0);
     tr.connect(tG);
     tG.connect(tLp);
     tLp.connect(bus);
 
-    // Layer E — glass partials
-    const baseF = isOpp ? 1045 : 880;
+    // Layer E — glass partials (staggered tails)
+    const baseF = isOpp ? 1120 : 920;
     /** @type {OscillatorNode[]} */
     const chimeOscs = [];
+    /** @type {number[]} */
+    const chimeStopAt = [];
     for (let p = 0; p < 3; p += 1) {
       const o = ctx.createOscillator();
       o.type = "sine";
-      o.frequency.setValueAtTime(baseF * (1 + 0.2 * p), t0);
-      o.frequency.exponentialRampToValueAtTime(120 + p * 40, t0 + 0.32);
+      o.frequency.setValueAtTime(baseF * (1 + 0.22 * p), t0);
+      o.frequency.exponentialRampToValueAtTime(108 + p * 44, t0 + 0.52 + p * 0.05);
       const oG = ctx.createGain();
       oG.gain.setValueAtTime(0.0001, t0);
-      oG.gain.exponentialRampToValueAtTime(0.06 * v * 0.55 ** p, t0 + 0.04);
-      oG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.36);
+      oG.gain.exponentialRampToValueAtTime(0.088 * v * 0.5 ** p, t0 + 0.058 + p * 0.03);
+      oG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.82 + p * 0.08);
       o.connect(oG);
       oG.connect(bus);
       chimeOscs.push(o);
+      chimeStopAt.push(t0 + 0.9 + p * 0.08);
+    }
+
+    const zip = ctx.createOscillator();
+    zip.type = "square";
+    zip.frequency.setValueAtTime(isOpp ? 228 : 172, t0);
+    zip.frequency.exponentialRampToValueAtTime(34, t0 + 0.128);
+    const zipG = ctx.createGain();
+    zipG.gain.setValueAtTime(0.0001, t0);
+    zipG.gain.exponentialRampToValueAtTime(0.072 * v, t0 + 0.016);
+    zipG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    const zipLp = ctx.createBiquadFilter();
+    zipLp.type = "lowpass";
+    zipLp.frequency.value = 3200;
+    zip.connect(zipG);
+    zipG.connect(zipLp);
+    zipLp.connect(bus);
+
+    // Layer F — body/sub decay (weights the dissolve so it doesn't feel like a tiny clip)
+    const sub = ctx.createOscillator();
+    sub.type = "sine";
+    sub.frequency.setValueAtTime(isOpp ? 62 : 50, t0);
+    sub.frequency.exponentialRampToValueAtTime(20, t0 + 1.08);
+    const subG = ctx.createGain();
+    subG.gain.setValueAtTime(0.0001, t0);
+    subG.gain.exponentialRampToValueAtTime((isOpp ? 0.24 : 0.16) * v, t0 + 0.088);
+    subG.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.62);
+    sub.connect(subG);
+    subG.connect(bus);
+
+    // Layer G — delayed shard sweep (“aftershock”, stretches perceived duration)
+    const ashDelay = 0.46;
+    const ashDur = 0.98;
+    const ash = ctx.createBufferSource();
+    ash.buffer = buf;
+    const ashBp = ctx.createBiquadFilter();
+    ashBp.type = "bandpass";
+    ashBp.frequency.setValueAtTime(isOpp ? 3400 : 2800, t0 + ashDelay);
+    ashBp.frequency.exponentialRampToValueAtTime(88, t0 + ashDelay + ashDur * 0.94);
+    ashBp.Q.value = 1.12;
+    const ashG = ctx.createGain();
+    ashG.gain.setValueAtTime(0.0001, t0 + ashDelay);
+    ashG.gain.exponentialRampToValueAtTime((isOpp ? 0.38 : 0.3) * v, t0 + ashDelay + 0.058);
+    ashG.gain.exponentialRampToValueAtTime(0.0001, t0 + ashDelay + ashDur);
+    ash.connect(ashBp);
+    ashBp.connect(ashG);
+    ashG.connect(bus);
+
+    // Layer H — explosion concussion (short LF punch under the shards)
+    const expl = ctx.createOscillator();
+    expl.type = "sine";
+    expl.frequency.setValueAtTime(isOpp ? 96 : 82, t0);
+    expl.frequency.exponentialRampToValueAtTime(28, t0 + 0.38);
+    const explG = ctx.createGain();
+    explG.gain.setValueAtTime(0.0001, t0);
+    explG.gain.exponentialRampToValueAtTime((isOpp ? 0.26 : 0.2) * v, t0 + 0.01);
+    explG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.52);
+    expl.connect(explG);
+    explG.connect(bus);
+
+    // Layer I — explosion blast cloud (filtered noise transient)
+    const explN = ctx.createBufferSource();
+    explN.buffer = buf;
+    const explLp = ctx.createBiquadFilter();
+    explLp.type = "lowpass";
+    explLp.frequency.setValueAtTime(5200, t0);
+    explLp.frequency.exponentialRampToValueAtTime(240, t0 + 0.24);
+    const explNg = ctx.createGain();
+    explNg.gain.setValueAtTime(0.0001, t0);
+    explNg.gain.exponentialRampToValueAtTime((isOpp ? 0.34 : 0.26) * v, t0 + 0.018);
+    explNg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+    explN.connect(explLp);
+    explLp.connect(explNg);
+    explNg.connect(bus);
+
+    // Layer J — car-crash scrape / twist (rapid BP sweep across noise)
+    const crash = ctx.createBufferSource();
+    crash.buffer = buf;
+    const crashBp = ctx.createBiquadFilter();
+    crashBp.type = "bandpass";
+    crashBp.frequency.setValueAtTime(isOpp ? 4800 : 4200, t0 + 0.004);
+    crashBp.frequency.exponentialRampToValueAtTime(160, t0 + 0.15);
+    crashBp.Q.value = 2.05;
+    const crashG = ctx.createGain();
+    crashG.gain.setValueAtTime(0.0001, t0 + 0.006);
+    crashG.gain.exponentialRampToValueAtTime((isOpp ? 0.32 : 0.24) * v, t0 + 0.032);
+    crashG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    crash.connect(crashBp);
+    crashBp.connect(crashG);
+    crashG.connect(bus);
+
+    // Layer K — metallic impact pings (brief bumper / sheet-metal hits)
+    /** @type {OscillatorNode[]} */
+    const clangOsc = [];
+    /** @type {number[]} */
+    const clangStop = [];
+    const clangFreq = isOpp ? [740, 1180, 1860] : [620, 980, 1540];
+    for (let ci = 0; ci < clangFreq.length; ci += 1) {
+      const co = ctx.createOscillator();
+      co.type = "triangle";
+      const f0 = clangFreq[ci];
+      co.frequency.setValueAtTime(f0, t0 + ci * 0.009);
+      co.frequency.exponentialRampToValueAtTime(Math.max(48, f0 * 0.38 + ci * 22), t0 + 0.072 + ci * 0.016);
+      const cg = ctx.createGain();
+      cg.gain.setValueAtTime(0.0001, t0 + ci * 0.009);
+      cg.gain.exponentialRampToValueAtTime((isOpp ? 0.09 : 0.068) * v * 0.72 ** ci, t0 + 0.018 + ci * 0.011);
+      cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14 + ci * 0.045);
+      co.connect(cg);
+      cg.connect(bus);
+      clangOsc.push(co);
+      clangStop.push(t0 + 0.22 + ci * 0.03);
     }
 
     try {
+      zip.start(t0);
+      zip.stop(t0 + 0.24);
+      expl.start(t0);
+      expl.stop(t0 + 0.58);
+      explN.start(t0);
+      explN.stop(t0 + 0.46);
+      crash.start(t0 + 0.004);
+      crash.stop(t0 + 0.32);
+      sub.start(t0);
+      sub.stop(t0 + 1.68);
       a.start(t0);
-      a.stop(t0 + durM + 0.04);
+      a.stop(t0 + durM + 0.12);
       b.start(t0);
-      b.stop(t0 + 0.35);
+      b.stop(t0 + 0.92);
       c.start(t0);
-      c.stop(t0 + 0.22);
+      c.stop(t0 + 0.58);
       tr.start(t0);
-      tr.stop(t0 + 0.34);
-      for (const o of chimeOscs) {
+      tr.stop(t0 + 0.88);
+      ash.start(t0 + ashDelay);
+      ash.stop(t0 + ashDelay + ashDur + 0.06);
+      for (let ci = 0; ci < clangOsc.length; ci += 1) {
+        clangOsc[ci].start(t0 + ci * 0.009);
+        clangOsc[ci].stop(clangStop[ci] ?? t0 + 0.26);
+      }
+      for (let pi = 0; pi < chimeOscs.length; pi += 1) {
+        const o = chimeOscs[pi];
+        const stopAt = chimeStopAt[pi] ?? t0 + 0.98;
         o.start(t0);
-        o.stop(t0 + 0.38);
+        o.stop(stopAt);
       }
     } catch {
       /* ignore */
+    }
+  }
+
+  /** Preset 1 — staggered square chirps + shard noise bursts (rhythmic cascade). */
+  function playDerezPreset1PulseCascade(kind) {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const isOpp = kind === "opponent";
+    const v = Math.max(0, sfxVolume) * (isOpp ? 1.34 : 1.22);
+    const nF = 8192;
+    const buf = ctx.createBuffer(1, nF, ctx.sampleRate);
+    const dch = buf.getChannelData(0);
+    for (let i = 0; i < nF; i += 1) {
+      dch[i] = (Math.random() * 2 - 1) * (1 - i / nF);
+    }
+    const steps = 6;
+    for (let k = 0; k < steps; k += 1) {
+      const tk = t0 + k * 0.082;
+      const sq = ctx.createOscillator();
+      sq.type = "square";
+      sq.frequency.setValueAtTime(isOpp ? 410 : 330, tk);
+      sq.frequency.exponentialRampToValueAtTime(48 + k * 9, tk + 0.072);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, tk);
+      g.gain.exponentialRampToValueAtTime(0.082 * v, tk + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.096);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 2600;
+      sq.connect(lp);
+      lp.connect(g);
+      g.connect(sfxGain);
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(4800 - k * 380, tk);
+      bp.frequency.exponentialRampToValueAtTime(220, tk + 0.088);
+      bp.Q.value = 1.45;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.0001, tk);
+      ng.gain.exponentialRampToValueAtTime(0.065 * v, tk + 0.014);
+      ng.gain.exponentialRampToValueAtTime(0.0001, tk + 0.09);
+      noise.connect(bp);
+      bp.connect(ng);
+      ng.connect(sfxGain);
+      try {
+        sq.start(tk);
+        sq.stop(tk + 0.108);
+        noise.start(tk);
+        noise.stop(tk + 0.098);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  /** Preset 2 — thunder wash + boom + ping + hiss tail (cinematic dissolve). */
+  function playDerezPreset2ThunderDissolve(kind) {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const isOpp = kind === "opponent";
+    const v = Math.max(0, sfxVolume) * (isOpp ? 1.32 : 1.18);
+    const nF = 12288;
+    const buf = ctx.createBuffer(1, nF, ctx.sampleRate);
+    const dch = buf.getChannelData(0);
+    for (let i = 0; i < nF; i += 1) {
+      dch[i] = (Math.random() * 2 - 1) * (1 - i / nF);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(420, t0);
+    lp.frequency.exponentialRampToValueAtTime(9800, t0 + 0.018);
+    lp.frequency.exponentialRampToValueAtTime(140, t0 + 1.05);
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t0);
+    ng.gain.exponentialRampToValueAtTime(0.52 * v, t0 + 0.045);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.18);
+    src.connect(lp);
+    lp.connect(ng);
+    ng.connect(sfxGain);
+    const boom = ctx.createOscillator();
+    boom.type = "sine";
+    boom.frequency.setValueAtTime(isOpp ? 58 : 48, t0);
+    boom.frequency.exponentialRampToValueAtTime(18, t0 + 0.85);
+    const bg = ctx.createGain();
+    bg.gain.setValueAtTime(0.0001, t0);
+    bg.gain.exponentialRampToValueAtTime(0.22 * v, t0 + 0.06);
+    bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.05);
+    boom.connect(bg);
+    bg.connect(sfxGain);
+    const ping = ctx.createOscillator();
+    ping.type = "sine";
+    ping.frequency.setValueAtTime(1760, t0 + 0.05);
+    ping.frequency.exponentialRampToValueAtTime(440, t0 + 0.38);
+    const pg = ctx.createGain();
+    pg.gain.setValueAtTime(0.0001, t0 + 0.05);
+    pg.gain.exponentialRampToValueAtTime(0.09 * v, t0 + 0.058);
+    pg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+    ping.connect(pg);
+    pg.connect(sfxGain);
+    try {
+      src.start(t0);
+      src.stop(t0 + 1.22);
+      boom.start(t0);
+      boom.stop(t0 + 1.12);
+      ping.start(t0 + 0.05);
+      ping.stop(t0 + 0.46);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Preset 3 — dual saw chirps + HP crackle (sharp arcade bite). */
+  function playDerezPreset3ArcadeShear(kind) {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const isOpp = kind === "opponent";
+    const v = Math.max(0, sfxVolume) * (isOpp ? 1.42 : 1.28);
+    for (let k = 0; k < 2; k += 1) {
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(isOpp ? 920 + k * 180 : 740 + k * 210, t0);
+      osc.frequency.exponentialRampToValueAtTime(55 + k * 18, t0 + 0.22 + k * 0.02);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.085 * v, t0 + 0.004 + k * 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26 + k * 0.02);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 6200;
+      osc.connect(lp);
+      lp.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.31);
+      } catch {
+        /* ignore */
+      }
+    }
+    const nF = 4096;
+    const buf = ctx.createBuffer(1, nF, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < nF; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / nF);
+    }
+    const hp = ctx.createBufferSource();
+    hp.buffer = buf;
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = "highpass";
+    bpf.frequency.value = 2800;
+    const hg = ctx.createGain();
+    hg.gain.setValueAtTime(0.0001, t0);
+    hg.gain.exponentialRampToValueAtTime(0.14 * v, t0 + 0.008);
+    hg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    hp.connect(bpf);
+    bpf.connect(hg);
+    hg.connect(sfxGain);
+    try {
+      hp.start(t0);
+      hp.stop(t0 + 0.2);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Preset 4 — slow sine cluster + distant hiss swell (gentler aftermath). */
+  function playDerezPreset4SoftImplode(kind) {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const isOpp = kind === "opponent";
+    const v = Math.max(0, sfxVolume) * (isOpp ? 1.22 : 1.08);
+    const freqs = isOpp ? [185, 247, 329] : [155, 233, 311];
+    let i = 0;
+    for (const f of freqs) {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      const delay = i * 0.048;
+      osc.frequency.setValueAtTime(f, t0 + delay);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.42 + i * 12, t0 + 0.72 + i * 0.06);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0 + delay);
+      g.gain.exponentialRampToValueAtTime(0.065 * v * 0.88 ** i, t0 + delay + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 1.35);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0 + delay);
+        osc.stop(t0 + delay + 1.42);
+      } catch {
+        /* ignore */
+      }
+      i += 1;
+    }
+    const nf = 8192;
+    const nb = ctx.createBuffer(1, nf, ctx.sampleRate);
+    const nd = nb.getChannelData(0);
+    for (let k = 0; k < nf; k++) {
+      nd[k] = (Math.random() * 2 - 1) * (1 - k / nf);
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = nb;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.setValueAtTime(2100, t0 + 0.35);
+    bp.frequency.exponentialRampToValueAtTime(130, t0 + 1.1);
+    bp.Q.value = 0.85;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t0 + 0.35);
+    ng.gain.exponentialRampToValueAtTime(0.06 * v, t0 + 0.42);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.28);
+    noise.connect(bp);
+    bp.connect(ng);
+    ng.connect(sfxGain);
+    try {
+      noise.start(t0 + 0.35);
+      noise.stop(t0 + 1.32);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Death derez — delegates to preset chosen in Dev HUD (`sfxDerezPreset`).
+   * @param {"player" | "opponent"} kind
+   */
+  function playDerezShatterCore(kind) {
+    if (!ctx) return;
+    duckMusicForDerezSfx(kind);
+    switch (sfxDerezPresetIndex) {
+      case 1:
+        playDerezPreset1PulseCascade(kind);
+        break;
+      case 2:
+        playDerezPreset2ThunderDissolve(kind);
+        break;
+      case 3:
+        playDerezPreset3ArcadeShear(kind);
+        break;
+      case 4:
+        playDerezPreset4SoftImplode(kind);
+        break;
+      default:
+        playDerezPreset0Shards(kind);
+        break;
+    }
+  }
+
+  /** Proximity bed — shared recipe with player engine: saw → fixed ~520 Hz lowpass (detuned pitch range). */
+  /** @type {{ osc: OscillatorNode; f: BiquadFilterNode; g: GainNode } | null} */
+  let enemyBed = null;
+  function ensureEnemyBed() {
+    if (enemyBed || !ctx) return;
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+    const f = ctx.createBiquadFilter();
+    f.type = "lowpass";
+    f.frequency.value = 520;
+    f.Q.value = 0.78;
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    osc.connect(f);
+    f.connect(g);
+    g.connect(sfxGain);
+    const t0 = ctx.currentTime;
+    try {
+      osc.start(t0);
+    } catch {
+      return;
+    }
+    enemyBed = { osc, f, g };
+  }
+
+  /** Quieter than enemy bed — triangle “fence hum” detuned by proximity to lethal trails (Dev HUD). */
+  /** @type {{ osc: OscillatorNode; f: BiquadFilterNode; g: GainNode } | null} */
+  let trailBed = null;
+  function ensureTrailBed() {
+    if (trailBed || !ctx) return;
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    const f = ctx.createBiquadFilter();
+    f.type = "lowpass";
+    f.frequency.value = 580;
+    f.Q.value = 0.72;
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    osc.connect(f);
+    f.connect(g);
+    g.connect(sfxGain);
+    const t0 = ctx.currentTime;
+    try {
+      osc.start(t0);
+    } catch {
+      return;
+    }
+    trailBed = { osc, f, g };
+  }
+
+  /** Continuous nitro/boost exhaust — looped noise BP + detuned saw LP (same timbral family as engine / proximity bed). */
+  /** @type {(null | { mix: GainNode })[]} */
+  const nitroPresetSlots = [null, null, null, null, null];
+  /** @type {{ src: AudioBufferSourceNode; bp: BiquadFilterNode; ng: GainNode; saw: OscillatorNode; slp: BiquadFilterNode; sg: GainNode; mix: GainNode } | null} */
+  let nitroExhaust = null;
+  function ensureNitroExhaustGraph() {
+    if (nitroExhaust || !ctx) return nitroExhaust;
+    const frames = Math.floor(ctx.sampleRate * 2);
+    const buf = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i += 1) {
+      d[i] = (Math.random() * 2 - 1) * 0.92;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1500;
+    bp.Q.value = 1.22;
+    const ng = ctx.createGain();
+    ng.gain.value = 1;
+    src.connect(bp);
+    bp.connect(ng);
+    const saw = ctx.createOscillator();
+    saw.type = "sawtooth";
+    saw.frequency.value = 340;
+    const slp = ctx.createBiquadFilter();
+    slp.type = "lowpass";
+    slp.frequency.value = 640;
+    slp.Q.value = 0.74;
+    const sg = ctx.createGain();
+    sg.gain.value = 1;
+    saw.connect(slp);
+    slp.connect(sg);
+    const mix = ctx.createGain();
+    mix.gain.value = 0;
+    ng.connect(mix);
+    sg.connect(mix);
+    mix.connect(sfxGain);
+    const tStart = ctx.currentTime;
+    try {
+      src.start(tStart);
+      saw.start(tStart);
+    } catch {
+      return null;
+    }
+    nitroExhaust = { src, bp, ng, saw, slp, sg, mix };
+    nitroPresetSlots[0] = nitroExhaust;
+    return nitroExhaust;
+  }
+
+  /**
+   * Alternate sustained nitro beds — indexed 1…4 (`sfxNitroPreset`).
+   * @param {1 | 2 | 3 | 4} idx
+   */
+  function ensureNitroPresetAlt(idx) {
+    if (!ctx || idx < 1 || idx > 4) return null;
+    if (nitroPresetSlots[idx]) return nitroPresetSlots[idx];
+
+    const frames = Math.floor(ctx.sampleRate * 2);
+    const buf = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i += 1) {
+      d[i] = (Math.random() * 2 - 1) * 0.92;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const mix = ctx.createGain();
+    mix.gain.value = 0;
+    mix.connect(sfxGain);
+    const tStart = ctx.currentTime;
+
+    if (idx === 1) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 760;
+      lp.Q.value = 0.68;
+      const ng = ctx.createGain();
+      ng.gain.value = 1;
+      src.connect(lp);
+      lp.connect(ng);
+      ng.connect(mix);
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 118;
+      const og = ctx.createGain();
+      og.gain.value = 1;
+      osc.connect(og);
+      og.connect(mix);
+      try {
+        src.start(tStart);
+        osc.start(tStart);
+      } catch {
+        return null;
+      }
+      nitroPresetSlots[idx] = /** @type {any} */ ({ mix, src, lp, ng, osc, og });
+      return nitroPresetSlots[idx];
+    }
+
+    if (idx === 2) {
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.value = 1580;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 3400;
+      const og = ctx.createGain();
+      og.gain.value = 1;
+      osc.connect(lp);
+      lp.connect(og);
+      og.connect(mix);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 3400;
+      bp.Q.value = 1.65;
+      const ng = ctx.createGain();
+      ng.gain.value = 0.55;
+      src.connect(bp);
+      bp.connect(ng);
+      ng.connect(mix);
+      try {
+        osc.start(tStart);
+        src.start(tStart);
+      } catch {
+        return null;
+      }
+      nitroPresetSlots[idx] = /** @type {any} */ ({ mix, osc, lp, bp, og, ng, src });
+      return nitroPresetSlots[idx];
+    }
+
+    if (idx === 3) {
+      const sq = ctx.createOscillator();
+      sq.type = "square";
+      sq.frequency.value = 46;
+      const slp = ctx.createBiquadFilter();
+      slp.type = "lowpass";
+      slp.frequency.value = 680;
+      const sg = ctx.createGain();
+      sg.gain.value = 1;
+      sq.connect(slp);
+      slp.connect(sg);
+      sg.connect(mix);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 920;
+      bp.Q.value = 1.35;
+      const ng = ctx.createGain();
+      ng.gain.value = 1;
+      src.connect(bp);
+      bp.connect(ng);
+      ng.connect(mix);
+      try {
+        sq.start(tStart);
+        src.start(tStart);
+      } catch {
+        return null;
+      }
+      nitroPresetSlots[idx] = /** @type {any} */ ({ mix, sq, slp, sg, bp, ng, src });
+      return nitroPresetSlots[idx];
+    }
+
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 2400;
+    bp.Q.value = 8;
+    const ng = ctx.createGain();
+    ng.gain.value = 1;
+    src.connect(bp);
+    bp.connect(ng);
+    ng.connect(mix);
+    try {
+      src.start(tStart);
+    } catch {
+      return null;
+    }
+    nitroPresetSlots[idx] = /** @type {any} */ ({ mix, bp, ng, src });
+    return nitroPresetSlots[idx];
+  }
+
+  /**
+   * @param {number} t
+   * @param {number} exceptIdx — preset slot to leave untouched (−1 = mute all)
+   */
+  function muteNitroPresetSlotsExcept(t, exceptIdx) {
+    for (let i = 0; i < 5; i++) {
+      if (i === exceptIdx) continue;
+      let mix = null;
+      if (i === 0) {
+        mix = nitroPresetSlots[0]?.mix ?? nitroExhaust?.mix ?? null;
+      } else {
+        mix = nitroPresetSlots[i]?.mix ?? null;
+      }
+      try {
+        if (mix) mix.gain.setTargetAtTime(0, t, 0.065);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  /**
+   * Sustained nitro/boost timbre — preset from Dev HUD (`sfxNitroPreset`).
+   * @param {Partial<{ active: boolean; intensity01: number; dt: number }>} [opts]
+   */
+  function tickNitroExhaustHiss(opts = {}) {
+    const active = opts.active !== false;
+    const intensity01 = clamp01(typeof opts.intensity01 === "number" ? opts.intensity01 : 0);
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    const dead = !active || intensity01 < 0.014;
+    if (dead) {
+      muteNitroPresetSlotsExcept(t, -1);
+      return;
+    }
+    const vol = Math.max(0, sfxVolume);
+    const shaped = Math.pow(intensity01, 0.76);
+    const pi = sfxNitroPresetIndex;
+    muteNitroPresetSlotsExcept(t, pi);
+
+    try {
+      if (pi === 1) {
+        const slot = ensureNitroPresetAlt(1);
+        if (!slot) return;
+        const amp = Math.min(0.27, shaped * 0.21 * vol);
+        slot.mix.gain.setTargetAtTime(amp, t, 0.052);
+        slot.lp.frequency.setTargetAtTime(420 + intensity01 * 2600, t, 0.09);
+        slot.osc.frequency.setTargetAtTime(88 + intensity01 * 210, t, 0.065);
+      } else if (pi === 2) {
+        const slot = ensureNitroPresetAlt(2);
+        if (!slot) return;
+        const amp = Math.min(0.22, shaped * 0.155 * vol);
+        slot.mix.gain.setTargetAtTime(amp, t, 0.055);
+        slot.osc.frequency.setTargetAtTime(960 + intensity01 * 4200, t, 0.08);
+        slot.bp.frequency.setTargetAtTime(2100 + intensity01 * 4100, t, 0.075);
+        slot.ng.gain.setTargetAtTime(0.35 + intensity01 * 0.55, t, 0.06);
+      } else if (pi === 3) {
+        const slot = ensureNitroPresetAlt(3);
+        if (!slot) return;
+        const amp = Math.min(0.29, shaped * 0.215 * vol);
+        slot.mix.gain.setTargetAtTime(amp, t, 0.048);
+        slot.sq.frequency.setTargetAtTime(38 + intensity01 * 72, t, 0.055);
+        slot.bp.frequency.setTargetAtTime(620 + intensity01 * 1480, t, 0.07);
+      } else if (pi === 4) {
+        const slot = ensureNitroPresetAlt(4);
+        if (!slot) return;
+        const amp = Math.min(0.2, shaped * 0.145 * vol);
+        slot.mix.gain.setTargetAtTime(amp, t, 0.06);
+        slot.bp.frequency.setTargetAtTime(900 + intensity01 * 5200, t, 0.1);
+        slot.bp.Q.value = 6 + intensity01 * 10;
+      } else {
+        const g = ensureNitroExhaustGraph();
+        if (!g) return;
+        const amp = Math.min(0.26, shaped * 0.185 * vol);
+        g.mix.gain.setTargetAtTime(amp, t, 0.052);
+        g.bp.frequency.setTargetAtTime(760 + intensity01 * 3360, t, 0.09);
+        g.bp.Q.value = 1.02 + intensity01 * 1.05;
+        g.saw.frequency.setTargetAtTime(248 + intensity01 * 560, t, 0.065);
+        g.slp.frequency.setTargetAtTime(500 + intensity01 * 1680, t, 0.075);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Burst opener paired with preset 0 sustained nitro — layered sweep + grit + bass + hiss. */
+  function playNitroBurstPresetVent() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxVolume);
+    const sweep = ctx.createOscillator();
+    const sg = ctx.createGain();
+    sweep.type = "sine";
+    sweep.frequency.setValueAtTime(140, t0);
+    sweep.frequency.exponentialRampToValueAtTime(2600, t0 + 0.175);
+    sg.gain.setValueAtTime(0.0001, t0);
+    sg.gain.exponentialRampToValueAtTime(0.125 * amp, t0 + 0.024);
+    sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+    sweep.connect(sg);
+    sg.connect(sfxGain);
+
+    const grit = ctx.createOscillator();
+    const gg = ctx.createGain();
+    grit.type = "sawtooth";
+    grit.frequency.setValueAtTime(320, t0);
+    grit.frequency.exponentialRampToValueAtTime(1480, t0 + 0.14);
+    const glp = ctx.createBiquadFilter();
+    glp.type = "lowpass";
+    glp.frequency.value = 1100;
+    gg.gain.setValueAtTime(0.0001, t0);
+    gg.gain.exponentialRampToValueAtTime(0.058 * amp, t0 + 0.032);
+    gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    grit.connect(glp);
+    glp.connect(gg);
+    gg.connect(sfxGain);
+
+    const bass = ctx.createOscillator();
+    const bg = ctx.createGain();
+    bass.type = "sine";
+    bass.frequency.setValueAtTime(58, t0);
+    bass.frequency.exponentialRampToValueAtTime(44, t0 + 0.12);
+    bg.gain.setValueAtTime(0.0001, t0);
+    bg.gain.exponentialRampToValueAtTime(0.118 * amp, t0 + 0.042);
+    bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+    bass.connect(bg);
+    bg.connect(sfxGain);
+
+    const n = 4096;
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    }
+    const hiss = ctx.createBufferSource();
+    hiss.buffer = buf;
+    const hp = ctx.createBiquadFilter();
+    hp.type = "bandpass";
+    hp.frequency.setValueAtTime(6200, t0);
+    hp.frequency.exponentialRampToValueAtTime(920, t0 + 0.16);
+    hp.Q.value = 1.42;
+    const hg = ctx.createGain();
+    hg.gain.setValueAtTime(0.0001, t0);
+    hg.gain.exponentialRampToValueAtTime(0.078 * amp, t0 + 0.015);
+    hg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    hiss.connect(hp);
+    hp.connect(hg);
+    hg.connect(sfxGain);
+
+    try {
+      sweep.start(t0);
+      sweep.stop(t0 + 0.29);
+      grit.start(t0);
+      grit.stop(t0 + 0.26);
+      bass.start(t0);
+      bass.stop(t0 + 0.34);
+      hiss.start(t0);
+      hiss.stop(t0 + 0.22);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Brief sine bump + LP noise — matches Turbine sustained character. */
+  function playNitroBurstPresetTurbine() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxVolume);
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(95, t0);
+    osc.frequency.exponentialRampToValueAtTime(380, t0 + 0.12);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.14 * amp, t0 + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    osc.connect(g);
+    g.connect(sfxGain);
+    const nf = 2048;
+    const buf = ctx.createBuffer(1, nf, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < nf; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / nf);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(560, t0);
+    lp.frequency.exponentialRampToValueAtTime(3400, t0 + 0.14);
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t0);
+    ng.gain.exponentialRampToValueAtTime(0.085 * amp, t0 + 0.022);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    src.connect(lp);
+    lp.connect(ng);
+    ng.connect(sfxGain);
+    try {
+      osc.start(t0);
+      osc.stop(t0 + 0.24);
+      src.start(t0);
+      src.stop(t0 + 0.21);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function playNitroBurstPresetEther() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxVolume);
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(2100, t0);
+    osc.frequency.exponentialRampToValueAtTime(8800, t0 + 0.09);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.078 * amp, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    osc.connect(g);
+    g.connect(sfxGain);
+    try {
+      osc.start(t0);
+      osc.stop(t0 + 0.2);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function playNitroBurstPresetSub() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxVolume);
+    const sq = ctx.createOscillator();
+    sq.type = "square";
+    sq.frequency.setValueAtTime(48, t0);
+    sq.frequency.exponentialRampToValueAtTime(72, t0 + 0.08);
+    const sg = ctx.createGain();
+    sg.gain.setValueAtTime(0.0001, t0);
+    sg.gain.exponentialRampToValueAtTime(0.11 * amp, t0 + 0.038);
+    sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 520;
+    sq.connect(lp);
+    lp.connect(sg);
+    sg.connect(sfxGain);
+    try {
+      sq.start(t0);
+      sq.stop(t0 + 0.28);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function playNitroBurstPresetThin() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxVolume);
+    const nf = 2048;
+    const buf = ctx.createBuffer(1, nf, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < nf; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / nf);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.setValueAtTime(5200, t0);
+    bp.frequency.exponentialRampToValueAtTime(900, t0 + 0.12);
+    bp.Q.value = 12;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t0);
+    ng.gain.exponentialRampToValueAtTime(0.065 * amp, t0 + 0.012);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    src.connect(bp);
+    bp.connect(ng);
+    ng.connect(sfxGain);
+    try {
+      src.start(t0);
+      src.stop(t0 + 0.18);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function dispatchNitroBurstWhoosh() {
+    switch (sfxNitroPresetIndex) {
+      case 1:
+        playNitroBurstPresetTurbine();
+        break;
+      case 2:
+        playNitroBurstPresetEther();
+        break;
+      case 3:
+        playNitroBurstPresetSub();
+        break;
+      case 4:
+        playNitroBurstPresetThin();
+        break;
+      default:
+        playNitroBurstPresetVent();
+        break;
+    }
+  }
+
+  function playBoostPadPresetVent() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const amp = Math.max(0, sfxVolume);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(380, t0);
+    osc.frequency.exponentialRampToValueAtTime(1750, t0 + 0.085);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.094 * amp, t0 + 0.022);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    osc.connect(g);
+    g.connect(sfxGain);
+
+    const saw = ctx.createOscillator();
+    const sg = ctx.createGain();
+    saw.type = "sawtooth";
+    saw.frequency.setValueAtTime(210, t0);
+    saw.frequency.exponentialRampToValueAtTime(780, t0 + 0.09);
+    const slp = ctx.createBiquadFilter();
+    slp.type = "lowpass";
+    slp.frequency.value = 820;
+    sg.gain.setValueAtTime(0.0001, t0);
+    sg.gain.exponentialRampToValueAtTime(0.048 * amp, t0 + 0.024);
+    sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+    saw.connect(slp);
+    slp.connect(sg);
+    sg.connect(sfxGain);
+
+    const n = 4096;
+    const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.setValueAtTime(4200, t0);
+    bp.frequency.exponentialRampToValueAtTime(780, t0 + 0.11);
+    bp.Q.value = 1.35;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t0);
+    ng.gain.exponentialRampToValueAtTime(0.065 * amp, t0 + 0.018);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+    noise.connect(bp);
+    bp.connect(ng);
+    ng.connect(sfxGain);
+
+    try {
+      osc.start(t0);
+      osc.stop(t0 + 0.19);
+      saw.start(t0);
+      saw.stop(t0 + 0.17);
+      noise.start(t0);
+      noise.stop(t0 + 0.16);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function dispatchBoostPadWhoosh() {
+    switch (sfxNitroPresetIndex) {
+      case 1:
+        playNitroBurstPresetTurbine();
+        break;
+      case 2:
+        playNitroBurstPresetEther();
+        break;
+      case 3:
+        playNitroBurstPresetSub();
+        break;
+      case 4:
+        playNitroBurstPresetThin();
+        break;
+      default:
+        playBoostPadPresetVent();
+        break;
+    }
+  }
+
+  function playOpponentSlamLayer() {
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const v = Math.max(0, sfxVolume);
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(54, t0);
+    osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.2);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.62 * v, t0 + 0.024);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.92);
+    osc.connect(g);
+    g.connect(sfxGain);
+    const harm = ctx.createOscillator();
+    harm.type = "triangle";
+    harm.frequency.setValueAtTime(108, t0);
+    harm.frequency.exponentialRampToValueAtTime(46, t0 + 0.16);
+    const hg = ctx.createGain();
+    hg.gain.setValueAtTime(0.0001, t0);
+    hg.gain.exponentialRampToValueAtTime(0.32 * v, t0 + 0.032);
+    hg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.72);
+    harm.connect(hg);
+    hg.connect(sfxGain);
+    try {
+      osc.start(t0);
+      osc.stop(t0 + 1.05);
+      harm.start(t0);
+      harm.stop(t0 + 0.82);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Engine off + enemy proximity bed to zero — does **not** move the music duck (safe during derez SFX).
+   * @param {number} [dt]
+   */
+  function silenceDrivingLayers(dt = 1 / 60) {
+    tickEngineSound({ active: false, dt });
+    tickNitroExhaustHiss({ active: false, intensity01: 0, dt });
+    ensureEnemyBed();
+    ensureTrailBed();
+    if (ctx) {
+      const t0 = ctx.currentTime;
+      if (enemyBed) {
+        try {
+          enemyBed.g.gain.setTargetAtTime(0, t0, 0.045);
+        } catch {
+          /* ignore */
+        }
+      }
+      if (trailBed) {
+        try {
+          trailBed.g.gain.setTargetAtTime(0, t0, 0.045);
+        } catch {
+          /* ignore */
+        }
+      }
     }
   }
 
@@ -856,6 +1943,75 @@ export function createAudioEngine(options = {}) {
       if (v.ambient != null) {
         ambientVolume = v.ambient;
         ambientGain.gain.value = v.ambient;
+      }
+    },
+
+    /**
+     * Frame mix: music duck + enemy engine proximity bed + trail proximity bed (SFX bus).
+     * @param {Partial<{ musicDuckTension01: number; musicDuckMaxDb: number; enemyEngine01: number; enemyEngineMaxGain: number; trailProximity01: number; trailProximityMaxGain: number; trailProximityBedEnabled: boolean }>} opts
+     */
+    applyDynamicMix(opts = {}) {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const duck = clamp01(/** @type {number} */ (opts.musicDuckTension01 ?? 0));
+      const maxDb = typeof opts.musicDuckMaxDb === "number" && Number.isFinite(opts.musicDuckMaxDb) ? opts.musicDuckMaxDb : 4;
+      const lin = Math.pow(10, -maxDb / 20);
+      const factor = 1 - duck * (1 - lin);
+      const base = effectiveMusicVolume();
+      try {
+        musicGain.gain.setTargetAtTime(base * factor, t0, 0.07);
+      } catch {
+        /* ignore */
+      }
+      const e01 = clamp01(/** @type {number} */ (opts.enemyEngine01 ?? 0));
+      const maxG =
+        typeof opts.enemyEngineMaxGain === "number" && Number.isFinite(opts.enemyEngineMaxGain)
+          ? Math.max(0, opts.enemyEngineMaxGain)
+          : 0.35;
+      ensureEnemyBed();
+      if (enemyBed) {
+        const mg = e01 * maxG * Math.max(0, sfxVolume);
+        enemyBed.g.gain.setTargetAtTime(mg, t0, 0.045);
+        /** Same sweep shape as player core; slight Hz offset so two bikes don’t perfectly phase-cancel when layered. */
+        enemyBed.osc.frequency.setTargetAtTime(84 + e01 * 248, t0, 0.085);
+      }
+      const trWall =
+        opts.trailProximityBedEnabled === false
+          ? 0
+          : clamp01(/** @type {number} */ (opts.trailProximity01 ?? 0));
+      const trMax =
+        typeof opts.trailProximityMaxGain === "number" && Number.isFinite(opts.trailProximityMaxGain)
+          ? Math.max(0, opts.trailProximityMaxGain)
+          : 0.22;
+      ensureTrailBed();
+      if (trailBed) {
+        const tg = trWall * trMax * Math.max(0, sfxVolume);
+        trailBed.g.gain.setTargetAtTime(tg, t0, 0.048);
+        trailBed.osc.frequency.setTargetAtTime(62 + trWall * 152, t0, 0.09);
+        trailBed.f.frequency.setTargetAtTime(380 + trWall * 820, t0, 0.085);
+      }
+    },
+
+    syncDevAudioPresets,
+
+    /** Tiny blip when the page first gets a user gesture (web autoplay unlock). */
+    playUiPreviewSting() {
+      if (!ctx) return;
+      const t0 = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(990, t0);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.055 * Math.max(0, sfxVolume), t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
+      osc.connect(g);
+      g.connect(sfxGain);
+      try {
+        osc.start(t0);
+        osc.stop(t0 + 0.09);
+      } catch {
+        /* ignore */
       }
     },
 
@@ -1040,8 +2196,11 @@ export function createAudioEngine(options = {}) {
 
     /**
      * Opponent derez (kill-cam) — same core, slightly brighter + shorter.
+     * @param {{ sting?: boolean }} [opts] — set `sting: false` to skip extra low slam (Dev HUD).
      */
-    playEnemyDerezShatter() {
+    playEnemyDerezShatter(opts) {
+      const st = opts && typeof opts === "object" && opts.sting === false ? false : true;
+      if (st) playOpponentSlamLayer();
       playDerezShatterCore("opponent");
     },
 
@@ -1112,26 +2271,9 @@ export function createAudioEngine(options = {}) {
       }
     },
 
-    /** Boost pad — lighter whoosh than nitro (plan P3.5; procedural). */
+    /** Boost pad opener — follows active nitro preset family. */
     playBoostPadWhoosh() {
-      if (!ctx) return;
-      const t0 = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(420, t0);
-      osc.frequency.exponentialRampToValueAtTime(1400, t0 + 0.06);
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.07 * sfxVolume, t0 + 0.018);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
-      osc.connect(g);
-      g.connect(sfxGain);
-      try {
-        osc.start(t0);
-        osc.stop(t0 + 0.14);
-      } catch {
-        /* ignore */
-      }
+      dispatchBoostPadWhoosh();
     },
 
     /** Shield deploy completes — rising energy tone (plan P3.4; procedural). */
@@ -1330,40 +2472,9 @@ export function createAudioEngine(options = {}) {
       }
     },
 
-    /** P8.5 — Nitro burst: whoosh + bass pulse (procedural). */
+    /** Nitro burst opener — follows active nitro preset family. */
     playNitroBurstWhoosh() {
-      if (!ctx) return;
-      const t0 = ctx.currentTime;
-      const amp = sfxVolume;
-      const sweep = ctx.createOscillator();
-      const sg = ctx.createGain();
-      sweep.type = "sine";
-      sweep.frequency.setValueAtTime(180, t0);
-      sweep.frequency.exponentialRampToValueAtTime(2200, t0 + 0.14);
-      sg.gain.setValueAtTime(0.0001, t0);
-      sg.gain.exponentialRampToValueAtTime(0.1 * amp, t0 + 0.02);
-      sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
-      sweep.connect(sg);
-      sg.connect(sfxGain);
-
-      const bass = ctx.createOscillator();
-      const bg = ctx.createGain();
-      bass.type = "sine";
-      bass.frequency.setValueAtTime(62, t0);
-      bg.gain.setValueAtTime(0.0001, t0);
-      bg.gain.exponentialRampToValueAtTime(0.09 * amp, t0 + 0.035);
-      bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
-      bass.connect(bg);
-      bg.connect(sfxGain);
-
-      try {
-        sweep.start(t0);
-        sweep.stop(t0 + 0.22);
-        bass.start(t0);
-        bass.stop(t0 + 0.24);
-      } catch {
-        /* ignore */
-      }
+      dispatchNitroBurstWhoosh();
     },
 
     /**
@@ -1513,6 +2624,8 @@ export function createAudioEngine(options = {}) {
     },
 
     tickEngineSound,
+    tickNitroExhaustHiss,
+    silenceDrivingLayers,
   };
 }
 
@@ -1530,6 +2643,9 @@ function createNoopEngine() {
     attachUserGestureUnlock: () => {},
     unlock: () => {},
     setVolumes: () => {},
+    applyDynamicMix: () => {},
+    syncDevAudioPresets: () => {},
+    playUiPreviewSting: () => {},
     setMusicCrossfadeDuration: () => {},
     getMusicCrossfadeDuration: () => 1,
     setMusicLobbyUrl: () => {},
@@ -1564,5 +2680,7 @@ function createNoopEngine() {
     playGateEnterHum: () => {},
     playTunnelTransitionWind: () => {},
     tickEngineSound: () => {},
+    tickNitroExhaustHiss: () => {},
+    silenceDrivingLayers: () => {},
   };
 }

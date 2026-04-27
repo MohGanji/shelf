@@ -277,6 +277,8 @@ export function mountEditorPropertiesPanel(root, opts) {
         ro.textContent =
           role === "entrance" || role === "vibejam"
             ? "Sign text is empty (entrance / Vibe Jam portal) — read-only."
+            : role === "daily"
+              ? "Daily Arena — hub drives copy from the calendar map; sign read-only here."
             : "Sign text is fixed for this gate role — read-only.";
         wrap.appendChild(ro);
       }

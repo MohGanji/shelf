@@ -1,0 +1,59 @@
+{
+  "id": "daily-2026-05-07",
+  "name": "Daily — Circuit 10",
+  "arenaWidth": 563,
+  "arenaDepth": 563,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 281.5,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 281.5,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": -70.8,
+      "z": -55.6,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 211,
+      "gridZ": 225
+    },
+    {
+      "x": 131.9,
+      "z": 36.9,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 414,
+      "gridZ": 318
+    }
+  ],
+  "rewards": {
+    "coins": 32,
+    "timeBonusThreshold": 149,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 565,
+  "mapDepth": 565
+}

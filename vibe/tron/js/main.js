@@ -11,10 +11,14 @@ import { GameMode, isArenaRideableMode } from "./gameState.js";
 import { createChaseCamera } from "./engine/camera.js";
 import {
   addCoins,
+  isDailyClearedOn,
   isLevelUnlockedLinear,
   loadOrCreateSave,
   persistSave,
+  recordDailyCleared,
   recordLevelComplete,
+  setFlagSeenGarage,
+  setTutorialCleared,
 } from "./data/savedata.js";
 import { createAudioEngine } from "./engine/audio.js";
 import { getGraphicsProfile } from "./engine/graphicsProfile.js";
@@ -38,11 +42,14 @@ import {
   applyExitGateRuntimeOpenVisual,
   computePlayerSpawnFromEntranceGate,
   extractGatesFromWallObjects,
+  getGateInwardPoint,
   queryOpenGateAtPosition,
   updateGateAnimations,
   withLobbyArenaGateLock,
+  withLobbyDailyGateRuntime,
   withLobbyRuntimeGateOverrides,
 } from "./game/gates.js";
+import { createWaypointBeacon } from "./game/waypointBeacon.js";
 import { createLightCycle, preloadLightCycleAsset } from "./game/cycle.js";
 import { syncHeadingSpeedFromVelocity } from "./game/playerMovement.js";
 import { tickPlayerArcadeDrive } from "./game/playerDrive.js";
@@ -68,15 +75,22 @@ import {
   evaluateCyclePairContact,
   tryTrailHitOnBody,
 } from "./game/collisionResolve.js";
-import { computePlayerNearMissDistance } from "./game/nearMiss.js";
+import {
+  computeNearestTrailHazardDistanceOnly,
+  computePlayerNearMissDistance,
+} from "./game/nearMiss.js";
 import {
   extractArenaDimensionsFromLevel,
   findCampaignLevelByCampaignIndex,
   findCampaignLevelById,
   getWipLevelValidated,
+  fetchDailyLobbyMeta,
+  fetchLevelByFilename,
+  getLocalYyyyMmDd,
   loadCampaignLevels,
   parseCampaignLevelIndex,
   selectPlaytestCampaignLevel,
+  TUTORIAL_LEVEL_FILENAME,
 } from "./levels/loader.js";
 import { consumeSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
 import { peekEditorPlaytestReturn, setEditorPlaytestReturn } from "./sessionEditorPlaytest.js";
@@ -99,6 +113,36 @@ import {
   isVibeJamPortalArrival,
 } from "./game/vibejam.js";
 import * as THREE from "./vendor/three-module.js";
+
+/** HUD pickup fly animation — matches arena pickup silhouette at readable screen size */
+const PICKUP_FLIGHT_SRC = Object.freeze({
+  nitro_recharge: new URL("../assets/ui/pickup-flight-nitro.svg", import.meta.url).href,
+  shield: new URL("../assets/ui/pickup-flight-shield.svg", import.meta.url).href,
+});
+
+/**
+ * Aim toward the fixed bottom-left HUD panel (#cycle-hud): inward from that corner so the eye tracks “into” the HUD zone.
+ * @param {HTMLElement | null} hudPanel
+ * @param {HTMLElement | null} fallbackEl — nitro strip or equip wrap if panel unavailable
+ */
+function getHudPickupFlightCornerTargetPx(hudPanel, fallbackEl) {
+  const hr = hudPanel?.getBoundingClientRect();
+  const ok =
+    hudPanel &&
+    !hudPanel.hidden &&
+    hr &&
+    hr.width > 4 &&
+    hr.height > 4 &&
+    Number.isFinite(hr.left);
+  if (ok && hr) {
+    const insetX = Math.min(36, hr.width * 0.14);
+    const insetY = Math.min(28, hr.height * 0.18);
+    return { tx: hr.left + insetX, ty: hr.bottom - insetY };
+  }
+  if (!fallbackEl) return null;
+  const fr = fallbackEl.getBoundingClientRect();
+  return { tx: fr.left + fr.width * 0.5, ty: fr.top + fr.height * 0.45 };
+}
 
 function $(id) {
   const el = document.getElementById(id);
@@ -180,6 +224,9 @@ async function main() {
 
   const campaign = await loadCampaignLevels();
 
+  const ymdLocal = getLocalYyyyMmDd();
+  const dailyLobbyMeta = await fetchDailyLobbyMeta(ymdLocal);
+
   /** Consume once here so a crash/close during the boot tunnel cannot strand `tron-session-boot-v1` (would boot the wrong arena on every visit). */
   const sessionBoot = consumeSessionBootTarget();
   const skipArenaForBoot =
@@ -192,9 +239,33 @@ async function main() {
   let arenaSizeFromCampaign;
   /** P6.9 — current arena JSON came from WIP play-test boot (validated). */
   let arenaFromWipPlaytest = false;
+  /** @type {string} */
+  let activeDailyYmd = "";
 
   if (skipArenaForBoot) {
     arenaSizeFromCampaign = undefined;
+  } else if (sessionBoot?.mode === "daily" && typeof sessionBoot.ymd === "string") {
+    const ymdBoot = String(sessionBoot.ymd).trim();
+    const dlev = await fetchLevelByFilename(`daily-${ymdBoot}.json`);
+    if (dlev && typeof dlev.id === "string") {
+      activeCampaignLevel = dlev;
+      activeDailyYmd = String(sessionBoot.ymd).trim();
+      arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+    } else {
+      console.warn("[main] Daily boot: missing level — loading lobby.");
+      const lobbyOrFallback =
+        findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
+        selectPlaytestCampaignLevel(campaign.validLevels, save);
+      let lobbyLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
+      lobbyLevel = withLobbyArenaGateLock(lobbyLevel, campaign.validLevels, save);
+      lobbyLevel = withLobbyDailyGateRuntime(lobbyLevel, {
+        ymd: ymdLocal,
+        hasMap: dailyLobbyMeta.hasMap,
+        clearedToday: isDailyClearedOn(save, ymdLocal),
+      });
+      activeCampaignLevel = lobbyLevel;
+      arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+    }
   } else if (sessionBoot?.mode === "wip_playtest" && typeof sessionBoot.levelId === "string") {
     const w = getWipLevelValidated(sessionBoot.levelId.trim());
     if (w && w.valid) {
@@ -210,6 +281,11 @@ async function main() {
         selectPlaytestCampaignLevel(campaign.validLevels, save);
       let lobbyLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
       lobbyLevel = withLobbyArenaGateLock(lobbyLevel, campaign.validLevels, save);
+      lobbyLevel = withLobbyDailyGateRuntime(lobbyLevel, {
+        ymd: ymdLocal,
+        hasMap: dailyLobbyMeta.hasMap,
+        clearedToday: isDailyClearedOn(save, ymdLocal),
+      });
       activeCampaignLevel = lobbyLevel;
       arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
     }
@@ -232,22 +308,52 @@ async function main() {
       useCampaign ??
       findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
       selectPlaytestCampaignLevel(campaign.validLevels, save);
+    if (activeCampaignLevel && activeCampaignLevel.id === LOBBY_LEVEL_ID) {
+      let ll = activeCampaignLevel;
+      ll = withLobbyDailyGateRuntime(/** @type {Record<string, unknown>} */ (ll), {
+        ymd: ymdLocal,
+        hasMap: dailyLobbyMeta.hasMap,
+        clearedToday: isDailyClearedOn(save, ymdLocal),
+      });
+      activeCampaignLevel = ll;
+    }
     arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
   } else {
-    const lobbyOrFallback =
-      findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
-      selectPlaytestCampaignLevel(campaign.validLevels, save);
-    let lobbyLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
-    lobbyLevel = withLobbyArenaGateLock(lobbyLevel, campaign.validLevels, save);
-    activeCampaignLevel = lobbyLevel;
-    arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+    const canBootTutorial =
+      save.tutorialCleared === false &&
+      !skipArenaForBoot &&
+      (!sessionBoot ||
+        (sessionBoot.mode !== "garage" && sessionBoot.mode !== "editor" && sessionBoot.mode !== "wip_playtest"));
+    if (canBootTutorial) {
+      const tut = await fetchLevelByFilename(TUTORIAL_LEVEL_FILENAME);
+      if (tut && tut.id === "level-tutorial") {
+        activeCampaignLevel = tut;
+        arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+      }
+    }
+    if (!activeCampaignLevel) {
+      const lobbyOrFallback =
+        findCampaignLevelById(campaign.validLevels, LOBBY_LEVEL_ID) ??
+        selectPlaytestCampaignLevel(campaign.validLevels, save);
+      let lobbyLevel = withLobbyRuntimeGateOverrides(lobbyOrFallback, save.progress.currentLevel);
+      lobbyLevel = withLobbyArenaGateLock(lobbyLevel, campaign.validLevels, save);
+      lobbyLevel = withLobbyDailyGateRuntime(lobbyLevel, {
+        ymd: ymdLocal,
+        hasMap: dailyLobbyMeta.hasMap,
+        clearedToday: isDailyClearedOn(save, ymdLocal),
+      });
+      activeCampaignLevel = lobbyLevel;
+      arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
+    }
   }
 
   /** Odd `level-N` → first gameplay stem, even → second (`config.getGameplayMusicUrl`). Lobby / bad id → NaN. */
-  const gameplayMusicCampaignN =
-    activeCampaignLevel && typeof activeCampaignLevel.id === "string" && activeCampaignLevel.id !== LOBBY_LEVEL_ID
-      ? parseCampaignLevelIndex(/** @type {Record<string, unknown>} */ (activeCampaignLevel))
-      : Number.NaN;
+  const gameplayMusicCampaignN = (() => {
+    if (!activeCampaignLevel || typeof activeCampaignLevel.id !== "string") return Number.NaN;
+    if (activeCampaignLevel.id === LOBBY_LEVEL_ID) return Number.NaN;
+    if (activeCampaignLevel.id === "level-tutorial") return 2;
+    return parseCampaignLevelIndex(/** @type {Record<string, unknown>} */ (activeCampaignLevel));
+  })();
 
   const audio = createAudioEngine({
     masterVolume: save.settings.masterVolume,
@@ -260,11 +366,40 @@ async function main() {
     musicGameplayUrl: getGameplayMusicUrl(runtime.devHud, gameplayMusicCampaignN),
   });
   audio.unlock();
+  {
+    let previewStingArmed = true;
+    const tryPreview = () => {
+      if (!previewStingArmed) return;
+      previewStingArmed = false;
+      window.removeEventListener("pointerdown", tryPreview, true);
+      window.removeEventListener("keydown", tryPreview, true);
+      if (runtime.devHud.audioPreviewStingEnabled === false) return;
+      try {
+        audio.playUiPreviewSting();
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("pointerdown", tryPreview, { capture: true, passive: true });
+    window.addEventListener("keydown", tryPreview, { capture: true, passive: true });
+  }
   for (const url of MUSIC_ASSET_URLS.lobbyVariants) {
     void audio.prefetch(url);
   }
   for (const url of MUSIC_ASSET_URLS.gameplayVariants) {
     void audio.prefetch(url);
+  }
+
+  /**
+   * Engine + enemy proximity bed hold last gains until cleared — stop rev / proximity during derez & tunnels.
+   * @param {number} [dt]
+   */
+  function silenceDrivingAndProximityAudio(dt = 1 / 60) {
+    if (typeof audio.silenceDrivingLayers === "function") {
+      audio.silenceDrivingLayers(dt);
+    } else {
+      audio.tickEngineSound({ active: false, dt });
+    }
   }
 
   const graphicsProfile = getGraphicsProfile();
@@ -408,8 +543,17 @@ async function main() {
       ? activeCampaignLevel.id === LOBBY_LEVEL_ID
       : false;
 
+  const isTutorialArena =
+    activeCampaignLevel &&
+    typeof activeCampaignLevel.id === "string" &&
+    activeCampaignLevel.id === "level-tutorial";
+
   /** P6.9 — editor play-test: normal level rules, backtick returns to Architect. */
   const isEditorPlaytest = arenaFromWipPlaytest;
+
+  const waypointBeacon = !isEditorPlaytest ? createWaypointBeacon({ scene: game.scene, devHud }) : null;
+  /** Beacon anchor nearer gate lip than generic inward hints (`getGateInwardPoint` default 10). Lobby + tutorial exit. */
+  const waypointBeaconGateInwardUnits = 6;
 
   gameMode = isLobby ? GameMode.LOBBY : GameMode.LEVEL;
 
@@ -426,7 +570,7 @@ async function main() {
   }
 
   try {
-    await audio.playMusicProfile(isLobby ? "lobby" : "gameplay");
+    await audio.playMusicProfile(isLobby || isTutorialArena ? "lobby" : "gameplay");
     audio.startAmbientBed();
   } catch {
     /* ignore */
@@ -449,6 +593,9 @@ async function main() {
       }
     }
   }
+
+  /** Tutorial: switch from lobby bed → gameplay once tips strip clears + throttle engaged (`main.js`). */
+  let tutorialGameplayMusicPending = isTutorialArena;
 
   /** Plan X3: campaign arenas stay frozen until first W; lobby allows immediate riding. */
   let levelStarted = isLobby;
@@ -549,7 +696,12 @@ async function main() {
    * @param {Record<string, unknown>} nextBoot
    */
   function beginLobbyGateTunnel(nextBoot) {
+    silenceDrivingAndProximityAudio();
     audio.playGateEnterHum();
+    if (nextBoot.mode === "garage") {
+      setFlagSeenGarage(save);
+      persistSave(save);
+    }
     setEditorPlaytestReturn(null);
     setSessionBootTarget(nextBoot);
     hideLobbyTransitionChrome();
@@ -574,6 +726,7 @@ async function main() {
 
   /** Vibe Jam hub exit: same as a lobby gate except tunnel uses `CONFIG.tunnelVibeJamSeconds` (2.8s), then `location.assign`. */
   function beginVibeJamRedirect(href) {
+    silenceDrivingAndProximityAudio();
     audio.playGateEnterHum();
     hideLobbyTransitionChrome();
     bootOverlay.classList.remove("boot-overlay--hidden");
@@ -601,6 +754,7 @@ async function main() {
   function beginEditorShortcutTunnel() {
     if (editorShortcutTunnelStarted) return;
     editorShortcutTunnelStarted = true;
+    silenceDrivingAndProximityAudio();
     audio.playGateEnterHum();
     setEditorPlaytestReturn(null);
     setSessionBootTarget({ mode: "editor" });
@@ -695,14 +849,6 @@ async function main() {
   let nitroVis = 0;
   const nitroState = createNitroState(effectivePlayerNitroMax());
 
-  const powerupField = createCampaignPowerupField({
-    scene: game.scene,
-    powerups: activeCampaignLevel && Array.isArray(activeCampaignLevel.powerups) ? activeCampaignLevel.powerups : [],
-    devHud,
-    spawnPickupBurst: gameplayParticles.spawnPickupBurst,
-    pickupVisualDetail: graphicsProfile.pickupVisualDetail,
-  });
-
   const boostPadField = createBoostPadField({
     scene: game.scene,
     gameObjects: activeCampaignLevel && Array.isArray(activeCampaignLevel.gameObjects) ? activeCampaignLevel.gameObjects : [],
@@ -756,6 +902,119 @@ async function main() {
   const hudEquipWrap = document.getElementById("hud-equip-wrap");
   const pickupFeedback = createPickupFeedback(document.getElementById("pickup-feedback"));
 
+  const hudPickupFlightProj = new THREE.Vector3();
+  /** @type {{ sx: number; sy: number; tx: number; ty: number; t0: number; durTravel: number; durVanish: number; el: HTMLElement }[]} */
+  const hudPickupFlights = [];
+
+  function beginHudPickupFlight(kind, wx, wy, wz) {
+    if (!game?.renderer?.domElement || !game?.camera) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    hudPickupFlightProj.set(wx, wy, wz);
+    hudPickupFlightProj.project(game.camera);
+    if (Math.abs(hudPickupFlightProj.z) > 1.001) return;
+    const canvas = game.renderer.domElement;
+    const rect = canvas.getBoundingClientRect();
+    const sx = (hudPickupFlightProj.x * 0.5 + 0.5) * rect.width + rect.left;
+    const sy = (-hudPickupFlightProj.y * 0.5 + 0.5) * rect.height + rect.top;
+
+    const fallbackEl =
+      kind === "nitro_recharge"
+        ? hudNitroEl
+        : kind === "shield"
+          ? hudEquipWrap || hudEquipIcon
+          : null;
+    const hudPanel = document.getElementById("cycle-hud");
+    const corner = getHudPickupFlightCornerTargetPx(hudPanel, fallbackEl);
+    if (!corner) return;
+    const { tx, ty } = corner;
+
+    const src =
+      kind === "nitro_recharge"
+        ? PICKUP_FLIGHT_SRC.nitro_recharge
+        : kind === "shield"
+          ? PICKUP_FLIGHT_SRC.shield
+          : "";
+    if (!src) return;
+
+    const el = document.createElement("div");
+    el.className = "pickup-hud-flight";
+    el.setAttribute("aria-hidden", "true");
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "";
+    img.draggable = false;
+    img.decoding = "async";
+    el.appendChild(img);
+    document.body.appendChild(el);
+
+    /* Travel pulls gaze toward HUD corner; short vanish phase reads as merging into HUD (world burst unchanged). */
+    const durTravel = 440;
+    const durVanish = 180;
+    hudPickupFlights.push({
+      sx,
+      sy,
+      tx,
+      ty,
+      t0: performance.now(),
+      durTravel,
+      durVanish,
+      el,
+    });
+  }
+
+  function tickHudPickupFlights() {
+    const now = performance.now();
+    for (let i = hudPickupFlights.length - 1; i >= 0; i -= 1) {
+      const f = hudPickupFlights[i];
+      const elapsed = now - f.t0;
+      const dur = f.durTravel + f.durVanish;
+      if (elapsed >= dur) {
+        f.el.remove();
+        hudPickupFlights.splice(i, 1);
+        continue;
+      }
+      let x;
+      let y;
+      let sc;
+      let op;
+      const travelScaleEnd = 0.88;
+      if (elapsed < f.durTravel) {
+        const u = elapsed / f.durTravel;
+        const e = 1 - (1 - u) ** 3;
+        x = f.sx + (f.tx - f.sx) * e;
+        y = f.sy + (f.ty - f.sy) * e;
+        sc = 1 - u * (1 - travelScaleEnd);
+        op = 1;
+      } else {
+        x = f.tx;
+        y = f.ty;
+        const u = (elapsed - f.durTravel) / f.durVanish;
+        const q = u * u;
+        sc = Math.max(0.06, travelScaleEnd * (1 - q));
+        op = 1 - q;
+      }
+      f.el.style.left = `${x}px`;
+      f.el.style.top = `${y}px`;
+      f.el.style.transform = `translate(-50%, -50%) scale(${sc})`;
+      f.el.style.opacity = String(op);
+    }
+  }
+
+  const powerupField = createCampaignPowerupField({
+    scene: game.scene,
+    powerups: activeCampaignLevel && Array.isArray(activeCampaignLevel.powerups) ? activeCampaignLevel.powerups : [],
+    devHud,
+    spawnPickupBurst: gameplayParticles.spawnPickupBurst,
+    pickupVisualDetail: graphicsProfile.pickupVisualDetail,
+    /* Lobby + arenas: draws attention toward HUD when collecting nitro/shield (world burst unchanged). */
+    onPickupHudFlight: !isEditorPlaytest
+      ? (payload) => {
+          beginHudPickupFlight(payload.type, payload.x, payload.y, payload.z);
+        }
+      : undefined,
+  });
+
   const derezOverlay = document.getElementById("derez-overlay");
   /** @type {'alive' | 'imploding' | 'tunnel'} */
   let playerDerezPhase = "alive";
@@ -796,6 +1055,13 @@ async function main() {
       playerBody.position.z,
       save.player.cycleColor ?? "#00FFFF",
     );
+    gameplayParticles.spawnDerezCubeShards(
+      playerBody.position.x,
+      playCfg.playerSpawnY,
+      playerBody.position.z,
+      save.player.cycleColor ?? "#00FFFF",
+      { count: 44, duration: 1.05 },
+    );
     gameMode = GameMode.PLAYER_DEREZ;
     playerDerezPhase = "imploding";
     playerDerezT0Ms = performance.now();
@@ -816,14 +1082,15 @@ async function main() {
       nitroBurstStrength: 0,
       shieldBubbleMode: "off",
     });
+    silenceDrivingAndProximityAudio(1 / 60);
     audio.playDerezShatter();
-    audio.tickEngineSound({ active: false, dt: 1 / 60 });
     if (derezOverlay) derezOverlay.hidden = false;
   }
 
   function startDerezTunnelToLobby() {
     if (playerDerezPhase !== "imploding") return;
     playerDerezPhase = "tunnel";
+    silenceDrivingAndProximityAudio(1 / 60);
     game.postPipeline.setDerezPostFx({ glitch: 0, flash: 0 });
     game.stopLoop();
     playTunnel(game.renderer, () => {
@@ -894,9 +1161,58 @@ async function main() {
 
   function beginWinTunnelToLobby() {
     if (winTunnelStarted || playerDerezPhase !== "alive") return;
+    silenceDrivingAndProximityAudio(1 / 60);
     audio.playGateEnterHum();
     winTunnelStarted = true;
     game.stopLoop();
+    const idStr = activeCampaignLevel && typeof activeCampaignLevel.id === "string" ? activeCampaignLevel.id : "";
+    const runTunnel = () =>
+      playTunnel(
+        game.renderer,
+        () => {
+          window.location.reload();
+        },
+        {
+          durationSeconds: CONFIG.tunnelGateSeconds,
+          onBegin: () => {
+            audio.playTunnelTransitionWind();
+            trailWall.clear();
+            const u = playerBody.userData;
+            u.equipSlot = undefined;
+            u.equipSlotQueued = undefined;
+          },
+          devHud,
+        },
+      ).catch(() => {
+        window.location.reload();
+      });
+    if (idStr === "level-tutorial") {
+      setTutorialCleared(save, true);
+      persistSave(save);
+      runTunnel();
+      return;
+    }
+    if (idStr.startsWith("daily-")) {
+      const ymd = idStr.length > 6 ? idStr.slice(6) : activeDailyYmd;
+      const rewards =
+        activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
+          ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
+          : null;
+      const baseCoins = rewards && typeof rewards.coins === "number" ? Math.max(0, Math.floor(rewards.coins)) : 0;
+      let add = baseCoins;
+      const th = rewards && typeof rewards.timeBonusThreshold === "number" ? rewards.timeBonusThreshold : null;
+      const tb = rewards && typeof rewards.timeBonusCoins === "number" ? rewards.timeBonusCoins : null;
+      if (typeof th === "number" && typeof tb === "number" && levelStarted && levelStartMonotonicMs > 0) {
+        const elapsed = getLevelElapsedSecExcludingPauses();
+        if (elapsed <= th) add += tb;
+      }
+      if (ymd) recordDailyCleared(save, ymd, add);
+      else if (add > 0) addCoins(save, add);
+      persistSave(save);
+      if (add > 0) audio.playCoinRewardTinkle();
+      runTunnel();
+      return;
+    }
     const levelIdx = activeCampaignLevel ? parseCampaignLevelIndex(activeCampaignLevel) : Number.NaN;
     const rewards =
       activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
@@ -926,25 +1242,7 @@ async function main() {
       persistSave(save);
       audio.playCoinRewardTinkle();
     }
-    playTunnel(
-      game.renderer,
-      () => {
-        window.location.reload();
-      },
-      {
-        durationSeconds: CONFIG.tunnelGateSeconds,
-        onBegin: () => {
-          audio.playTunnelTransitionWind();
-          trailWall.clear();
-          const u = playerBody.userData;
-          u.equipSlot = undefined;
-          u.equipSlotQueued = undefined;
-        },
-        devHud,
-      },
-    ).catch(() => {
-      window.location.reload();
-    });
+    runTunnel();
   }
 
   /** @type {import("./gameState.js").GameModeValue} */
@@ -1084,6 +1382,7 @@ async function main() {
     setEditorPlaytestReturn(null);
     setSessionBootTarget(null);
     hideLobbyTransitionChrome();
+    silenceDrivingAndProximityAudio();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -1111,6 +1410,7 @@ async function main() {
     setSessionBootTarget({ mode: "editor", wipLevelId: wid });
     if (pauseMenu) pauseMenu.close();
     hideLobbyTransitionChrome();
+    silenceDrivingAndProximityAudio();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -1375,12 +1675,13 @@ async function main() {
   function eliminateEnemyWithParticles(w, e) {
     if (e.eliminated) return;
     if (enemyDerezState) {
-      gameplayParticles.spawnDerezBurst(
-        e.body.position.x,
-        playCfg.playerSpawnY,
-        e.body.position.z,
-        e.color,
-      );
+      gameplayParticles.spawnDerezBurst(e.body.position.x, playCfg.playerSpawnY, e.body.position.z, e.color, {
+        particleCount: 52,
+      });
+      gameplayParticles.spawnDerezCubeShards(e.body.position.x, playCfg.playerSpawnY, e.body.position.z, e.color, {
+        count: 72,
+        duration: 1.0,
+      });
       eliminateCampaignEnemy(w, e);
       return;
     }
@@ -1391,6 +1692,7 @@ async function main() {
       keyframed: false,
       phaseStartMs: 0,
       implodeSfxDone: false,
+      shardSplatterDone: false,
       returnFov0: devHud.cameraBaseFov,
       returnFov1: devHud.cameraBaseFov,
     };
@@ -1415,21 +1717,51 @@ async function main() {
       const b = floorMat.userData.emissiveIntensityBase;
       floorMat.emissiveIntensity = b * (0.92 + 0.08 * Math.sin(t * 2.15));
     }
+    tickHudPickupFlights();
+
+    if (waypointBeacon) {
+      /** @type {{ x: number; z: number } | null} */
+      let pt = null;
+      if (isLobby) {
+        if (!save.progress.completedLevels.includes(1)) {
+          const g = wallGates.find((x) => x.role === "arena");
+          pt = g ? getGateInwardPoint(g, playCfg.arenaWidth, playCfg.arenaDepth, waypointBeaconGateInwardUnits) : null;
+        } else if (!save.flags.seenGarage) {
+          const g = wallGates.find((x) => x.role === "garage");
+          pt = g ? getGateInwardPoint(g, playCfg.arenaWidth, playCfg.arenaDepth, waypointBeaconGateInwardUnits) : null;
+        }
+      } else if (exitGateUnlocked) {
+        const g = wallGates.find((x) => x.role === "exit");
+        pt = g ? getGateInwardPoint(g, playCfg.arenaWidth, playCfg.arenaDepth, waypointBeaconGateInwardUnits) : null;
+      }
+      waypointBeacon.setTarget(!!pt, pt ? pt.x : 0, pt ? pt.z : 0);
+      waypointBeacon.tick(t);
+    }
     if (isLobby) {
-      tickLobbyBannerControllers(game.scene.userData.lobbyBannerControllers, save, campaign.validLevels);
+      const ds =
+        !dailyLobbyMeta.hasMap
+          ? { ymd: ymdLocal, state: /** @type {const} */ ("no_map"), displayName: "" }
+          : isDailyClearedOn(save, ymdLocal)
+            ? { ymd: ymdLocal, state: /** @type {const} */ ("cleared"), displayName: dailyLobbyMeta.displayName }
+            : { ymd: ymdLocal, state: /** @type {const} */ ("play"), displayName: dailyLobbyMeta.displayName };
+      tickLobbyBannerControllers(game.scene.userData.lobbyBannerControllers, save, campaign.validLevels, ds);
     } else {
       let enemiesRemaining = 0;
       for (const e of enemyRoster.list) {
         if (!e.eliminated) enemiesRemaining++;
       }
+      const aid = activeCampaignLevel && typeof activeCampaignLevel.id === "string" ? activeCampaignLevel.id : "";
+      const exitUiMode = aid === "level-tutorial" ? "tutorial" : aid.startsWith("daily-") ? "daily" : "normal";
       tickCampaignExitBanners(game.scene.userData.lobbyBannerControllers, {
         remaining: enemiesRemaining,
         total: rawEnemyCount,
         complete: exitGateUnlocked,
         coinGained: getPendingLevelCoinAward(getLevelElapsedSecExcludingPauses()),
+        exitUiMode,
       });
     }
     if (playerDerezPhase === "imploding") {
+      silenceDrivingAndProximityAudio(dt);
       const durationSec = Math.max(0.4, devHud.derezSequenceSeconds ?? 2);
       const elapsed = (performance.now() - playerDerezT0Ms) / 1000;
       const slow = devHud.derezSlowMo !== false ? 1.75 : 1;
@@ -1490,7 +1822,7 @@ async function main() {
         const implodeSec = Math.max(0.08, devHud.enemyKillImplodeSec ?? 0.72);
         const returnSec = Math.max(0.08, devHud.enemyKillReturnSec ?? 0.6);
 
-        audio.tickEngineSound({ active: false, dt });
+        silenceDrivingAndProximityAudio(dt);
         game.postPipeline.setNitroFx({ strength: 0 });
         if (speedLineEl) {
           speedLineEl.style.opacity = "0";
@@ -1512,17 +1844,28 @@ async function main() {
         } else if (d.phase === "implode") {
           if (!d.implodeSfxDone) {
             d.implodeSfxDone = true;
-            gameplayParticles.spawnDerezBurst(
-              snap.x,
-              playCfg.playerSpawnY,
-              snap.z,
-              e.color,
-            );
-            audio.playEnemyDerezShatter();
+            gameplayParticles.spawnDerezCubeShards(snap.x, playCfg.playerSpawnY, snap.z, e.color, {
+              count: 420,
+              duration: Math.max(1.45, implodeSec * 1.35),
+            });
+            gameplayParticles.spawnDerezBurst(snap.x, playCfg.playerSpawnY, snap.z, e.color, {
+              particleCount: 104,
+            });
+            audio.playEnemyDerezShatter({ sting: devHud.eliminationStingEnabled !== false });
           }
           const tRaw = (now - d.phaseStartMs) / (implodeSec * 1000);
+          if (!d.shardSplatterDone && tRaw >= 0.4) {
+            d.shardSplatterDone = true;
+            gameplayParticles.spawnDerezCubeShards(snap.x, playCfg.playerSpawnY, snap.z, e.color, {
+              count: 180,
+              duration: Math.max(0.92, implodeSec * 0.82),
+            });
+            gameplayParticles.spawnDerezBurst(snap.x, playCfg.playerSpawnY, snap.z, e.color, {
+              particleCount: 44,
+            });
+          }
           const visU = Math.min(1, tRaw);
-          e.cycle.updateDerezImplosion(dt, visU);
+          e.cycle.updateDerezShardSmash(dt, visU);
           game.camera.position.copy(enemyKillTo);
           game.camera.lookAt(enemyKillLTo);
           game.camera.fov = devHud.cameraBaseFov;
@@ -1570,6 +1913,7 @@ async function main() {
     }
 
     if (playerDerezPhase !== "alive") {
+      silenceDrivingAndProximityAudio(dt);
       gameplayParticles.tick(dt, {});
       return;
     }
@@ -1596,6 +1940,11 @@ async function main() {
         } else if (role === "garage") {
           beginLobbyGateTunnel({ mode: "garage" });
           return;
+        } else if (role === "daily") {
+          if (dailyLobbyMeta.hasMap && !isDailyClearedOn(save, ymdLocal)) {
+            beginLobbyGateTunnel({ mode: "daily", ymd: ymdLocal });
+            return;
+          }
         } else if (role === "vibejam" && !vibejamNavLock) {
           vibejamNavLock = true;
           const href = vjReturnFlow
@@ -1619,7 +1968,7 @@ async function main() {
     }
 
     playerDriveCfg.nitroBarCount = effectivePlayerNitroMax();
-    boostPadField.tick(dt, {
+    const playerOverBoostPad = boostPadField.tick(dt, {
       isLobby,
       levelStarted,
       playerBody,
@@ -1763,6 +2112,32 @@ async function main() {
       }
     }
 
+    if (
+      tutorialGameplayMusicPending &&
+      levelStarted &&
+      !hubWelcomeBannerVisible &&
+      !isLobby
+    ) {
+      tutorialGameplayMusicPending = false;
+      void audio.playMusicProfile("gameplay").catch(() => {});
+    }
+
+    trailWall.update(dt, {
+      x: playerBody.position.x,
+      z: playerBody.position.z,
+      heading: playerBody.userData.heading ?? 0,
+      speed: playerBody.userData.speed ?? 0,
+    });
+    updateEnemyTrails(enemyRoster.list, dt);
+
+    const trailSourcesForMix = buildTrailSources(trailWall, enemyRoster.list);
+    const pxMix = playerBody.position.x;
+    const pzMix = playerBody.position.z;
+
+    if (typeof audio.syncDevAudioPresets === "function") {
+      audio.syncDevAudioPresets(devHud);
+    }
+
     const spdEngine = playerBody.userData.speed ?? 0;
     const nitroCapMul =
       typeof devHud.nitroMaxSpeedMultiplier === "number" && Number.isFinite(devHud.nitroMaxSpeedMultiplier)
@@ -1784,17 +2159,61 @@ async function main() {
     const raw = nitroOn ? 1 : 0;
     nitroVis += (raw - nitroVis) * (1 - Math.exp(-16 * dt));
 
-    trailWall.update(dt, {
-      x: playerBody.position.x,
-      z: playerBody.position.z,
-      heading: playerBody.userData.heading ?? 0,
-      speed: playerBody.userData.speed ?? 0,
-    });
-    updateEnemyTrails(enemyRoster.list, dt);
+    let nitroExhaust01 = 0;
+    if (nitroOn) nitroExhaust01 += 0.34 + nitroVis * 0.66;
+    if (playerOverBoostPad) nitroExhaust01 += 0.42;
+    nitroExhaust01 = Math.min(1, nitroExhaust01);
+    if (typeof audio.tickNitroExhaustHiss === "function") {
+      audio.tickNitroExhaustHiss({
+        active: playerDerezPhase === "alive" && !isTunnelBlockingInput(),
+        intensity01: nitroExhaust01,
+        dt,
+      });
+    }
 
-    const trailSources = buildTrailSources(trailWall, enemyRoster.list);
-    const px = playerBody.position.x;
-    const pz = playerBody.position.z;
+    const trailSources = trailSourcesForMix;
+    const px = pxMix;
+    const pz = pzMix;
+
+    const trailFalloff =
+      typeof devHud.trailProximityFalloffDistance === "number" && Number.isFinite(devHud.trailProximityFalloffDistance)
+        ? Math.max(4, devHud.trailProximityFalloffDistance)
+        : 30;
+    const trailNearest = computeNearestTrailHazardDistanceOnly(pxMix, pzMix, trailSourcesForMix, devHud, playCfg);
+    const trailProximity01 = Number.isFinite(trailNearest) ? Math.max(0, 1 - trailNearest / trailFalloff) : 0;
+
+    if (typeof audio.applyDynamicMix === "function" && playerDerezPhase === "alive" && !isTunnelBlockingInput()) {
+      let minEnemyD = Infinity;
+      for (const e of enemyRoster.list) {
+        if (e.eliminated) continue;
+        const dx = e.body.position.x - px;
+        const dz = e.body.position.z - pz;
+        minEnemyD = Math.min(minEnemyD, Math.hypot(dx, dz));
+      }
+      const speedT = Math.min(1, (playerBody.userData.speed ?? 0) / 85);
+      const nearT = Number.isFinite(minEnemyD) ? Math.max(0, 1 - minEnemyD / 48) : 0;
+      const tension = Math.min(1, speedT * 0.35 + nearT * 0.65);
+      const enemy01 =
+        devHud.enemyEngineBedEnabled !== false && Number.isFinite(minEnemyD)
+          ? Math.max(0, 1 - minEnemyD / 52)
+          : 0;
+      const trailMix = {
+        trailProximity01,
+        trailProximityMaxGain: devHud.trailProximityMaxGain,
+        trailProximityBedEnabled: devHud.trailProximityBedEnabled,
+      };
+      if (!isLobby) {
+        audio.applyDynamicMix({
+          musicDuckTension01: devHud.musicDuckEnabled !== false ? tension : 0,
+          musicDuckMaxDb: devHud.musicDuckMaxDb,
+          enemyEngine01: enemy01,
+          enemyEngineMaxGain: devHud.enemyEngineMaxGain,
+          ...trailMix,
+        });
+      } else {
+        audio.applyDynamicMix({ musicDuckTension01: 0, enemyEngine01: 0, ...trailMix });
+      }
+    }
 
     const playerTrailHit = tryTrailHitOnBody(
       playerBody,
@@ -1879,7 +2298,8 @@ async function main() {
       !isLobby &&
       rawEnemyCount > 0 &&
       enemyRoster.list.length > 0 &&
-      enemyRoster.list.every((e) => e.eliminated)
+      enemyRoster.list.every((e) => e.eliminated) &&
+      enemyDerezState === null
     ) {
       if (runtimeUnlockCampaignExitGate(game.scene, world, playCfg, wallMat)) {
         exitGateUnlocked = true;
@@ -1927,7 +2347,19 @@ async function main() {
         game.scene.userData.barrierBodies,
       );
       const nowMs = performance.now();
-      if (dist < nm && nowMs - lastNearMissMs >= 380) {
+      let minEnemyForWhoosh = Infinity;
+      for (const e of enemyRoster.list) {
+        if (e.eliminated) continue;
+        const dx = e.body.position.x - px;
+        const dz = e.body.position.z - pz;
+        minEnemyForWhoosh = Math.min(minEnemyForWhoosh, Math.hypot(dx, dz));
+      }
+      const enemyEngT = Number.isFinite(minEnemyForWhoosh) ? Math.max(0, 1 - minEnemyForWhoosh / 50) : 0;
+      const suppressNearMissWhoosh =
+        devHud.nearMissWhooshWhenEnemyEngine !== false &&
+        devHud.enemyEngineBedEnabled !== false &&
+        enemyEngT > 0.42;
+      if (dist < nm && nowMs - lastNearMissMs >= 380 && !suppressNearMissWhoosh) {
         audio.playNearMissWhoosh();
         lastNearMissMs = nowMs;
       }
@@ -2061,12 +2493,18 @@ async function main() {
     if (sp === "deploying") shieldBubbleMode = "deploy";
     else if (sp === "active") shieldBubbleMode = "active";
 
+    const tutNitroMul =
+      activeCampaignLevel && activeCampaignLevel.id === "level-tutorial" && typeof devHud.tutorialNitroJuice === "number" && Number.isFinite(devHud.tutorialNitroJuice)
+        ? Math.max(0.4, devHud.tutorialNitroJuice)
+        : 1;
+    const nitroFxVis = Math.min(1, nitroVis * tutNitroMul);
+
     playerCycle.update(dt, {
       speed: spd,
       steer,
       accelerating,
       braking,
-      nitroBurstStrength: nitroVis,
+      nitroBurstStrength: nitroFxVis,
       shieldBubbleMode,
     });
     updateEnemyCycleMeshes(enemyRoster.list, dt);
@@ -2078,11 +2516,10 @@ async function main() {
       nitroStrength: nitroVis,
       playerHeading: playerBody.userData.heading,
     });
-
-    game.postPipeline.setNitroFx({ strength: nitroVis });
+    game.postPipeline.setNitroFx({ strength: nitroFxVis });
     if (speedLineEl) {
       speedLineEl.style.opacity = String(
-        devHud.nitroSpeedLines ? nitroVis * 0.78 : 0,
+        devHud.nitroSpeedLines ? nitroFxVis * 0.78 : 0,
       );
     }
 
@@ -2093,7 +2530,7 @@ async function main() {
         y: playCfg.playerSpawnY,
         z: playerBody.position.z,
         heading: playerBody.userData.heading ?? 0,
-        strength: nitroVis,
+        strength: nitroFxVis,
         colorHex: hexColorToInt(save.player.cycleColor ?? "#00FFFF"),
       },
     ];
@@ -2198,23 +2635,39 @@ async function main() {
 
   lobbyBanner.hidden = false;
   lobbyBanner.classList.remove("state-banner--hidden");
-  const p = lobbyBanner.querySelector("p");
-  if (p) {
+  const welcomeEl = lobbyBanner.querySelector(".state-banner__welcome");
+  const detailEl = lobbyBanner.querySelector(".state-banner__detail");
+  const hintEl = lobbyBanner.querySelector(".state-banner__hint");
+  if (detailEl instanceof HTMLElement) {
     const lname =
       activeCampaignLevel && typeof activeCampaignLevel.name === "string"
         ? activeCampaignLevel.name
         : "";
-    const stage = Math.max(1, Math.floor(save.progress.currentLevel));
     if (isLobby) {
-      p.textContent = "Welcome to the lobby. Ride north toward the gates. Clear the arenas to win the game. You can upgrade your motorcycle in the garage.";
+      if (welcomeEl instanceof HTMLElement) welcomeEl.hidden = true;
+      if (hintEl instanceof HTMLElement) hintEl.hidden = true;
+      detailEl.textContent = "The beacon marks your next stop — follow the light.";
+    } else if (isTutorialArena) {
+      if (welcomeEl instanceof HTMLElement) {
+        welcomeEl.hidden = false;
+        welcomeEl.textContent = "Welcome to Tron: Cyber Cycles";
+      }
+      detailEl.textContent =
+        "Avoid the trails, defeat your rival then reach the exit gate to win.";
+      if (hintEl instanceof HTMLElement) {
+        hintEl.hidden = false;
+        hintEl.textContent = "Press W when ready.";
+      }
     } else {
+      if (welcomeEl instanceof HTMLElement) welcomeEl.hidden = true;
+      if (hintEl instanceof HTMLElement) hintEl.hidden = true;
       const title = lname || "Arena";
       const enemyN = enemyRoster.list.length;
       const enemyLine =
         enemyN === 0
           ? "No rival cycles on this map — focus on the course and the exit."
           : `${enemyN} rival cycle${enemyN === 1 ? "" : "s"} on the grid — avoid their trails.`;
-      p.textContent = [
+      detailEl.textContent = [
         `${title} — ${enemyLine}`,
         "Reach the exit gate to finish. Press W when ready; the timer starts on your first throttle.",
       ].join(" ");
@@ -2234,6 +2687,7 @@ async function main() {
       const goEditor = () => {
         setEditorPlaytestReturn(null);
         setSessionBootTarget({ mode: "editor", wipLevelId: pending.levelId });
+        silenceDrivingAndProximityAudio();
         game.stopLoop();
         playTunnel(
           game.renderer,
@@ -2261,9 +2715,13 @@ async function main() {
     }
   }
 
-  /** P7.5 — first lobby visit: modal controls reference; blocks cycle keys until dismissed. */
-  if (isLobby && !save.controlsShown && !vjPortalArrival) {
-    showFirstVisitControlsOverlayIfNeeded({ save });
+  /** P7.5 — first-time controls: modal on first-run tutorial arena; lobby only if tutorial already cleared / migrated save. */
+  if (!vjPortalArrival && !save.controlsShown) {
+    if (isTutorialArena && save.tutorialCleared === false) {
+      showFirstVisitControlsOverlayIfNeeded({ save, venue: "tutorial" });
+    } else if (isLobby && save.tutorialCleared !== false) {
+      showFirstVisitControlsOverlayIfNeeded({ save, venue: "lobby" });
+    }
   }
 
   canvas.addEventListener("click", () => canvas.focus());

@@ -11,7 +11,7 @@ export { GATE_WIDTH };
 
 /** @typedef {"north" | "south" | "east" | "west"} WallEdge */
 
-/** @typedef {"entrance" | "exit" | "arena" | "garage" | "multiplayer" | "vibejam"} GateRole */
+/** @typedef {"entrance" | "exit" | "arena" | "garage" | "multiplayer" | "vibejam" | "daily"} GateRole */
 
 /** Canonical role strings (must match `levels/schema.js` validation). */
 export const GATE_ROLES = Object.freeze(
@@ -22,6 +22,7 @@ export const GATE_ROLES = Object.freeze(
     "garage",
     "multiplayer",
     "vibejam",
+    "daily",
   ]),
 );
 
@@ -138,6 +139,47 @@ export function withLobbyArenaGateLock(level, validLevels, save) {
   }
 
   return mapArenaGate(() => ({ locked: false }));
+}
+
+/**
+ * Daily gate: lock when no JSON for local date or already cleared today; ribbon CLEARED when done.
+ *
+ * @param {Record<string, unknown> | null | undefined} level
+ * @param {{ ymd: string; hasMap: boolean; clearedToday: boolean }} snap
+ */
+export function withLobbyDailyGateRuntime(level, snap) {
+  if (!level || typeof level !== "object" || level.id !== LOBBY_LEVEL_ID) return level;
+  if (!Array.isArray(level.wallObjects)) return level;
+  const { ymd, hasMap, clearedToday } = snap;
+  void ymd;
+  const wallObjects = level.wallObjects.map((wo) => {
+    if (!wo || typeof wo !== "object") return wo;
+    const o = /** @type {Record<string, unknown>} */ (wo);
+    if (o.type !== "gate" || o.role !== "daily") return wo;
+    if (!hasMap) {
+      return {
+        ...o,
+        locked: true,
+        signText: "DAILY",
+        lockedRibbonText: "",
+      };
+    }
+    if (clearedToday) {
+      return {
+        ...o,
+        locked: true,
+        signText: "DAILY",
+        lockedRibbonText: "CLEARED",
+      };
+    }
+    return {
+      ...o,
+      locked: false,
+      signText: "DAILY",
+      lockedRibbonText: "",
+    };
+  });
+  return { ...level, wallObjects };
 }
 
 /**
@@ -486,7 +528,7 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
  * Y-up; group origin on floor at wall anchor.
  * @param {ParsedGate} g
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
- * @param {"lobby_garage"|"lobby_progress"|"lobby_multiplayer"|"lobby_vibejam"|null} [lobbyBannerKind] — big canvas above arch on lobby hub only
+ * @param {"lobby_garage"|"lobby_progress"|"lobby_multiplayer"|"lobby_vibejam"|"lobby_daily"|null} [lobbyBannerKind] — big canvas above arch on lobby hub only
  * @param {boolean} [attachCampaignExitBanner] — live stats board above exit gate on campaign arenas only
  */
 function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaignExitBanner = false) {
@@ -654,7 +696,8 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
     lobbyBannerKind === "lobby_garage" ||
     lobbyBannerKind === "lobby_progress" ||
     lobbyBannerKind === "lobby_multiplayer" ||
-    lobbyBannerKind === "lobby_vibejam"
+    lobbyBannerKind === "lobby_vibejam" ||
+    lobbyBannerKind === "lobby_daily"
   ) {
     const ctrl = attachLobbyGateBannerBoard(
       group,
@@ -677,6 +720,24 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
  * @param {number} arenaWidth
  * @param {number} arenaDepth
  */
+/**
+ * World XZ a few units inside the arena from a gate (for beacons, hints).
+ * @param {ParsedGate} g
+ * @param {number} arenaWidth
+ * @param {number} arenaDepth
+ * @param {number} [inwardUnits]
+ * @returns {{ x: number; z: number } | null}
+ */
+export function getGateInwardPoint(g, arenaWidth, arenaDepth, inwardUnits = 10) {
+  if (!g || typeof g !== "object") return null;
+  const placed = placeGateGroupOnWall(g, arenaWidth, arenaDepth);
+  const inw = inwardNormalFromEdge(/** @type {WallEdge} */ (g.edge));
+  return {
+    x: placed.position.x + inw.x * inwardUnits,
+    z: placed.position.z + inw.z * inwardUnits,
+  };
+}
+
 export function placeGateGroupOnWall(g, arenaWidth, arenaDepth) {
   const halfW = arenaWidth / 2;
   const halfD = arenaDepth / 2;
@@ -736,18 +797,23 @@ export function buildGateMeshes(
   const lobbyHub = levelId === LOBBY_LEVEL_ID;
 
   for (const g of gates) {
-    /** @type {"lobby_garage" | "lobby_progress" | "lobby_multiplayer" | "lobby_vibejam" | null} */
+    /** @type {"lobby_garage" | "lobby_progress" | "lobby_multiplayer" | "lobby_vibejam" | "lobby_daily" | null} */
     let lbKind = null;
     if (lobbyHub && g.role === "garage") lbKind = "lobby_garage";
     else if (lobbyHub && g.role === "arena") lbKind = "lobby_progress";
     else if (lobbyHub && g.role === "multiplayer") lbKind = "lobby_multiplayer";
     else if (lobbyHub && g.role === "vibejam") lbKind = "lobby_vibejam";
+    else if (lobbyHub && g.role === "daily") lbKind = "lobby_daily";
     const grp = buildSingleGateGroup(g, playCfg, lbKind, useCampaignExitBanner && g.role === "exit");
     const banner = grp.userData.lobbyGateBannerController;
     if (banner) lobbyGateBannerControllers.push(banner);
     const { position, rotationY } = placeGateGroupOnWall(g, arenaWidth, arenaDepth);
     grp.position.copy(position);
     grp.rotation.y = rotationY;
+    /** West multiplayer gate mesh faced outward — flip 180° so signs / arch read from inside the lobby. */
+    if (lobbyHub && g.role === "multiplayer" && g.edge === "west") {
+      grp.rotation.y += Math.PI;
+    }
     root.add(grp);
 
     const mats = /** @type {THREE.MeshStandardMaterial[]} */ (grp.userData.pillarMaterials || []);

@@ -1093,20 +1093,6 @@
         hidden
       ></div>
 
-      <div
-        id="pickup-feedback"
-        class="pickup-feedback"
-        hidden
-        aria-live="assertive"
-        aria-atomic="true"
-        role="status"
-      >
-        <div class="pickup-feedback__inner">
-          <p class="pickup-feedback__title"></p>
-          <p class="pickup-feedback__sub"></p>
-        </div>
-      </div>
-
       <div id="cycle-hud" class="cycle-hud" aria-live="polite" hidden>
         <div class="cycle-hud__row cycle-hud__row--speed">
           <span class="cycle-hud__icon" aria-hidden="true">⚡</span>
@@ -1127,14 +1113,29 @@
           role="img"
           aria-label="Nitro charges"
         ></div>
-        <div
-          id="hud-equip-wrap"
-          class="cycle-hud__equip"
-          role="group"
-          aria-label="Equipped power-up"
-        >
-          <span id="hud-equip-icon" class="cycle-hud__equip-icon" aria-hidden="true">□</span>
-          <span id="hud-equip-e" class="cycle-hud__equip-e" aria-hidden="true">E</span>
+        <div class="cycle-hud__equip-feedback-row">
+          <div
+            id="hud-equip-wrap"
+            class="cycle-hud__equip"
+            role="group"
+            aria-label="Equipped power-up"
+          >
+            <span id="hud-equip-icon" class="cycle-hud__equip-icon" aria-hidden="true">□</span>
+            <span id="hud-equip-e" class="cycle-hud__equip-e" aria-hidden="true">E</span>
+          </div>
+          <div
+            id="pickup-feedback"
+            class="pickup-feedback"
+            hidden
+            aria-live="assertive"
+            aria-atomic="true"
+            role="status"
+          >
+            <div class="pickup-feedback__inner">
+              <p class="pickup-feedback__title"></p>
+              <p class="pickup-feedback__sub"></p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1257,9 +1258,9 @@
       </div>
 
       <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
-        <p>
-          Hub — ride north to the wall gates for Arena, Garage, and locked Multiplayer. WASD to drive.
-        </p>
+        <p class="state-banner__welcome" hidden></p>
+        <p class="state-banner__detail"></p>
+        <p class="state-banner__hint" hidden></p>
       </div>
 
       <div
@@ -1457,11 +1458,11 @@
 
       <dialog id="editor-open-level-dialog" class="editor-open-level-dialog" aria-labelledby="editor-open-level-title">
         <form method="dialog" class="editor-open-level-dialog__form">
-          <h3 id="editor-open-level-title" class="editor-open-level-dialog__title">Open campaign level</h3>
+          <h3 id="editor-open-level-title" class="editor-open-level-dialog__title">Open bundled level</h3>
           <p class="editor-open-level-dialog__lead">
-            Choose a bundled campaign level or the lobby. The editor opens it as a WIP copy with the original campaign id and filename preserved for export.
+            Pick from the campaign manifest, the lobby, the first-run tutorial, or a scheduled daily arena. The editor opens a WIP copy; exporting JSON targets the same filename under <code>levels/</code>.
           </p>
-          <div id="editor-open-level-list" class="editor-open-level-dialog__list" role="listbox" aria-label="Campaign levels"></div>
+          <div id="editor-open-level-list" class="editor-open-level-dialog__list" role="listbox" aria-label="Bundled levels"></div>
           <p id="editor-open-level-error" class="editor-open-level-dialog__error" hidden role="alert"></p>
           <div class="editor-open-level-dialog__actions">
             <button type="button" class="editor-open-level-dialog__btn" data-editor-open-level-cancel>Cancel</button>

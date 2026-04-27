@@ -1,0 +1,68 @@
+{
+  "id": "daily-2026-05-17",
+  "name": "Daily — Circuit 20",
+  "arenaWidth": 633,
+  "arenaDepth": 633,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 316.5,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 316.5,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": 134.4,
+      "z": 39.3,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 451,
+      "gridZ": 355
+    },
+    {
+      "x": -45.2,
+      "z": 74.3,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 272,
+      "gridZ": 390
+    },
+    {
+      "x": -92.5,
+      "z": -96.9,
+      "rotation": 0,
+      "color": "#00FF88",
+      "category": "medium",
+      "gridX": 225,
+      "gridZ": 219
+    }
+  ],
+  "rewards": {
+    "coins": 36,
+    "timeBonusThreshold": 159,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 635,
+  "mapDepth": 635
+}

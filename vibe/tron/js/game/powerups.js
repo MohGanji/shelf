@@ -262,6 +262,7 @@ function buildPowerupSpinGroup(type, em, devHud) {
  * @property {(type: 'shield') => void} apply.onPlayerShield
  * @property {(enemy: import('./enemies.js').CampaignEnemyEntity, type: 'nitro_recharge' | 'shield') => void} apply.onEnemyPickup
  * @property {(info: { type: string; title: string }) => void} [onPickupNotify]
+ * @property {(payload: { type: string; x: number; y: number; z: number }) => void} [onPickupHudFlight] — nitro / shield screen cue toward HUD corner (lobby + campaign arenas when wired)
  */
 
 /**
@@ -271,12 +272,14 @@ function buildPowerupSpinGroup(type, em, devHud) {
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {(wx: number, wy: number, wz: number, em: number, neon: number) => void} [opts.spawnPickupBurst] — P9.3 shared particles
  * @param {boolean} [opts.pickupVisualDetail] — emissive pulse on meshes (when enabled by graphics profile)
+ * @param {(payload: { type: string; x: number; y: number; z: number }) => void} [opts.onPickupHudFlight]
  * @returns {{ root: THREE.Group; tick: (dt: number, ctx: PowerupFieldTickContext) => void; dispose: () => void; getMinimapPickups: () => { x: number; z: number; kind: 'pickup' }[] }}
  */
 export function createCampaignPowerupField(opts) {
   const { scene, devHud } = opts;
   const pickupVisualDetail = opts.pickupVisualDetail === true;
   const externalPickupBurst = opts.spawnPickupBurst;
+  const onPickupHudFlight = typeof opts.onPickupHudFlight === "function" ? opts.onPickupHudFlight : null;
   const raw = opts.powerups;
   const root = new THREE.Group();
   root.name = "campaign-powerups";
@@ -554,6 +557,17 @@ export function createCampaignPowerupField(opts) {
 
       if (canPlayerPick && dPlayer < pickR) {
         spawnPickupBurst(inst.x, inst.node.position.y, inst.z, inst.emissive, neon);
+        if (
+          onPickupHudFlight &&
+          (inst.type === "nitro_recharge" || inst.type === "shield")
+        ) {
+          onPickupHudFlight({
+            type: inst.type,
+            x: inst.x,
+            y: inst.node.position.y,
+            z: inst.z,
+          });
+        }
         if (inst.category === "level_permanent") {
           if (inst.type === "trail_extend") apply.onPlayerTrailExtend();
           onPickupSound("level_permanent");

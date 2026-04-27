@@ -1,0 +1,86 @@
+{
+  "id": "daily-2026-05-01",
+  "name": "Daily — Circuit 04",
+  "arenaWidth": 521,
+  "arenaDepth": 521,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 260.5,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 260.5,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": 13.9,
+      "z": 58.4,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 275,
+      "gridZ": 318
+    },
+    {
+      "x": -81.5,
+      "z": 69.4,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 180,
+      "gridZ": 329
+    },
+    {
+      "x": -49.9,
+      "z": -20.7,
+      "rotation": 0,
+      "color": "#00FF88",
+      "category": "medium",
+      "gridX": 211,
+      "gridZ": 239
+    },
+    {
+      "x": -7.8,
+      "z": -100.7,
+      "rotation": 0,
+      "color": "#FFAA00",
+      "category": "medium",
+      "gridX": 253,
+      "gridZ": 159
+    },
+    {
+      "x": 41,
+      "z": -25,
+      "rotation": 0,
+      "color": "#AA66FF",
+      "category": "hard",
+      "gridX": 302,
+      "gridZ": 235
+    }
+  ],
+  "rewards": {
+    "coins": 44,
+    "timeBonusThreshold": 143,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 523,
+  "mapDepth": 523
+}

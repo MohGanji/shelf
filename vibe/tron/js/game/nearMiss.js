@@ -165,3 +165,30 @@ export function computePlayerNearMissDistance(
 
   return best;
 }
+
+/**
+ * Minimum distance to lethal trail tiles only (immunity-aligned). Ignores arena walls / barriers —
+ * used for trail proximity audio bed.
+ *
+ * @param {number} px
+ * @param {number} pz
+ * @param {ReturnType<import("./collisionResolve.js").buildTrailSources>} trailSources
+ * @param {import("../config.js").DEFAULT_DEV_HUD} devHud
+ * @param {ReturnType<import("../config.js").getArenaPlaytestConfig>} playCfg
+ */
+export function computeNearestTrailHazardDistanceOnly(px, pz, trailSources, devHud, playCfg) {
+  const capRaw =
+    typeof devHud.trailProximityFalloffDistance === "number" && Number.isFinite(devHud.trailProximityFalloffDistance)
+      ? devHud.trailProximityFalloffDistance
+      : 30;
+  const cap = Math.max(4, capRaw);
+  const selfId = "player";
+  let best = Infinity;
+  for (const s of trailSources) {
+    const n = selfId === s.ownerId ? s.getEdgeCount() : 0;
+    const imm = selfId === s.ownerId ? physicalTrailImmunitySegments(devHud, playCfg.world) : 0;
+    const d = s.map.nearestHazardDistance(px, pz, selfId, n, imm, cap);
+    best = Math.min(best, d);
+  }
+  return best;
+}

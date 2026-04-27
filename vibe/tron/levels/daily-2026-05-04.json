@@ -1,0 +1,113 @@
+{
+  "id": "daily-2026-05-04",
+  "name": "Daily — Circuit 07",
+  "arenaWidth": 542,
+  "arenaDepth": 542,
+  "wallObjects": [
+    {
+      "type": "gate",
+      "edge": "south",
+      "position": 271,
+      "width": 5,
+      "role": "entrance",
+      "signText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "north",
+      "position": 271,
+      "width": 5,
+      "role": "exit",
+      "signText": "EXIT",
+      "locked": true,
+      "destination": "lobby"
+    }
+  ],
+  "barriers": [],
+  "gameObjects": [],
+  "powerups": [],
+  "enemies": [
+    {
+      "x": -38.8,
+      "z": 64.2,
+      "rotation": 0,
+      "color": "#FF6600",
+      "category": "easy",
+      "gridX": 233,
+      "gridZ": 335
+    },
+    {
+      "x": -115,
+      "z": 40.7,
+      "rotation": 0,
+      "color": "#FF3388",
+      "category": "easy",
+      "gridX": 157,
+      "gridZ": 311
+    },
+    {
+      "x": -64.9,
+      "z": -23.5,
+      "rotation": 0,
+      "color": "#00FF88",
+      "category": "medium",
+      "gridX": 207,
+      "gridZ": 247
+    },
+    {
+      "x": -59.3,
+      "z": -99.7,
+      "rotation": 0,
+      "color": "#FFAA00",
+      "category": "medium",
+      "gridX": 212,
+      "gridZ": 171
+    },
+    {
+      "x": 9.5,
+      "z": -62.3,
+      "rotation": 0,
+      "color": "#AA66FF",
+      "category": "hard",
+      "gridX": 281,
+      "gridZ": 208
+    },
+    {
+      "x": 81.8,
+      "z": -73.6,
+      "rotation": 0,
+      "color": "#FF4488",
+      "category": "hard",
+      "gridX": 353,
+      "gridZ": 197
+    },
+    {
+      "x": 56.9,
+      "z": -2.6,
+      "rotation": 0,
+      "color": "#44AAFF",
+      "category": "boss",
+      "gridX": 328,
+      "gridZ": 268
+    },
+    {
+      "x": 83.3,
+      "z": 62.2,
+      "rotation": 0,
+      "color": "#FFCC00",
+      "category": "easy",
+      "gridX": 355,
+      "gridZ": 333
+    }
+  ],
+  "rewards": {
+    "coins": 56,
+    "timeBonusThreshold": 146,
+    "timeBonusCoins": 18
+  },
+  "schemaVersion": 2,
+  "mapWidth": 544,
+  "mapDepth": 544
+}

@@ -40,6 +40,9 @@ export function sanitizeNeonHex(raw, fallback = DEFAULT_NEON_HEX) {
  * @property {number[]} progress.completedLevels — level IDs cleared (0 = lobby, always present)
  * @property {number} progress.coins
  * @property {number} progress.totalCoinsEarned
+ * @property {Record<string, { coins: number; clearedAt: number }>} progress.dailyClears — YMD → one completion record (for calendar / streak UI)
+ * @property {object} flags
+ * @property {boolean} flags.seenGarage — first garage tunnel; beacon UX
  * @property {object} cosmetics
  * @property {string[]} cosmetics.ownedCycleColors
  * @property {string[]} cosmetics.ownedTrailColors
@@ -50,6 +53,7 @@ export function sanitizeNeonHex(raw, fallback = DEFAULT_NEON_HEX) {
  * @property {number} settings.ambientVolume
  * @property {Record<string, number|boolean>} devHud — stored as defaults; Advanced tuning (Dev HUD) is session-only
  * @property {boolean} controlsShown — first-time controls overlay dismissed
+ * @property {boolean} tutorialCleared — first-run combat tutorial finished (exit to lobby)
  */
 
 /** @returns {PlayerSave} */
@@ -72,6 +76,10 @@ export function createDefaultSave() {
       completedLevels: [0],
       coins: 0,
       totalCoinsEarned: 0,
+      dailyClears: /** @type {Record<string, { coins: number; clearedAt: number }>} */ ({}),
+    },
+    flags: {
+      seenGarage: false,
     },
     cosmetics: {
       ownedCycleColors: ["#00FFFF"],
@@ -85,6 +93,7 @@ export function createDefaultSave() {
     },
     devHud: mergeDevHud({}),
     controlsShown: false,
+    tutorialCleared: false,
   };
 }
 
@@ -100,6 +109,27 @@ function normalizeCompletedLevels(v) {
   const set = new Set(nums);
   set.add(0);
   return [...set].sort((a, b) => a - b);
+}
+
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * @param {unknown} v
+ * @param {Record<string, { coins: number; clearedAt: number }>} fallback
+ */
+function normalizeDailyClears(v, fallback) {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return { ...fallback };
+  /** @type {Record<string, { coins: number; clearedAt: number }>} */
+  const out = {};
+  for (const [k, raw] of Object.entries(v)) {
+    if (typeof k !== "string" || !YMD_RE.test(k)) continue;
+    if (!raw || typeof raw !== "object") continue;
+    const c = /** @type {Record<string, unknown>} */ (raw);
+    const coins = typeof c.coins === "number" && Number.isFinite(c.coins) ? Math.max(0, Math.floor(c.coins)) : 0;
+    const clearedAt = typeof c.clearedAt === "number" && Number.isFinite(c.clearedAt) ? c.clearedAt : Date.now();
+    out[k] = { coins, clearedAt };
+  }
+  return out;
 }
 
 /**
@@ -119,6 +149,7 @@ export function normalizePlayerSave(raw) {
       : {};
 
   const progressIn = o.progress && typeof o.progress === "object" ? /** @type {Record<string, unknown>} */ (o.progress) : {};
+  const flagsIn = o.flags && typeof o.flags === "object" ? /** @type {Record<string, unknown>} */ (o.flags) : null;
   const cosmeticsIn = o.cosmetics && typeof o.cosmetics === "object" ? /** @type {Record<string, unknown>} */ (o.cosmetics) : {};
   const settingsIn = o.settings && typeof o.settings === "object" ? /** @type {Record<string, unknown>} */ (o.settings) : {};
 
@@ -134,6 +165,8 @@ export function normalizePlayerSave(raw) {
       ? Math.max(0, progressIn.totalCoinsEarned)
       : d.progress.totalCoinsEarned;
 
+  const dailyClears = normalizeDailyClears(progressIn.dailyClears, d.progress.dailyClears);
+
   const ownedCycle =
     Array.isArray(cosmeticsIn.ownedCycleColors) && cosmeticsIn.ownedCycleColors.length > 0
       ? cosmeticsIn.ownedCycleColors.map(String)
@@ -145,6 +178,14 @@ export function normalizePlayerSave(raw) {
 
   const vol = (x, fallback) =>
     typeof x === "number" && Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : fallback;
+
+  /** Migration: pre-tutorial saves have no `tutorialCleared` — do not block returning players. */
+  let tutorialCleared = Boolean(o.tutorialCleared);
+  if (o.tutorialCleared === undefined) tutorialCleared = true;
+
+  /** Migration: if no flags, assume long-time player has "seen" garage (avoid nag). */
+  let seenGarage = Boolean(flagsIn?.seenGarage);
+  if (!flagsIn) seenGarage = true;
 
   /** @type {PlayerSave} */
   const out = {
@@ -179,6 +220,10 @@ export function normalizePlayerSave(raw) {
       completedLevels: normalizeCompletedLevels(progressIn.completedLevels),
       coins,
       totalCoinsEarned,
+      dailyClears,
+    },
+    flags: {
+      seenGarage,
     },
     cosmetics: {
       ownedCycleColors: ownedCycle,
@@ -193,6 +238,7 @@ export function normalizePlayerSave(raw) {
     // Never apply `o.devHud` from disk (old or new saves). Dev HUD is session-only; this strips legacy persisted tuning on every load.
     devHud: mergeDevHud({}),
     controlsShown: Boolean(o.controlsShown),
+    tutorialCleared,
   };
   clampProgressToLinearIntegrity(out);
   syncTrailColorToCycle(out);
@@ -305,6 +351,42 @@ export function mergeDevHudIntoSave(save, patch) {
 /** @param {PlayerSave} save @param {boolean} shown */
 export function setControlsShown(save, shown) {
   save.controlsShown = shown;
+}
+
+/** @param {PlayerSave} save @param {boolean} cleared */
+export function setTutorialCleared(save, cleared) {
+  save.tutorialCleared = !!cleared;
+}
+
+/** @param {PlayerSave} save */
+export function setFlagSeenGarage(save) {
+  if (!save.flags) save.flags = { ...createDefaultSave().flags };
+  save.flags.seenGarage = true;
+}
+
+/**
+ * Daily arena: one clear per YMD, coins from level rewards.
+ * @param {PlayerSave} save
+ * @param {string} ymd
+ * @param {number} coins
+ */
+export function recordDailyCleared(save, ymd, coins) {
+  if (typeof ymd !== "string" || !YMD_RE.test(ymd)) return;
+  const n = Math.max(0, Math.floor(coins));
+  if (!save.progress.dailyClears) save.progress.dailyClears = {};
+  if (save.progress.dailyClears[ymd]) return;
+  save.progress.dailyClears[ymd] = { coins: n, clearedAt: Date.now() };
+  addCoins(save, n);
+}
+
+/**
+ * @param {PlayerSave} save
+ * @param {string} ymd
+ * @returns {boolean}
+ */
+export function isDailyClearedOn(save, ymd) {
+  if (typeof ymd !== "string" || !YMD_RE.test(ymd)) return false;
+  return Boolean(save.progress.dailyClears && save.progress.dailyClears[ymd]);
 }
 
 /** @param {PlayerSave} save @param {Partial<PlayerSave["settings"]>} partial */

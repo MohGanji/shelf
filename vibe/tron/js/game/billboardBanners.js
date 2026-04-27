@@ -143,6 +143,7 @@ export function attachCampaignExitGateBanner(gateGroup, dims) {
  * @property {number} total — enemies placed in level
  * @property {boolean} complete — exit gate unlocked (all cleared or zero-enemy level)
  * @property {number} coinGained — NEON to display when complete (base + time bonus if applicable)
+ * @property {"normal" | "tutorial" | "daily"} [exitUiMode]
  */
 
 /**
@@ -152,7 +153,9 @@ export function attachCampaignExitGateBanner(gateGroup, dims) {
 export function tickCampaignExitBanners(controllers, snap) {
   if (!controllers || controllers.length === 0) return;
   const { remaining, total, complete, coinGained } = snap;
-  const fp = `x:${remaining}|${total}|${complete ? 1 : 0}|${coinGained}|i${bannerGateIconAssetVersion}`;
+  const uim = snap.exitUiMode || "normal";
+  /** Bump `tb` when tutorial exit copy/layout changes so canvases redraw (fingerprint ignores literal strings). */
+  const fp = `x:${remaining}|${total}|${complete ? 1 : 0}|${coinGained}|i${bannerGateIconAssetVersion}|m:${uim}|tb:v4`;
   for (const c of controllers) {
     if (c.kind !== "campaign_exit") continue;
     if (fp === c._fingerprint) continue;
@@ -172,8 +175,113 @@ function redrawCampaignExitBanner(c, snap) {
   const ch = canvas.height;
   const g = GATE_UI_SCALE;
   const { remaining, total, complete, coinGained } = snap;
+  const uim = snap.exitUiMode || "normal";
   ctx.clearRect(0, 0, cw, ch);
   drawBillboardFrameCrisp(ctx, cw, ch, g);
+
+  if (uim === "tutorial") {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const fz = 64 * g;
+    const sw = Math.max(3, 3.2 * g);
+    if (!complete) {
+      ctx.font = `600 ${fz}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(
+        ctx,
+        "OUTRIDE YOUR RIVAL",
+        cw / 2,
+        ch * 0.42,
+        "rgba(0, 238, 255, 0.95)",
+        sw,
+      );
+      ctx.font = `600 ${fz * 0.84}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(
+        ctx,
+        "AVOID TRAILS",
+        cw / 2,
+        ch * 0.58,
+        "rgba(200, 230, 250, 0.92)",
+        Math.max(2.6, 3 * g),
+      );
+    } else {
+      ctx.font = `700 ${fz * 1.05}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(
+        ctx,
+        "EXIT TO LOBBY",
+        cw / 2,
+        ch * 0.5,
+        "rgba(130, 255, 210, 0.98)",
+        sw,
+      );
+    }
+    return;
+  }
+
+  if (uim === "daily") {
+    if (!complete) {
+      const fzMain = 96 * g;
+      const swMain = Math.max(5, 5 * g);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${fzMain}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(
+        ctx,
+        `${remaining} / ${total}`,
+        cw / 2,
+        ch * 0.38,
+        "rgba(0, 238, 255, 0.98)",
+        swMain,
+      );
+      ctx.font = `600 ${fzMain * 0.7}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(
+        ctx,
+        "DAILY — CLEAR FOR NEON",
+        cw / 2,
+        ch * 0.55,
+        "rgba(200, 235, 255, 0.95)",
+        Math.max(3, 3 * g),
+      );
+    } else {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const fzC = 76 * g;
+      ctx.font = `700 ${fzC}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(
+        ctx,
+        "DAILY COMPLETE",
+        cw / 2,
+        ch * 0.36,
+        "rgba(130, 255, 210, 0.98)",
+        Math.max(4, 4.2 * g),
+      );
+      ctx.font = `500 ${50 * g}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      strokeThenFillText(ctx, "COIN GAINED:", cw / 2, ch * 0.5, "rgba(190, 220, 240, 0.92)", Math.max(3, 3 * g));
+      const coinLabel = String(Math.max(0, Math.floor(coinGained)));
+      const yCoin = ch * 0.66;
+      const coinImg = cachedBannerCoinIcon;
+      const iconSize = 64 * g;
+      ctx.font = `700 ${72 * g}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+      const tw = ctx.measureText(coinLabel).width;
+      const gap = 16 * g;
+      const totalW = (coinImg ? iconSize + gap : 0) + tw;
+      let xLeft = cw / 2 - totalW / 2;
+      if (coinImg) {
+        ctx.drawImage(coinImg, xLeft, yCoin - iconSize / 2, iconSize, iconSize);
+        xLeft += iconSize + gap;
+      }
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      strokeThenFillText(
+        ctx,
+        coinLabel,
+        xLeft,
+        yCoin,
+        "rgba(255, 230, 120, 0.98)",
+        Math.max(4, 4 * g),
+      );
+    }
+    return;
+  }
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -399,14 +507,14 @@ export function attachBuildingBannerPlane(barrierGroup, b, w, d, tallH, playCfg)
 }
 
 /** Static gate board copy — bump if multiplayer banner art changes. */
-const FINGERPRINT_LOBBY_MULTIPLAYER = "lobby_multiplayer:v1";
+const FINGERPRINT_LOBBY_MULTIPLAYER = "lobby_multiplayer:v2";
 const FINGERPRINT_LOBBY_VIBEJAM = "lobby_vibejam:v1";
 
 /**
  * Big board above a lobby gate (arena / garage / multiplayer placeholder).
  * @param {THREE.Group} gateGroup
  * @param {{ gateWidth: number; archHeight: number; pillarD: number }} dims
- * @param {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"lobby_vibejam"} bannerKind
+ * @param {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"lobby_vibejam"|"lobby_daily"} bannerKind
  * @param {"north"|"south"|"east"|"west"|undefined} [wallEdge] — east/west gates need a Y flip so the plane faces into the arena (otherwise text is mirrored)
  * @returns {LobbyBannerController | null}
  */
@@ -436,7 +544,9 @@ export function attachLobbyGateBannerBoard(gateGroup, dims, bannerKind, wallEdge
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(0, ah + bh * 0.5 + 0.35 * GATE_WORLD_SCALE, pillarD / 2 + 0.1);
   if (wallEdge === "east" || wallEdge === "west") {
-    mesh.rotation.y = Math.PI;
+    /* East/west gates: banner plane faces into lobby; multiplayer west gate parent is flipped π (gates.js). */
+    mesh.rotation.y =
+      bannerKind === "lobby_multiplayer" && wallEdge === "west" ? 0 : Math.PI;
   }
   mesh.name = `lobby-gate-banner:${bannerKind}`;
   mesh.castShadow = false;
@@ -465,8 +575,59 @@ export function attachLobbyGateBannerBoard(gateGroup, dims, bannerKind, wallEdge
     redrawVibeJamPortalBanner(ctrl);
     ctrl._fingerprint = FINGERPRINT_LOBBY_VIBEJAM;
     tex.needsUpdate = true;
+  } else if (bannerKind === "lobby_daily") {
+    redrawDailyLobbyBanner(ctrl, { state: "no_map", displayName: "", ymd: "" });
+    ctrl._fingerprint = "";
+    tex.needsUpdate = true;
   }
   return ctrl;
+}
+
+/**
+ * @param {LobbyBannerController} c
+ * @param {{ state: "no_map" | "play" | "cleared"; displayName: string; ymd: string }} snap
+ */
+export function redrawDailyLobbyBanner(c, snap) {
+  const { ctx, canvas } = c;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const g = GATE_UI_SCALE;
+  ctx.clearRect(0, 0, cw, ch);
+  drawBillboardFrameCrisp(ctx, cw, ch, g);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const fz = 80 * g;
+  const sw = Math.max(4, 4.2 * g);
+  const fzSub = 50 * g;
+  ctx.font = `700 ${fz}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+  strokeThenFillText(ctx, "DAILY ARENA", cw / 2, ch * 0.3, "rgba(130, 255, 210, 0.98)", sw);
+  if (snap.state === "no_map") {
+    ctx.font = `600 ${fzSub}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+    strokeThenFillText(
+      ctx,
+      "NO ARENAS TODAY",
+      cw / 2,
+      ch * 0.5,
+      "rgba(200, 235, 255, 0.95)",
+      Math.max(3, 3 * g),
+    );
+    ctx.font = `500 ${fzSub * 0.75}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+    strokeThenFillText(ctx, "Come back tomorrow", cw / 2, ch * 0.7, "rgba(180, 200, 220, 0.88)", Math.max(2, 2.5 * g));
+  } else if (snap.state === "play") {
+    const line = snap.displayName || "Challenge";
+    ctx.font = `600 ${Math.min(fzSub * 1.1, 120 * g)}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+    strokeThenFillText(ctx, line, cw / 2, ch * 0.52, "rgba(0, 238, 255, 0.95)", Math.max(3, 3 * g));
+  } else {
+    ctx.font = `500 ${fzSub * 0.88}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+    strokeThenFillText(
+      ctx,
+      "Come back tomorrow",
+      cw / 2,
+      ch * 0.58,
+      "rgba(200, 220, 240, 0.92)",
+      Math.max(2, 2.5 * g),
+    );
+  }
 }
 
 /**
@@ -502,15 +663,15 @@ function redrawMultiplayerComingSoonBanner(c) {
   drawBillboardFrameCrisp(ctx, cw, ch, g);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  /** Match campaign gate progress line (`fzMid` / `swMid`). */
-  const fz = 108 * g;
-  const sw = Math.max(5, 5 * g);
+  /** Smaller than arena banner — avoids clipping behind stadium rim geometry at shallow angles. */
+  const fz = 72 * g;
+  const sw = Math.max(4, 4 * g);
   ctx.font = `700 ${fz}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
   strokeThenFillText(
     ctx,
     "COMING SOON",
     cw / 2,
-    ch / 2,
+    ch * 0.48,
     "rgba(200, 235, 255, 0.98)",
     sw,
   );
@@ -740,11 +901,25 @@ function fingerprintGarage(save, placement) {
  * @param {LobbyBannerController[] | undefined} controllers
  * @param {import("../data/savedata.js").PlayerSave} save
  * @param {Record<string, unknown>[]} validLevels
+ * @param {{ ymd: string; state: "no_map" | "play" | "cleared"; displayName: string } | null | undefined} [dailySnap] — when null/undefined, daily boards are skipped
  */
-export function tickLobbyBannerControllers(controllers, save, validLevels) {
+export function tickLobbyBannerControllers(controllers, save, validLevels, dailySnap) {
   if (!controllers || controllers.length === 0) return;
   for (const c of controllers) {
     if (c.kind === "campaign_exit") continue;
+    if (c.kind === "lobby_daily") {
+      if (!dailySnap) continue;
+      const fp = `lobby_daily_${dailySnap.ymd}|${dailySnap.state}|${dailySnap.displayName}`;
+      if (fp === c._fingerprint) continue;
+      c._fingerprint = fp;
+      redrawDailyLobbyBanner(c, {
+        state: dailySnap.state,
+        displayName: dailySnap.displayName,
+        ymd: dailySnap.ymd,
+      });
+      c.texture.needsUpdate = true;
+      continue;
+    }
     const fp =
       c.kind === "lobby_multiplayer"
         ? FINGERPRINT_LOBBY_MULTIPLAYER
@@ -765,7 +940,7 @@ export function tickLobbyBannerControllers(controllers, save, validLevels) {
 
 /**
  * @typedef {object} LobbyBannerController
- * @property {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"lobby_vibejam"|"campaign_exit"} kind
+ * @property {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"lobby_vibejam"|"lobby_daily"|"campaign_exit"} kind
  * @property {"gate"|"building"} placement
  * @property {THREE.CanvasTexture} texture
  * @property {HTMLCanvasElement} canvas

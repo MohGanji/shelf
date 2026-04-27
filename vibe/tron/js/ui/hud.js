@@ -89,7 +89,7 @@ export function barrierFootprintXZ(body) {
 }
 
 /**
- * P9.4 — corner minimap: arena aspect, trails as lines, barriers as filled polys, boost pads as filled neon rects, pickups/portals as hollow circles.
+ * P9.4 — corner minimap: arena aspect, trails as lines, barriers as filled polys, boost pads as filled neon rects, pickups/portals as glyphs (no text legend).
  * @param {HTMLCanvasElement | null} canvas
  * @param {{ internalScale?: number }} [opts] — multiply backing-store resolution (non-low graphics profile)
  * @returns {{ draw: (frame: MinimapFrame) => void; dispose: () => void }}
@@ -285,13 +285,6 @@ export function createArenaMinimapRenderer(canvas, opts = {}) {
           ctx.restore();
         }
       }
-
-      ctx.fillStyle = "rgba(140, 200, 220, 0.5)";
-      ctx.font = "9px ui-monospace, monospace";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "bottom";
-      ctx.fillText("◆ pick-up", 4, ch - 4);
-      ctx.fillText("○ portal", 4, ch - 14);
 
       function drawDot(wx, wz, fill, radius = 3) {
         const [cx, cy] = toCanvas(wx, wz);

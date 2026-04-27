@@ -52,6 +52,17 @@
       "edge": "north",
       "position": 320,
       "width": 5,
+      "role": "daily",
+      "signText": "DAILY",
+      "lockedRibbonText": "",
+      "locked": true,
+      "destination": null
+    },
+    {
+      "type": "gate",
+      "edge": "west",
+      "position": 75,
+      "width": 5,
       "role": "multiplayer",
       "signText": "MULTIPLAYER",
       "lockedRibbonText": "COMING SOON",
