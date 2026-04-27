@@ -78,7 +78,7 @@ import {
   parseCampaignLevelIndex,
   selectPlaytestCampaignLevel,
 } from "./levels/loader.js";
-import { consumeSessionBootTarget, peekSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
+import { consumeSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js";
 import { peekEditorPlaytestReturn, setEditorPlaytestReturn } from "./sessionEditorPlaytest.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import {
@@ -180,9 +180,10 @@ async function main() {
 
   const campaign = await loadCampaignLevels();
 
-  const bootPeek = peekSessionBootTarget();
+  /** Consume once here so a crash/close during the boot tunnel cannot strand `tron-session-boot-v1` (would boot the wrong arena on every visit). */
+  const sessionBoot = consumeSessionBootTarget();
   const skipArenaForBoot =
-    bootPeek && (bootPeek.mode === "garage" || bootPeek.mode === "editor");
+    sessionBoot && (sessionBoot.mode === "garage" || sessionBoot.mode === "editor");
 
   /** P7.1 / P7.2 — lobby + gate locks, or campaign level after arena gate, or skip arena for garage/editor boot. */
   /** @type {Record<string, unknown> | null} */
@@ -194,8 +195,8 @@ async function main() {
 
   if (skipArenaForBoot) {
     arenaSizeFromCampaign = undefined;
-  } else if (bootPeek?.mode === "wip_playtest" && typeof bootPeek.levelId === "string") {
-    const w = getWipLevelValidated(bootPeek.levelId.trim());
+  } else if (sessionBoot?.mode === "wip_playtest" && typeof sessionBoot.levelId === "string") {
+    const w = getWipLevelValidated(sessionBoot.levelId.trim());
     if (w && w.valid) {
       activeCampaignLevel = /** @type {Record<string, unknown>} */ (
         JSON.parse(JSON.stringify(w.level))
@@ -212,8 +213,8 @@ async function main() {
       activeCampaignLevel = lobbyLevel;
       arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
     }
-  } else if (bootPeek?.mode === "campaign" && typeof bootPeek.levelId === "string") {
-    const found = findCampaignLevelById(campaign.validLevels, bootPeek.levelId);
+  } else if (sessionBoot?.mode === "campaign" && typeof sessionBoot.levelId === "string") {
+    const found = findCampaignLevelById(campaign.validLevels, sessionBoot.levelId);
     /** @type {Record<string, unknown> | null | undefined} */
     let useCampaign = found;
     if (
@@ -281,9 +282,7 @@ async function main() {
 
   bootOverlay.classList.add("boot-overlay--hidden");
 
-  const bootConsumed = consumeSessionBootTarget();
-
-  if (bootConsumed?.mode === "garage") {
+  if (sessionBoot?.mode === "garage") {
     gameMode = GameMode.GARAGE;
     const hud = document.getElementById("cycle-hud");
     const ban = document.getElementById("lobby-placeholder");
@@ -319,7 +318,7 @@ async function main() {
     });
     return;
   }
-  if (bootConsumed?.mode === "editor") {
+  if (sessionBoot?.mode === "editor") {
     gameMode = GameMode.EDITOR;
     const hud = document.getElementById("cycle-hud");
     const ban = document.getElementById("lobby-placeholder");
@@ -328,7 +327,7 @@ async function main() {
     if (mm) mm.hidden = true;
     if (ban) ban.hidden = true;
     const wipOpen =
-      typeof bootConsumed.wipLevelId === "string" ? bootConsumed.wipLevelId : undefined;
+      typeof sessionBoot.wipLevelId === "string" ? sessionBoot.wipLevelId : undefined;
     mountEditorDestinationScreen({
       game,
       devHud,

@@ -118,7 +118,11 @@ export async function loadCampaignLevels(opts = {}) {
     try {
       const res = await fetch(url, { signal });
       if (!res.ok) {
-        console.warn(`[loader] skipping campaign file ${filename}: HTTP ${res.status}`);
+        if (filename === "level-0-lobby.json") {
+          console.error(`[loader] Lobby file not loaded: ${filename} HTTP ${res.status}`);
+        } else {
+          console.warn(`[loader] skipping campaign file ${filename}: HTTP ${res.status}`);
+        }
         entries.push({ filename, valid: false, errors: [`HTTP ${res.status}`] });
         continue;
       }
@@ -133,7 +137,20 @@ export async function loadCampaignLevels(opts = {}) {
       const v = validateLevel(json);
       if (!v.valid) {
         const first = v.errors[0] ?? "validation failed";
-        console.warn(`[loader] invalid campaign level (${filename}): ${first}`);
+        const isLobbyFile =
+          filename === "level-0-lobby.json" ||
+          (json &&
+            typeof json === "object" &&
+            !Array.isArray(json) &&
+            /** @type {Record<string, unknown>} */ (json).id === LOBBY_LEVEL_ID);
+        if (isLobbyFile) {
+          console.error(
+            "[loader] Lobby level failed validation (file omitted from campaign). The game expects this file to load for `level-0` — see errors below.",
+            { filename, errors: v.errors },
+          );
+        } else {
+          console.warn(`[loader] invalid campaign level (${filename}): ${first}`);
+        }
         entries.push({ filename, valid: false, errors: v.errors });
         continue;
       }
@@ -320,9 +337,16 @@ export function extractArenaDimensionsFromLevel(level) {
  * @param {{ progress: { currentLevel: number } }} save
  * @returns {Record<string, unknown> | null}
  */
-export function selectPlaytestCampaignLevel(validLevels, save) {
+export function selectPlaytestCampaignLevel(validLevels, _save) {
   if (!validLevels.length) return null;
   const lobby = validLevels.find((L) => L && L.id === LOBBY_LEVEL_ID);
   if (lobby) return lobby;
-  return validLevels[0] ?? null;
+  const fallback = validLevels[0] ?? null;
+  if (fallback) {
+    console.warn(
+      "[loader] Lobby (level-0) is not in the validated campaign list — using the first loaded level as a fallback (check earlier [loader] messages if level-0 failed validation or fetch).",
+      { fallbackId: typeof fallback.id === "string" ? fallback.id : fallback },
+    );
+  }
+  return fallback;
 }
