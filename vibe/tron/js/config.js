@@ -12,7 +12,8 @@
 export const AUDIO_AUTOPLAY = true;
 
 /**
- * P8.2 — Optional loop MP3s. Lobby + gameplay: two stems each (Dev HUD `lobbyMusicVariant` / `gameplayMusicVariant` 0 | 1).
+ * P8.2 — Optional loop MP3s. Two stems each: lobby uses Dev HUD `lobbyMusicVariant`;
+ * campaign arenas alternate (`level-1`/`3`/… → first gameplay stem, `level-2`/`4`/… → second), with Dev HUD override for WIP / tuning.
  * If missing or fetch/decode fails, `audio.js` uses seamless procedural beds.
  * @type {{ lobbyVariants: readonly string[]; gameplayVariants: readonly string[] }}
  */
@@ -206,7 +207,7 @@ export const DEFAULT_DEV_HUD = {
   musicCrossfadeDuration: 1.0,
   /** 0 = first lobby stem, 1 = second (`MUSIC_ASSET_URLS.lobbyVariants`). */
   lobbyMusicVariant: 0,
-  /** 0 = first gameplay stem, 1 = second (`MUSIC_ASSET_URLS.gameplayVariants`). */
+  /** 0 = first gameplay stem, 1 = second. Used for WIP/unknown id and Dev HUD override, not for campaign `level-N` parity. */
   gameplayMusicVariant: 0,
   cameraDistance: 19.0,
   cameraHeight: 7.5,
@@ -326,19 +327,32 @@ export function getLobbyMusicUrl(devHud) {
 }
 
 /**
- * Active gameplay music asset URL from Dev HUD `gameplayMusicVariant` (0…N-1).
+ * Active gameplay music asset URL. Campaign `level-N` (N ≥ 1) alternates stems: **odd** N → first file, **even** N → second.
+ * If `campaignLevelN` is omitted, NaN, or below 1, uses `gameplayMusicVariant`. With `forceDevVariant`, always uses `gameplayMusicVariant` (Dev HUD live tweak).
+ *
  * @param {Partial<typeof DEFAULT_DEV_HUD> | null | undefined} devHud
+ * @param {number} [campaignLevelN] — e.g. `parseCampaignLevelIndex` for the loaded arena
+ * @param {{ forceDevVariant?: boolean }} [opts]
  * @returns {string}
  */
-export function getGameplayMusicUrl(devHud) {
+export function getGameplayMusicUrl(devHud, campaignLevelN, opts) {
   const list = MUSIC_ASSET_URLS.gameplayVariants;
   if (!Array.isArray(list) || list.length === 0) return "";
+  const force = Boolean(opts && opts.forceDevVariant);
+  if (force) {
+    let idx = 0;
+    if (devHud && typeof devHud.gameplayMusicVariant === "number" && Number.isFinite(devHud.gameplayMusicVariant)) {
+      idx = Math.max(0, Math.min(list.length - 1, Math.floor(devHud.gameplayMusicVariant)));
+    }
+    return list[idx] ?? "";
+  }
+  if (typeof campaignLevelN === "number" && Number.isFinite(campaignLevelN) && campaignLevelN >= 1) {
+    const stemIdx = campaignLevelN % 2 === 1 ? 0 : 1;
+    const idx = Math.min(stemIdx, list.length - 1);
+    return list[idx] ?? "";
+  }
   let idx = 0;
-  if (
-    devHud &&
-    typeof devHud.gameplayMusicVariant === "number" &&
-    Number.isFinite(devHud.gameplayMusicVariant)
-  ) {
+  if (devHud && typeof devHud.gameplayMusicVariant === "number" && Number.isFinite(devHud.gameplayMusicVariant)) {
     idx = Math.max(0, Math.min(list.length - 1, Math.floor(devHud.gameplayMusicVariant)));
   }
   return list[idx] ?? "";

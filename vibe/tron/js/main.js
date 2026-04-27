@@ -243,6 +243,12 @@ async function main() {
     arenaSizeFromCampaign = extractArenaDimensionsFromLevel(activeCampaignLevel);
   }
 
+  /** Odd `level-N` → first gameplay stem, even → second (`config.getGameplayMusicUrl`). Lobby / bad id → NaN. */
+  const gameplayMusicCampaignN =
+    activeCampaignLevel && typeof activeCampaignLevel.id === "string" && activeCampaignLevel.id !== LOBBY_LEVEL_ID
+      ? parseCampaignLevelIndex(/** @type {Record<string, unknown>} */ (activeCampaignLevel))
+      : Number.NaN;
+
   const audio = createAudioEngine({
     masterVolume: save.settings.masterVolume,
     musicVolume: save.settings.musicVolume,
@@ -251,7 +257,7 @@ async function main() {
     musicCrossfadeSec: runtime.devHud.musicCrossfadeDuration,
     autoplay: AUDIO_AUTOPLAY,
     musicLobbyUrl: getLobbyMusicUrl(runtime.devHud),
-    musicGameplayUrl: getGameplayMusicUrl(runtime.devHud),
+    musicGameplayUrl: getGameplayMusicUrl(runtime.devHud, gameplayMusicCampaignN),
   });
   audio.unlock();
   for (const url of MUSIC_ASSET_URLS.lobbyVariants) {
@@ -1337,7 +1343,11 @@ async function main() {
         }
       }
       if (Object.prototype.hasOwnProperty.call(patch, "gameplayMusicVariant")) {
-        audio.setMusicGameplayUrl(getGameplayMusicUrl(devHud));
+        const gn =
+          isLobby || !activeCampaignLevel
+            ? Number.NaN
+            : parseCampaignLevelIndex(/** @type {Record<string, unknown>} */ (activeCampaignLevel));
+        audio.setMusicGameplayUrl(getGameplayMusicUrl(devHud, gn, { forceDevVariant: true }));
         if (!isLobby) {
           void audio.playMusicProfile("gameplay");
         }

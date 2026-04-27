@@ -84,6 +84,8 @@ function readEditorSource(level) {
 const STANDARD_NEON_COST = 50;
 /** Aurora Veil — 3× standard. */
 const EXOTIC_NEON_COST = STANDARD_NEON_COST * 3;
+/** Police Bar — set tier (separate from other exotics). */
+const POLICE_NEON_COST = 200;
 /** Prism Drift — premium full-spectrum finish. */
 const EXOTIC_PRISM_NEON_COST = 250;
 
@@ -102,7 +104,7 @@ const GARAGE_COLOR_CATALOG = [
     name: "Police Bar",
     exoticId: EXOTIC_POLICE,
     swatch: "police",
-    cost: EXOTIC_NEON_COST,
+    cost: POLICE_NEON_COST,
   },
   {
     name: "Aurora Veil",
@@ -155,12 +157,82 @@ function renderGarageStats(el, save) {
 }
 
 /**
+ * Append to `document.body` (not under `#garage-destination`) so clicks are not lost to
+ * `.tron-destination--garage { pointer-events: none }` + the transparent showroom region
+ * (hits would fall through to `#game-canvas`).
+ *
+ * @returns {{ open: (o: { name: string, cost: number, perform: () => void }) => void, close: () => void, remove: () => void, isOpen: () => boolean }}
+ */
+function mountGarageColorUnlockDialog() {
+  const dialog = document.createElement("dialog");
+  dialog.className = "garage-color-unlock-dialog";
+  dialog.setAttribute("aria-labelledby", "garage-color-unlock-title");
+
+  const panel = document.createElement("div");
+  panel.className = "garage-color-unlock-dialog__panel";
+  const title = document.createElement("h3");
+  title.id = "garage-color-unlock-title";
+  title.className = "garage-color-unlock-dialog__title";
+  title.textContent = "Unlock color";
+  const lead = document.createElement("p");
+  lead.className = "garage-color-unlock-dialog__lead";
+  const actions = document.createElement("div");
+  actions.className = "garage-color-unlock-dialog__actions";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "garage-color-unlock-dialog__btn";
+  cancelBtn.textContent = "Cancel";
+  const goBtn = document.createElement("button");
+  goBtn.type = "button";
+  goBtn.className = "garage-color-unlock-dialog__btn garage-color-unlock-dialog__btn--primary";
+  goBtn.textContent = "Unlock";
+
+  let run = () => {};
+
+  const close = () => {
+    if (dialog.open) dialog.close();
+  };
+
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) close();
+  });
+  cancelBtn.addEventListener("click", close);
+  goBtn.addEventListener("click", () => {
+    const fn = run;
+    close();
+    fn();
+  });
+
+  actions.append(cancelBtn, goBtn);
+  panel.append(title, lead, actions);
+  dialog.appendChild(panel);
+  document.body.appendChild(dialog);
+
+  return {
+    open(/** @type {{ name: string, cost: number, perform: () => void }} */ o) {
+      lead.textContent = `Unlock “${o.name}” for ${o.cost} NEON?`;
+      goBtn.setAttribute("aria-label", `Unlock for ${o.cost} NEON`);
+      goBtn.textContent = `Unlock (${o.cost} NEON)`;
+      run = o.perform;
+      dialog.showModal();
+    },
+    close,
+    remove() {
+      close();
+      dialog.remove();
+    },
+    isOpen: () => dialog.open,
+  };
+}
+
+/**
  * @param {HTMLElement} container
  * @param {"cycle"|"trail"} kind
  * @param {import("../data/savedata.js").PlayerSave} save
  * @param {() => void} onChanged
+ * @param {{ colorUnlock?: ReturnType<typeof mountGarageColorUnlockDialog> }} [opts]
  */
-function renderColorSwatches(container, kind, save, onChanged) {
+function renderColorSwatches(container, kind, save, onChanged, opts) {
   container.replaceChildren();
   void kind;
   const current = normalizePlayerNeonColor(save.player.cycleColor);
@@ -213,12 +285,26 @@ function renderColorSwatches(container, kind, save, onChanged) {
         return;
       }
       if (save.progress.coins < entry.cost) return;
-      spendCoins(save, entry.cost);
-      unlockCosmeticColor(save, kind, persistChoice);
-      save.player.cycleColor = persistChoice;
-      save.player.trailColor = persistChoice;
-      persistSave(save);
-      onChanged();
+
+      const applyPaidUnlock = () => {
+        if (save.progress.coins < entry.cost) return;
+        spendCoins(save, entry.cost);
+        unlockCosmeticColor(save, kind, persistChoice);
+        save.player.cycleColor = persistChoice;
+        save.player.trailColor = persistChoice;
+        persistSave(save);
+        onChanged();
+      };
+
+      if (opts?.colorUnlock) {
+        opts.colorUnlock.open({
+          name: entry.name,
+          cost: entry.cost,
+          perform: applyPaidUnlock,
+        });
+      } else {
+        applyPaidUnlock();
+      }
     });
 
     container.appendChild(btn);
@@ -352,10 +438,11 @@ export function mountGarageDestinationScreen(opts) {
   const statsEl = document.getElementById("garage-stats");
   const cycleSw = document.getElementById("garage-cycle-swatches");
   const upgradesEl = document.getElementById("garage-upgrades");
+  const colorUnlock = mountGarageColorUnlockDialog();
 
   function refreshGarageCommerce() {
     if (statsEl) renderGarageStats(statsEl, save);
-    if (cycleSw) renderColorSwatches(cycleSw, "cycle", save, refreshGarageCommerce);
+    if (cycleSw) renderColorSwatches(cycleSw, "cycle", save, refreshGarageCommerce, { colorUnlock });
     if (upgradesEl) renderAttributeUpgrades(upgradesEl, save, refreshGarageCommerce);
     showroom.syncFromSave(save);
   }
@@ -373,12 +460,19 @@ export function mountGarageDestinationScreen(opts) {
   if (btn) btn.addEventListener("click", onClick);
 
   const onKey = (e) => {
-    if (e.key === "Escape") onReturn();
+    if (e.key !== "Escape") return;
+    if (colorUnlock.isOpen()) {
+      e.preventDefault();
+      colorUnlock.close();
+      return;
+    }
+    onReturn();
   };
   window.addEventListener("keydown", onKey);
 
   return {
     dispose() {
+      colorUnlock.remove();
       showroom.dispose();
       window.removeEventListener("keydown", onKey);
       if (btn) btn.removeEventListener("click", onClick);

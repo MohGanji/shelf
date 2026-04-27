@@ -1435,6 +1435,77 @@ body {
   border-color: rgba(0, 255, 240, 0.85);
 }
 
+/* Paid color unlock confirmation (garage swatches). Portaled to `document.body` so it is not under
+   `.tron-destination--garage { pointer-events: none }` (transparent area would hit `#game-canvas`). */
+.garage-color-unlock-dialog {
+  max-width: min(24rem, 92vw);
+  padding: 0;
+  border: 1px solid rgba(0, 255, 255, 0.35);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(200, 230, 255, 0.95);
+  pointer-events: auto;
+}
+
+.garage-color-unlock-dialog::backdrop {
+  background: rgba(0, 4, 12, 0.72);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+.garage-color-unlock-dialog__panel {
+  padding: 1.1rem 1.2rem 1.15rem;
+  background: linear-gradient(165deg, rgba(8, 14, 28, 0.98) 0%, rgba(4, 8, 18, 0.99) 100%);
+  border-radius: 6px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
+}
+
+.garage-color-unlock-dialog__title {
+  margin: 0 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #7ee8ff;
+}
+
+.garage-color-unlock-dialog__lead {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(170, 210, 240, 0.9);
+}
+
+.garage-color-unlock-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.garage-color-unlock-dialog__btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 200, 255, 0.35);
+  background: rgba(0, 30, 50, 0.6);
+  color: rgba(200, 235, 255, 0.95);
+  font: inherit;
+  cursor: pointer;
+}
+
+.garage-color-unlock-dialog__btn:hover {
+  border-color: rgba(0, 255, 255, 0.55);
+  background: rgba(0, 50, 70, 0.55);
+}
+
+.garage-color-unlock-dialog__btn--primary {
+  border-color: rgba(0, 255, 255, 0.55);
+  background: rgba(0, 90, 110, 0.55);
+}
+
+.garage-color-unlock-dialog__btn--primary:hover {
+  background: rgba(0, 120, 140, 0.55);
+}
+
 .neon-coin-icon {
   display: block;
   width: 14px;

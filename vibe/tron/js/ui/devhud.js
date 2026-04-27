@@ -280,7 +280,7 @@ export function createDevHudController(opts) {
     },
     {
       key: "gameplayMusicVariant",
-      label: "Gameplay music (0=A · 1=B)",
+      label: "Gameplay stem (0=A · 1=B) — Dev override; campaign alternates by level",
       min: 0,
       max: 1,
       step: 1,
