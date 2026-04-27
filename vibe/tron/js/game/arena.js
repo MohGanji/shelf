@@ -564,8 +564,19 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
     wallBodiesByEdge,
   };
 
+  /** @type {import('./billboardBanners.js').LobbyBannerController[]} */
+  let gateLobbyBannerControllers = [];
   if (gates.length > 0) {
-    const built = buildGateMeshes(scene, playCfg, gates, playCfg.arenaWidth, playCfg.arenaDepth);
+    const levelId = level && typeof level.id === "string" ? level.id : null;
+    const built = buildGateMeshes(
+      scene,
+      playCfg,
+      gates,
+      playCfg.arenaWidth,
+      playCfg.arenaDepth,
+      levelId,
+    );
+    gateLobbyBannerControllers = built.lobbyGateBannerControllers;
     scene.userData.gateAnimatables = built.animatables;
     scene.userData.gates = { list: gates, root: built.root };
     scene.userData.openGateFootprints = computeOpenGateWallFootprints(
@@ -581,12 +592,22 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
 
   /** @type {import('cannon-es').Body[]} */
   let barrierBodies = [];
+  /** @type {import('./billboardBanners.js').LobbyBannerController[]} */
+  let lobbyBannerControllers = [...gateLobbyBannerControllers];
+
   if (level && Array.isArray(level.barriers) && level.barriers.length > 0) {
-    const built = buildBarriersFromLevel(scene, world, wallMat, playCfg, level.barriers);
-    barrierBodies = built.bodies;
-    scene.userData.barriersGroup = built.group;
+    const bBuilt = buildBarriersFromLevel(scene, world, wallMat, playCfg, level.barriers);
+    barrierBodies = bBuilt.bodies;
+    scene.userData.barriersGroup = bBuilt.group;
+    lobbyBannerControllers = lobbyBannerControllers.concat(bBuilt.lobbyBannerControllers);
   } else {
     delete scene.userData.barriersGroup;
+  }
+
+  if (lobbyBannerControllers.length > 0) {
+    scene.userData.lobbyBannerControllers = lobbyBannerControllers;
+  } else {
+    delete scene.userData.lobbyBannerControllers;
   }
   scene.userData.barrierBodies = barrierBodies;
 

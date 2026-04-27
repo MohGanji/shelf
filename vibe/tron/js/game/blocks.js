@@ -7,6 +7,7 @@ import {
 } from "../engine/facadeEmissiveAtlas.js";
 import { createTriangleBarrierBody, createWallPhysicsBody } from "../engine/physics.js";
 import { resolveTriangleBuildingRotationY } from "../levels/footprints.js";
+import { attachBuildingBannerPlane } from "./billboardBanners.js";
 
 /**
  * Interior barriers from validated level JSON — visuals + static cannon-es boxes (plan § Arena Object Categories, P5.4).
@@ -72,7 +73,7 @@ function addBarrierBox(world, wallMatRef, halfExtents, center, rotationY = 0) {
 
 /**
  * @param {unknown} b
- * @returns {{ type: string; x: number; z: number; height?: number; shape?: string; variant?: string; width?: number; depth?: number; rotation?: number; triangleQuarter?: 0 | 1 | 2 | 3; color?: string } | null}
+ * @returns {{ type: string; x: number; z: number; height?: number; shape?: string; variant?: string; width?: number; depth?: number; rotation?: number; triangleQuarter?: 0 | 1 | 2 | 3; color?: string; banner?: { kind: string } } | null}
  */
 function coerceBarrier(b) {
   if (!b || typeof b !== "object") return null;
@@ -94,6 +95,11 @@ function coerceBarrier(b) {
     out.triangleQuarter = /** @type {0 | 1 | 2 | 3} */(((o.triangleQuarter % 4) + 4) % 4);
   }
   if (typeof o.color === "string") out.color = o.color;
+  const ban = o.banner;
+  if (ban && typeof ban === "object" && !Array.isArray(ban)) {
+    const bk = /** @type {Record<string, unknown>} */ (ban).kind;
+    if (typeof bk === "string") out.banner = { kind: bk };
+  }
   return out;
 }
 
@@ -328,13 +334,15 @@ function mergeAxisAlignedBarrierTiles(tileKeys) {
  * @param {import('cannon-es').Material} wallMatRef
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
  * @param {unknown[]} barriers
- * @returns {{ group: THREE.Group; bodies: import('cannon-es').Body[] }}
+ * @returns {{ group: THREE.Group; bodies: import('cannon-es').Body[]; lobbyBannerControllers: import('./billboardBanners.js').LobbyBannerController[] }}
  */
 export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barriers) {
   const group = new THREE.Group();
   group.name = "barriers";
   /** @type {import('cannon-es').Body[]} */
   const bodies = [];
+  /** @type {import('./billboardBanners.js').LobbyBannerController[]} */
+  const lobbyBannerControllers = [];
 
   const wallH = playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight;
   const neon = barrierNeon(playCfg);
@@ -495,6 +503,8 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
         b.rotation ?? 0,
       ),
     );
+    const bannerCtrl = attachBuildingBannerPlane(group, b, w, d, tallH, playCfg);
+    if (bannerCtrl) lobbyBannerControllers.push(bannerCtrl);
   }
 
   for (const [h, keySet] of squareBuildingsByHeight) {
@@ -621,5 +631,5 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
   }
 
   scene.add(group);
-  return { group, bodies };
+  return { group, bodies, lobbyBannerControllers };
 }

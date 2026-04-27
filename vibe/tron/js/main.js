@@ -89,6 +89,7 @@ import {
 import { createDevHudController } from "./ui/devhud.js";
 import { createArenaMinimapRenderer } from "./ui/hud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
+import { tickLobbyBannerControllers } from "./game/billboardBanners.js";
 import * as THREE from "./vendor/three-module.js";
 
 function $(id) {
@@ -1352,6 +1353,9 @@ async function main() {
     ) {
       const b = floorMat.userData.emissiveIntensityBase;
       floorMat.emissiveIntensity = b * (0.92 + 0.08 * Math.sin(t * 2.15));
+    }
+    if (isLobby) {
+      tickLobbyBannerControllers(game.scene.userData.lobbyBannerControllers, save, campaign.validLevels);
     }
     if (playerDerezPhase === "imploding") {
       const durationSec = Math.max(0.4, devHud.derezSequenceSeconds ?? 2);

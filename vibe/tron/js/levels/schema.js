@@ -28,6 +28,9 @@ const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer"
 const EDGES = new Set(["north", "south", "east", "west"]);
 const BARRIER_TYPES = new Set(["wall", "building", "structure"]);
 const BUILDING_SHAPES = new Set(["square", "triangle"]);
+
+/** Optional LED-style billboard on square `building` barriers (lobby hub, etc.). */
+export const BUILDING_BANNER_KINDS = new Set(["lobby_progress", "lobby_garage"]);
 const STRUCTURE_VARIANTS = new Set(["pylon", "column", "obelisk"]);
 const COSMETIC_VARIANTS = new Set(["panel_a", "panel_b", "panel_c"]);
 const GAME_OBJECT_TYPES = new Set(["boost_pad", "portal"]);
@@ -460,6 +463,18 @@ function validateBarriers(barriers, errors) {
         }
       } else if (b.triangleQuarter !== undefined) {
         errors.push(`${path}.triangleQuarter is only valid when shape is triangle`);
+      }
+      if (b.banner !== undefined) {
+        if (shape !== "square") {
+          errors.push(`${path}.banner is only supported on square buildings`);
+        } else if (!isPlainObject(b.banner)) {
+          errors.push(`${path}.banner must be an object`);
+        } else {
+          const kind = b.banner.kind;
+          if (typeof kind !== "string" || !BUILDING_BANNER_KINDS.has(kind)) {
+            errors.push(`${path}.banner.kind must be one of: lobby_progress, lobby_garage`);
+          }
+        }
       }
     }
     if (type === "structure") {

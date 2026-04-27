@@ -12,6 +12,13 @@ import { DEFAULT_CAMPAIGN_BASE, loadCampaignManifest, upsertWipLevel } from "../
 import { persistSave, spendCoins, unlockCosmeticColor } from "../data/savedata.js";
 import { clampAttributeLevel } from "../game/attributes.js";
 import {
+  GARAGE_ATTR_KEYS,
+  GARAGE_ATTR_TITLES,
+  formatGarageAttrFraction,
+  garageAttrScale,
+  garageMetricAtAttributeLevel,
+} from "../game/garagePlayerMetrics.js";
+import {
   appendManifestEntry,
   buildCampaignExportFilename,
   buildCampaignLevelJsonForExport,
@@ -110,94 +117,6 @@ const GARAGE_COLOR_CATALOG = [
     cost: EXOTIC_PRISM_NEON_COST,
   },
 ];
-
-/** @type {readonly (keyof import("../data/savedata.js").PlayerSave["player"]["attributes"])[]} */
-const GARAGE_ATTR_KEYS = ["speed", "acceleration", "trailLength", "nitroBars", "handling"];
-
-const ATTR_TITLES = {
-  speed: "Speed",
-  acceleration: "Acceleration",
-  trailLength: "Trail length",
-  nitroBars: "Nitro bars",
-  handling: "Handling",
-};
-
-/**
- * @param {import("../data/savedata.js").PlayerSave["player"]["attributes"]} attrs
- * @param {import("../data/savedata.js").PlayerSave} save
- */
-function playtestForGarage(attrs, save) {
-  const runtime = createRuntimeFromPlayerSave(save);
-  return getArenaPlaytestConfig(runtime, attrs, {});
-}
-
-/**
- * @param {string} key
- * @param {ReturnType<typeof getArenaPlaytestConfig>} play
- */
-function readGarageMetric(key, play) {
-  switch (key) {
-    case "speed":
-      return play.maxMoveSpeed;
-    case "acceleration":
-      return play.acceleration;
-    case "handling":
-      return play.baseTurnRate;
-    case "nitroBars":
-      return play.nitroBarCount;
-    case "trailLength":
-      return play.trailMaxSegments;
-    default:
-      return 0;
-  }
-}
-
-/**
- * Stat at current save levels vs same save with one attribute capped at 10 (bar scale 0 → max).
- * @param {string} key
- * @param {import("../data/savedata.js").PlayerSave} save
- */
-function garageAttrScale(key, save) {
-  const base = save.player.attributes;
-  const playCur = playtestForGarage(base, save);
-  const attrsMaxOne = { ...base, [key]: 10 };
-  const playCap = playtestForGarage(attrsMaxOne, save);
-  const cur = readGarageMetric(key, playCur);
-  const max = Math.max(readGarageMetric(key, playCap), 1e-9);
-  return { cur, max };
-}
-
-/**
- * @param {string} key
- * @param {import("../data/savedata.js").PlayerSave} save
- * @param {number} level
- */
-function garageMetricAtAttributeLevel(key, save, level) {
-  const attrs = { ...save.player.attributes, [key]: clampAttributeLevel(level) };
-  return readGarageMetric(key, playtestForGarage(attrs, save));
-}
-
-/**
- * @param {string} key
- * @param {number} cur
- * @param {number} max
- */
-function formatGarageAttrFraction(key, cur, max) {
-  switch (key) {
-    case "speed":
-      return `${Math.round(cur)} / ${Math.round(max)} u/s`;
-    case "acceleration":
-      return `${cur.toFixed(1)} / ${max.toFixed(1)} u/s²`;
-    case "trailLength":
-      return `${Math.round(cur)} / ${Math.round(max)} seg`;
-    case "nitroBars":
-      return `${cur} / ${max}`;
-    case "handling":
-      return `${cur.toFixed(2)} / ${max.toFixed(2)} rad/s`;
-    default:
-      return `${cur} / ${max}`;
-  }
-}
 
 /**
  * @param {string} raw
@@ -330,7 +249,7 @@ function renderAttributeUpgrades(container, save, onChanged) {
 
     const title = document.createElement("span");
     title.className = "garage-upgrade-row__title";
-    title.textContent = ATTR_TITLES[key];
+    title.textContent = GARAGE_ATTR_TITLES[key];
 
     const val = document.createElement("span");
     val.className = "garage-upgrade-row__val";
@@ -345,8 +264,8 @@ function renderAttributeUpgrades(container, save, onChanged) {
     barContainer.className = "garage-upgrade-row__bar-container";
     barContainer.title =
       level >= 10
-        ? `${ATTR_TITLES[key]} — max tier (10/10)`
-        : `${ATTR_TITLES[key]} — next tier: ${formatGarageAttrFraction(key, nextVal, max)}`;
+        ? `${GARAGE_ATTR_TITLES[key]} — max tier (10/10)`
+        : `${GARAGE_ATTR_TITLES[key]} — next tier: ${formatGarageAttrFraction(key, nextVal, max)}`;
 
     const currentBar = document.createElement("div");
     currentBar.className = "garage-upgrade-row__bar-current";
