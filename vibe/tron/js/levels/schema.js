@@ -22,7 +22,7 @@ export const LOBBY_LEVEL_ID = "level-0";
 
 /** Default lobby dimensions from the plan. */
 export const LOBBY_ARENA_WIDTH = 400;
-export const LOBBY_ARENA_DEPTH = 240;
+export const LOBBY_ARENA_DEPTH = 150;
 
 const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer"]);
 const EDGES = new Set(["north", "south", "east", "west"]);

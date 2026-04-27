@@ -36,7 +36,7 @@ export const WORLD = {
   defaultArenaWidth: 400,
   defaultArenaDepth: 400,
   lobbyArenaWidth: 400,
-  lobbyArenaDepth: 200,
+  lobbyArenaDepth: 150,
   defaultTopSpeed: 60,
   defaultAcceleration: 20,
   /**

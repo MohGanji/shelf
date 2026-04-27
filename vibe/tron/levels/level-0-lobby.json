@@ -3,9 +3,9 @@
   "name": "Stadium Concourse",
   "schemaVersion": 2,
   "arenaWidth": 400,
-  "arenaDepth": 240,
+  "arenaDepth": 150,
   "mapWidth": 402,
-  "mapDepth": 242,
+  "mapDepth": 152,
   "wallObjects": [
     {
       "type": "gate",
@@ -55,209 +55,183 @@
       "gridX": 1,
       "gridZ": 1,
       "width": 68,
-      "depth": 30,
+      "depth": 19,
       "height": 5,
       "shape": "square",
       "zone": "stadium-mask",
       "x": -166,
-      "z": -105
+      "z": -65.5
     },
     {
       "type": "building",
       "gridX": 333,
       "gridZ": 1,
       "width": 68,
-      "depth": 30,
+      "depth": 19,
       "height": 5,
       "shape": "square",
       "zone": "stadium-mask",
       "x": 166,
-      "z": -105
+      "z": -65.5
     },
     {
       "type": "building",
       "gridX": 1,
-      "gridZ": 31,
+      "gridZ": 20,
       "width": 24,
-      "depth": 62,
+      "depth": 39,
       "height": 5,
       "shape": "square",
       "zone": "stadium-mask",
       "x": -188,
-      "z": -59
+      "z": -36.5
     },
     {
       "type": "building",
       "gridX": 377,
-      "gridZ": 31,
+      "gridZ": 20,
       "width": 24,
-      "depth": 62,
+      "depth": 39,
       "height": 5,
       "shape": "square",
       "zone": "stadium-mask",
       "x": 188,
-      "z": -59
+      "z": -36.5
     },
     {
       "type": "building",
       "gridX": 1,
-      "gridZ": 150,
+      "gridZ": 94,
       "width": 24,
-      "depth": 61,
+      "depth": 38,
       "height": 5,
       "shape": "square",
       "zone": "stadium-mask",
       "x": -188,
-      "z": 59.5
+      "z": 37
     },
     {
       "type": "building",
       "gridX": 377,
-      "gridZ": 150,
+      "gridZ": 94,
       "width": 24,
-      "depth": 61,
+      "depth": 38,
       "height": 5,
       "shape": "square",
       "zone": "stadium-mask",
       "x": 188,
-      "z": 59.5
+      "z": 37
     },
     {
       "type": "building",
       "gridX": 173,
-      "gridZ": 190,
+      "gridZ": 119,
       "width": 14,
-      "depth": 30,
+      "depth": 19,
       "height": 2,
       "shape": "square",
       "color": "#00e8ff",
       "zone": "arena-band",
       "x": -21,
-      "z": 84
+      "z": 52.5
     },
     {
       "type": "building",
       "gridX": 215,
-      "gridZ": 190,
+      "gridZ": 119,
       "width": 14,
-      "depth": 30,
+      "depth": 19,
       "height": 2,
       "shape": "square",
       "color": "#00e8ff",
       "zone": "arena-band",
       "x": 21,
-      "z": 84
+      "z": 52.5
     },
     {
       "type": "building",
       "gridX": 283,
-      "gridZ": 190,
+      "gridZ": 119,
       "width": 14,
-      "depth": 30,
+      "depth": 19,
       "height": 2,
       "shape": "square",
       "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": 89,
-      "z": 84
+      "z": 52.5
     },
     {
       "type": "building",
       "gridX": 337,
-      "gridZ": 190,
+      "gridZ": 119,
       "width": 14,
-      "depth": 30,
+      "depth": 19,
       "height": 2,
       "shape": "square",
       "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": 143,
-      "z": 84
+      "z": 52.5
     },
     {
       "type": "building",
       "gridX": 132,
-      "gridZ": 22,
+      "gridZ": 14,
       "width": 38,
-      "depth": 30,
+      "depth": 19,
       "height": 3,
       "shape": "square",
       "zone": "center-left-rim",
       "x": -50,
-      "z": -84
+      "z": -52.5
     },
     {
       "type": "building",
       "gridX": 232,
-      "gridZ": 22,
+      "gridZ": 14,
       "width": 38,
-      "depth": 30,
+      "depth": 19,
       "height": 3,
       "shape": "square",
       "zone": "center-right-rim",
       "x": 50,
-      "z": -84
-    },
-    {
-      "type": "building",
-      "gridX": 104,
-      "gridZ": 120,
-      "width": 28,
-      "depth": 28,
-      "height": 3,
-      "shape": "triangle",
-      "triangleQuarter": 0,
-      "zone": "center-plaza",
-      "x": -90,
-      "z": 0
-    },
-    {
-      "type": "building",
-      "gridX": 284,
-      "gridZ": 120,
-      "width": 28,
-      "depth": 28,
-      "height": 3,
-      "shape": "triangle",
-      "triangleQuarter": 2,
-      "zone": "center-plaza",
-      "x": 90,
-      "z": 0
+      "z": -52.5
     },
     {
       "type": "building",
       "gridX": 105,
-      "gridZ": 190,
+      "gridZ": 119,
       "width": 14,
-      "depth": 30,
+      "depth": 19,
       "height": 2,
       "shape": "square",
       "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": -89,
-      "z": 84
+      "z": 52.5
     },
     {
       "type": "building",
       "gridX": 51,
-      "gridZ": 190,
+      "gridZ": 119,
       "width": 14,
-      "depth": 30,
+      "depth": 19,
       "height": 2,
       "shape": "square",
       "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": -143,
-      "z": 84
+      "z": 52.5
     }
   ],
   "gameObjects": [
     {
       "type": "portal",
       "gridX": 28,
-      "gridZ": 120,
-      "x": -172,
-      "z": 0,
+      "gridZ": 74,
+      "x": -170.5,
+      "z": 0.5,
       "portalHalfTurn": 0,
       "pairId": "0-lobby-concourse",
       "pairColor": "#7CFFEA"
@@ -265,9 +239,9 @@
     {
       "type": "portal",
       "gridX": 372,
-      "gridZ": 120,
-      "x": 172,
-      "z": 0,
+      "gridZ": 74,
+      "x": 173.5,
+      "z": 0.5,
       "portalHalfTurn": 0,
       "pairId": "0-lobby-concourse",
       "pairColor": "#7CFFEA"
@@ -275,112 +249,112 @@
     {
       "type": "boost_pad",
       "gridX": 196,
-      "gridZ": 153,
+      "gridZ": 96,
       "width": 10,
-      "depth": 40,
+      "depth": 25,
       "color": "#00e8ff",
       "x": 0,
-      "z": 52
+      "z": 32.5
     },
     {
       "type": "boost_pad",
       "gridX": 301,
-      "gridZ": 168,
+      "gridZ": 105,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": 104,
-      "z": 51
+      "z": 31.5
     },
     {
       "type": "boost_pad",
       "gridX": 303,
-      "gridZ": 176,
+      "gridZ": 110,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": 106,
-      "z": 59
+      "z": 36.5
     },
     {
       "type": "boost_pad",
       "gridX": 305,
-      "gridZ": 184,
+      "gridZ": 115,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": 108,
-      "z": 67
+      "z": 41.5
     },
     {
       "type": "boost_pad",
       "gridX": 299,
-      "gridZ": 160,
+      "gridZ": 100,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": 102,
-      "z": 43
+      "z": 26.5
     },
     {
       "type": "boost_pad",
       "gridX": 297,
-      "gridZ": 152,
+      "gridZ": 95,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": 100,
-      "z": 35
+      "z": 21.5
     },
     {
       "type": "boost_pad",
       "gridX": 81,
-      "gridZ": 187,
+      "gridZ": 117,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": -116,
-      "z": 70
+      "z": 43.5
     },
     {
       "type": "boost_pad",
       "gridX": 83,
-      "gridZ": 179,
+      "gridZ": 112,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": -114,
-      "z": 62
+      "z": 38.5
     },
     {
       "type": "boost_pad",
       "gridX": 85,
-      "gridZ": 171,
+      "gridZ": 107,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": -112,
-      "z": 54
+      "z": 33.5
     },
     {
       "type": "boost_pad",
       "gridX": 87,
-      "gridZ": 163,
+      "gridZ": 102,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": -110,
-      "z": 46
+      "z": 28.5
     },
     {
       "type": "boost_pad",
       "gridX": 89,
-      "gridZ": 155,
+      "gridZ": 97,
       "width": 8,
-      "depth": 8,
+      "depth": 5,
       "color": "#00e8ff",
       "x": -108,
-      "z": 38
+      "z": 23.5
     }
   ],
   "powerups": [],
