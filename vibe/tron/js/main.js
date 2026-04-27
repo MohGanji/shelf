@@ -89,7 +89,7 @@ import {
 import { createDevHudController } from "./ui/devhud.js";
 import { createArenaMinimapRenderer } from "./ui/hud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
-import { tickLobbyBannerControllers } from "./game/billboardBanners.js";
+import { tickCampaignExitBanners, tickLobbyBannerControllers } from "./game/billboardBanners.js";
 import * as THREE from "./vendor/three-module.js";
 
 function $(id) {
@@ -482,6 +482,22 @@ async function main() {
       pauseExtra += performance.now() - levelPauseWallClockStartMs;
     }
     return Math.max(0, (performance.now() - levelStartMonotonicMs - pauseExtra) / 1000);
+  }
+
+  /** NEON the player would earn on exit (base + time bonus if still under threshold). */
+  function getPendingLevelCoinAward(elapsedSec) {
+    if (!activeCampaignLevel || !activeCampaignLevel.rewards || typeof activeCampaignLevel.rewards !== "object") {
+      return 0;
+    }
+    const rewards = /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards);
+    const base = typeof rewards.coins === "number" ? rewards.coins : 0;
+    const th = rewards.timeBonusThreshold;
+    const tb = rewards.timeBonusCoins;
+    let add = base;
+    if (typeof th === "number" && typeof tb === "number" && levelStarted && levelStartMonotonicMs > 0) {
+      if (elapsedSec <= th) add += tb;
+    }
+    return add;
   }
 
   const playerBody = createPlayerBody(playCfg, playerMat);
@@ -1356,6 +1372,17 @@ async function main() {
     }
     if (isLobby) {
       tickLobbyBannerControllers(game.scene.userData.lobbyBannerControllers, save, campaign.validLevels);
+    } else {
+      let enemiesRemaining = 0;
+      for (const e of enemyRoster.list) {
+        if (!e.eliminated) enemiesRemaining++;
+      }
+      tickCampaignExitBanners(game.scene.userData.lobbyBannerControllers, {
+        remaining: enemiesRemaining,
+        total: rawEnemyCount,
+        complete: exitGateUnlocked,
+        coinGained: getPendingLevelCoinAward(getLevelElapsedSecExcludingPauses()),
+      });
     }
     if (playerDerezPhase === "imploding") {
       const durationSec = Math.max(0.4, devHud.derezSequenceSeconds ?? 2);

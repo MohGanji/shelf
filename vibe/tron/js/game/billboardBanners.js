@@ -85,6 +85,155 @@ function ensureBannerGateIconsLoading() {
 ensureBannerGateIconsLoading();
 
 /**
+ * Live stats board above the campaign exit gate (not used in lobby).
+ * @param {THREE.Group} gateGroup
+ * @param {{ gateWidth: number; archHeight: number; pillarD: number }} dims
+ * @returns {LobbyBannerController | null}
+ */
+export function attachCampaignExitGateBanner(gateGroup, dims) {
+  const { gateWidth: gw, archHeight: ah, pillarD } = dims;
+  const canvas = document.createElement("canvas");
+  canvas.width = GATE_CANVAS_W;
+  canvas.height = GATE_CANVAS_H;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
+  if (!ctx) return null;
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+    side: THREE.DoubleSide,
+  });
+
+  const bw = Math.max(6, gw * 2.55) * GATE_WORLD_SCALE;
+  const bh = Math.max(2.2, gw * 0.98) * GATE_WORLD_SCALE;
+  const geo = new THREE.PlaneGeometry(bw, bh);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(0, ah + bh * 0.5 + 0.35 * GATE_WORLD_SCALE, pillarD / 2 + 0.1);
+  mesh.name = "campaign-exit-gate-banner";
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  gateGroup.add(mesh);
+
+  /** @type {LobbyBannerController} */
+  const ctrl = {
+    kind: /** @type {const} */ ("campaign_exit"),
+    placement: /** @type {const} */ ("gate"),
+    texture: tex,
+    canvas,
+    ctx,
+    material: mat,
+    mesh,
+    _fingerprint: "",
+    dispose() {
+      disposeBanner(mat, geo, tex);
+    },
+  };
+  return ctrl;
+}
+
+/**
+ * @typedef {object} CampaignExitBannerSnapshot
+ * @property {number} remaining — enemies still alive
+ * @property {number} total — enemies placed in level
+ * @property {boolean} complete — exit gate unlocked (all cleared or zero-enemy level)
+ * @property {number} coinGained — NEON to display when complete (base + time bonus if applicable)
+ */
+
+/**
+ * @param {LobbyBannerController[] | undefined} controllers
+ * @param {CampaignExitBannerSnapshot} snap
+ */
+export function tickCampaignExitBanners(controllers, snap) {
+  if (!controllers || controllers.length === 0) return;
+  const { remaining, total, complete, coinGained } = snap;
+  const fp = `x:${remaining}|${total}|${complete ? 1 : 0}|${coinGained}|i${bannerGateIconAssetVersion}`;
+  for (const c of controllers) {
+    if (c.kind !== "campaign_exit") continue;
+    if (fp === c._fingerprint) continue;
+    c._fingerprint = fp;
+    redrawCampaignExitBanner(c, snap);
+    c.texture.needsUpdate = true;
+  }
+}
+
+/**
+ * @param {LobbyBannerController} c
+ * @param {CampaignExitBannerSnapshot} snap
+ */
+function redrawCampaignExitBanner(c, snap) {
+  const { ctx, canvas } = c;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const g = GATE_UI_SCALE;
+  const { remaining, total, complete, coinGained } = snap;
+  ctx.clearRect(0, 0, cw, ch);
+  drawBillboardFrameCrisp(ctx, cw, ch, g);
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const fzMain = 96 * g;
+  const swMain = Math.max(5, 5 * g);
+  /** Slightly smaller than enemy-progress lines so coin block has room. */
+  const fzLevelComplete = 76 * g;
+  const swLevelComplete = Math.max(4, 4.2 * g);
+  const fzSub = 40 * g;
+  const swSub = Math.max(3, Math.round(3 * g * 1.4));
+  const fzCoin = 72 * g;
+  const swCoin = Math.max(4, 4 * g);
+
+  if (!complete && total > 0) {
+    ctx.font = `700 ${fzMain}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+    strokeThenFillText(
+      ctx,
+      `${remaining} / ${total}`,
+      cw / 2,
+      ch * 0.38,
+      "rgba(0, 238, 255, 0.98)",
+      swMain,
+    );
+    ctx.font = `600 ${fzMain * 0.72}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+    strokeThenFillText(ctx, "ENEMIES ALIVE", cw / 2, ch * 0.52, "rgba(200, 235, 255, 0.95)", swSub);
+    return;
+  }
+
+  ctx.font = `700 ${fzLevelComplete}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+  strokeThenFillText(
+    ctx,
+    "LEVEL COMPLETE",
+    cw / 2,
+    ch * 0.34,
+    "rgba(130, 255, 210, 0.98)",
+    swLevelComplete,
+  );
+
+  ctx.font = `500 ${fzSub}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+  strokeThenFillText(ctx, "COIN GAINED:", cw / 2, ch * 0.5, "rgba(190, 220, 240, 0.92)", swSub);
+
+  const coinLabel = String(Math.max(0, Math.floor(coinGained)));
+  const yCoin = ch * 0.66;
+  const coinImg = cachedBannerCoinIcon;
+  const iconSize = 64 * g;
+  ctx.font = `700 ${fzCoin}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+  const tw = ctx.measureText(coinLabel).width;
+  const gap = 16 * g;
+  const totalW = (coinImg ? iconSize + gap : 0) + tw;
+  let xLeft = cw / 2 - totalW / 2;
+  if (coinImg) {
+    ctx.drawImage(coinImg, xLeft, yCoin - iconSize / 2, iconSize, iconSize);
+    xLeft += iconSize + gap;
+  }
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  strokeThenFillText(ctx, coinLabel, xLeft, yCoin, "rgba(255, 230, 120, 0.98)", swCoin);
+}
+
+/**
  * Side-profile cycle silhouette tinted with player neon (SVG is dark grey).
  * @param {CanvasRenderingContext2D} ctx
  * @param {CanvasImageSource} img
@@ -565,6 +714,7 @@ function fingerprintGarage(save, placement) {
 export function tickLobbyBannerControllers(controllers, save, validLevels) {
   if (!controllers || controllers.length === 0) return;
   for (const c of controllers) {
+    if (c.kind === "campaign_exit") continue;
     const fp =
       c.kind === "lobby_multiplayer"
         ? FINGERPRINT_LOBBY_MULTIPLAYER
@@ -582,7 +732,7 @@ export function tickLobbyBannerControllers(controllers, save, validLevels) {
 
 /**
  * @typedef {object} LobbyBannerController
- * @property {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"} kind
+ * @property {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"campaign_exit"} kind
  * @property {"gate"|"building"} placement
  * @property {THREE.CanvasTexture} texture
  * @property {HTMLCanvasElement} canvas

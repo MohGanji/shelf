@@ -5,7 +5,7 @@
 import * as THREE from "../vendor/three-module.js";
 import { parseCampaignLevelIndex } from "../levels/loader.js";
 import { GATE_WIDTH, LOBBY_LEVEL_ID } from "../levels/schema.js";
-import { attachLobbyGateBannerBoard } from "./billboardBanners.js";
+import { attachCampaignExitGateBanner, attachLobbyGateBannerBoard } from "./billboardBanners.js";
 
 export { GATE_WIDTH };
 
@@ -486,8 +486,9 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
  * @param {ParsedGate} g
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
  * @param {"lobby_garage"|"lobby_progress"|"lobby_multiplayer"|null} [lobbyBannerKind] — big canvas above arch on lobby hub only
+ * @param {boolean} [attachCampaignExitBanner] — live stats board above exit gate on campaign arenas only
  */
-function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null) {
+function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaignExitBanner = false) {
   const group = new THREE.Group();
   const w = g.width;
   const h = (playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight) || 3.0;
@@ -659,6 +660,9 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null) {
       lobbyBannerKind,
     );
     if (ctrl) group.userData.lobbyGateBannerController = ctrl;
+  } else if (attachCampaignExitBanner && g.role === "exit") {
+    const ctrl = attachCampaignExitGateBanner(group, { gateWidth: w, archHeight: h, pillarD });
+    if (ctrl) group.userData.lobbyGateBannerController = ctrl;
   }
 
   return group;
@@ -708,9 +712,18 @@ export function placeGateGroupOnWall(g, arenaWidth, arenaDepth) {
  * @param {number} arenaWidth
  * @param {number} arenaDepth
  * @param {string | null | undefined} [levelId] — when `level-0`, arena/garage gates get live lobby boards
+ * @param {boolean} [useCampaignExitBanner] — when true (non-lobby), exit gate gets a live stats billboard
  * @returns {{ root: THREE.Group; animatables: { update: (t: number) => void }[]; lobbyGateBannerControllers: import("./billboardBanners.js").LobbyBannerController[] }}
  */
-export function buildGateMeshes(scene, playCfg, gates, arenaWidth, arenaDepth, levelId) {
+export function buildGateMeshes(
+  scene,
+  playCfg,
+  gates,
+  arenaWidth,
+  arenaDepth,
+  levelId,
+  useCampaignExitBanner = false,
+) {
   const root = new THREE.Group();
   root.name = "tron-gates";
   /** @type {{ update: (t: number) => void }[]} */
@@ -725,7 +738,7 @@ export function buildGateMeshes(scene, playCfg, gates, arenaWidth, arenaDepth, l
     if (lobbyHub && g.role === "garage") lbKind = "lobby_garage";
     else if (lobbyHub && g.role === "arena") lbKind = "lobby_progress";
     else if (lobbyHub && g.role === "multiplayer") lbKind = "lobby_multiplayer";
-    const grp = buildSingleGateGroup(g, playCfg, lbKind);
+    const grp = buildSingleGateGroup(g, playCfg, lbKind, useCampaignExitBanner && g.role === "exit");
     const banner = grp.userData.lobbyGateBannerController;
     if (banner) lobbyGateBannerControllers.push(banner);
     const { position, rotationY } = placeGateGroupOnWall(g, arenaWidth, arenaDepth);

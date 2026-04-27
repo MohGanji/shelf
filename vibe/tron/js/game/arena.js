@@ -3,6 +3,7 @@ import { Vec3 } from "../vendor/cannon-es-module.js";
 import { getFloorGridLineStep } from "../config.js";
 import { createFloorBody, createWallPhysicsBody } from "../engine/physics.js";
 import { buildBarriersFromLevel } from "./blocks.js";
+import { LOBBY_LEVEL_ID } from "../levels/schema.js";
 import {
   buildGateMeshes,
   computeOpenGateWallFootprints,
@@ -568,6 +569,8 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
   let gateLobbyBannerControllers = [];
   if (gates.length > 0) {
     const levelId = level && typeof level.id === "string" ? level.id : null;
+    const useCampaignExitBanner =
+      !!level && typeof level.id === "string" && level.id !== LOBBY_LEVEL_ID;
     const built = buildGateMeshes(
       scene,
       playCfg,
@@ -575,6 +578,7 @@ export function buildArenaFromCampaignLevel(scene, world, wallMat, floorMat, pla
       playCfg.arenaWidth,
       playCfg.arenaDepth,
       levelId,
+      useCampaignExitBanner,
     );
     gateLobbyBannerControllers = built.lobbyGateBannerControllers;
     scene.userData.gateAnimatables = built.animatables;
