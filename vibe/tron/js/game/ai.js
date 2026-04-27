@@ -2,6 +2,9 @@
  * Enemy AI (plan Phase 4): P4.2 steering — tile-map trail lookahead + solid (arena/barrier) ray checks.
  * P4.3 — hunting: intercept (trail-cut lead), tiered flanking, aggression + reaction-time smoothing.
  * P4.4 — self-preservation: `aiAvoidanceRange` for wall rays + peer separation; `aiReactionTime` smooths combined hunt + peer steer.
+ * Slow / idle player: lateral sweep flanking scales up; peer separation from the **player** scales down so cycles can close and cut in.
+ * `offenseBlend` + `pinCommit`: on a **slow/close** player, `applyAiEvasionThrottle` only sees `imminentHit` as hazard (not `dangerL/R` noise), and react-brakes are skipped — avoids S↔W stutter. Still obeys `imminentHit`.
+ * Pace: planner favors **W** and high `enemySpd` / `topSpeed`; if stuck near a static player (~no progress) briefly **re-aims** `pred` away, keeps speed, then re-engages.
  * Evasion throttle: brake is “slow enough to carve,” not “stop.” Planner scores gas vs brake per steer;
  * a minimum-speed floor + rearm hysteresis keeps enemies off zero in pinches unless impact is imminent.
  * While braking in hazard, steer is forced non-zero when needed so S always pairs with A/D (sharp carve).
@@ -248,9 +251,11 @@ export function raycastSolidClearanceXZ(opts) {
  * @param {string} opts.selfId
  * @param {number} opts.avoidRange — `devHud.aiAvoidanceRange` (clamped floor 1.2)
  * @param {Array<{ id: string; x: number; z: number }>} opts.peers
+ * @param {number} [opts.playerPeerSepScale=1] — 0..1, scales only the **player** peer so slow/stationary targets
+ *   are not shoved by separation (enemies can close for a side sweep or kill); other peers unchanged
  */
 export function computePeerSeparationSteer(opts) {
-  const { px, pz, heading, selfId, peers, avoidRange } = opts;
+  const { px, pz, heading, selfId, peers, avoidRange, playerPeerSepScale = 1 } = opts;
   const r = Math.max(1.2, avoidRange);
   const fx = Math.sin(heading);
   const fz = Math.cos(heading);
@@ -264,7 +269,8 @@ export function computePeerSeparationSteer(opts) {
     if (dist < 0.08 || dist > r) continue;
     const cross = fx * relZ - fz * relX;
     const sgn = cross === 0 ? 0 : cross > 0 ? 1 : -1;
-    const w = (1 - dist / r) ** 1.35;
+    let w = (1 - dist / r) ** 1.35;
+    if (p.id === "player") w *= Math.max(0, Math.min(1, playerPeerSepScale));
     acc += sgn * w;
   }
 
@@ -311,7 +317,8 @@ function computeEnemyNitroDesire(p) {
   if (devHud.aiSmartPlannerEnabled !== false) {
     const smart = smartAiParams(devHud);
     const wantEscape = dangerFwd && clearF > Math.max(8, devHud.aiAvoidanceRange * 1.15);
-    const chaseWindow = distPlayer > 14 && distPlayer < 105 && huntDist > 4;
+    const huntMin = pspd < 10 ? 1.2 : 4;
+    const chaseWindow = distPlayer > 14 && distPlayer < 105 && huntDist > huntMin;
     const speedDeficit = enemySpd < pspd * 1.06 + 8;
     const wantChase = chaseWindow && speedDeficit && !dangerFwd && !wallNear;
     const wantRecoverSpeed = enemySpd < 18 && distPlayer > 24 && distPlayer < 100 && !dangerFwd;
@@ -336,12 +343,19 @@ function computeEnemyNitroDesire(p) {
   const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
   const minChase = 12;
   const maxChase = tier === "hard" ? 98 : tier === "medium" ? 86 : 58;
-  const wantChase =
+  const wantChaseMoving =
     distPlayer > minChase &&
     distPlayer < maxChase &&
     huntDist > 3.5 &&
     pspd > 3.5 &&
     enemySpd < pspd * 1.12 + 10;
+  const wantChaseVuln =
+    distPlayer > minChase &&
+    distPlayer < maxChase &&
+    pspd < 3.5 &&
+    huntDist > 1.15 &&
+    enemySpd < 42;
+  const wantChase = wantChaseMoving || wantChaseVuln;
 
   const wantEscape =
     (dangerFwd && clearF < avoidRange * 1.85) || (wallNear && clearF < avoidRange * 1.05);
@@ -670,24 +684,87 @@ export function computeEnemyCycleKeys(opts) {
 
   const tier = intelligenceTier(intelligence);
   const agg = Math.max(0.2, Math.min(3, devHud.aiAggression));
+  /** 1 = sitting duck, 0 = normal — boosts lateral sweep & reduces “don’t step on the player” peer shove. */
+  const slowVuln = Math.max(0, Math.min(1, 1 - playerSpeed / 15));
   const leadT = interceptLeadSeconds(intelligence, playerSpeed, agg);
   let predX = playerPos.x + playerVx * leadT;
   let predZ = playerPos.z + playerVz * leadT;
 
   const flankBase = devHud.aiFlankingEnabled === false ? 0 : flankBlendForTier(tier) * agg;
+  const sweepAdd =
+    devHud.aiFlankingEnabled === false
+      ? 0
+      : slowVuln *
+        slowVuln *
+        (tier === "hard" ? 0.46 : tier === "medium" ? 0.35 : 0.27) *
+        Math.min(2.1, agg);
+  const effectiveFlank = flankBase + sweepAdd;
   const toPredX = predX - px;
   const toPredZ = predZ - pz;
   const distPred = Math.hypot(toPredX, toPredZ);
-  if (distPred > 1e-4 && flankBase > 1e-6) {
+  if (distPred > 1e-4 && effectiveFlank > 1e-6) {
     const inv = 1 / distPred;
     const nx = toPredX * inv;
     const nz = toPredZ * inv;
     const perpX = -nz;
     const perpZ = nx;
     const side = enemyIndex % 2 === 0 ? 1 : -1;
-    const flankMag = flankBase * Math.min(20, 3 + distPred * 0.38);
+    const flankMag = effectiveFlank * Math.min(22, 3.5 + distPred * (0.38 + 0.2 * slowVuln));
     predX += perpX * flankMag * side;
     predZ += perpZ * flankMag * side;
+  }
+
+  const distPlayer = Math.hypot(playerPos.x - px, playerPos.z - pz);
+  const offenseBlend = Math.max(
+    0,
+    Math.min(
+      1,
+      slowVuln * Math.max(0, (78 - distPlayer) / 78) * (distPlayer > 1.4 ? 1 : 0.45),
+    ),
+  );
+  const uPace = body.userData;
+  const nowMs = performance.now();
+  if (typeof uPace._aiPaceBreakUntilMs !== "number") uPace._aiPaceBreakUntilMs = 0;
+  if (typeof uPace._aiPaceBestDist !== "number") {
+    uPace._aiPaceBestDist = distPlayer;
+    uPace._aiPaceStuckAtMs = nowMs;
+  }
+  if (typeof uPace._aiPaceStuckAtMs !== "number") uPace._aiPaceStuckAtMs = nowMs;
+  if (typeof uPace._aiPaceInsideBreak !== "boolean") uPace._aiPaceInsideBreak = false;
+  if (nowMs < uPace._aiPaceBreakUntilMs) uPace._aiPaceInsideBreak = true;
+  else {
+    if (uPace._aiPaceInsideBreak) {
+      uPace._aiPaceInsideBreak = false;
+      uPace._aiPaceBestDist = distPlayer;
+      uPace._aiPaceStuckAtMs = nowMs;
+    } else if (distPlayer < uPace._aiPaceBestDist - 0.75) {
+      uPace._aiPaceBestDist = distPlayer;
+      uPace._aiPaceStuckAtMs = nowMs;
+    }
+    if (
+      nowMs >= uPace._aiPaceBreakUntilMs &&
+      playerSpeed < 9.5 &&
+      slowVuln * Math.max(0, (100 - distPlayer) / 100) > 0.2 &&
+      distPlayer < 105 &&
+      distPlayer > 4.5 &&
+      nowMs - uPace._aiPaceStuckAtMs > 1000
+    ) {
+      uPace._aiPaceBreakUntilMs = nowMs + 2800;
+      uPace._aiPaceBestDist = distPlayer;
+      uPace._aiPaceStuckAtMs = nowMs;
+    }
+  }
+  const paceBreak = nowMs < uPace._aiPaceBreakUntilMs;
+  if (paceBreak) {
+    const rx = px - playerPos.x;
+    const rz = pz - playerPos.z;
+    const rlen = Math.hypot(rx, rz) || 1e-4;
+    const runS = 50 + (enemyIndex % 5) * 3.5;
+    const srx = (rx / rlen) * runS;
+    const srz = (rz / rlen) * runS;
+    const sideP = enemyIndex % 2 === 0 ? 1 : -1;
+    predX = px + srx + (-rz / rlen) * 15 * sideP;
+    predZ = pz + srz + (rx / rlen) * 15 * sideP;
   }
 
   const ttx = predX - px;
@@ -706,6 +783,7 @@ export function computeEnemyCycleKeys(opts) {
   let steerCmd = Math.max(-1, Math.min(1, dh * errGain));
 
   const avoidRange = Math.max(2.5, devHud.aiAvoidanceRange);
+  const playerPeerSepScale = Math.min(1, playerSpeed / 9);
   const peerSep =
     devHud.aiPeerSeparationEnabled !== false && peers.length > 0
       ? computePeerSeparationSteer({
@@ -715,6 +793,7 @@ export function computeEnemyCycleKeys(opts) {
           selfId,
           peers,
           avoidRange,
+          playerPeerSepScale,
         })
       : 0;
   steerCmd = Math.max(-1, Math.min(1, steerCmd + peerSep * 0.95));
@@ -797,7 +876,6 @@ export function computeEnemyCycleKeys(opts) {
   const safeR = !dangerR;
   const safeHL = !dangerHL;
   const safeHR = !dangerHR;
-  const distPlayer = Math.hypot(playerPos.x - px, playerPos.z - pz);
   const enemySpdEarly = typeof body.userData.speed === "number" ? body.userData.speed : 0;
   const topSpeed = playCfg.maxMoveSpeed;
 
@@ -807,6 +885,11 @@ export function computeEnemyCycleKeys(opts) {
 
   if (devHud.aiSmartPlannerEnabled !== false) {
     const p = smartAiParams(devHud);
+    const planSafe = 1 - 0.76 * offenseBlend * (paceBreak ? 0.38 : 1);
+    const paceN = Math.min(1, enemySpdEarly / Math.max(0.01, topSpeed));
+    const paceWeight = 2.45 * p.aggression * 0.9;
+    const pinApproach =
+      !paceBreak && playerSpeed < 9.5 && distPlayer < 60 && distPlayer > 0.9;
     const grid = trailSources[0] && trailSources[0].map;
     const avoidOwnTrail = devHud.aiAvoidOwnTrailEnabled !== false;
     const avoidEnemyTrails = devHud.aiAvoidEnemyTrailsEnabled !== false;
@@ -908,6 +991,10 @@ export function computeEnemyCycleKeys(opts) {
           -1,
           Math.min(1, (playerToEnemyNow - playerToCandidate) / Math.max(1, sampleDist)),
         );
+        const slowCloseBonus =
+          !paceBreak && playerSpeed < 13 && distPlayer < 90
+            ? slowVuln * p.aggression * 1.5 * Math.max(0, closing)
+            : 0;
         const cutoffScore = useCutoff ? Math.max(0, closing) * 0.7 + Math.max(0, align) * 0.3 : 0;
         const pressureScore = usePressure ? directPressure * (0.6 + Math.min(0.4, distPlayer / 120)) : 0;
         const reachScore = Math.min(1, reachable / Math.max(1, p.floodBudget));
@@ -919,17 +1006,32 @@ export function computeEnemyCycleKeys(opts) {
         const stabilityBonus = cand === prevSteer ? p.stability * 0.9 : cand === 0 && prevSteer === 0 ? p.stability * 0.6 : 0;
 
         let score = 0;
-        score += reachScore * (2.2 + p.safety * 5.5);
+        score += reachScore * (2.2 + p.safety * 5.5) * planSafe;
         score += Math.max(0, align) * p.aggression * 3.2;
+        score += slowCloseBonus;
         score += cutoffScore * p.cutoff * 3.5;
         score += pressureScore * p.pressure * 2.2;
         score += stabilityBonus;
-        score -= dangerPenalty * (5 + p.safety * 12);
-        score -= trapPenalty * (3 + p.safety * 8);
+        score -= dangerPenalty * (5 + p.safety * 12) * planSafe;
+        score -= trapPenalty * (3 + p.safety * 8) * planSafe;
         if (cand === seekSteer) score += p.aggression * 0.45;
 
+        if (!useBrake) {
+          score += paceWeight * (0.22 + 0.78 * paceN);
+          score += 1.35 * p.aggression * (1 - paceN) * (1 - paceN);
+        } else {
+          const hardHazard = trailDanger || solidDanger;
+          if (!hardHazard) {
+            score -= 1.1 * p.aggression * (0.55 + 0.45 * paceN) * (paceBreak ? 1.25 : 1);
+          }
+        }
+
         if (useBrake && enemySpdEarly <= topSpeed * (evasionMinFrac + 0.035)) {
-          score -= 4.0 + p.safety * 0.6;
+          score -= (paceBreak ? 2.0 : 4.0) + p.safety * (paceBreak ? 0.3 : 0.6);
+        }
+        if (pinApproach && useBrake) {
+          score -=
+            4.2 * p.aggression * (trailDanger || solidDanger || solidClear < avoidRange * 0.85 ? 0.42 : 1.25);
         }
 
         if (useBrake) {
@@ -940,11 +1042,12 @@ export function computeEnemyCycleKeys(opts) {
             dangerL ||
             dangerR ||
             clearF < avoidRange * 1.15;
+          const needSlowTame = paceBreak ? 0.08 : 1 - 0.9 * offenseBlend;
           if (pinch) {
             score += 1.15 + p.aggression * 1.1 + p.safety * 0.95;
           }
           if (needSlow && enemySpdEarly > topSpeed * 0.28) {
-            score += 0.65 + spdFactor * (0.85 + p.safety * 0.7);
+            score += (0.65 + spdFactor * (0.85 + p.safety * 0.7)) * needSlowTame;
           }
           if (
             useCutoff &&
@@ -990,8 +1093,10 @@ export function computeEnemyCycleKeys(opts) {
       brake = best.useBrake;
       if (
         !brake &&
+        !paceBreak &&
         best.danger &&
-        best.reachable < p.floodBudget * 0.12
+        best.reachable < p.floodBudget * 0.12 &&
+        offenseBlend < 0.5
       ) {
         brake = true;
       }
@@ -1012,6 +1117,19 @@ export function computeEnemyCycleKeys(opts) {
   const enemySpd = typeof body.userData.speed === "number" ? body.userData.speed : 0;
   const escapeBlocked = dangerFwd && !safeL && !safeR;
 
+  const hazardBrake = dangerFwd || wallNear || dangerL || dangerR || escapeBlocked;
+  /** Only skip the gas pulse when a solid impact is truly close (not merely “trail uneasy”). */
+  const imminentHit =
+    clearF < pr * 2.85 + enemySpd * Math.max(0.04, dt) * 2.4 ||
+    (dangerFwd && clearF < 5.8 && enemySpd > topSpeed * 0.36);
+  /**
+   * Slow/close target: do not treat `dangerL` / `dangerR` as “hazard” for the evasion min-speed
+   * brake dance (they flicker); only **imminent** wall/trail contact keeps hazard on.
+   */
+  const pinCommit =
+    !paceBreak && playerSpeed < 9.5 && distPlayer < 62 && distPlayer > 0.85 && !imminentHit;
+  const allowPinReact = !pinCommit || imminentHit;
+
   /** Speed×reaction horizon (cf. Armagetron `Speed * Delay`): brake to buy turn radius before impact. */
   if (
     devHud.aiBrakeForSafetyEnabled !== false &&
@@ -1019,32 +1137,37 @@ export function computeEnemyCycleKeys(opts) {
   ) {
     const reactH = Math.max(0.04, devHud.aiReactionTime);
     const stopDist = enemySpd * reactH * 1.45 + pr * 0.35;
-    if (!brake && clearF < stopDist && clearF < avoidRange * 1.85 && enemySpd > topSpeed * 0.18) {
+    const allowPaceReact = !paceBreak || imminentHit;
+    if (
+      allowPaceReact &&
+      allowPinReact &&
+      !brake &&
+      clearF < stopDist &&
+      clearF < avoidRange * 1.85 &&
+      enemySpd > topSpeed * 0.18
+    ) {
       brake = true;
     }
-    if (!brake && escapeBlocked && enemySpd > topSpeed * 0.12) {
+    if (allowPaceReact && allowPinReact && !brake && escapeBlocked && enemySpd > topSpeed * 0.12) {
       brake = true;
     }
   }
-
-  const hazardBrake =
-    dangerFwd || wallNear || dangerL || dangerR || escapeBlocked;
-  /** Only skip the gas pulse when a solid impact is truly close (not merely “trail uneasy”). */
-  const imminentHit =
-    clearF < pr * 2.85 + enemySpd * Math.max(0.04, dt) * 2.4 ||
-    (dangerFwd && clearF < 5.8 && enemySpd > topSpeed * 0.36);
   if (
     devHud.aiBrakeForSafetyEnabled !== false &&
     !(nitroState && nitroState.burstRemaining > 1e-5)
   ) {
+    const hazardForEvas = paceBreak || pinCommit ? imminentHit : hazardBrake;
     brake = applyAiEvasionThrottle(body, {
       wantBrake: brake,
-      hazard: hazardBrake,
+      hazard: hazardForEvas,
       imminent: imminentHit,
       enemySpd,
       topSpeed,
       devHud,
     });
+  }
+  if (pinCommit && !imminentHit) {
+    brake = false;
   }
 
   if (brake && hazardBrake && steer === 0) {
@@ -1067,21 +1190,32 @@ export function computeEnemyCycleKeys(opts) {
   if (nitroState && nitroState.burstRemaining > 1e-5) {
     space = true;
   } else if (nitroState && nitroState.bars > 0) {
-    space = computeEnemyNitroDesire({
-      tier,
-      intelligence,
-      agg,
-      dangerFwd,
-      wallNear,
-      clearF,
-      distPlayer,
-      pspd: playerSpeed,
-      enemySpd,
-      huntDist,
-      userData: body.userData,
-      dt,
-      devHud,
-    });
+    const wantPaceNitro =
+      (paceBreak && enemySpd < topSpeed * 0.58 && !dangerFwd) ||
+      (!paceBreak &&
+        !dangerFwd &&
+        !wallNear &&
+        distPlayer > 22 &&
+        distPlayer < 95 &&
+        enemySpd > topSpeed * 0.14 &&
+        enemySpd < topSpeed * 0.4);
+    space = wantPaceNitro
+      ? true
+      : computeEnemyNitroDesire({
+          tier,
+          intelligence,
+          agg,
+          dangerFwd,
+          wallNear,
+          clearF,
+          distPlayer,
+          pspd: playerSpeed,
+          enemySpd,
+          huntDist,
+          userData: body.userData,
+          dt,
+          devHud,
+        });
   }
 
   if (devHud.aiDebugScoringEnabled) {
