@@ -375,7 +375,8 @@ export function createRuntimeFromPlayerSave(_playerSave) {
 /** Full-screen tunnel transition (BOOT / gates) — see `engine/tunnel.js` */
 export const CONFIG = {
   tunnelGateSeconds: 1,
-  tunnelBootSeconds: 2.8,
+  /** First-load intro tunnel; gate transitions use `tunnelGateSeconds` (1s). Keep this short — real load finishes before the tunnel. */
+  tunnelBootSeconds: 1.5,
   tunnelRadius: 14,
   tunnelLength: 240,
   tunnelRadialSegments: 64,
