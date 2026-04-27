@@ -1,5 +1,7 @@
 # Tron: Cyber Cycles
 
+![Tron: Cyber Cycles Poster](./assets/poster.png)
+
 Implementation tracks `plans/plan-2026-04-09-tron-light-cycles.md`.
 
 ## Audio (P8.1)
