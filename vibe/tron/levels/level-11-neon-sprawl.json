@@ -191,22 +191,22 @@
   ],
   "enemies": [
     {
-      "x": -182.5,
-      "z": 120.5,
+      "x": -173.5,
+      "z": 130.5,
       "rotation": 0,
       "color": "#00E5FF",
       "category": "hard",
-      "gridX": 8,
-      "gridZ": 300
+      "gridX": 17,
+      "gridZ": 310
     },
     {
-      "x": 154.5,
-      "z": 120.5,
+      "x": 145.5,
+      "z": 110.5,
       "rotation": 0,
       "color": "#00E5FF",
       "category": "hard",
-      "gridX": 345,
-      "gridZ": 300
+      "gridX": 336,
+      "gridZ": 290
     }
   ],
   "rewards": {

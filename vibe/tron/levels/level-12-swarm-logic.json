@@ -378,31 +378,31 @@
   ],
   "enemies": [
     {
-      "x": -14.5,
-      "z": 133.5,
+      "x": -6.5,
+      "z": 142.5,
       "rotation": 0,
       "color": "#FF3D7F",
       "category": "medium",
-      "gridX": 186,
-      "gridZ": 333
+      "gridX": 194,
+      "gridZ": 342
     },
     {
-      "x": -148.5,
-      "z": 44.5,
+      "x": -157.5,
+      "z": 53.5,
       "rotation": 0,
       "color": "#FF3D7F",
       "category": "medium",
-      "gridX": 52,
-      "gridZ": 244
+      "gridX": 43,
+      "gridZ": 253
     },
     {
-      "x": 133.5,
-      "z": -88.5,
+      "x": 125.5,
+      "z": -79.5,
       "rotation": 0,
       "color": "#FF3D7F",
       "category": "medium",
-      "gridX": 334,
-      "gridZ": 111
+      "gridX": 326,
+      "gridZ": 120
     }
   ],
   "rewards": {

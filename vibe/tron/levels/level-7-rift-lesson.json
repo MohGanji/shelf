@@ -92,22 +92,22 @@
   ],
   "enemies": [
     {
-      "x": -127.5,
-      "z": 87.5,
+      "x": -118.5,
+      "z": 97.5,
       "rotation": 0,
       "color": "#FF8A00",
       "category": "easy",
-      "gridX": 33,
-      "gridZ": 227
+      "gridX": 42,
+      "gridZ": 237
     },
     {
-      "x": 128.5,
-      "z": 87.5,
+      "x": 119.5,
+      "z": 77.5,
       "rotation": 0,
       "color": "#FF3D7F",
       "category": "medium",
-      "gridX": 289,
-      "gridZ": 227
+      "gridX": 280,
+      "gridZ": 217
     }
   ],
   "rewards": {

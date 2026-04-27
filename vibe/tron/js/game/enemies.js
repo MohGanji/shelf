@@ -4,7 +4,12 @@
  */
 
 import { getArenaPlaytestConfig, normalizeEnemyCategory } from "../config.js";
-import { createPlayerBody, applyContinuousArenaWallSlide, applyContinuousBarrierSlide } from "../engine/physics.js";
+import {
+  createPlayerBody,
+  applyContinuousArenaWallSlide,
+  applyContinuousBarrierSlide,
+  syncCyclePhysicsYaw,
+} from "../engine/physics.js";
 import { computeEnemyCycleKeys } from "./ai.js";
 import { createLightCycle } from "./cycle.js";
 import { createTrailWallSystem } from "./trail.js";
@@ -47,10 +52,11 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @param {import('../config.js').DEFAULT_DEV_HUD} opts.devHud
  * @param {Record<string, unknown> | null} opts.campaignLevel
  * @param {{ arenaWidth: number; arenaDepth: number } | null} opts.arenaSize
+ * @param {{ x: number; z: number } | null | undefined} opts.enemyFaceTarget — world XZ to face at spawn (e.g. player entrance); matches `atan2` convention in {@link ./ai.js} and {@link ./gates.js}
  * @returns {{ list: CampaignEnemyEntity[]; tick: (dt: number, ctx: EnemyTickContext) => void }}
  */
 export function createCampaignEnemyEntities(opts) {
-  const { scene, world, playerMat, runtime, devHud, campaignLevel, arenaSize } = opts;
+  const { scene, world, playerMat, runtime, devHud, campaignLevel, arenaSize, enemyFaceTarget } = opts;
 
   /** @type {CampaignEnemyEntity[]} */
   const list = [];
@@ -92,10 +98,30 @@ export function createCampaignEnemyEntities(opts) {
     const body = createPlayerBody(playCfg, playerMat);
     const x = typeof raw.x === "number" ? raw.x : 0;
     const z = typeof raw.z === "number" ? raw.z : 0;
-    const heading = typeof raw.rotation === "number" ? raw.rotation : 0;
+    const tx =
+      enemyFaceTarget &&
+      typeof enemyFaceTarget.x === "number" &&
+      Number.isFinite(enemyFaceTarget.x)
+        ? enemyFaceTarget.x
+        : null;
+    const tz =
+      enemyFaceTarget &&
+      typeof enemyFaceTarget.z === "number" &&
+      Number.isFinite(enemyFaceTarget.z)
+        ? enemyFaceTarget.z
+        : null;
+    let heading = typeof raw.rotation === "number" ? raw.rotation : 0;
+    if (tx !== null && tz !== null) {
+      const dx = tx - x;
+      const dz = tz - z;
+      if (Math.abs(dx) > 1e-4 || Math.abs(dz) > 1e-4) {
+        heading = Math.atan2(dx, dz);
+      }
+    }
     body.position.set(x, playCfg.playerSpawnY, z);
     body.velocity.set(0, 0, 0);
     body.userData.heading = heading;
+    syncCyclePhysicsYaw(body);
     body.userData.speed = 0;
     body.allowSleep = false;
     /** P4.5 — equippable shield (same phases as player; AI triggers deploy). */

@@ -373,16 +373,6 @@ async function main() {
 
   const gameplayParticles = createGameplayParticles({ scene: game.scene, devHud });
 
-  const enemyRoster = createCampaignEnemyEntities({
-    scene: game.scene,
-    world,
-    playerMat,
-    runtime,
-    devHud,
-    campaignLevel: activeCampaignLevel,
-    arenaSize: arenaSizeFromCampaign,
-  });
-
   const wallGates =
     activeCampaignLevel && Array.isArray(activeCampaignLevel.wallObjects)
       ? extractGatesFromWallObjects(activeCampaignLevel.wallObjects)
@@ -395,6 +385,17 @@ async function main() {
   const spawnX = entranceSpawn ? entranceSpawn.x : 0;
   const spawnZ = entranceSpawn ? entranceSpawn.z : 0;
   const spawnHeading = entranceSpawn ? entranceSpawn.heading : 0;
+
+  const enemyRoster = createCampaignEnemyEntities({
+    scene: game.scene,
+    world,
+    playerMat,
+    runtime,
+    devHud,
+    campaignLevel: activeCampaignLevel,
+    arenaSize: arenaSizeFromCampaign,
+    enemyFaceTarget: { x: spawnX, z: spawnZ },
+  });
 
   const isLobby =
     activeCampaignLevel && typeof activeCampaignLevel.id === "string"
