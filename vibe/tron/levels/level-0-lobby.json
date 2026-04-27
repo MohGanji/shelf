@@ -130,7 +130,6 @@
       "depth": 19,
       "height": 2,
       "shape": "square",
-      "color": "#00e8ff",
       "zone": "arena-band",
       "x": -21,
       "z": 52.5
@@ -143,7 +142,6 @@
       "depth": 19,
       "height": 2,
       "shape": "square",
-      "color": "#00e8ff",
       "zone": "arena-band",
       "x": 21,
       "z": 52.5
@@ -156,7 +154,6 @@
       "depth": 19,
       "height": 2,
       "shape": "square",
-      "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": 89,
       "z": 52.5
@@ -169,7 +166,6 @@
       "depth": 19,
       "height": 2,
       "shape": "square",
-      "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": 143,
       "z": 52.5
@@ -206,7 +202,6 @@
       "depth": 19,
       "height": 2,
       "shape": "square",
-      "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": -89,
       "z": 52.5
@@ -219,7 +214,6 @@
       "depth": 19,
       "height": 2,
       "shape": "square",
-      "color": "#ffe84a",
       "zone": "multiplayer-band",
       "x": -143,
       "z": 52.5
