@@ -3,13 +3,13 @@
 
 :root {
   color-scheme: dark;
+  /* Clearance above bottom safe area for Vibe Jam widget + corner HUD */
+  --hud-bottom-offset: calc(env(safe-area-inset-bottom, 0px) + 68px);
   --tron-bg: #0a0a0a;
   --tron-grid: #1a1a3e;
   --tron-cyan: #00ffff;
   --tron-orange: #ff6600;
   --tron-dim: rgba(0, 255, 255, 0.35);
-  --boot-bar-bg: rgba(0, 40, 60, 0.85);
-  --boot-bar-fill: linear-gradient(90deg, #00ffff, #66ffff);
 }
 
 .noscript-fallback {
@@ -86,7 +86,7 @@ body {
   user-select: none;
 }
 
-/* BOOT tunnel HTML overlay — warp layers + title + progress centered like derez (in the tunnel) */
+/* BOOT tunnel HTML overlay — warp layers + title centered like derez (in the tunnel) */
 .boot-overlay {
   position: fixed;
   inset: 0;
@@ -195,28 +195,6 @@ body {
   }
 }
 
-.boot-overlay__bar-wrap {
-  position: relative;
-  z-index: 2;
-  flex-shrink: 0;
-  width: min(520px, 88vw);
-  height: 10px;
-  border-radius: 999px;
-  background: var(--boot-bar-bg);
-  border: 1px solid var(--tron-dim);
-  box-shadow: 0 0 18px rgba(0, 255, 255, 0.25);
-  overflow: hidden;
-}
-
-.boot-overlay__bar {
-  height: 100%;
-  width: 0%;
-  border-radius: inherit;
-  background: var(--boot-bar-fill);
-  box-shadow: 0 0 14px rgba(102, 255, 255, 0.85);
-  transition: width 0.12s ease-out;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .boot-overlay__warp-radial,
   .boot-overlay__warp-streaks,
@@ -305,7 +283,7 @@ body {
 .cycle-hud {
   position: fixed;
   left: max(16px, env(safe-area-inset-left, 0px));
-  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  bottom: var(--hud-bottom-offset);
   z-index: 18;
   max-width: min(520px, 92vw);
   padding: 10px 14px;
@@ -486,7 +464,7 @@ body {
 .hud-minimap-wrap {
   position: fixed;
   right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  bottom: var(--hud-bottom-offset);
   z-index: 18;
   padding: 6px;
   pointer-events: none;

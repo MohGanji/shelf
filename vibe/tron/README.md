@@ -8,7 +8,7 @@ Implementation tracks `plans/plan-2026-04-09-tron-light-cycles.md`.
 
 ## BOOT tunnel (P9.5)
 
-`js/engine/tunnel.js` — `playTunnel(renderer, onComplete?, { durationSeconds })` runs the full-screen grid tunnel while the HTML BOOT overlay shows progress (`CONFIG.tunnelBootSeconds`). `isTunnelBlockingInput()` is true for the tunnel duration so gameplay keys are not buffered.
+`js/engine/tunnel.js` — `playTunnel(renderer, onComplete?, { durationSeconds })` runs the full-screen grid tunnel while the HTML BOOT overlay (warp + title) stays up (`CONFIG.tunnelBootSeconds`). `isTunnelBlockingInput()` is true for the tunnel duration so gameplay keys are not buffered.
 
 ## P1.2 — Arena foundation
 

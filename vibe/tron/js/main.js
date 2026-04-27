@@ -107,16 +107,6 @@ function formatHudMmSs(sec) {
   return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
 }
 
-/**
- * @param {{ fill: HTMLElement; label: HTMLElement }} els
- * @param {number} pct 0–100
- */
-function setBootProgress(els, pct) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  els.fill.style.width = `${clamped}%`;
-  els.label.setAttribute("aria-valuenow", String(Math.round(clamped)));
-}
-
 /** 0–1 → smooth 0–1 (enemy kill-cam, etc.) */
 function smoothstep01(t) {
   if (t <= 0) return 0;
@@ -167,12 +157,8 @@ async function main() {
   const canvas = /** @type {HTMLCanvasElement} */ ($("game-canvas"));
   const bootOverlay = $("boot-overlay");
   const lobbyBanner = $("lobby-placeholder");
-  const bootEls = { fill: $("boot-progress-fill"), label: $("boot-progress-label") };
-
-  setBootProgress(bootEls, 4);
 
   const save = loadOrCreateSave();
-  setBootProgress(bootEls, 18);
   const runtime = createRuntimeFromPlayerSave(save);
 
   try {
@@ -182,7 +168,6 @@ async function main() {
   }
 
   const campaign = await loadCampaignLevels();
-  setBootProgress(bootEls, 44);
 
   const bootPeek = peekSessionBootTarget();
   const skipArenaForBoot =
@@ -256,7 +241,6 @@ async function main() {
     musicLobbyUrl: getLobbyMusicUrl(runtime.devHud),
     musicGameplayUrl: getGameplayMusicUrl(runtime.devHud),
   });
-  setBootProgress(bootEls, 58);
   audio.unlock();
   for (const url of MUSIC_ASSET_URLS.lobbyVariants) {
     void audio.prefetch(url);
@@ -264,11 +248,9 @@ async function main() {
   for (const url of MUSIC_ASSET_URLS.gameplayVariants) {
     void audio.prefetch(url);
   }
-  setBootProgress(bootEls, 74);
 
   const graphicsProfile = getGraphicsProfile();
   const game = createGameRenderer(canvas, { devHud: runtime.devHud, graphicsProfile });
-  setBootProgress(bootEls, 86);
 
   const devHud = runtime.devHud; // session-only: Advanced tuning is not written to localStorage (refresh restores defaults)
 
@@ -278,35 +260,13 @@ async function main() {
   /** No-op: dev HUD (and same-store visual sliders) are session-only; do not merge into `save` or `persistSave`. */
   function persistDevHudToSave() {}
 
-  const durationMs = CONFIG.tunnelBootSeconds * 1000;
-  const rampT0 = performance.now();
-  /** @type {ReturnType<typeof setInterval> | 0} */
-  let rampIv = setInterval(() => {
-    const u = Math.min(1, (performance.now() - rampT0) / durationMs);
-    setBootProgress(bootEls, 86 + 13 * u);
-    if (u >= 1) {
-      clearInterval(rampIv);
-      rampIv = 0;
-    }
-  }, 40);
-
-  try {
-    await playTunnel(
-      game.renderer,
-      () => {
-        setBootProgress(bootEls, 100);
-      },
-      {
-        durationSeconds: CONFIG.tunnelBootSeconds,
-        onBegin: () => {
-          audio.playTunnelTransitionWind();
-        },
-        devHud,
-      },
-    );
-  } finally {
-    if (rampIv) clearInterval(rampIv);
-  }
+  await playTunnel(game.renderer, undefined, {
+    durationSeconds: CONFIG.tunnelBootSeconds,
+    onBegin: () => {
+      audio.playTunnelTransitionWind();
+    },
+    devHud,
+  });
 
   bootOverlay.classList.add("boot-overlay--hidden");
 

@@ -3,7 +3,7 @@
   "lang": "en",
   "name": "Tron: Cyber Cycles",
   "short_name": "Tron",
-  "description": "Tron: Legacy–inspired cyber cycle arena — neon trails, AI hunters, garage upgrades, and a level editor.",
+  "description": "Fast-paced tron arena game made with Threejs! Take down your opponents in the arena - Play in the browser, no install.",
   "categories": ["games", "entertainment"],
   "icons": [
     {
