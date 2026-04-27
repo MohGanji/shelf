@@ -267,6 +267,7 @@ export function createDevHudController(opts) {
 
   section("Gameplay", [
     { key: "lowSpeedThreshold", label: "Low-speed threshold", min: 0, max: 40, step: 0.5 },
+    { key: "debugTrailCollisionBoxes", label: "Debug Trail Collision Boxes", kind: "bool" },
   ]);
 
   section("Audio", [

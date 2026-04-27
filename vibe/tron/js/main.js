@@ -1399,6 +1399,12 @@ async function main() {
   const step = 1 / playCfg.physicsHz;
   /** Hide bottom welcome strip once the player is moving (hub + arena tips). */
   let hubWelcomeBannerVisible = true;
+
+  let debugCollisionGroup = null;
+  let debugTrailMesh = null;
+  let debugPlayerMesh = null;
+  const debugEnemyMeshes = [];
+
   game.setOnFrame(({ t, dt }) => {
     const floorMat = game.scene.userData.arenaFloorMaterial;
     if (
@@ -2114,6 +2120,80 @@ async function main() {
           }
         : null,
     });
+
+    if (devHud.debugTrailCollisionBoxes) {
+      if (!debugCollisionGroup) {
+        debugCollisionGroup = new THREE.Group();
+        game.scene.add(debugCollisionGroup);
+
+        const tSize = playCfg.world.tileSize;
+        const boxGeo = new THREE.BoxGeometry(tSize, tSize, tSize);
+        const redMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true, depthTest: false });
+        debugTrailMesh = new THREE.InstancedMesh(boxGeo, redMat, 20000);
+        debugTrailMesh.frustumCulled = false;
+        debugCollisionGroup.add(debugTrailMesh);
+
+        const playerGeo = new THREE.BoxGeometry(playCfg.cycleHalfWidth * 2, playCfg.cycleHalfHeight * 2, playCfg.cycleHalfLength * 2);
+        const playerEdges = new THREE.EdgesGeometry(playerGeo);
+        const blueMat = new THREE.LineBasicMaterial({ color: 0x0088ff, depthTest: false });
+        debugPlayerMesh = new THREE.LineSegments(playerEdges, blueMat);
+        debugCollisionGroup.add(debugPlayerMesh);
+      }
+
+      // Update Player
+      debugPlayerMesh.position.copy(playerBody.position);
+      debugPlayerMesh.rotation.y = playerBody.userData.heading ?? 0;
+
+      // Update Enemies
+      while (debugEnemyMeshes.length < enemyRoster.list.length) {
+        const eGeo = new THREE.BoxGeometry(playCfg.cycleHalfWidth * 2, playCfg.cycleHalfHeight * 2, playCfg.cycleHalfLength * 2);
+        const eEdges = new THREE.EdgesGeometry(eGeo);
+        const oMat = new THREE.LineBasicMaterial({ color: 0xff8800, depthTest: false });
+        const mesh = new THREE.LineSegments(eEdges, oMat);
+        debugEnemyMeshes.push(mesh);
+        debugCollisionGroup.add(mesh);
+      }
+      for (let i = 0; i < enemyRoster.list.length; i++) {
+        const e = enemyRoster.list[i];
+        const mesh = debugEnemyMeshes[i];
+        if (e.eliminated) {
+          mesh.visible = false;
+        } else {
+          mesh.visible = true;
+          mesh.position.copy(e.body.position);
+          mesh.rotation.y = e.body.userData.heading ?? 0;
+        }
+      }
+
+      // Update Trails
+      const allTiles = [];
+      for (const s of trailSources) {
+        if (s.map && typeof s.map.getActiveTiles === "function") {
+          allTiles.push(...s.map.getActiveTiles());
+        }
+      }
+      const count = Math.min(allTiles.length, 20000);
+      debugTrailMesh.count = count;
+      const dummy = new THREE.Object3D();
+      for (let i = 0; i < count; i++) {
+        const t = allTiles[i];
+        dummy.position.set(t.cx, playCfg.world.trailWallHeight * 0.5, t.cz);
+        dummy.updateMatrix();
+        debugTrailMesh.setMatrixAt(i, dummy.matrix);
+      }
+      debugTrailMesh.instanceMatrix.needsUpdate = true;
+
+    } else if (debugCollisionGroup) {
+      game.scene.remove(debugCollisionGroup);
+      debugCollisionGroup.children.forEach(c => {
+         if (c.geometry) c.geometry.dispose();
+         if (c.material) c.material.dispose();
+      });
+      debugCollisionGroup = null;
+      debugTrailMesh = null;
+      debugPlayerMesh = null;
+      debugEnemyMeshes.length = 0;
+    }
   });
 
   lobbyBanner.hidden = false;

@@ -76,11 +76,20 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
       plot(x0, z0);
       if (x0 === ix1 && z0 === iz1) break;
       const e2 = 2 * err;
-      if (e2 > -dz) {
+      let stepX = false;
+      let stepZ = false;
+      if (e2 > -dz) stepX = true;
+      if (e2 < dx) stepZ = true;
+      
+      if (stepX && stepZ) {
+        plot(x0 + sx, z0);
+      }
+      
+      if (stepX) {
         err -= dz;
         x0 += sx;
       }
-      if (e2 < dx) {
+      if (stepZ) {
         err += dx;
         z0 += sz;
       }
@@ -290,6 +299,20 @@ export function createTrailTileMap({ arenaWidth, arenaDepth, tileSize = TILE_SIZ
     evaluateCollisionLine,
     hasTrailAhead,
     nearestHazardDistance,
+    getActiveTiles() {
+      const out = [];
+      for (const [k, cell] of cells.entries()) {
+        if (cell.size > 0) {
+          const [ix, iz] = k.split(",").map(Number);
+          const center = tileToWorldCenter(ix, iz);
+          for (const [oid] of cell.entries()) {
+            out.push({ cx: center.x, cz: center.z, ownerId: oid, isPlayer: oid === "player" });
+            break;
+          }
+        }
+      }
+      return out;
+    },
     getBounds() {
       return { cols, rows, tileSize: ts, halfW, halfD };
     },

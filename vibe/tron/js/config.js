@@ -109,6 +109,7 @@ export const DEFAULT_DEV_HUD = {
   /** Additive glow strength (× trail opacity × segment fade; try 0 to disable shell). */
   trailGlowAlpha: 0.18,
   trailFadeSpeed: 1.0,
+  debugTrailCollisionBoxes: false,
   /** Legacy alias migrated into `playerBaseTrailLength`; kept for old saves/internal fallback only. */
   defaultTrailLength: 200,
   maxSpeed: 100,
