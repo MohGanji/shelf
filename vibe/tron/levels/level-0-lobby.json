@@ -19,6 +19,16 @@
     },
     {
       "type": "gate",
+      "edge": "east",
+      "position": 75,
+      "width": 5,
+      "role": "vibejam",
+      "signText": "",
+      "locked": false,
+      "destination": null
+    },
+    {
+      "type": "gate",
       "edge": "north",
       "position": 80,
       "width": 5,
@@ -174,20 +184,20 @@
   "gameObjects": [
     {
       "type": "portal",
-      "gridX": 28,
-      "gridZ": 74,
-      "x": -170.5,
-      "z": 0.5,
+      "gridX": 75,
+      "gridZ": 12,
+      "x": -123.5,
+      "z": -63.5,
       "portalHalfTurn": 0,
       "pairId": "0-lobby-concourse",
       "pairColor": "#7CFFEA"
     },
     {
       "type": "portal",
-      "gridX": 372,
-      "gridZ": 74,
-      "x": 173.5,
-      "z": 0.5,
+      "gridX": 300,
+      "gridZ": 12,
+      "x": 101.5,
+      "z": -63.5,
       "portalHalfTurn": 0,
       "pairId": "0-lobby-concourse",
       "pairColor": "#7CFFEA"

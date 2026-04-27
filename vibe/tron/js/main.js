@@ -91,6 +91,13 @@ import { createDevHudController } from "./ui/devhud.js";
 import { createArenaMinimapRenderer } from "./ui/hud.js";
 import { LOBBY_LEVEL_ID } from "./levels/schema.js";
 import { tickCampaignExitBanners, tickLobbyBannerControllers } from "./game/billboardBanners.js";
+import {
+  attachVibeJamReturnPortalVfx,
+  buildVibeJamExitToHubUrl,
+  buildVibeJamReturnToRefUrl,
+  getVibeJamRefParam,
+  isVibeJamPortalArrival,
+} from "./game/vibejam.js";
 import * as THREE from "./vendor/three-module.js";
 
 function $(id) {
@@ -160,6 +167,10 @@ async function main() {
 
   const save = loadOrCreateSave();
   const runtime = createRuntimeFromPlayerSave(save);
+
+  const vjPortalArrival = isVibeJamPortalArrival();
+  const vjRefRaw = getVibeJamRefParam();
+  const vjReturnFlow = vjPortalArrival && typeof vjRefRaw === "string" && vjRefRaw.length > 0;
 
   try {
     await preloadLightCycleAsset();
@@ -261,7 +272,7 @@ async function main() {
   function persistDevHudToSave() {}
 
   await playTunnel(game.renderer, undefined, {
-    durationSeconds: CONFIG.tunnelBootSeconds,
+    durationSeconds: vjPortalArrival ? 0.08 : CONFIG.tunnelBootSeconds,
     onBegin: () => {
       audio.playTunnelTransitionWind();
     },
@@ -396,6 +407,18 @@ async function main() {
 
   gameMode = isLobby ? GameMode.LOBBY : GameMode.LEVEL;
 
+  if (isLobby && vjReturnFlow) {
+    const tr = game.scene.getObjectByName("tron-gates");
+    if (tr) {
+      for (const ch of tr.children) {
+        if (ch instanceof THREE.Group && ch.userData && ch.userData.gateRole === "vibejam") {
+          attachVibeJamReturnPortalVfx(/** @type {THREE.Group} */ (ch));
+          break;
+        }
+      }
+    }
+  }
+
   try {
     await audio.playMusicProfile(isLobby ? "lobby" : "gameplay");
     audio.startAmbientBed();
@@ -490,12 +513,30 @@ async function main() {
 
   /** P7.2 — lobby functional gates: rising-edge ride-through → tunnel → {@link setSessionBootTarget} + reload. */
   let lobbyGateWasInside = false;
+  /** Vibe Jam webring redirect in flight (avoid re-trigger). */
+  let vibejamNavLock = false;
 
   function clearTrailAndEquipForTunnel() {
     trailWall.clear();
     const u = playerBody.userData;
     u.equipSlot = undefined;
     u.equipSlotQueued = undefined;
+  }
+
+  /** Hide fixed HUD / lobby banner for any `playTunnel` from the arena loop. */
+  function hideLobbyTransitionChrome() {
+    const hud = document.getElementById("cycle-hud");
+    const mm = document.getElementById("hud-minimap-wrap");
+    const nitroEl = document.getElementById("nitro-speed-lines");
+    const pickupFb = document.getElementById("pickup-feedback");
+    if (hud) hud.hidden = true;
+    if (mm) mm.hidden = true;
+    if (nitroEl) nitroEl.hidden = true;
+    if (pickupFb) pickupFb.hidden = true;
+    if (lobbyBanner) {
+      lobbyBanner.hidden = true;
+      lobbyBanner.classList.add("state-banner--hidden");
+    }
   }
 
   /**
@@ -505,6 +546,7 @@ async function main() {
     audio.playGateEnterHum();
     setEditorPlaytestReturn(null);
     setSessionBootTarget(nextBoot);
+    hideLobbyTransitionChrome();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -524,6 +566,30 @@ async function main() {
     });
   }
 
+  /** Vibe Jam hub exit: same as a lobby gate except tunnel uses `CONFIG.tunnelVibeJamSeconds` (2.8s), then `location.assign`. */
+  function beginVibeJamRedirect(href) {
+    audio.playGateEnterHum();
+    hideLobbyTransitionChrome();
+    bootOverlay.classList.remove("boot-overlay--hidden");
+    game.stopLoop();
+    playTunnel(
+      game.renderer,
+      () => {
+        window.location.assign(href);
+      },
+      {
+        durationSeconds: CONFIG.tunnelVibeJamSeconds,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+          clearTrailAndEquipForTunnel();
+        },
+        devHud,
+      },
+    ).catch(() => {
+      window.location.assign(href);
+    });
+  }
+
   let editorShortcutTunnelStarted = false;
 
   function beginEditorShortcutTunnel() {
@@ -532,6 +598,7 @@ async function main() {
     audio.playGateEnterHum();
     setEditorPlaytestReturn(null);
     setSessionBootTarget({ mode: "editor" });
+    hideLobbyTransitionChrome();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -1010,6 +1077,7 @@ async function main() {
     if (pauseMenu) pauseMenu.close();
     setEditorPlaytestReturn(null);
     setSessionBootTarget(null);
+    hideLobbyTransitionChrome();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -1036,6 +1104,7 @@ async function main() {
     setEditorPlaytestReturn(null);
     setSessionBootTarget({ mode: "editor", wipLevelId: wid });
     if (pauseMenu) pauseMenu.close();
+    hideLobbyTransitionChrome();
     game.stopLoop();
     playTunnel(
       game.renderer,
@@ -1511,6 +1580,13 @@ async function main() {
         } else if (role === "garage") {
           beginLobbyGateTunnel({ mode: "garage" });
           return;
+        } else if (role === "vibejam" && !vibejamNavLock) {
+          vibejamNavLock = true;
+          const href = vjReturnFlow
+            ? buildVibeJamReturnToRefUrl(vjRefRaw, { save, playerBody })
+            : buildVibeJamExitToHubUrl({ save, playerBody });
+          beginVibeJamRedirect(href);
+          return;
         }
       }
       lobbyGateWasInside = inside;
@@ -1926,7 +2002,7 @@ async function main() {
         minimapGates.push({
           x0, x1, z0, z1,
           role: g.role,
-          open: !g.locked || g.role === "entrance"
+          open: !g.locked || g.role === "entrance" || g.role === "vibejam"
         });
       }
     }
@@ -2096,7 +2172,7 @@ async function main() {
   }
 
   /** P7.5 — first lobby visit: modal controls reference; blocks cycle keys until dismissed. */
-  if (isLobby && !save.controlsShown) {
+  if (isLobby && !save.controlsShown && !vjPortalArrival) {
     showFirstVisitControlsOverlayIfNeeded({ save });
   }
 

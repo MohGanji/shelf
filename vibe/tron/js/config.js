@@ -377,6 +377,8 @@ export const CONFIG = {
   tunnelGateSeconds: 1,
   /** First-load intro tunnel; gate transitions use `tunnelGateSeconds` (1s). Keep this short — real load finishes before the tunnel. */
   tunnelBootSeconds: 1.5,
+  /** Lobby → Vibe Jam hub redirect only (other gates use `tunnelGateSeconds`). */
+  tunnelVibeJamSeconds: 2.8,
   tunnelRadius: 14,
   tunnelLength: 240,
   tunnelRadialSegments: 64,

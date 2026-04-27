@@ -24,7 +24,7 @@ export const LOBBY_LEVEL_ID = "level-0";
 export const LOBBY_ARENA_WIDTH = 400;
 export const LOBBY_ARENA_DEPTH = 150;
 
-const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer"]);
+const GATE_ROLES = new Set(["entrance", "exit", "arena", "garage", "multiplayer", "vibejam"]);
 const EDGES = new Set(["north", "south", "east", "west"]);
 const BARRIER_TYPES = new Set(["wall", "building", "structure"]);
 const BUILDING_SHAPES = new Set(["square", "triangle"]);
@@ -326,9 +326,12 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
       }
       const role = wo.role;
       if (typeof role !== "string" || !GATE_ROLES.has(role)) {
-        errors.push(`${path}.role must be one of: entrance, exit, arena, garage, multiplayer`);
+        errors.push(`${path}.role must be one of: entrance, exit, arena, garage, multiplayer, vibejam`);
       } else {
         roleCounts[role] = (roleCounts[role] ?? 0) + 1;
+        if (role === "vibejam" && !lobby) {
+          errors.push(`${path}.vibejam gates are only valid on the lobby level (level-0)`);
+        }
       }
       const width = wo.width;
       if (!isFiniteNumber(width) || width !== GATE_WIDTH) {
@@ -369,7 +372,13 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
   }
 
   if (lobby) {
-    const need = ["entrance", "arena", "garage", "multiplayer"];
+    if ((roleCounts.entrance ?? 0) !== 1) {
+      errors.push(`Lobby must have exactly one entrance gate (found ${roleCounts.entrance ?? 0})`);
+    }
+    if ((roleCounts.vibejam ?? 0) !== 1) {
+      errors.push(`Lobby must have exactly one vibejam gate (found ${roleCounts.vibejam ?? 0})`);
+    }
+    const need = ["arena", "garage", "multiplayer"];
     for (const r of need) {
       if ((roleCounts[r] ?? 0) !== 1) {
         errors.push(`Lobby must have exactly one gate with role "${r}" (found ${roleCounts[r] ?? 0})`);
@@ -401,8 +410,8 @@ function validateWallObjects(wallObjects, arenaWidth, arenaDepth, lobby, errors)
 function validateGateDestination(path, gate, errors) {
   const role = gate.role;
   const dest = gate.destination;
-  if (role === "entrance") {
-    if (dest !== null) errors.push(`${path}.destination must be null for entrance gates`);
+  if (role === "entrance" || role === "vibejam") {
+    if (dest !== null) errors.push(`${path}.destination must be null for ${role} gates`);
     return;
   }
   if (role === "exit") {

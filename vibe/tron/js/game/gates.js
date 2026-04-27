@@ -11,7 +11,7 @@ export { GATE_WIDTH };
 
 /** @typedef {"north" | "south" | "east" | "west"} WallEdge */
 
-/** @typedef {"entrance" | "exit" | "arena" | "garage" | "multiplayer"} GateRole */
+/** @typedef {"entrance" | "exit" | "arena" | "garage" | "multiplayer" | "vibejam"} GateRole */
 
 /** Canonical role strings (must match `levels/schema.js` validation). */
 export const GATE_ROLES = Object.freeze(
@@ -21,6 +21,7 @@ export const GATE_ROLES = Object.freeze(
     "arena",
     "garage",
     "multiplayer",
+    "vibejam",
   ]),
 );
 
@@ -485,7 +486,7 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
  * Y-up; group origin on floor at wall anchor.
  * @param {ParsedGate} g
  * @param {ReturnType<import('../config.js').getArenaPlaytestConfig>} playCfg
- * @param {"lobby_garage"|"lobby_progress"|"lobby_multiplayer"|null} [lobbyBannerKind] — big canvas above arch on lobby hub only
+ * @param {"lobby_garage"|"lobby_progress"|"lobby_multiplayer"|"lobby_vibejam"|null} [lobbyBannerKind] — big canvas above arch on lobby hub only
  * @param {boolean} [attachCampaignExitBanner] — live stats board above exit gate on campaign arenas only
  */
 function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaignExitBanner = false) {
@@ -493,7 +494,7 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
   const w = g.width;
   const h = (playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight) || 3.0;
   const wallT = 1.0;
-  const open = !g.locked || g.role === "entrance";
+  const open = !g.locked || g.role === "entrance" || g.role === "vibejam";
 
   /** Dark metal body + saturated teal emissive (not white) — intensity drives “neon” read. */
   const colorHex = open ? 0x061018 : 0x0a1018;
@@ -652,12 +653,14 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
   if (
     lobbyBannerKind === "lobby_garage" ||
     lobbyBannerKind === "lobby_progress" ||
-    lobbyBannerKind === "lobby_multiplayer"
+    lobbyBannerKind === "lobby_multiplayer" ||
+    lobbyBannerKind === "lobby_vibejam"
   ) {
     const ctrl = attachLobbyGateBannerBoard(
       group,
       { gateWidth: w, archHeight: h, pillarD },
       lobbyBannerKind,
+      g.edge,
     );
     if (ctrl) group.userData.lobbyGateBannerController = ctrl;
   } else if (attachCampaignExitBanner && g.role === "exit") {
@@ -733,11 +736,12 @@ export function buildGateMeshes(
   const lobbyHub = levelId === LOBBY_LEVEL_ID;
 
   for (const g of gates) {
-    /** @type {"lobby_garage" | "lobby_progress" | "lobby_multiplayer" | null} */
+    /** @type {"lobby_garage" | "lobby_progress" | "lobby_multiplayer" | "lobby_vibejam" | null} */
     let lbKind = null;
     if (lobbyHub && g.role === "garage") lbKind = "lobby_garage";
     else if (lobbyHub && g.role === "arena") lbKind = "lobby_progress";
     else if (lobbyHub && g.role === "multiplayer") lbKind = "lobby_multiplayer";
+    else if (lobbyHub && g.role === "vibejam") lbKind = "lobby_vibejam";
     const grp = buildSingleGateGroup(g, playCfg, lbKind, useCampaignExitBanner && g.role === "exit");
     const banner = grp.userData.lobbyGateBannerController;
     if (banner) lobbyGateBannerControllers.push(banner);

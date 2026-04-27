@@ -400,15 +400,17 @@ export function attachBuildingBannerPlane(barrierGroup, b, w, d, tallH, playCfg)
 
 /** Static gate board copy — bump if multiplayer banner art changes. */
 const FINGERPRINT_LOBBY_MULTIPLAYER = "lobby_multiplayer:v1";
+const FINGERPRINT_LOBBY_VIBEJAM = "lobby_vibejam:v1";
 
 /**
  * Big board above a lobby gate (arena / garage / multiplayer placeholder).
  * @param {THREE.Group} gateGroup
  * @param {{ gateWidth: number; archHeight: number; pillarD: number }} dims
- * @param {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"} bannerKind
+ * @param {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"lobby_vibejam"} bannerKind
+ * @param {"north"|"south"|"east"|"west"|undefined} [wallEdge] — east/west gates need a Y flip so the plane faces into the arena (otherwise text is mirrored)
  * @returns {LobbyBannerController | null}
  */
-export function attachLobbyGateBannerBoard(gateGroup, dims, bannerKind) {
+export function attachLobbyGateBannerBoard(gateGroup, dims, bannerKind, wallEdge) {
   const { gateWidth: gw, archHeight: ah, pillarD } = dims;
   const canvas = document.createElement("canvas");
   canvas.width = GATE_CANVAS_W;
@@ -433,6 +435,9 @@ export function attachLobbyGateBannerBoard(gateGroup, dims, bannerKind) {
   const geo = new THREE.PlaneGeometry(bw, bh);
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(0, ah + bh * 0.5 + 0.35 * GATE_WORLD_SCALE, pillarD / 2 + 0.1);
+  if (wallEdge === "east" || wallEdge === "west") {
+    mesh.rotation.y = Math.PI;
+  }
   mesh.name = `lobby-gate-banner:${bannerKind}`;
   mesh.castShadow = false;
   mesh.receiveShadow = false;
@@ -456,8 +461,33 @@ export function attachLobbyGateBannerBoard(gateGroup, dims, bannerKind) {
     redrawMultiplayerComingSoonBanner(ctrl);
     ctrl._fingerprint = FINGERPRINT_LOBBY_MULTIPLAYER;
     tex.needsUpdate = true;
+  } else if (bannerKind === "lobby_vibejam") {
+    redrawVibeJamPortalBanner(ctrl);
+    ctrl._fingerprint = FINGERPRINT_LOBBY_VIBEJAM;
+    tex.needsUpdate = true;
   }
   return ctrl;
+}
+
+/**
+ * @param {LobbyBannerController} c
+ */
+function redrawVibeJamPortalBanner(c) {
+  const { ctx, canvas } = c;
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const g = GATE_UI_SCALE;
+  ctx.clearRect(0, 0, cw, ch);
+  drawBillboardFrameCrisp(ctx, cw, ch, g);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const fz = 96 * g;
+  const sw = Math.max(5, 5 * g);
+  ctx.font = `700 ${fz}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+  strokeThenFillText(ctx, "VIBE JAM", cw / 2, ch * 0.4, "rgba(130, 255, 210, 0.98)", sw);
+  const fz2 = 72 * g;
+  ctx.font = `700 ${fz2}px "Orbitron", "Segoe UI", system-ui, sans-serif`;
+  strokeThenFillText(ctx, "PORTAL", cw / 2, ch * 0.62, "rgba(200, 235, 255, 0.96)", Math.max(4, 4 * g));
 }
 
 /**
@@ -718,12 +748,15 @@ export function tickLobbyBannerControllers(controllers, save, validLevels) {
     const fp =
       c.kind === "lobby_multiplayer"
         ? FINGERPRINT_LOBBY_MULTIPLAYER
-        : c.kind === "lobby_progress"
-          ? fingerprintProgress(save, validLevels)
-          : fingerprintGarage(save, c.placement === "gate" ? "gate" : "building");
+        : c.kind === "lobby_vibejam"
+          ? FINGERPRINT_LOBBY_VIBEJAM
+          : c.kind === "lobby_progress"
+            ? fingerprintProgress(save, validLevels)
+            : fingerprintGarage(save, c.placement === "gate" ? "gate" : "building");
     if (fp === c._fingerprint) continue;
     c._fingerprint = fp;
     if (c.kind === "lobby_multiplayer") redrawMultiplayerComingSoonBanner(c);
+    else if (c.kind === "lobby_vibejam") redrawVibeJamPortalBanner(c);
     else if (c.kind === "lobby_progress") redrawProgressBanner(c, save, validLevels);
     else redrawGarageBanner(c, save);
     c.texture.needsUpdate = true;
@@ -732,7 +765,7 @@ export function tickLobbyBannerControllers(controllers, save, validLevels) {
 
 /**
  * @typedef {object} LobbyBannerController
- * @property {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"campaign_exit"} kind
+ * @property {"lobby_progress"|"lobby_garage"|"lobby_multiplayer"|"lobby_vibejam"|"campaign_exit"} kind
  * @property {"gate"|"building"} placement
  * @property {THREE.CanvasTexture} texture
  * @property {HTMLCanvasElement} canvas

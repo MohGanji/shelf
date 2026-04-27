@@ -478,6 +478,14 @@ body {
   display: block;
 }
 
+/* Fixed HUD uses z-index; [hidden] must not lose to other rules. */
+.cycle-hud[hidden],
+.hud-minimap-wrap[hidden],
+#nitro-speed-lines[hidden],
+#pickup-feedback[hidden] {
+  display: none !important;
+}
+
 /* P7.5 — first-visit controls overlay (lobby) */
 .controls-overlay {
   position: fixed;

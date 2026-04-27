@@ -275,8 +275,8 @@ export function mountEditorPropertiesPanel(root, opts) {
         const ro = document.createElement("p");
         ro.className = "editor-props__ro";
         ro.textContent =
-          role === "entrance"
-            ? "Sign text is empty (entrance) — read-only."
+          role === "entrance" || role === "vibejam"
+            ? "Sign text is empty (entrance / Vibe Jam portal) — read-only."
             : "Sign text is fixed for this gate role — read-only.";
         wrap.appendChild(ro);
       }

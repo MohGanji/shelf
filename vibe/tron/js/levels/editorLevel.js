@@ -124,7 +124,7 @@ function gateClearAabb(g, aw, ad) {
   const halfW = aw / 2;
   const halfD = ad / 2;
   const w = g.width;
-  const depth = g.role === "entrance" ? 10 : 5;
+  const depth = g.role === "entrance" || g.role === "vibejam" ? 10 : 5;
   const p = g.position;
   const eps = 1e-3;
   switch (g.edge) {
