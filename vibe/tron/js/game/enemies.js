@@ -349,6 +349,7 @@ export function eliminateCampaignEnemy(world, e) {
 
 /**
  * Cinematic death: same removal as `eliminateCampaignEnemy` but keep the cycle mesh for implosion.
+ * Trail is cleared in `endEnemyCinematicDerez` so own-trail / wall context stays visible through kill-cam.
  * @param {import('cannon-es').World} world
  * @param {CampaignEnemyEntity} e
  */
@@ -366,7 +367,6 @@ export function beginEnemyCinematicElimination(world, e) {
     z: e.body.position.z,
     heading: e.body.userData.heading ?? 0,
   };
-  e.trail.clear();
   world.removeBody(e.body);
   e.cycle.root.position.set(
     e.derezSnapshot.x,
@@ -382,6 +382,7 @@ export function beginEnemyCinematicElimination(world, e) {
 export function endEnemyCinematicDerez(e) {
   e.cinematicDerezActive = false;
   e.derezSnapshot = null;
+  e.trail.clear();
   e.cycle.root.visible = false;
 }
 
