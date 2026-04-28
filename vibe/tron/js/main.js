@@ -758,6 +758,40 @@ async function main() {
   }
 
   let editorShortcutTunnelStarted = false;
+  /** Map editor (/): requires ~3 s hold — cleared on release before that. */
+  let editorSlashHoldTimerId = /** @type {ReturnType<typeof setTimeout> | null} */ (null);
+  const EDITOR_SHORTCUT_HOLD_MS = 3000;
+
+  function clearEditorSlashHoldTimer() {
+    if (editorSlashHoldTimerId != null) {
+      clearTimeout(editorSlashHoldTimerId);
+      editorSlashHoldTimerId = null;
+    }
+  }
+
+  function tryEditorShortcutAfterSlashHold() {
+    if (editorShortcutTunnelStarted) return;
+    if (isTunnelBlockingInput()) return;
+    if (isControlsOverlayBlockingInput()) return;
+    if (isPauseOverlayBlockingInput()) return;
+    if (playerDerezPhase !== "alive") return;
+    if (
+      gameMode !== GameMode.LOBBY &&
+      gameMode !== GameMode.LEVEL &&
+      gameMode !== GameMode.LEVEL_COMPLETE
+    ) {
+      return;
+    }
+    const active = document.activeElement;
+    if (
+      active instanceof HTMLInputElement ||
+      active instanceof HTMLTextAreaElement ||
+      active instanceof HTMLSelectElement
+    ) {
+      return;
+    }
+    beginEditorShortcutTunnel();
+  }
 
   function beginEditorShortcutTunnel() {
     if (editorShortcutTunnelStarted) return;
@@ -1544,17 +1578,7 @@ async function main() {
     "keydown",
     (e) => {
       if (e.key !== "/" && e.code !== "Slash") return;
-      if (isTunnelBlockingInput()) return;
-      if (isControlsOverlayBlockingInput()) return;
-      if (isPauseOverlayBlockingInput()) return;
-      if (playerDerezPhase !== "alive") return;
-      if (
-        gameMode !== GameMode.LOBBY &&
-        gameMode !== GameMode.LEVEL &&
-        gameMode !== GameMode.LEVEL_COMPLETE
-      ) {
-        return;
-      }
+      if (e.repeat) return;
       const t = e.target;
       if (
         t instanceof HTMLInputElement ||
@@ -1565,7 +1589,20 @@ async function main() {
       }
       e.preventDefault();
       e.stopPropagation();
-      beginEditorShortcutTunnel();
+      clearEditorSlashHoldTimer();
+      editorSlashHoldTimerId = window.setTimeout(() => {
+        editorSlashHoldTimerId = null;
+        tryEditorShortcutAfterSlashHold();
+      }, EDITOR_SHORTCUT_HOLD_MS);
+    },
+    true,
+  );
+
+  window.addEventListener(
+    "keyup",
+    (e) => {
+      if (e.key !== "/" && e.code !== "Slash") return;
+      clearEditorSlashHoldTimer();
     },
     true,
   );

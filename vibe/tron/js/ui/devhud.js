@@ -1,5 +1,5 @@
 /**
- * Developer HUD (`.` key) — live `devHud` sliders + toggles (plan P9.2).
+ * Developer HUD (**hold `.` ~3s** to show · **tap `.`** to hide) — live `devHud` sliders + toggles (plan P9.2).
  * Mutates the same `devHud` object as gameplay; calls `applyDevHud` + `persist` on change (`persist` is a no-op: tuning is session-only, not in localStorage).
  */
 
@@ -56,7 +56,7 @@ export function createDevHudController(opts) {
   headerTop.appendChild(resetBtn);
   const hint = document.createElement("div");
   hint.className = "dev-hud__hint";
-  hint.textContent = "Press . to hide · tuning lasts until you refresh the page";
+  hint.textContent = "Hold . (~3 s) to open · tap . to hide · tuning lasts until you refresh";
   header.appendChild(headerTop);
   header.appendChild(hint);
 
@@ -422,11 +422,22 @@ export function createDevHudController(opts) {
   mount.appendChild(root);
 
   let open = false;
+  /** Opening the panel requires a long press; cleared on hide or cancel. */
+  let periodHoldTimerId = /** @type {ReturnType<typeof setTimeout> | null} */ (null);
+  const DEV_HUD_OPEN_HOLD_MS = 3000;
+
+  function clearPeriodHoldTimer() {
+    if (periodHoldTimerId != null) {
+      clearTimeout(periodHoldTimerId);
+      periodHoldTimerId = null;
+    }
+  }
 
   function setOpen(v) {
     open = v;
     root.hidden = !v;
     root.setAttribute("aria-hidden", v ? "false" : "true");
+    if (!v) clearPeriodHoldTimer();
   }
 
   function toggle() {
@@ -478,12 +489,32 @@ export function createDevHudController(opts) {
     if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) {
       if (t !== document.body && !root.contains(t)) return;
     }
+    if (open) {
+      if (e.repeat) return;
+      e.preventDefault();
+      e.stopPropagation();
+      clearPeriodHoldTimer();
+      toggle();
+      return;
+    }
+    if (e.repeat) return;
     e.preventDefault();
     e.stopPropagation();
-    toggle();
+    clearPeriodHoldTimer();
+    periodHoldTimerId = window.setTimeout(() => {
+      periodHoldTimerId = null;
+      setOpen(true);
+    }, DEV_HUD_OPEN_HOLD_MS);
+  }
+
+  /** @param {KeyboardEvent} e */
+  function onGlobalKeyup(e) {
+    if (e.key !== "." && e.code !== "Period") return;
+    clearPeriodHoldTimer();
   }
 
   window.addEventListener("keydown", onGlobalKeydown, true);
+  window.addEventListener("keyup", onGlobalKeyup, true);
 
   refreshControls();
 
@@ -492,6 +523,8 @@ export function createDevHudController(opts) {
     refresh: refreshControls,
     dispose() {
       window.removeEventListener("keydown", onGlobalKeydown, true);
+      window.removeEventListener("keyup", onGlobalKeyup, true);
+      clearPeriodHoldTimer();
       root.remove();
     },
   };
