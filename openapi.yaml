@@ -1,0 +1,10 @@
+openapi: 3.1.0
+info:
+  title: ganji.me
+  description: |
+    Static personal site (HTML). No authenticated HTTP API is offered; pages are
+    served as documents. This specification describes the site for discovery only.
+  version: "1.0.0"
+servers:
+  - url: https://ganji.me
+paths: {}

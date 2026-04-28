@@ -1,0 +1,12 @@
+OAuth / OIDC well-known and MCP server card (ganji.me)
+
+OAuth / OIDC / Protected Resource Metadata
+- Not published. This site is static HTML with no protected HTTP APIs and no token issuer.
+- Do not add fake /.well-known/openid-configuration, oauth-authorization-server, or
+  oauth-protected-resource unless you operate a real authorization server.
+
+MCP Server Card (/.well-known/mcp/server-card.json)
+- Deferred. A valid card requires a working MCP transport endpoint (e.g. Streamable HTTP).
+- Adding server-card.json without a real /mcp (or similar) endpoint would mislead clients.
+- To satisfy scanners later: deploy MCP on Cloudflare Workers (or another host), then add
+  .well-known/mcp/server-card.json with serverInfo, capabilities, and the live endpoint URL.

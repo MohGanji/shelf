@@ -63,6 +63,62 @@
     <script type="text/javascript" src="./scripts.js"></script>
     <script src="./items.js"></script>
     <script>
+      (function () {
+        var mc = typeof navigator !== 'undefined' && navigator.modelContext;
+        if (!mc || typeof mc.registerTool !== 'function') return;
+        var baseUrl = window.location.origin;
+        function abs(path) {
+          return new URL(path, baseUrl).href;
+        }
+        function fmtSlug(name) {
+          return String(name).toLowerCase().replaceAll(' ', '-');
+        }
+        try {
+          mc.registerTool({
+            name: 'ganji.list_blog_posts',
+            title: 'List blog posts',
+            description: 'Returns title, slug, path (root-relative), absolute URL, and date for each post in the homepage index (same data as items.js).',
+            inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+            annotations: { readOnlyHint: true },
+            execute: async function () {
+              var posts = window.blogPosts || [];
+              return posts.map(function (p) {
+                var slug = fmtSlug(p.url);
+                var path = '/' + slug + '.html';
+                return {
+                  title: p.title,
+                  slug: slug,
+                  path: path,
+                  url: abs(path),
+                  date: p.date
+                };
+              });
+            }
+          });
+        } catch (e) {}
+        try {
+          mc.registerTool({
+            name: 'ganji.site_discovery',
+            title: 'Site discovery URLs',
+            description: 'Discovery URLs for this host: sitemap, robots, API catalog, OpenAPI, agent skills index.',
+            inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+            annotations: { readOnlyHint: true },
+            execute: async function () {
+              return {
+                baseUrl: baseUrl,
+                site: abs('/'),
+                sitemap: abs('/sitemap.xml'),
+                robots: abs('/robots.txt'),
+                apiCatalog: abs('/.well-known/api-catalog'),
+                openApi: abs('/openapi.yaml'),
+                agentSkillsIndex: abs('/.well-known/agent-skills/index.json')
+              };
+            }
+          });
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       document.querySelector('#gumroad-follow-form-embed-button').addEventListener('click', function() {
           gtag('event', 'subscribe_button_clicked', {
               'event_category': 'subscribe_newsletter',

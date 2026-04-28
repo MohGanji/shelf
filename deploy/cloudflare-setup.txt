@@ -1,0 +1,28 @@
+Cloudflare dashboard steps for ganji.me (zone must be proxied).
+
+Repository: absolute URIs in robots.txt (Sitemap:), sitemap.xml, .well-known/api-catalog,
+openapi.yaml servers, and agent-skills index.json are generated from site-origin.config.json
+(run: node scripts/sync-discovery-files.mjs && node scripts/generate-sitemap.mjs).
+Canonical origin is https://ganji.me. If ganji.blog is a separate proxied zone, duplicate
+Transform Rules and Markdown for Agents there as well.
+
+1) Markdown for Agents
+   - Cloudflare Dashboard → your zone → Speed or Settings (product moves by account)
+   - Find "Markdown for Agents" (see https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/ )
+   - Enable for the zone.
+   - Verify: curl -sI -H 'Accept: text/markdown' https://ganji.me/ | grep -i content-type
+
+2) Transform Rule — Link header on homepage
+   - Rules → Transform Rules → Modify Response Header → Create rule
+   - Rule name: Agent discovery Link header
+   - When incoming requests match: (http.host eq "ganji.me") and (http.request.uri.path eq "/" or http.request.uri.path eq "/index.html")
+   - Then: Set dynamic → Header name: Link
+   - Value (single header, comma-separated relations; RFC 8288):
+     </.well-known/api-catalog>; rel="api-catalog", </openapi.yaml>; rel="service-desc", </me.html>; rel="service-doc", </sitemap.xml>; rel="sitemap"
+
+   Note: If the dashboard rejects commas, add multiple "Set static" Link headers with one relation each (also valid per RFC 8288).
+
+3) Optional scan
+   POST https://isitagentready.com/api/scan
+   Content-Type: application/json
+   {"url":"https://ganji.me"}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "ganji-blog-site-overview",
+      "type": "skill-md",
+      "description": "Context and key URLs for ganji.me (canonical personal site).",
+      "url": "https://ganji.me/.well-known/agent-skills/site-overview.md",
+      "digest": "sha256:7dec5e1790697993439e9489c835f14bb9e53be776fd389b5442d38b9b7a14ef"
+    },
+    {
+      "name": "ganji-blog-posts",
+      "type": "skill-md",
+      "description": "How post URLs and items.js relate on ganji.me; sitemap and robots pointers.",
+      "url": "https://ganji.me/.well-known/agent-skills/blog-posts.md",
+      "digest": "sha256:4054be651eef58a57d799215334ed89c7db6fdb7fe67db0be2cad7c187f3b3e4"
+    }
+  ]
+}

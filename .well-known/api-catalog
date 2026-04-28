@@ -1,0 +1,19 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://ganji.me/",
+      "service-desc": [
+        {
+          "href": "https://ganji.me/openapi.yaml",
+          "type": "application/yaml"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://ganji.me/me.html",
+          "type": "text/html"
+        }
+      ]
+    }
+  ]
+}
