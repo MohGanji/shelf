@@ -24,7 +24,7 @@ import {
   setTutorialCleared,
 } from "./data/savedata.js";
 import { createAudioEngine } from "./engine/audio.js";
-import { getGraphicsProfile } from "./engine/graphicsProfile.js";
+import { applyLargeArenaGraphicsOverrides, getGraphicsProfile } from "./engine/graphicsProfile.js";
 import { createGameRenderer } from "./engine/renderer.js";
 import { isTunnelBlockingInput, playTunnel } from "./engine/tunnel.js";
 import {
@@ -36,6 +36,7 @@ import {
 } from "./engine/physics.js";
 import { createTronCycleKeyState } from "./engine/input.js";
 import {
+  applyArenaEnvMapToSubtree,
   applyArenaFloorEnvMap,
   applyArenaStageEnvironment,
   buildArenaFromCampaignLevel,
@@ -405,7 +406,11 @@ async function main() {
     }
   }
 
-  const graphicsProfile = getGraphicsProfile();
+  const graphicsProfile = applyLargeArenaGraphicsOverrides(
+    getGraphicsProfile(),
+    arenaSizeFromCampaign?.arenaWidth,
+    arenaSizeFromCampaign?.arenaDepth,
+  );
   const game = createGameRenderer(canvas, { devHud: runtime.devHud, graphicsProfile });
 
   const devHud = runtime.devHud; // session-only: Advanced tuning is not written to localStorage (refresh restores defaults)
@@ -845,7 +850,13 @@ async function main() {
     }
   }
 
-  const chase = createChaseCamera(game.camera, devHud);
+  const chase = createChaseCamera(game.camera, devHud, {
+    arenaClamp: {
+      halfW: playCfg.arenaWidth * 0.5,
+      halfD: playCfg.arenaDepth * 0.5,
+      margin: 3,
+    },
+  });
   chase.spawnAt(playerCycle.root.position, spawnHeading);
   const portalWarpSnapPos = new THREE.Vector3();
 
@@ -1017,6 +1028,24 @@ async function main() {
         }
       : undefined,
   });
+
+  {
+    const envTex = game.scene.userData.arenaEnvMapTexture;
+    if (envTex) {
+      applyArenaEnvMapToSubtree(playerCycle.root, envTex);
+      applyArenaEnvMapToSubtree(trailWall.root, envTex);
+      for (const e of enemyRoster.list) {
+        if (e.eliminated) continue;
+        applyArenaEnvMapToSubtree(e.cycle.root, envTex);
+        applyArenaEnvMapToSubtree(e.trail.root, envTex);
+      }
+      applyArenaEnvMapToSubtree(boostPadField.root, envTex);
+      applyArenaEnvMapToSubtree(portalField.root, envTex);
+      applyArenaEnvMapToSubtree(powerupField.root, envTex);
+      const gatesRoot = game.scene.userData.gates?.root;
+      if (gatesRoot) applyArenaEnvMapToSubtree(gatesRoot, envTex);
+    }
+  }
 
   const derezOverlay = document.getElementById("derez-overlay");
   /** @type {'alive' | 'imploding' | 'tunnel'} */

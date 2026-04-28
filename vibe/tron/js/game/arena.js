@@ -782,6 +782,10 @@ export function applyArenaFloorEnvMap(renderer, floorMat, playCfg, scene = null)
   floorMat.roughness = Math.max(0.72, floorMat.roughness - 0.06);
   floorMat.needsUpdate = true;
 
+  if (scene) {
+    scene.userData.arenaEnvMapTexture = rt.texture;
+  }
+
   const barriers = scene?.userData?.barriersGroup;
   if (barriers) {
     barriers.traverse((obj) => {
@@ -806,6 +810,36 @@ export function applyArenaFloorEnvMap(renderer, floorMat, playCfg, scene = null)
       for (const m of mats) m?.dispose();
     }
   }
+}
+
+/**
+ * Apply arena PMREM to `MeshStandardMaterial` / `MeshPhysicalMaterial` under `root`.
+ * Skips transparent shells with `depthWrite: false` (additive glows) to avoid dulling them.
+ *
+ * @param {THREE.Object3D | null | undefined} root
+ * @param {THREE.Texture | null | undefined} envTex
+ * @param {{ defaultEnvIntensity?: number }} [opts]
+ */
+export function applyArenaEnvMapToSubtree(root, envTex, opts = {}) {
+  if (!root || !envTex) return;
+  const defInt =
+    typeof opts.defaultEnvIntensity === "number" && Number.isFinite(opts.defaultEnvIntensity)
+      ? opts.defaultEnvIntensity
+      : 1;
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const m of mats) {
+      if (!m || !("envMap" in m) || !("metalness" in m)) continue;
+      const std = /** @type {THREE.MeshStandardMaterial} */ (m);
+      if (std.transparent === true && std.depthWrite === false) continue;
+      std.envMap = envTex;
+      if (typeof std.envMapIntensity !== "number" || std.envMapIntensity <= 0) {
+        std.envMapIntensity = defInt;
+      }
+      std.needsUpdate = true;
+    }
+  });
 }
 
 /**

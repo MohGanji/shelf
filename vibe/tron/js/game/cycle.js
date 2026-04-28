@@ -68,7 +68,7 @@ export { preloadLightCycleAsset } from "./cycleAssetLoader.js";
 /**
  * Enhanced Tron hull shader: multi-layer fresnel rim, procedural panel lines,
  * animated energy pulse scan. Injected via onBeforeCompile to preserve PBR lighting.
- * @param {THREE.MeshStandardMaterial} material
+ * @param {THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial} material
  * @param {{ value: THREE.Color }} rimColorUniform
  * @param {{ value: number }} rimStrengthUniform
  * @param {{ value: number }} timeUniform
@@ -216,11 +216,11 @@ export function createProceduralLightCycle(options = {}) {
   function makeHullMaterial() {
     return new THREE.MeshStandardMaterial({
       color: 0x040608,
-      metalness: 0.97,
+      metalness: 0.91,
       roughness: 0.22,
       emissive: emissiveDim,
       emissiveIntensity: EMISSIVE.hull * ns,
-      envMapIntensity: 1.4,
+      envMapIntensity: 1.12,
     });
   }
 
@@ -255,19 +255,23 @@ export function createProceduralLightCycle(options = {}) {
   const rimBloomMat = new THREE.MeshBasicMaterial({
     color: primary,
     transparent: true,
-    opacity: 0.28,
+    opacity: 0.22,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
   });
-  const glassMat = new THREE.MeshStandardMaterial({
+  const glassMat = new THREE.MeshPhysicalMaterial({
     color: 0x040810,
-    metalness: 0.96,
-    roughness: 0.06,
+    metalness: 0.92,
+    roughness: 0.07,
     transparent: true,
     opacity: 0.36,
     emissive: 0x001018,
     emissiveIntensity: EMISSIVE.glass * ns,
+    envMapIntensity: 0.88,
+    clearcoat: 0.26,
+    clearcoatRoughness: 0.22,
+    ior: 1.5,
   });
   const hullEdgeMat = new THREE.LineBasicMaterial({
     color: primary,
@@ -318,7 +322,6 @@ export function createProceduralLightCycle(options = {}) {
   registerTronRim(stripMatStrong, 0.22, { energyPulse: true });
   registerTronRim(stripMatSoft, 0.15, { energyPulse: true });
   registerTronRim(wheelGlowMat, 0.48);
-  registerTronRim(glassMat, 0.08);
   registerTronRim(underglowMat, 0.15, { energyPulse: true });
   registerTronRim(rearAccentMat, 0.20, { energyPulse: true });
 

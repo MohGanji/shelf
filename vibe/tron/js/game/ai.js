@@ -492,6 +492,27 @@ function isTrailTileBlocked(opts) {
 }
 
 /**
+ * Each flood step calls `isTrailTileBlocked`, which scans **every** trail tile map. Cost grows with
+ * `trailSources.length` × budget × planner branches; it explodes in close multi-enemy fights. Scale
+ * the budget down when many trails are active or when already near the player (local geometry dominates).
+ *
+ * @param {number} baseBudget — from {@link smartAiParams} (often 400+)
+ * @param {number} distPlayer
+ * @param {number} trailSourceCount — player + live enemies
+ */
+function effectiveSmartFloodBudget(baseBudget, distPlayer, trailSourceCount) {
+  const n = Math.max(1, trailSourceCount);
+  const sourceScale = 1 / Math.sqrt(n);
+  let distScale;
+  if (distPlayer < 20) distScale = 0.35;
+  else if (distPlayer < 38) distScale = 0.52;
+  else if (distPlayer < 70) distScale = 0.72;
+  else distScale = 1;
+  const capped = Math.floor(baseBudget * sourceScale * distScale);
+  return Math.max(36, Math.min(baseBudget, capped));
+}
+
+/**
  * @param {number} x
  * @param {number} z
  * @param {number} halfW
@@ -933,10 +954,12 @@ export function computeEnemyCycleKeys(opts) {
         const sampleDist = p.projectionDist * projMul;
         const sampleX = px + dx * sampleDist;
         const sampleZ = pz + dz * sampleDist;
-        const trailSteps = Math.max(
+        const trailStepsBase = Math.max(
           3,
           Math.floor(p.lookaheadTiles * (useBrake ? 0.78 : 1)),
         );
+        const trailSteps =
+          distPlayer < 26 ? Math.min(trailStepsBase, 5) : trailStepsBase;
         const trailDanger =
           (avoidOwnTrail || avoidEnemyTrails) &&
           hasDangerousTrailAhead({
@@ -965,13 +988,14 @@ export function computeEnemyCycleKeys(opts) {
         let reachable = p.floodBudget;
         if (useReachability) {
           const tile = grid.worldToTile(sampleX, sampleZ);
+          const floodCap = effectiveSmartFloodBudget(p.floodBudget, distPlayer, trailSources.length);
           reachable = floodFillReachable({
             startTile: tile,
             grid,
             selfId,
             immunitySegments: imm,
             sources: trailSources,
-            budget: p.floodBudget,
+            budget: floodCap,
             halfW,
             halfD,
             radius: pr,

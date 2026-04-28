@@ -60,6 +60,8 @@ export function createCampaignEnemyEntities(opts) {
 
   /** @type {CampaignEnemyEntity[]} */
   const list = [];
+  /** Reused each tick to avoid allocating a fresh `trailSources` array when many enemies are active. */
+  const trailSourcesScratch = [];
 
   if (!campaignLevel || typeof campaignLevel !== "object") {
     return { list, tick: () => {} };
@@ -258,22 +260,21 @@ export function createCampaignEnemyEntities(opts) {
     const canMove = isLobby || levelStarted;
 
     const barriers = scene.userData.barrierBodies;
-    /** @type {Array<{ map: { hasTrailAhead: Function }; ownerId: string; edgeCount: number }>} */
-    const trailSources = [
-      {
-        map: playerTrail.getTrailTileMap(),
-        ownerId: "player",
-        edgeCount: playerTrail.getLogicalEdgeCount(),
-      },
-    ];
+    trailSourcesScratch.length = 0;
+    trailSourcesScratch.push({
+      map: playerTrail.getTrailTileMap(),
+      ownerId: "player",
+      edgeCount: playerTrail.getLogicalEdgeCount(),
+    });
     for (const e of list) {
       if (e.eliminated) continue;
-      trailSources.push({
+      trailSourcesScratch.push({
         map: e.trail.getTrailTileMap(),
         ownerId: e.id,
         edgeCount: e.trail.getLogicalEdgeCount(),
       });
     }
+    const trailSources = trailSourcesScratch;
 
     const pvx = playerBody.velocity.x;
     const pvz = playerBody.velocity.z;

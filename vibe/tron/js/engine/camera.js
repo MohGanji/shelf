@@ -7,8 +7,9 @@ import * as THREE from "../vendor/three-module.js";
  *
  * @param {THREE.PerspectiveCamera} camera
  * @param {import("../config.js").DEFAULT_DEV_HUD} devHud — mutable runtime HUD
+ * @param {{ arenaClamp?: { halfW: number; halfD: number; margin?: number } }} [opts] — keep chase camera inside arena footprint (XZ)
  */
-export function createChaseCamera(camera, devHud) {
+export function createChaseCamera(camera, devHud, opts = {}) {
   const smoothPos = new THREE.Vector3();
   const smoothLook = new THREE.Vector3();
   const forward = new THREE.Vector3(0, 0, -1);
@@ -18,8 +19,22 @@ export function createChaseCamera(camera, devHud) {
   const tmpDesired = new THREE.Vector3();
   const tmpLook = new THREE.Vector3();
 
+  const arenaClamp = opts.arenaClamp;
+
   let smoothFov = devHud.cameraBaseFov;
   let spawned = false;
+
+  function clampCameraXZ(v) {
+    if (!arenaClamp) return;
+    const hw = arenaClamp.halfW;
+    const hd = arenaClamp.halfD;
+    if (!(hw > 0) || !(hd > 0)) return;
+    const m = typeof arenaClamp.margin === "number" && Number.isFinite(arenaClamp.margin) ? arenaClamp.margin : 2.5;
+    const hx = Math.max(0.5, hw - m);
+    const hz = Math.max(0.5, hd - m);
+    v.x = THREE.MathUtils.clamp(v.x, -hx, hx);
+    v.z = THREE.MathUtils.clamp(v.z, -hz, hz);
+  }
 
   /**
    * Instant chase “ideal” (plan § kill-cam return): no smoothing — matches normal chase endpoint math.
@@ -81,6 +96,8 @@ export function createChaseCamera(camera, devHud) {
       .copy(playerPos)
       .addScaledVector(forward, devHud.cameraLookAhead)
       .addScaledVector(right, steer * devHud.cameraTurnOffset * 0.35);
+
+    clampCameraXZ(outPos);
 
     return (
       devHud.cameraBaseFov +
@@ -210,6 +227,7 @@ export function createChaseCamera(camera, devHud) {
       .multiplyScalar(-devHud.cameraDistance)
       .addScaledVector(up, devHud.cameraHeight);
     smoothPos.copy(playerPos).add(tmp);
+    clampCameraXZ(smoothPos);
     smoothLook
       .copy(playerPos)
       .addScaledVector(forward, devHud.cameraLookAhead);

@@ -17,7 +17,7 @@
  *   postFilmStrength: number;
  *   pickupVisualDetail: boolean;
  *   portalVisualDetail: boolean;
- *   enableFxaa: boolean;
+ *   postAntialias: 'off' | 'fxaa' | 'smaa';
  * }} GraphicsProfile
  */
 
@@ -84,7 +84,7 @@ export function getGraphicsProfile() {
 
   const rawDpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
 
-  /** @type {{ maxPixelRatio: number; bloomResolutionScale: number; minimapMinIntervalMs: number; minimapResolutionScale: number; arenaFloorDetail: 'off' | 'basic' | 'rich'; postFilmStrength: number; pickupVisualDetail: boolean; portalVisualDetail: boolean; enableFxaa: boolean }} */
+  /** @type {{ maxPixelRatio: number; bloomResolutionScale: number; minimapMinIntervalMs: number; minimapResolutionScale: number; arenaFloorDetail: 'off' | 'basic' | 'rich'; postFilmStrength: number; pickupVisualDetail: boolean; portalVisualDetail: boolean; postAntialias: 'off' | 'fxaa' | 'smaa' }} */
   const byTier =
     tier === "low"
       ? {
@@ -96,7 +96,7 @@ export function getGraphicsProfile() {
           postFilmStrength: 0,
           pickupVisualDetail: false,
           portalVisualDetail: false,
-          enableFxaa: false,
+          postAntialias: "off",
         }
       : tier === "high"
         ? {
@@ -108,7 +108,7 @@ export function getGraphicsProfile() {
             postFilmStrength: 0.06,
             pickupVisualDetail: true,
             portalVisualDetail: true,
-            enableFxaa: true,
+            postAntialias: "smaa",
           }
         : {
             maxPixelRatio: 1.5,
@@ -119,7 +119,7 @@ export function getGraphicsProfile() {
             postFilmStrength: 0.08,
             pickupVisualDetail: true,
             portalVisualDetail: false,
-            enableFxaa: true,
+            postAntialias: "fxaa",
           };
 
   let maxPixelRatio = byTier.maxPixelRatio;
@@ -139,7 +139,37 @@ export function getGraphicsProfile() {
     postFilmStrength: byTier.postFilmStrength,
     pickupVisualDetail: byTier.pickupVisualDetail,
     portalVisualDetail: byTier.portalVisualDetail,
-    enableFxaa: byTier.enableFxaa,
+    postAntialias: byTier.postAntialias,
   };
   return cached;
+}
+
+/**
+ * **High** tier defaults (SMAA, DPR 2, rich floor, large bloom RT) melt on huge arenas — enormous floor
+ * fill plus multi-pass post dominates the GPU. For daily 500², 420² campaign rooms, etc., shift toward
+ * medium-style post cost while keeping `tier === 'high'` for the session.
+ *
+ * @param {GraphicsProfile | null | undefined} profile
+ * @param {number} [arenaWidth]
+ * @param {number} [arenaDepth]
+ * @returns {GraphicsProfile | null | undefined}
+ */
+export function applyLargeArenaGraphicsOverrides(profile, arenaWidth, arenaDepth) {
+  if (!profile || profile.tier !== "high") return profile;
+  const w = typeof arenaWidth === "number" ? arenaWidth : Number.NaN;
+  const d = typeof arenaDepth === "number" ? arenaDepth : Number.NaN;
+  if (!Number.isFinite(w) || !Number.isFinite(d) || w <= 0 || d <= 0) return profile;
+
+  const maxSpan = Math.max(w, d);
+  const footprint = w * d;
+  const heavyArena = maxSpan >= 380 || footprint >= 140000;
+  if (!heavyArena) return profile;
+
+  return {
+    ...profile,
+    postAntialias: "fxaa",
+    bloomResolutionScale: Math.min(profile.bloomResolutionScale, 0.68),
+    maxPixelRatio: Math.min(profile.maxPixelRatio, 1.35),
+    arenaFloorDetail: profile.arenaFloorDetail === "rich" ? "basic" : profile.arenaFloorDetail,
+  };
 }

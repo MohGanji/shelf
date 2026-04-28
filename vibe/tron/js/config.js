@@ -135,7 +135,7 @@ export const DEFAULT_DEV_HUD = {
   /** Additive colored glow shell: `trailWallHeight` × this. */
   trailGlowHeightMul: 1.5,
   /** Additive glow strength (× trail opacity × segment fade; try 0 to disable shell). */
-  trailGlowAlpha: 0.18,
+  trailGlowAlpha: 0.12,
   trailFadeSpeed: 1.0,
   debugTrailCollisionBoxes: false,
   /** Legacy alias migrated into `playerBaseTrailLength`; kept for old saves/internal fallback only. */

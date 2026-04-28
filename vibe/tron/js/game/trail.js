@@ -93,7 +93,7 @@ export function createTrailWallSystem(options) {
   }
   function glowAlpha() {
     const n = devHud.trailGlowAlpha;
-    return typeof n === "number" && Number.isFinite(n) ? Math.max(0, Math.min(1.25, n)) : 0.18;
+    return typeof n === "number" && Number.isFinite(n) ? Math.max(0, Math.min(1.25, n)) : 0.12;
   }
 
   /** When thickness/height multipliers change, merged glow geometry must rebuild. */

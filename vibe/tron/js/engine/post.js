@@ -5,6 +5,7 @@ import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examp
 import { OutputPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js";
 import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/ShaderPass.js";
+import { SMAAPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/SMAAPass.js";
 import { UnrealBloomPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 import { DEFAULT_DEV_HUD } from "../config.js";
@@ -130,7 +131,7 @@ const FilmGradeShader = {
  * @param {import('three').Scene} scene
  * @param {import('three').Camera} camera
  * @param {Partial<typeof DEFAULT_DEV_HUD>} [devHud]
- * @param {{ bloomResolutionScale?: number; postFilmStrength?: number; enableFxaa?: boolean }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
+ * @param {{ bloomResolutionScale?: number; postFilmStrength?: number; postAntialias?: 'off' | 'fxaa' | 'smaa' }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
  */
 export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpts = {}) {
   const hud = { ...DEFAULT_DEV_HUD, ...devHud };
@@ -164,13 +165,17 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
     typeof postOpts.postFilmStrength === "number" && Number.isFinite(postOpts.postFilmStrength)
       ? Math.max(0, postOpts.postFilmStrength)
       : 0;
+  const aaMode = postOpts.postAntialias === "fxaa" || postOpts.postAntialias === "smaa" ? postOpts.postAntialias : "off";
+  /**
+   * FXAA blurs the whole frame and hides film grain; SMAA does not, so any `uGrain` reads as harsh
+   * stippling on bloom. Disable grain for SMAA; vignette from this pass stays.
+   */
+  const filmGrainMul = aaMode === "smaa" ? 0 : 1;
   const filmPass = new ShaderPass(FilmGradeShader);
   filmPass.material.uniforms.uVignette.value = filmStrength > 0 ? 0.22 + filmStrength * 0.65 : 0;
-  filmPass.material.uniforms.uGrain.value = filmStrength > 0 ? 0.018 + filmStrength * 0.07 : 0;
+  filmPass.material.uniforms.uGrain.value =
+    filmStrength > 0 ? (0.018 + filmStrength * 0.07) * filmGrainMul : 0;
   filmPass.enabled = filmStrength > 0.001;
-
-  const fxaaPass = new ShaderPass(FXAAShader);
-  fxaaPass.enabled = postOpts.enableFxaa === true;
 
   const outputPass = new OutputPass();
 
@@ -181,18 +186,35 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   composer.addPass(crtPass);
   composer.addPass(nitroPass);
   composer.addPass(filmPass);
-  composer.addPass(fxaaPass);
+
+  /** @type {ShaderPass | InstanceType<typeof SMAAPass> | null} */
+  let aaPass = null;
+  if (aaMode === "fxaa") {
+    aaPass = new ShaderPass(FXAAShader);
+    composer.addPass(aaPass);
+  } else if (aaMode === "smaa") {
+    const ds0 = new THREE.Vector2();
+    renderer.getDrawingBufferSize(ds0);
+    aaPass = new SMAAPass(Math.max(1, ds0.x), Math.max(1, ds0.y));
+    composer.addPass(aaPass);
+  }
+
   composer.addPass(outputPass);
 
-  /** Sync FXAA pixel size (drawing buffer, includes DPR). */
-  function syncFxaaResolution() {
+  function syncAaResolution() {
+    if (!aaPass) return;
     const ds = new THREE.Vector2();
     renderer.getDrawingBufferSize(ds);
     const sx = Math.max(1, ds.x);
     const sy = Math.max(1, ds.y);
-    fxaaPass.material.uniforms.resolution.value.set(1 / sx, 1 / sy);
+    if (aaMode === "fxaa") {
+      aaPass.material.uniforms.resolution.value.set(1 / sx, 1 / sy);
+    } else if (aaMode === "smaa") {
+      aaPass.setSize(sx, sy);
+    }
   }
-  syncFxaaResolution();
+
+  syncAaResolution();
 
   function syncFog() {
     if (scene.fog instanceof THREE.FogExp2) {
@@ -243,7 +265,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
       const fullH = h * dpr;
       bloomPass.resolution.set(fullW * bloomScale, fullH * bloomScale);
       crtPass.material.uniforms.uResolution.value.set(fullW, fullH);
-      syncFxaaResolution();
+      syncAaResolution();
     },
     render() {
       if (filmPass.enabled) {
@@ -261,7 +283,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
       crtPass.dispose();
       nitroPass.dispose();
       filmPass.dispose();
-      fxaaPass.dispose();
+      aaPass?.dispose();
       outputPass.dispose();
     },
   };

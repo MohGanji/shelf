@@ -76,7 +76,7 @@ export function createWaypointBeacon(opts) {
   const colMat = new THREE.MeshBasicMaterial({
     color: 0x44ffe8,
     transparent: true,
-    opacity: 0.26,
+    opacity: 0.2,
     depthWrite: false,
     fog: false,
     side: THREE.DoubleSide,
@@ -91,7 +91,7 @@ export function createWaypointBeacon(opts) {
   const ringMat = new THREE.MeshBasicMaterial({
     color: 0x66ffee,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.34,
     depthWrite: false,
     fog: false,
     side: THREE.DoubleSide,
@@ -112,7 +112,7 @@ export function createWaypointBeacon(opts) {
   const ringOuterMat = new THREE.MeshBasicMaterial({
     color: 0x88ffff,
     transparent: true,
-    opacity: 0.22,
+    opacity: 0.17,
     depthWrite: false,
     fog: false,
     side: THREE.DoubleSide,

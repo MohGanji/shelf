@@ -108,7 +108,7 @@ export function createGameRenderer(canvas, opts = {}) {
   const post = createPostPipeline(renderer, scene, camera, devHud, {
     bloomResolutionScale: gfx.bloomResolutionScale,
     postFilmStrength: typeof gfx.postFilmStrength === "number" ? gfx.postFilmStrength : 0,
-    enableFxaa: gfx.enableFxaa === true,
+    postAntialias: gfx.postAntialias,
   });
 
   let running = false;
