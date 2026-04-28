@@ -6,6 +6,33 @@
 
 import * as THREE from "../vendor/three-module.js";
 
+/** Soft vertical falloff for column alpha (reduces hard caps + draws eye along the beam). */
+function createColumnAlphaTexture() {
+  const h = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = 4;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, "rgba(255,255,255,0)");
+  g.addColorStop(0.12, "rgba(255,255,255,0.55)");
+  g.addColorStop(0.5, "rgba(255,255,255,1)");
+  g.addColorStop(0.88, "rgba(255,255,255,0.55)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 /** Count ∈ [3..5]; spacing preserved between consecutive chevrons. */
 const CHEVRON_COUNT = 5;
 /** Vertical gap between neighbors (same ~10 as earlier sparse pair). */
@@ -43,7 +70,9 @@ export function createWaypointBeacon(opts) {
   root.name = "waypoint-beacon";
   scene.add(root);
 
-  const colGeo = new THREE.CylinderGeometry(0.32, 0.52, 48, 12, 1, true);
+  const colRadialSeg = 48;
+  const colGeo = new THREE.CylinderGeometry(0.32, 0.52, 48, colRadialSeg, 1, true);
+  const colAlphaMap = createColumnAlphaTexture();
   const colMat = new THREE.MeshBasicMaterial({
     color: 0x44ffe8,
     transparent: true,
@@ -52,6 +81,7 @@ export function createWaypointBeacon(opts) {
     fog: false,
     side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending,
+    alphaMap: colAlphaMap || undefined,
   });
   const column = new THREE.Mesh(colGeo, colMat);
   column.position.y = 24;
@@ -196,6 +226,7 @@ export function createWaypointBeacon(opts) {
       scene.remove(root);
       colGeo.dispose();
       colMat.dispose();
+      if (colAlphaMap) colAlphaMap.dispose();
       ringGeo.dispose();
       ringMat.dispose();
       ringOuterGeo.dispose();

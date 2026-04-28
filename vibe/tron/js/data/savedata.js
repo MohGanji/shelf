@@ -51,6 +51,7 @@ export function sanitizeNeonHex(raw, fallback = DEFAULT_NEON_HEX) {
  * @property {number} settings.musicVolume
  * @property {number} settings.sfxVolume
  * @property {number} settings.ambientVolume
+ * @property {"clean"|"retro"} [settings.visualPreset] — persisted post look; default clean
  * @property {Record<string, number|boolean>} devHud — stored as defaults; Advanced tuning (Dev HUD) is session-only
  * @property {boolean} controlsShown — first-time controls overlay dismissed
  * @property {boolean} tutorialCleared — first-run combat tutorial finished (exit to lobby)
@@ -90,6 +91,7 @@ export function createDefaultSave() {
       musicVolume: 0.7,
       sfxVolume: 1.0,
       ambientVolume: 0.5,
+      visualPreset: "clean",
     },
     devHud: mergeDevHud({}),
     controlsShown: false,
@@ -179,6 +181,12 @@ export function normalizePlayerSave(raw) {
   const vol = (x, fallback) =>
     typeof x === "number" && Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : fallback;
 
+  const visualPresetRaw = settingsIn.visualPreset;
+  const visualPreset =
+    visualPresetRaw === "retro" || visualPresetRaw === "clean"
+      ? visualPresetRaw
+      : d.settings.visualPreset;
+
   /** Migration: pre-tutorial saves have no `tutorialCleared` — do not block returning players. */
   let tutorialCleared = Boolean(o.tutorialCleared);
   if (o.tutorialCleared === undefined) tutorialCleared = true;
@@ -234,6 +242,7 @@ export function normalizePlayerSave(raw) {
       musicVolume: vol(settingsIn.musicVolume, d.settings.musicVolume),
       sfxVolume: vol(settingsIn.sfxVolume, d.settings.sfxVolume),
       ambientVolume: vol(settingsIn.ambientVolume, d.settings.ambientVolume),
+      visualPreset,
     },
     // Never apply `o.devHud` from disk (old or new saves). Dev HUD is session-only; this strips legacy persisted tuning on every load.
     devHud: mergeDevHud({}),
@@ -396,6 +405,9 @@ export function patchSettings(save, partial) {
   if (partial.musicVolume != null && Number.isFinite(partial.musicVolume)) save.settings.musicVolume = clamp01(partial.musicVolume);
   if (partial.sfxVolume != null && Number.isFinite(partial.sfxVolume)) save.settings.sfxVolume = clamp01(partial.sfxVolume);
   if (partial.ambientVolume != null && Number.isFinite(partial.ambientVolume)) save.settings.ambientVolume = clamp01(partial.ambientVolume);
+  if (partial.visualPreset === "clean" || partial.visualPreset === "retro") {
+    save.settings.visualPreset = partial.visualPreset;
+  }
 }
 
 /**

@@ -622,7 +622,7 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
 
   try {
     const edgeLines = new THREE.LineSegments(
-      new THREE.EdgesGeometry(neonGeo, 32),
+      new THREE.EdgesGeometry(neonGeo, 42),
       new THREE.LineBasicMaterial({
         color: emissiveHex,
         transparent: true,

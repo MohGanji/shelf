@@ -3,7 +3,7 @@
  * Mutates the same `devHud` object as gameplay; calls `applyDevHud` + `persist` on change (`persist` is a no-op: tuning is session-only, not in localStorage).
  */
 
-import { DEFAULT_DEV_HUD, mergeDevHud } from "../config.js";
+import { DEFAULT_DEV_HUD, mergeDevHud, visualPresetDevHudPatch } from "../config.js";
 
 /**
  * @typedef {{
@@ -62,6 +62,32 @@ export function createDevHudController(opts) {
 
   const scroll = document.createElement("div");
   scroll.className = "dev-hud__scroll";
+
+  const presetRow = document.createElement("label");
+  presetRow.className = "dev-hud__row";
+  const presetLab = document.createElement("span");
+  presetLab.className = "dev-hud__label";
+  presetLab.textContent = "Visual preset";
+  const visualPresetSelect = document.createElement("select");
+  visualPresetSelect.className = "dev-hud__select";
+  visualPresetSelect.setAttribute("aria-label", "Visual look preset");
+  for (const [val, label] of [
+    ["clean", "Clean (smooth)"],
+    ["retro", "Retro (heavy bloom)"],
+  ]) {
+    const opt = document.createElement("option");
+    opt.value = val;
+    opt.textContent = label;
+    visualPresetSelect.appendChild(opt);
+  }
+  visualPresetSelect.value = devHud.visualPreset === "retro" ? "retro" : "clean";
+  visualPresetSelect.addEventListener("change", () => {
+    const p = visualPresetSelect.value === "retro" ? "retro" : "clean";
+    applyAndPersist(visualPresetDevHudPatch(p));
+  });
+  presetRow.appendChild(presetLab);
+  presetRow.appendChild(visualPresetSelect);
+  scroll.appendChild(presetRow);
 
   /** @type {Map<string, HTMLInputElement>} */
   const inputs = new Map();
@@ -296,6 +322,13 @@ export function createDevHudController(opts) {
     { key: "trailProximityBedEnabled", label: "Trail proximity bed", kind: "bool" },
     { key: "trailProximityFalloffDistance", label: "Trail proximity falloff (units)", min: 8, max: 56, step: 1 },
     { key: "trailProximityMaxGain", label: "Trail bed max gain", min: 0, max: 0.55, step: 0.02 },
+    {
+      key: "trailProximityExtraSelfImmunity",
+      label: "Trail bed extra self-immunity (phys. edges)",
+      min: 0,
+      max: 48,
+      step: 1,
+    },
     { key: "musicDuckEnabled", label: "Tension music duck", kind: "bool" },
     { key: "musicDuckMaxDb", label: "Music duck max dB", min: 0, max: 12, step: 0.25 },
     { key: "enemyEngineBedEnabled", label: "Enemy proximity engine bed", kind: "bool" },
@@ -402,6 +435,7 @@ export function createDevHudController(opts) {
 
   /** Sync control values from `devHud` (e.g. after load). */
   function refreshControls() {
+    visualPresetSelect.value = devHud.visualPreset === "retro" ? "retro" : "clean";
     for (const [keyStr, el] of inputs) {
       if (!isDevKey(keyStr)) continue;
       const key = /** @type {keyof typeof DEFAULT_DEV_HUD} */ (keyStr);

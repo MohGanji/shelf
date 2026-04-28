@@ -175,19 +175,31 @@ export function computePlayerNearMissDistance(
  * @param {ReturnType<import("./collisionResolve.js").buildTrailSources>} trailSources
  * @param {import("../config.js").DEFAULT_DEV_HUD} devHud
  * @param {ReturnType<import("../config.js").getArenaPlaytestConfig>} playCfg
+ * @param {{ selfSampleX?: number; selfSampleZ?: number }} [opts] — sample **own** trail distance from rear axle
+ *   (trail emit point); enemies still use `px`/`pz` (cycle center). Omit to use center for all sources.
  */
-export function computeNearestTrailHazardDistanceOnly(px, pz, trailSources, devHud, playCfg) {
+export function computeNearestTrailHazardDistanceOnly(px, pz, trailSources, devHud, playCfg, opts = {}) {
   const capRaw =
     typeof devHud.trailProximityFalloffDistance === "number" && Number.isFinite(devHud.trailProximityFalloffDistance)
       ? devHud.trailProximityFalloffDistance
-      : 30;
+      : 15;
   const cap = Math.max(4, capRaw);
   const selfId = "player";
+  const extraImmRaw = devHud.trailProximityExtraSelfImmunity;
+  const extraImm =
+    typeof extraImmRaw === "number" && Number.isFinite(extraImmRaw) ? Math.max(0, Math.floor(extraImmRaw)) : 12;
+  const sx =
+    typeof opts.selfSampleX === "number" && Number.isFinite(opts.selfSampleX) ? opts.selfSampleX : px;
+  const sz =
+    typeof opts.selfSampleZ === "number" && Number.isFinite(opts.selfSampleZ) ? opts.selfSampleZ : pz;
   let best = Infinity;
   for (const s of trailSources) {
     const n = selfId === s.ownerId ? s.getEdgeCount() : 0;
-    const imm = selfId === s.ownerId ? physicalTrailImmunitySegments(devHud, playCfg.world) : 0;
-    const d = s.map.nearestHazardDistance(px, pz, selfId, n, imm, cap);
+    const baseImm = selfId === s.ownerId ? physicalTrailImmunitySegments(devHud, playCfg.world) : 0;
+    const imm = selfId === s.ownerId ? baseImm + extraImm : 0;
+    const qx = selfId === s.ownerId ? sx : px;
+    const qz = selfId === s.ownerId ? sz : pz;
+    const d = s.map.nearestHazardDistance(qx, qz, selfId, n, imm, cap);
     best = Math.min(best, d);
   }
   return best;

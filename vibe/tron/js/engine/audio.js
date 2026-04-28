@@ -1982,7 +1982,7 @@ export function createAudioEngine(options = {}) {
       const trMax =
         typeof opts.trailProximityMaxGain === "number" && Number.isFinite(opts.trailProximityMaxGain)
           ? Math.max(0, opts.trailProximityMaxGain)
-          : 0.22;
+          : 0.2;
       ensureTrailBed();
       if (trailBed) {
         const tg = trWall * trMax * Math.max(0, sfxVolume);

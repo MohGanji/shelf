@@ -1,11 +1,13 @@
 import {
   AUDIO_AUTOPLAY,
   CONFIG,
+  CYCLE_BOUNDS,
   MUSIC_ASSET_URLS,
   getLobbyMusicUrl,
   getGameplayMusicUrl,
   createRuntimeFromPlayerSave,
   getArenaPlaytestConfig,
+  visualPresetDevHudPatch,
 } from "./config.js";
 import { GameMode, isArenaRideableMode } from "./gameState.js";
 import { createChaseCamera } from "./engine/camera.js";
@@ -14,6 +16,7 @@ import {
   isDailyClearedOn,
   isLevelUnlockedLinear,
   loadOrCreateSave,
+  patchSettings,
   persistSave,
   recordDailyCleared,
   recordLevelComplete,
@@ -1261,11 +1264,16 @@ async function main() {
     const am = pauseOverlayEl.querySelector('[data-pause-set="ambientVolume"]');
     const crt = pauseOverlayEl.querySelector('[data-pause-set="crtScanlines"]');
     const bl = pauseOverlayEl.querySelector('[data-pause-set="bloomIntensity"]');
+    const vp = pauseOverlayEl.querySelector('[data-pause-set="visualPreset"]');
     if (m instanceof HTMLInputElement) m.value = String(save.settings.masterVolume);
     if (mu instanceof HTMLInputElement) mu.value = String(save.settings.musicVolume);
     if (sx instanceof HTMLInputElement) sx.value = String(save.settings.sfxVolume);
     if (am instanceof HTMLInputElement) am.value = String(save.settings.ambientVolume);
     if (crt instanceof HTMLInputElement) crt.checked = !!devHud.crtScanlines;
+    if (vp instanceof HTMLSelectElement) {
+      const p = save.settings.visualPreset === "retro" ? "retro" : "clean";
+      vp.value = p;
+    }
     if (bl instanceof HTMLInputElement) {
       bl.value = String(
         typeof devHud.bloomIntensity === "number" && Number.isFinite(devHud.bloomIntensity)
@@ -1289,6 +1297,17 @@ async function main() {
       const on = t.checked;
       devHud.crtScanlines = on;
       game.applyDevHud({ crtScanlines: on });
+      return;
+    }
+
+    if (key === "visualPreset") {
+      if (!(t instanceof HTMLSelectElement)) return;
+      const p = t.value === "retro" ? "retro" : "clean";
+      patchSettings(save, { visualPreset: p });
+      persistSave(save);
+      const patch = visualPresetDevHudPatch(p);
+      Object.assign(devHud, patch);
+      game.applyDevHud(patch);
       return;
     }
 
@@ -2178,8 +2197,15 @@ async function main() {
     const trailFalloff =
       typeof devHud.trailProximityFalloffDistance === "number" && Number.isFinite(devHud.trailProximityFalloffDistance)
         ? Math.max(4, devHud.trailProximityFalloffDistance)
-        : 30;
-    const trailNearest = computeNearestTrailHazardDistanceOnly(pxMix, pzMix, trailSourcesForMix, devHud, playCfg);
+        : 15;
+    const phMix = playerBody.userData.heading ?? 0;
+    const rearOff = CYCLE_BOUNDS.length * 0.48;
+    const trailRearX = pxMix - Math.sin(phMix) * rearOff;
+    const trailRearZ = pzMix - Math.cos(phMix) * rearOff;
+    const trailNearest = computeNearestTrailHazardDistanceOnly(pxMix, pzMix, trailSourcesForMix, devHud, playCfg, {
+      selfSampleX: trailRearX,
+      selfSampleZ: trailRearZ,
+    });
     const trailProximity01 = Number.isFinite(trailNearest) ? Math.max(0, 1 - trailNearest / trailFalloff) : 0;
 
     if (typeof audio.applyDynamicMix === "function" && playerDerezPhase === "alive" && !isTunnelBlockingInput()) {

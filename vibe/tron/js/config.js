@@ -82,13 +82,41 @@ export const TRON_COLORS = {
   enemyCycle: 0xff6600,
 };
 
+/**
+ * Post values for pause-menu / boot “Clean” (smoother, less edge halation) vs “Retro” (stronger CA + bloom).
+ * @param {"clean" | "retro"} preset
+ * @returns {Pick<typeof DEFAULT_DEV_HUD, "visualPreset" | "bloomIntensity" | "bloomRadius" | "bloomThreshold" | "chromaticAberration" | "neonIntensity">}
+ */
+export function visualPresetDevHudPatch(preset) {
+  if (preset === "retro") {
+    return {
+      visualPreset: "retro",
+      bloomIntensity: 0.95,
+      bloomRadius: 0.3,
+      bloomThreshold: 0.3,
+      chromaticAberration: 0.002,
+      neonIntensity: 0.95,
+    };
+  }
+  return {
+    visualPreset: "clean",
+    bloomIntensity: 0.88,
+    bloomRadius: 0.235,
+    bloomThreshold: 0.38,
+    chromaticAberration: 0.0011,
+    neonIntensity: 0.92,
+  };
+}
+
 /** Default dev HUD keys — in-memory tuning only; save file stores schema defaults (see normalizePlayerSave) */
 export const DEFAULT_DEV_HUD = {
-  bloomIntensity: 0.95,
+  /** `clean` = default look; `retro` = heavier bloom / CA (see {@link visualPresetDevHudPatch}). */
+  visualPreset: /** @type {"clean" | "retro"} */ ("clean"),
+  bloomIntensity: 0.88,
   /** UnrealBloomPass radius — reference-style “selective bloom” often pairs with higher threshold. */
-  bloomRadius: 0.3,
-  bloomThreshold: 0.3,
-  chromaticAberration: 0.002,
+  bloomRadius: 0.235,
+  bloomThreshold: 0.38,
+  chromaticAberration: 0.0011,
   crtScanlines: false,
   gridBrightness: 0.2,
   /** Arena / editor / garage floor: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
@@ -97,7 +125,7 @@ export const DEFAULT_DEV_HUD = {
   buildingGridStep: 1,
   /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
   tunnelGridLineStep: 8,
-  neonIntensity: 0.95,
+  neonIntensity: 0.92,
   cycleNeonIntensity: 0.5,
   buildingGlitchStyle: 0,
   fogDensity: 0.009,
@@ -241,10 +269,15 @@ export const DEFAULT_DEV_HUD = {
    */
   sfxDerezPreset: 0,
   /** Distance falloff for trail proximity bed (world units); nearer trails read louder. */
-  trailProximityFalloffDistance: 30,
+  trailProximityFalloffDistance: 15,
   /** Trail proximity audio bed — quieter default than enemy engine proximity. */
   trailProximityBedEnabled: true,
-  trailProximityMaxGain: 0.22,
+  trailProximityMaxGain: 0.2,
+  /**
+   * Extra **physical** trail-edge indices treated as non-hazard for the **trail proximity bed** only
+   * (beyond {@link physicalTrailImmunitySegments}) so the rear-axle sample does not pump the bed on tight self-trail geometry.
+   */
+  trailProximityExtraSelfImmunity: 12,
   eliminationStingEnabled: true,
   /** Nitro VFX / post multiplier in first-run tutorial (1 = default). */
   tutorialNitroJuice: 1.35,
@@ -407,11 +440,15 @@ export function mergeRuntimeConfig(devHud = {}) {
  * Boot-time helper: builds merged runtime with default dev HUD (save does not apply tuning across sessions).
  * All gameplay should use this object (or `getArenaPlaytestConfig`) — not raw `DEFAULT_DEV_HUD` / `WORLD` alone.
  *
- * @param {{ devHud?: Record<string, unknown> }} [_playerSave] — unused; kept for call-site stability
+ * @param {{ settings?: { visualPreset?: string } } | null | undefined} [playerSave] — `settings.visualPreset` selects clean vs retro post defaults at boot.
  * @returns {RuntimeConfig}
  */
-export function createRuntimeFromPlayerSave(_playerSave) {
-  return mergeRuntimeConfig({});
+export function createRuntimeFromPlayerSave(playerSave) {
+  const preset =
+    playerSave && typeof playerSave === "object" && playerSave.settings?.visualPreset === "retro"
+      ? "retro"
+      : "clean";
+  return mergeRuntimeConfig(visualPresetDevHudPatch(preset));
 }
 
 /** Full-screen tunnel transition (BOOT / gates) — see `engine/tunnel.js` */

@@ -249,7 +249,7 @@ export function createTrailWallSystem(options) {
     const chord = Math.hypot(dx, dz);
     if (chord < 1e-5) return;
 
-    const divisions = Math.max(4, Math.min(64, Math.ceil(chord * 12)));
+    const divisions = Math.max(6, Math.min(64, Math.ceil(chord * 14)));
     const parts = [];
     const thickUse = asGlow ? thick * glowThickMul() : thick;
     const wallHUse = asGlow ? wallH * glowHeightMul() : wallH;

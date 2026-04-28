@@ -1,5 +1,6 @@
 import * as THREE from "../vendor/three-module.js";
 import { CopyShader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/CopyShader.js";
+import { FXAAShader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/shaders/FXAAShader.js";
 import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js";
 import { OutputPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/OutputPass.js";
 import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js";
@@ -129,7 +130,7 @@ const FilmGradeShader = {
  * @param {import('three').Scene} scene
  * @param {import('three').Camera} camera
  * @param {Partial<typeof DEFAULT_DEV_HUD>} [devHud]
- * @param {{ bloomResolutionScale?: number; postFilmStrength?: number }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
+ * @param {{ bloomResolutionScale?: number; postFilmStrength?: number; enableFxaa?: boolean }} [postOpts] P10.2 — values below 1 shrink bloom RT (large GPU savings).
  */
 export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpts = {}) {
   const hud = { ...DEFAULT_DEV_HUD, ...devHud };
@@ -168,6 +169,9 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   filmPass.material.uniforms.uGrain.value = filmStrength > 0 ? 0.018 + filmStrength * 0.07 : 0;
   filmPass.enabled = filmStrength > 0.001;
 
+  const fxaaPass = new ShaderPass(FXAAShader);
+  fxaaPass.enabled = postOpts.enableFxaa === true;
+
   const outputPass = new OutputPass();
 
   const composer = new EffectComposer(renderer);
@@ -177,7 +181,18 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   composer.addPass(crtPass);
   composer.addPass(nitroPass);
   composer.addPass(filmPass);
+  composer.addPass(fxaaPass);
   composer.addPass(outputPass);
+
+  /** Sync FXAA pixel size (drawing buffer, includes DPR). */
+  function syncFxaaResolution() {
+    const ds = new THREE.Vector2();
+    renderer.getDrawingBufferSize(ds);
+    const sx = Math.max(1, ds.x);
+    const sy = Math.max(1, ds.y);
+    fxaaPass.material.uniforms.resolution.value.set(1 / sx, 1 / sy);
+  }
+  syncFxaaResolution();
 
   function syncFog() {
     if (scene.fog instanceof THREE.FogExp2) {
@@ -228,6 +243,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
       const fullH = h * dpr;
       bloomPass.resolution.set(fullW * bloomScale, fullH * bloomScale);
       crtPass.material.uniforms.uResolution.value.set(fullW, fullH);
+      syncFxaaResolution();
     },
     render() {
       if (filmPass.enabled) {
@@ -245,6 +261,7 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
       crtPass.dispose();
       nitroPass.dispose();
       filmPass.dispose();
+      fxaaPass.dispose();
       outputPass.dispose();
     },
   };

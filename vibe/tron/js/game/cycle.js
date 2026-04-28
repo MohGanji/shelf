@@ -551,11 +551,11 @@ export function createProceduralLightCycle(options = {}) {
   {
     function addNeonStrip(points, mat, radius, bloomRadius) {
       const curve = new THREE.CatmullRomCurve3(points);
-      const tubeGeo = new THREE.TubeGeometry(curve, 24, radius, 4, false);
+      const tubeGeo = new THREE.TubeGeometry(curve, 24, radius, 10, false);
       disposableGeoms.push(tubeGeo);
       animationRoot.add(new THREE.Mesh(tubeGeo, mat));
 
-      const bloomGeo = new THREE.TubeGeometry(curve, 24, bloomRadius, 4, false);
+      const bloomGeo = new THREE.TubeGeometry(curve, 24, bloomRadius, 10, false);
       disposableGeoms.push(bloomGeo);
       animationRoot.add(new THREE.Mesh(bloomGeo, rimBloomMat));
     }
