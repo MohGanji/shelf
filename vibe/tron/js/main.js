@@ -1755,13 +1755,46 @@ async function main() {
   let debugPlayerMesh = null;
   const debugEnemyMeshes = [];
 
+  const showFpsHud =
+    typeof location !== "undefined" && new URLSearchParams(location.search).get("fps") === "1";
+  /** @type {HTMLDivElement | null} */
+  let fpsHudEl = null;
+  if (showFpsHud && typeof document !== "undefined") {
+    fpsHudEl = document.createElement("div");
+    fpsHudEl.setAttribute("aria-hidden", "true");
+    fpsHudEl.style.cssText =
+      "position:fixed;left:8px;top:8px;z-index:2147483647;font:12px/1.25 ui-monospace,monospace;color:#0f8;background:rgba(0,0,0,0.55);padding:4px 10px;pointer-events:none;border-radius:4px;";
+    document.body.appendChild(fpsHudEl);
+  }
+  const fpsTimestamps = /** @type {number[]} */ ([]);
+  let fpsHudLastWriteMs = 0;
+  /** Rich-floor emissive pulse (~17 Hz max) — `arenaFloorDetail === 'rich'` only. */
+  let lastArenaFloorPulseT = Number.NEGATIVE_INFINITY;
+  const ARENA_FLOOR_PULSE_MIN_DT = 1 / 17;
+
   game.setOnFrame(({ t, dt }) => {
+    if (fpsHudEl) {
+      const nowMs = performance.now();
+      fpsTimestamps.push(nowMs);
+      while (fpsTimestamps.length && nowMs - fpsTimestamps[0] > 1000) {
+        fpsTimestamps.shift();
+      }
+      if (nowMs - fpsHudLastWriteMs >= 200) {
+        fpsHudLastWriteMs = nowMs;
+        const fpsN = fpsTimestamps.length;
+        const frameMs = dt > 0 ? dt * 1000 : 0;
+        fpsHudEl.textContent = `~${fpsN} fps  ${frameMs.toFixed(1)} ms`;
+      }
+    }
+
     const floorMat = game.scene.userData.arenaFloorMaterial;
     if (
       floorMat &&
       floorMat.userData &&
-      typeof floorMat.userData.emissiveIntensityBase === "number"
+      typeof floorMat.userData.emissiveIntensityBase === "number" &&
+      t - lastArenaFloorPulseT >= ARENA_FLOOR_PULSE_MIN_DT
     ) {
+      lastArenaFloorPulseT = t;
       const b = floorMat.userData.emissiveIntensityBase;
       floorMat.emissiveIntensity = b * (0.92 + 0.08 * Math.sin(t * 2.15));
     }

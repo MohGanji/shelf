@@ -993,7 +993,7 @@
             "permissions": "Runs entirely client-side in the browser sandbox (JavaScript ES modules, WebGL, Web Audio API). Optional localStorage only for campaign progress, garage upgrades, editor WIP levels, and settings. No microphone, camera, geolocation, notifications, or background sync access required or requested.",
             "storageRequirements": "No disk install. Optional campaign progress, garage upgrades, editor WIP levels, and settings persist in browser localStorage only (typically well under 1 MB).",
             "memoryRequirements": "Typical browser tab: roughly 150–900 MB system RAM depending on GPU texture budget, WebGL post-processing tier, and session length.",
-            "processorRequirements": "Client-side only: one JavaScript main thread plus WebGL on the GPU. A dual-core CPU from roughly the last decade is typically enough for 60 Hz at default (balanced / medium) graphics; low-power laptops may use ?perf=low.",
+            "processorRequirements": "Client-side only: one JavaScript main thread plus WebGL on the GPU. Defaults match balanced (?perf=medium) graphics with internal resolution capped like ?dpr=1; optional ?perf=high and higher ?dpr= sharpen the image. Low-power laptops may use ?perf=low.",
             "softwareHelp": {
               "@type": "CreativeWork",
               "name": "Keyboard controls and quick start",

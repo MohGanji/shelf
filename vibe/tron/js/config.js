@@ -100,11 +100,12 @@ export function visualPresetDevHudPatch(preset) {
   }
   return {
     visualPreset: "clean",
-    bloomIntensity: 0.88,
-    bloomRadius: 0.235,
-    bloomThreshold: 0.38,
-    chromaticAberration: 0.0011,
-    neonIntensity: 0.92,
+    /** Slightly brighter selective bloom vs older defaults — pairs with lower `bloomResolutionScale` on medium/high. */
+    bloomIntensity: 0.91,
+    bloomRadius: 0.24,
+    bloomThreshold: 0.365,
+    chromaticAberration: 0.0009,
+    neonIntensity: 0.93,
   };
 }
 
@@ -112,11 +113,11 @@ export function visualPresetDevHudPatch(preset) {
 export const DEFAULT_DEV_HUD = {
   /** `clean` = default look; `retro` = heavier bloom / CA (see {@link visualPresetDevHudPatch}). */
   visualPreset: /** @type {"clean" | "retro"} */ ("clean"),
-  bloomIntensity: 0.88,
+  bloomIntensity: 0.91,
   /** UnrealBloomPass radius — reference-style “selective bloom” often pairs with higher threshold. */
-  bloomRadius: 0.235,
-  bloomThreshold: 0.38,
-  chromaticAberration: 0.0011,
+  bloomRadius: 0.24,
+  bloomThreshold: 0.365,
+  chromaticAberration: 0.0009,
   crtScanlines: false,
   gridBrightness: 0.2,
   /** Arena / editor / garage floor: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
@@ -125,7 +126,7 @@ export const DEFAULT_DEV_HUD = {
   buildingGridStep: 1,
   /** Boot/tunnel cylinder texture: line spacing = 32px × this (match floor feel when equal). */
   tunnelGridLineStep: 8,
-  neonIntensity: 0.92,
+  neonIntensity: 0.93,
   cycleNeonIntensity: 0.5,
   buildingGlitchStyle: 0,
   fogDensity: 0.009,

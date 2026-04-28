@@ -94,11 +94,17 @@ export function createGameRenderer(canvas, opts = {}) {
   const w0 = canvas.clientWidth || window.innerWidth;
   const h0 = canvas.clientHeight || window.innerHeight;
   const dpr0 = Math.min(window.devicePixelRatio || 1, gfx.maxPixelRatio);
+  const refScale0 =
+    typeof gfx.reflectorResolutionScale === "number" && Number.isFinite(gfx.reflectorResolutionScale)
+      ? Math.min(1, Math.max(0.25, gfx.reflectorResolutionScale))
+      : 1;
   const floorGeom = new THREE.PlaneGeometry(900, 900);
+  const rw0 = Math.max(64, Math.floor(w0 * dpr0 * refScale0));
+  const rh0 = Math.max(64, Math.floor(h0 * dpr0 * refScale0));
   const floorReflector = new Reflector(floorGeom, {
     color: 0x0c0c18,
-    textureWidth: Math.floor(w0 * dpr0),
-    textureHeight: Math.floor(h0 * dpr0),
+    textureWidth: rw0,
+    textureHeight: rh0,
     clipBias: 0.003,
   });
   floorReflector.rotation.x = -Math.PI / 2;
@@ -129,7 +135,13 @@ export function createGameRenderer(canvas, opts = {}) {
     camera.updateProjectionMatrix();
     post.setSize(w, h);
     const dpr = renderer.getPixelRatio();
-    floorReflector.getRenderTarget().setSize(Math.floor(w * dpr), Math.floor(h * dpr));
+    const refScale =
+      typeof gfx.reflectorResolutionScale === "number" && Number.isFinite(gfx.reflectorResolutionScale)
+        ? Math.min(1, Math.max(0.25, gfx.reflectorResolutionScale))
+        : 1;
+    const rtw = Math.max(64, Math.floor(w * dpr * refScale));
+    const rth = Math.max(64, Math.floor(h * dpr * refScale));
+    floorReflector.getRenderTarget().setSize(rtw, rth);
   }
 
   function applyDevHud(patch) {
