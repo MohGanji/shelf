@@ -3,8 +3,8 @@
  * Override with URL: `?perf=low|medium|high` or `?dpr=1` (caps device pixel ratio).
  * Optional: `?aa=smaa` on **medium** / **high** restores SMAA (costly; default is FXAA for smoother FPS).
  * Debug: `?fps=1` shows a lightweight fps / frame-ms overlay (session-only).
- * Default (no `?perf=`): **medium** tier — same as `perf=medium`; **high** is only used when `?perf=high` is set.
- * Default DPR (no `?dpr=`): capped like **`dpr=1`** for smoother FPS; set `?dpr=` to allow higher internal resolution.
+ * Default (no `?perf=`): heuristics choose **low** / **medium** / **high** (strong hidpi desktops may auto-select **high**); override with `?perf=`.
+ * Default DPR (no `?dpr=`): capped like **`dpr=1`** (works well with auto-**high**); set `?dpr=` for higher internal resolution.
  */
 
 /** @typedef {'low' | 'medium' | 'high'} GraphicsTier */
@@ -58,7 +58,16 @@ function detectTier() {
 
   if (score >= 4) return "low";
 
-  /** No auto-`high`: default experience stays **medium** (`?perf=high` opt-in). */
+  const rawDpr = window.devicePixelRatio || 1;
+  /** Retina-class + 8 GB RAM or 8+ threads + non-Safari (Safari post path is heavier per pixel). */
+  const strongDesktop =
+    score === 0 &&
+    !isLikelyDesktopSafari() &&
+    rawDpr >= 1.5 &&
+    ((typeof mem === "number" && mem >= 8) ||
+      (typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency >= 8));
+
+  if (strongDesktop) return "high";
   return "medium";
 }
 
