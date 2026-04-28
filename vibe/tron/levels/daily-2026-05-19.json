@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-19",
-  "name": "Daily — Circuit 22",
+  "name": "Daily — Opera Shell",
   "arenaWidth": 647,
   "arenaDepth": 647,
   "wallObjects": [
@@ -25,54 +25,244 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 85,
+      "depth": 22,
+      "gridX": 175,
+      "gridZ": 518,
+      "x": -107,
+      "z": 204.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 85,
+      "depth": 22,
+      "gridX": 388,
+      "gridZ": 518,
+      "x": 106,
+      "z": 204.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 128,
+      "depth": 8,
+      "gridX": 260,
+      "gridZ": 508,
+      "x": -0.5,
+      "z": 187.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 30,
+      "depth": 30,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 45,
+      "gridZ": 95,
+      "x": -264.5,
+      "z": -214.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 3,
+      "width": 30,
+      "depth": 30,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 45,
+      "gridZ": 130,
+      "x": -264.5,
+      "z": -179.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 3,
+      "width": 30,
+      "depth": 30,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 78,
+      "gridZ": 165,
+      "x": -231.5,
+      "z": -144.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 2,
+      "width": 28,
+      "depth": 28,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 78,
+      "gridZ": 202,
+      "x": -231.5,
+      "z": -107.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 2,
+      "width": 26,
+      "depth": 26,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 110,
+      "gridZ": 238,
+      "x": -199.5,
+      "z": -71.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 2,
+      "width": 24,
+      "depth": 24,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 140,
+      "gridZ": 275,
+      "x": -169.5,
+      "z": -34.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 30,
+      "depth": 30,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 573,
+      "gridZ": 95,
+      "x": 264.5,
+      "z": -214.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 3,
+      "width": 30,
+      "depth": 30,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 573,
+      "gridZ": 130,
+      "x": 264.5,
+      "z": -179.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 3,
+      "width": 30,
+      "depth": 30,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 540,
+      "gridZ": 165,
+      "x": 231.5,
+      "z": -144.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 2,
+      "width": 28,
+      "depth": 28,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 540,
+      "gridZ": 202,
+      "x": 231.5,
+      "z": -107.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 2,
+      "width": 26,
+      "depth": 26,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 511,
+      "gridZ": 238,
+      "x": 202.5,
+      "z": -71.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 2,
+      "width": 24,
+      "depth": 24,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 483,
+      "gridZ": 275,
+      "x": 174.5,
+      "z": -34.5
+    }
+  ],
   "gameObjects": [],
   "powerups": [],
   "enemies": [
     {
-      "x": 40.3,
-      "z": 29.6,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 364,
-      "gridZ": 353
+      "gridX": 35,
+      "gridZ": 35,
+      "x": -289,
+      "z": -288
     },
     {
-      "x": -15.7,
-      "z": 95.7,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 308,
-      "gridZ": 419
+      "gridX": 36,
+      "gridZ": 35,
+      "x": -288,
+      "z": -288
     },
     {
-      "x": -137.2,
-      "z": 43.8,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 187,
-      "gridZ": 367
+      "gridX": 37,
+      "gridZ": 35,
+      "x": -287,
+      "z": -288
     },
     {
-      "x": -64,
-      "z": -64.7,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 260,
-      "gridZ": 258
+      "gridX": 38,
+      "gridZ": 35,
+      "x": -286,
+      "z": -288
     },
     {
-      "x": 43.3,
-      "z": -131,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 367,
-      "gridZ": 192
+      "gridX": 39,
+      "gridZ": 35,
+      "x": -285,
+      "z": -288
     }
   ],
   "rewards": {

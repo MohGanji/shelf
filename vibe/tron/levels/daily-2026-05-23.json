@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-23",
-  "name": "Daily — Circuit 26",
+  "name": "Daily — Skate Bowl",
   "arenaWidth": 675,
   "arenaDepth": 675,
   "wallObjects": [
@@ -25,90 +25,276 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "triangle",
+      "triangleQuarter": 0,
+      "height": 3,
+      "width": 38,
+      "depth": 38,
+      "gridX": 295,
+      "gridZ": 305,
+      "x": -20.5,
+      "z": -10.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "triangleQuarter": 2,
+      "height": 3,
+      "width": 38,
+      "depth": 38,
+      "gridX": 295,
+      "gridZ": 346,
+      "x": -20.5,
+      "z": 30.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 46,
+      "depth": 7,
+      "gridX": 249,
+      "gridZ": 304,
+      "x": -17,
+      "z": -31.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 45,
+      "depth": 7,
+      "gridX": 333,
+      "gridZ": 304,
+      "x": 66.5,
+      "z": -31.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 38,
+      "depth": 7,
+      "gridX": 295,
+      "gridZ": 294,
+      "x": -20.5,
+      "z": -41.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 38,
+      "depth": 7,
+      "gridX": 295,
+      "gridZ": 384,
+      "x": -20.5,
+      "z": 38.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 52,
+      "depth": 6,
+      "gridX": 288,
+      "gridZ": 400,
+      "x": -24.5,
+      "z": 54
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 52,
+      "depth": 6,
+      "gridX": 288,
+      "gridZ": 230,
+      "x": -24.5,
+      "z": -116
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "width": 1,
+      "depth": 1,
+      "gridX": 248,
+      "gridZ": 300,
+      "x": -89.5,
+      "z": -38.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "width": 1,
+      "depth": 1,
+      "gridX": 248,
+      "gridZ": 315,
+      "x": -89.5,
+      "z": -23.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "width": 1,
+      "depth": 1,
+      "gridX": 379,
+      "gridZ": 300,
+      "x": 41.5,
+      "z": -38.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "width": 1,
+      "depth": 1,
+      "gridX": 379,
+      "gridZ": 315,
+      "x": 41.5,
+      "z": -23.5
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 2,
+      "depth": 32,
+      "gridX": 245,
+      "gridZ": 309,
+      "x": -92.5,
+      "z": -15
+    },
+    {
+      "type": "boost_pad",
+      "width": 2,
+      "depth": 32,
+      "gridX": 380,
+      "gridZ": 309,
+      "x": 42.5,
+      "z": -15
+    },
+    {
+      "type": "boost_pad",
+      "width": 32,
+      "depth": 2,
+      "gridX": 298,
+      "gridZ": 343,
+      "x": -4,
+      "z": 0.5
+    },
+    {
+      "type": "boost_pad",
+      "width": 3,
+      "depth": 22,
+      "gridX": 313,
+      "gridZ": 268,
+      "x": 10.5,
+      "z": -88
+    },
+    {
+      "type": "boost_pad",
+      "width": 3,
+      "depth": 22,
+      "gridX": 313,
+      "gridZ": 416,
+      "x": 10.5,
+      "z": 60
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 120,
+      "x": -217.5,
+      "z": -217.5
+    }
+  ],
   "enemies": [
     {
-      "x": -8.5,
-      "z": 69.5,
+      "x": -303,
+      "z": -302,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 330,
-      "gridZ": 407
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": -78.3,
-      "z": 87,
+      "x": -302,
+      "z": -302,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 260,
-      "gridZ": 424
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": -62.4,
-      "z": 14.4,
+      "x": -301,
+      "z": -302,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 276,
-      "gridZ": 351
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": -102.9,
-      "z": -41.6,
+      "x": -300,
+      "z": -302,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 235,
-      "gridZ": 295
+      "gridX": 38,
+      "gridZ": 35
     },
     {
-      "x": -31.6,
-      "z": -48.6,
+      "x": -299,
+      "z": -302,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 306,
-      "gridZ": 288
+      "gridX": 39,
+      "gridZ": 35
     },
     {
-      "x": 3.7,
-      "z": -104.9,
+      "x": -298,
+      "z": -302,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 342,
-      "gridZ": 232
+      "gridX": 40,
+      "gridZ": 35
     },
     {
-      "x": 31.3,
-      "z": -41.5,
+      "x": -297,
+      "z": -302,
       "rotation": 0,
       "color": "#44AAFF",
       "category": "boss",
-      "gridX": 369,
-      "gridZ": 296
+      "gridX": 41,
+      "gridZ": 35
     },
     {
-      "x": 94.2,
-      "z": -30.6,
+      "x": -296,
+      "z": -302,
       "rotation": 0,
       "color": "#FFCC00",
       "category": "easy",
-      "gridX": 432,
-      "gridZ": 306
+      "gridX": 42,
+      "gridZ": 35
     },
     {
-      "x": 44,
-      "z": 13.4,
+      "x": -295,
+      "z": -302,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 382,
-      "gridZ": 350
+      "gridX": 43,
+      "gridZ": 35
     }
   ],
   "rewards": {

@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-05",
-  "name": "Daily — Circuit 08",
+  "name": "Daily — Sonar Mesh",
   "arenaWidth": 549,
   "arenaDepth": 549,
   "wallObjects": [
@@ -25,90 +25,297 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 100,
+      "depth": 180,
+      "gridX": 20,
+      "gridZ": 40,
+      "x": -205.5,
+      "z": -145.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 110,
+      "depth": 180,
+      "gridX": 430,
+      "gridZ": 40,
+      "x": 209.5,
+      "z": -145.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 200,
+      "depth": 100,
+      "gridX": 20,
+      "gridZ": 280,
+      "x": -155.5,
+      "z": 54.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 200,
+      "depth": 100,
+      "gridX": 330,
+      "gridZ": 280,
+      "x": 154.5,
+      "z": 54.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 100,
+      "depth": 60,
+      "gridX": 120,
+      "gridZ": 220,
+      "x": -105.5,
+      "z": -25.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 100,
+      "depth": 60,
+      "gridX": 330,
+      "gridZ": 220,
+      "x": 154.5,
+      "z": -25.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 100,
+      "depth": 140,
+      "gridX": 120,
+      "gridZ": 40,
+      "x": -105.5,
+      "z": -165.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 100,
+      "depth": 140,
+      "gridX": 330,
+      "gridZ": 40,
+      "x": 154.5,
+      "z": -165.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 90,
+      "depth": 6,
+      "gridX": 231,
+      "gridZ": 188,
+      "x": 0.5,
+      "z": -84.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 90,
+      "depth": 6,
+      "gridX": 231,
+      "gridZ": 326,
+      "x": 0.5,
+      "z": 53.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 130,
+      "gridZ": 205,
+      "x": -145,
+      "z": -70
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 275,
+      "gridZ": 200,
+      "x": 0,
+      "z": -75
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 420,
+      "gridZ": 205,
+      "x": 145,
+      "z": -70
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 225,
+      "gridZ": 268,
+      "x": -50,
+      "z": -7
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 325,
+      "gridZ": 268,
+      "x": 50,
+      "z": -7
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 275,
+      "gridZ": 360,
+      "x": 0,
+      "z": 85
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 240,
+      "gridZ": 100,
+      "x": -33.5,
+      "z": -173
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 260,
+      "gridZ": 400,
+      "x": -13.5,
+      "z": 127
+    },
+    {
+      "type": "portal",
+      "portalHalfTurn": 0,
+      "pairId": "daily-2026-05-05-gate0",
+      "pairColor": "#5FD4E8",
+      "gridX": 15,
+      "gridZ": 245,
+      "x": -258,
+      "z": -28
+    },
+    {
+      "type": "portal",
+      "portalHalfTurn": 0,
+      "pairId": "daily-2026-05-05-gate0",
+      "pairColor": "#5FD4E8",
+      "gridX": 530,
+      "gridZ": 245,
+      "x": 257,
+      "z": -28
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 270,
+      "gridZ": 198,
+      "x": -4.5,
+      "z": -76.5
+    }
+  ],
   "enemies": [
     {
-      "x": -58.8,
-      "z": 54.3,
+      "x": -90,
+      "z": -89,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 216,
-      "gridZ": 328
+      "gridX": 185,
+      "gridZ": 185
     },
     {
-      "x": -125.8,
-      "z": 17.1,
+      "x": 85,
+      "z": -89,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 149,
-      "gridZ": 291
+      "gridX": 360,
+      "gridZ": 185
     },
     {
-      "x": -65.8,
-      "z": -33.9,
+      "x": 0,
+      "z": -110,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 209,
-      "gridZ": 240
+      "gridX": 275,
+      "gridZ": 165
     },
     {
-      "x": -56.3,
-      "z": -107.1,
+      "x": 0,
+      "z": 45,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 219,
-      "gridZ": 167
+      "gridX": 275,
+      "gridZ": 320
     },
     {
-      "x": 8.6,
-      "z": -67.5,
+      "x": -50,
+      "z": 30,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 284,
-      "gridZ": 207
+      "gridX": 225,
+      "gridZ": 305
     },
     {
-      "x": 77.4,
-      "z": -85.1,
+      "x": 75,
+      "z": -64,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 352,
-      "gridZ": 189
+      "gridX": 350,
+      "gridZ": 210
     },
     {
-      "x": 60.5,
-      "z": -13.6,
+      "x": 0,
+      "z": 115,
       "rotation": 0,
       "color": "#44AAFF",
       "category": "boss",
-      "gridX": 336,
-      "gridZ": 260
+      "gridX": 275,
+      "gridZ": 390
     },
     {
-      "x": 100.9,
-      "z": 41.3,
+      "x": -35,
+      "z": 155,
       "rotation": 0,
       "color": "#FFCC00",
       "category": "easy",
-      "gridX": 376,
-      "gridZ": 315
+      "gridX": 240,
+      "gridZ": 430
     },
     {
-      "x": 30.3,
-      "z": 47.1,
+      "x": 35,
+      "z": 155,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 305,
-      "gridZ": 321
+      "gridX": 310,
+      "gridZ": 430
     }
   ],
   "rewards": {

@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-06",
-  "name": "Daily — Circuit 09",
+  "name": "Daily — Refinery Night",
   "arenaWidth": 556,
   "arenaDepth": 556,
   "wallObjects": [
@@ -25,99 +25,232 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 22,
+      "gridX": 35,
+      "gridZ": 115,
+      "x": -233,
+      "z": -153
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 22,
+      "gridX": 60,
+      "gridZ": 115,
+      "x": -208,
+      "z": -153
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 22,
+      "gridX": 35,
+      "gridZ": 142,
+      "x": -233,
+      "z": -126
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 22,
+      "gridX": 60,
+      "gridZ": 142,
+      "x": -208,
+      "z": -126
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 6,
+      "depth": 88,
+      "gridX": 95,
+      "gridZ": 172,
+      "x": -181,
+      "z": -63
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 72,
+      "depth": 5,
+      "gridX": 188,
+      "gridZ": 492,
+      "x": -55,
+      "z": 215.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 14,
+      "depth": 14,
+      "gridX": 368,
+      "gridZ": 52,
+      "x": 96,
+      "z": -220
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 14,
+      "depth": 14,
+      "gridX": 388,
+      "gridZ": 52,
+      "x": 116,
+      "z": -220
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 52,
+      "depth": 38,
+      "gridX": 228,
+      "gridZ": 268,
+      "x": -25,
+      "z": 8
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 34,
+      "depth": 26,
+      "gridX": 408,
+      "gridZ": 188,
+      "x": 146,
+      "z": -78
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 10,
+      "depth": 52,
+      "gridX": 218,
+      "gridZ": 188,
+      "x": -56,
+      "z": -65
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 108,
+      "depth": 5,
+      "gridX": 148,
+      "gridZ": 42,
+      "x": -77,
+      "z": -234.5
+    }
+  ],
   "gameObjects": [],
   "powerups": [],
   "enemies": [
     {
-      "x": -76.2,
-      "z": 37.6,
+      "x": -228.5,
+      "z": -113.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 202,
-      "gridZ": 315
+      "gridX": 50,
+      "gridZ": 164
     },
     {
-      "x": -131.4,
-      "z": -12.1,
+      "x": -213.5,
+      "z": -113.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 147,
-      "gridZ": 265
+      "gridX": 65,
+      "gridZ": 164
     },
     {
-      "x": -63.3,
-      "z": -47.3,
+      "x": -198.5,
+      "z": -113.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 215,
-      "gridZ": 230
+      "gridX": 80,
+      "gridZ": 164
     },
     {
-      "x": -46.7,
-      "z": -117,
+      "x": -28.5,
+      "z": 40.5,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 232,
-      "gridZ": 161
+      "gridX": 250,
+      "gridZ": 318
     },
     {
-      "x": 12.4,
-      "z": -71.9,
+      "x": -10.5,
+      "z": 47.5,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 291,
-      "gridZ": 206
+      "gridX": 268,
+      "gridZ": 325
     },
     {
-      "x": 79.1,
-      "z": -90.2,
-      "rotation": 0,
-      "color": "#FF4488",
-      "category": "hard",
-      "gridX": 358,
-      "gridZ": 187
-    },
-    {
-      "x": 64,
-      "z": -19.9,
+      "x": 61.5,
+      "z": -82.5,
       "rotation": 0,
       "color": "#44AAFF",
-      "category": "boss",
-      "gridX": 343,
-      "gridZ": 258
+      "category": "hard",
+      "gridX": 340,
+      "gridZ": 195
     },
     {
-      "x": 110.5,
-      "z": 28.1,
+      "x": -153.5,
+      "z": 82.5,
+      "rotation": 0,
+      "color": "#FF4488",
+      "category": "boss",
+      "gridX": 125,
+      "gridZ": 360
+    },
+    {
+      "x": 181.5,
+      "z": 2.5,
       "rotation": 0,
       "color": "#FFCC00",
       "category": "easy",
-      "gridX": 389,
-      "gridZ": 306
+      "gridX": 460,
+      "gridZ": 280
     },
     {
-      "x": 42.6,
-      "z": 43.7,
+      "x": -78.5,
+      "z": 152.5,
       "rotation": 0,
-      "color": "#FF6600",
-      "category": "easy",
-      "gridX": 321,
-      "gridZ": 321
-    },
-    {
-      "x": 23.8,
-      "z": 105.3,
-      "rotation": 0,
-      "color": "#FF3388",
+      "color": "#66DDAA",
       "category": "medium",
-      "gridX": 302,
-      "gridZ": 383
+      "gridX": 200,
+      "gridZ": 430
+    },
+    {
+      "x": 36.5,
+      "z": -157.5,
+      "rotation": 0,
+      "color": "#DD8844",
+      "category": "medium",
+      "gridX": 315,
+      "gridZ": 120
     }
   ],
   "rewards": {

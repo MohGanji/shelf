@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-08",
-  "name": "Daily — Circuit 11",
+  "name": "Daily — Jousting Lists",
   "arenaWidth": 570,
   "arenaDepth": 570,
   "wallObjects": [
@@ -25,36 +25,165 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 16,
+      "depth": 500,
+      "gridX": 278,
+      "gridZ": 55,
+      "x": 0,
+      "z": 19
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 12,
+      "depth": 440,
+      "gridX": 95,
+      "gridZ": 72,
+      "x": -185,
+      "z": 6
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 12,
+      "depth": 440,
+      "gridX": 473,
+      "gridZ": 72,
+      "x": 193,
+      "z": 6
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 11,
+      "depth": 56,
+      "gridX": 266,
+      "gridZ": 200,
+      "x": -15.5,
+      "z": -58
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 11,
+      "depth": 56,
+      "gridX": 267,
+      "gridZ": 274,
+      "x": -13.5,
+      "z": 16
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 11,
+      "depth": 56,
+      "gridX": 294,
+      "gridZ": 210,
+      "x": 13.5,
+      "z": -48
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 11,
+      "depth": 56,
+      "gridX": 296,
+      "gridZ": 284,
+      "x": 15.5,
+      "z": 26
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 115,
+      "gridZ": 58,
+      "x": -170.5,
+      "z": -227.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 448,
+      "gridZ": 58,
+      "x": 162.5,
+      "z": -227.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 115,
+      "gridZ": 505,
+      "x": -170.5,
+      "z": 219.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 448,
+      "gridZ": 505,
+      "x": 162.5,
+      "z": 219.5
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 140,
+      "gridZ": 208,
+      "x": -144,
+      "z": -75.5
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 398,
+      "gridZ": 208,
+      "x": 114,
+      "z": -75.5
+    }
+  ],
   "powerups": [],
   "enemies": [
     {
-      "x": -76.4,
-      "z": -56.5,
+      "x": -250.5,
+      "z": -249.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 209,
-      "gridZ": 228
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 111.1,
-      "z": -88.5,
+      "x": -249.5,
+      "z": -249.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 397,
-      "gridZ": 196
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": 35.5,
-      "z": 81.6,
+      "x": -248.5,
+      "z": -249.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 321,
-      "gridZ": 366
+      "gridX": 37,
+      "gridZ": 35
     }
   ],
   "rewards": {

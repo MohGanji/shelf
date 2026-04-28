@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-10",
-  "name": "Daily — Circuit 13",
+  "name": "Daily — Arena Tour",
   "arenaWidth": 584,
   "arenaDepth": 584,
   "wallObjects": [
@@ -25,54 +25,160 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 54,
+      "depth": 7,
+      "gridX": 265,
+      "gridZ": 508,
+      "x": -1,
+      "z": 218.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 20,
+      "depth": 68,
+      "gridX": 14,
+      "gridZ": 118,
+      "x": -269,
+      "z": -141
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 26,
+      "depth": 56,
+      "gridX": 12,
+      "gridZ": 218,
+      "x": -268,
+      "z": -47
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 32,
+      "depth": 48,
+      "gridX": 10,
+      "gridZ": 318,
+      "x": -267,
+      "z": 49
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 20,
+      "depth": 68,
+      "gridX": 552,
+      "gridZ": 118,
+      "x": 269,
+      "z": -141
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 26,
+      "depth": 56,
+      "gridX": 548,
+      "gridZ": 218,
+      "x": 268,
+      "z": -47
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 32,
+      "depth": 48,
+      "gridX": 544,
+      "gridZ": 318,
+      "x": 267,
+      "z": 49
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 90,
+      "gridZ": 90,
+      "x": -201,
+      "z": -200.5
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 90,
+      "gridZ": 99,
+      "x": -201,
+      "z": -191.5
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 120,
+      "x": -172,
+      "z": -172
+    }
+  ],
   "enemies": [
     {
-      "x": -58,
-      "z": -87.5,
+      "x": -257.5,
+      "z": -256.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 235,
-      "gridZ": 204
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 25.6,
-      "z": -45.3,
+      "x": -256.5,
+      "z": -256.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 318,
-      "gridZ": 246
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": 98.9,
-      "z": 4.2,
+      "x": -255.5,
+      "z": -256.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 391,
-      "gridZ": 296
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": 19.1,
-      "z": 41.8,
+      "x": -254.5,
+      "z": -256.5,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 312,
-      "gridZ": 333
+      "gridX": 38,
+      "gridZ": 35
     },
     {
-      "x": -57.8,
-      "z": 72.8,
+      "x": -253.5,
+      "z": -256.5,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 235,
-      "gridZ": 364
+      "gridX": 39,
+      "gridZ": 35
     }
   ],
   "rewards": {

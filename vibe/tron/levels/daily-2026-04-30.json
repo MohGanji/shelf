@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-04-30",
-  "name": "Daily — Circuit 03",
+  "name": "Daily — Gladiator Pit",
   "arenaWidth": 514,
   "arenaDepth": 514,
   "wallObjects": [
@@ -25,45 +25,594 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 180,
+      "depth": 24,
+      "gridX": 50,
+      "gridZ": 28,
+      "x": -118,
+      "z": -218
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 180,
+      "depth": 24,
+      "gridX": 290,
+      "gridZ": 28,
+      "x": 122,
+      "z": -218
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 200,
+      "depth": 20,
+      "gridX": 40,
+      "gridZ": 56,
+      "x": -118,
+      "z": -192
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 200,
+      "depth": 20,
+      "gridX": 280,
+      "gridZ": 56,
+      "x": 122,
+      "z": -192
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 210,
+      "depth": 18,
+      "gridX": 30,
+      "gridZ": 80,
+      "x": -123,
+      "z": -169
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 220,
+      "depth": 18,
+      "gridX": 270,
+      "gridZ": 80,
+      "x": 122,
+      "z": -169
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 230,
+      "depth": 16,
+      "gridX": 20,
+      "gridZ": 102,
+      "x": -123,
+      "z": -148
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 240,
+      "depth": 16,
+      "gridX": 270,
+      "gridZ": 102,
+      "x": 132,
+      "z": -148
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 14,
+      "depth": 44,
+      "gridX": 1,
+      "gridZ": 188,
+      "x": -250,
+      "z": -48
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 14,
+      "depth": 44,
+      "gridX": 501,
+      "gridZ": 188,
+      "x": 250,
+      "z": -48
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 55,
+      "gridZ": 200,
+      "x": -198,
+      "z": -54
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 175,
+      "gridZ": 200,
+      "x": -78,
+      "z": -54
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 295,
+      "gridZ": 200,
+      "x": 42,
+      "z": -54
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 415,
+      "gridZ": 200,
+      "x": 162,
+      "z": -54
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 115,
+      "gridZ": 210,
+      "x": -138,
+      "z": -44
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 235,
+      "gridZ": 210,
+      "x": -18,
+      "z": -44
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 355,
+      "gridZ": 210,
+      "x": 102,
+      "z": -44
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 55,
+      "gridZ": 220,
+      "x": -198,
+      "z": -34
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 175,
+      "gridZ": 220,
+      "x": -78,
+      "z": -34
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 295,
+      "gridZ": 220,
+      "x": 42,
+      "z": -34
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 415,
+      "gridZ": 220,
+      "x": 162,
+      "z": -34
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 115,
+      "gridZ": 230,
+      "x": -138,
+      "z": -24
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 235,
+      "gridZ": 230,
+      "x": -18,
+      "z": -24
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 355,
+      "gridZ": 230,
+      "x": 102,
+      "z": -24
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 55,
+      "gridZ": 240,
+      "x": -198,
+      "z": -14
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 175,
+      "gridZ": 240,
+      "x": -78,
+      "z": -14
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 295,
+      "gridZ": 240,
+      "x": 42,
+      "z": -14
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 415,
+      "gridZ": 240,
+      "x": 162,
+      "z": -14
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 115,
+      "gridZ": 250,
+      "x": -138,
+      "z": -4
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 235,
+      "gridZ": 250,
+      "x": -18,
+      "z": -4
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 355,
+      "gridZ": 250,
+      "x": 102,
+      "z": -4
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 55,
+      "gridZ": 260,
+      "x": -198,
+      "z": 6
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 175,
+      "gridZ": 260,
+      "x": -78,
+      "z": 6
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 295,
+      "gridZ": 260,
+      "x": 42,
+      "z": 6
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 415,
+      "gridZ": 260,
+      "x": 162,
+      "z": 6
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 115,
+      "gridZ": 270,
+      "x": -138,
+      "z": 16
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 235,
+      "gridZ": 270,
+      "x": -18,
+      "z": 16
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 355,
+      "gridZ": 270,
+      "x": 102,
+      "z": 16
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 55,
+      "gridZ": 280,
+      "x": -198,
+      "z": 26
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 175,
+      "gridZ": 280,
+      "x": -78,
+      "z": 26
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 295,
+      "gridZ": 280,
+      "x": 42,
+      "z": 26
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 415,
+      "gridZ": 280,
+      "x": 162,
+      "z": 26
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 115,
+      "gridZ": 290,
+      "x": -138,
+      "z": 36
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 235,
+      "gridZ": 290,
+      "x": -18,
+      "z": 36
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 8,
+      "gridX": 355,
+      "gridZ": 290,
+      "x": 102,
+      "z": 36
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 12,
+      "depth": 10,
+      "gridX": 180,
+      "gridZ": 320,
+      "x": -72,
+      "z": 67
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 12,
+      "depth": 10,
+      "gridX": 300,
+      "gridZ": 325,
+      "x": 48,
+      "z": 72
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 12,
+      "depth": 10,
+      "gridX": 210,
+      "gridZ": 335,
+      "x": -42,
+      "z": 82
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 12,
+      "depth": 10,
+      "gridX": 330,
+      "gridZ": 340,
+      "x": 78,
+      "z": 87
+    }
+  ],
   "gameObjects": [],
-  "powerups": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 120,
+      "x": -137,
+      "z": -137
+    }
+  ],
   "enemies": [
     {
-      "x": 23.5,
-      "z": 49.7,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 281,
-      "gridZ": 306
+      "gridX": 240,
+      "gridZ": 460,
+      "x": -17.5,
+      "z": 203.5
     },
     {
-      "x": -81.9,
-      "z": 60.8,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 176,
-      "gridZ": 317
+      "gridX": 250,
+      "gridZ": 460,
+      "x": -7.5,
+      "z": 203.5
     },
     {
-      "x": -36.3,
-      "z": -32.9,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 221,
-      "gridZ": 224
+      "gridX": 260,
+      "gridZ": 460,
+      "x": 2.5,
+      "z": 203.5
     },
     {
-      "x": 49.3,
-      "z": -82.4,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 307,
-      "gridZ": 174
+      "gridX": 270,
+      "gridZ": 460,
+      "x": 12.5,
+      "z": 203.5
     }
   ],
   "rewards": {

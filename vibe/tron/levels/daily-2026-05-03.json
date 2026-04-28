@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-03",
-  "name": "Daily — Circuit 06",
+  "name": "Daily — Superspeedway",
   "arenaWidth": 535,
   "arenaDepth": 535,
   "wallObjects": [
@@ -25,72 +25,225 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 348,
+      "depth": 8,
+      "gridX": 95,
+      "gridZ": 90,
+      "x": 0.5,
+      "z": -174.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 348,
+      "depth": 8,
+      "gridX": 95,
+      "gridZ": 422,
+      "x": 0.5,
+      "z": 157.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 8,
+      "depth": 324,
+      "gridX": 95,
+      "gridZ": 98,
+      "x": -169.5,
+      "z": -8.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 8,
+      "depth": 324,
+      "gridX": 435,
+      "gridZ": 98,
+      "x": 170.5,
+      "z": -8.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 200,
+      "depth": 200,
+      "gridX": 170,
+      "gridZ": 160,
+      "x": 1.5,
+      "z": -8.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 12,
+      "depth": 10,
+      "gridX": 455,
+      "gridZ": 205,
+      "x": 192.5,
+      "z": -58.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 12,
+      "depth": 10,
+      "gridX": 478,
+      "gridZ": 228,
+      "x": 215.5,
+      "z": -35.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 14,
+      "depth": 8,
+      "gridX": 118,
+      "gridZ": 62,
+      "x": -136.5,
+      "z": -202.5
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 525,
+      "gridZ": 115,
+      "x": 258.5,
+      "z": -151
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 525,
+      "gridZ": 175,
+      "x": 258.5,
+      "z": -91
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 525,
+      "gridZ": 235,
+      "x": 258.5,
+      "z": -31
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 525,
+      "gridZ": 295,
+      "x": 258.5,
+      "z": 29
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 525,
+      "gridZ": 355,
+      "x": 258.5,
+      "z": 89
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 525,
+      "gridZ": 400,
+      "x": 258.5,
+      "z": 134
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 518,
+      "gridZ": 268,
+      "x": 250.5,
+      "z": 0.5
+    }
+  ],
   "enemies": [
     {
-      "x": -18.7,
-      "z": 67.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 249,
-      "gridZ": 335
+      "gridX": 185,
+      "gridZ": 40,
+      "x": -83,
+      "z": -227
     },
     {
-      "x": -101.8,
-      "z": 57.7,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 166,
-      "gridZ": 325
+      "gridX": 220,
+      "gridZ": 44,
+      "x": -48,
+      "z": -223
     },
     {
-      "x": -61.7,
-      "z": -17.1,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 206,
-      "gridZ": 250
+      "gridX": 255,
+      "gridZ": 48,
+      "x": -13,
+      "z": -219
     },
     {
-      "x": -54.7,
-      "z": -96.6,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 213,
-      "gridZ": 170
+      "gridX": 310,
+      "gridZ": 52,
+      "x": 42,
+      "z": -215
     },
     {
-      "x": 15.5,
-      "z": -55.9,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 284,
-      "gridZ": 211
+      "gridX": 350,
+      "gridZ": 48,
+      "x": 82,
+      "z": -219
     },
     {
-      "x": 91.3,
-      "z": -51.8,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 359,
-      "gridZ": 215
+      "gridX": 380,
+      "gridZ": 44,
+      "x": 112,
+      "z": -223
     },
     {
-      "x": 50.1,
-      "z": 13.9,
       "rotation": 0,
       "color": "#44AAFF",
       "category": "boss",
-      "gridX": 318,
-      "gridZ": 281
+      "gridX": 410,
+      "gridZ": 40,
+      "x": 142,
+      "z": -227
     }
   ],
   "rewards": {

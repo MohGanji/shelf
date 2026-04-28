@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-12",
-  "name": "Daily — Circuit 15",
+  "name": "Daily — Parking Spiral",
   "arenaWidth": 598,
   "arenaDepth": 598,
   "wallObjects": [
@@ -25,72 +25,431 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 118,
+      "depth": 18,
+      "gridX": 175,
+      "gridZ": 128,
+      "x": -66,
+      "z": -163
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 20,
+      "depth": 128,
+      "gridX": 293,
+      "gridZ": 146,
+      "x": 3,
+      "z": -90
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 128,
+      "depth": 18,
+      "gridX": 314,
+      "gridZ": 274,
+      "x": 78,
+      "z": -17
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 20,
+      "depth": 112,
+      "gridX": 148,
+      "gridZ": 294,
+      "x": -142,
+      "z": -50
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 160,
+      "depth": 18,
+      "gridX": 252,
+      "gridZ": 408,
+      "x": 32,
+      "z": 117
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 20,
+      "depth": 138,
+      "gridX": 80,
+      "gridZ": 152,
+      "x": -210,
+      "z": -79
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 128,
+      "depth": 18,
+      "gridX": 392,
+      "gridZ": 428,
+      "x": 156,
+      "z": 137
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 118,
+      "gridZ": 432,
+      "x": -181.5,
+      "z": 132.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 132,
+      "gridZ": 432,
+      "x": -167.5,
+      "z": 132.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 118,
+      "gridZ": 448,
+      "x": -181.5,
+      "z": 148.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 132,
+      "gridZ": 448,
+      "x": -167.5,
+      "z": 148.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 118,
+      "gridZ": 464,
+      "x": -181.5,
+      "z": 164.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 132,
+      "gridZ": 464,
+      "x": -167.5,
+      "z": 164.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 375,
+      "gridZ": 462,
+      "x": 75.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 392,
+      "gridZ": 462,
+      "x": 92.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 409,
+      "gridZ": 462,
+      "x": 109.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 426,
+      "gridZ": 462,
+      "x": 126.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 443,
+      "gridZ": 462,
+      "x": 143.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 460,
+      "gridZ": 462,
+      "x": 160.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 477,
+      "gridZ": 462,
+      "x": 177.5,
+      "z": 162.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 375,
+      "gridZ": 478,
+      "x": 75.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 392,
+      "gridZ": 478,
+      "x": 92.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 409,
+      "gridZ": 478,
+      "x": 109.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 426,
+      "gridZ": 478,
+      "x": 126.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 443,
+      "gridZ": 478,
+      "x": 143.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 460,
+      "gridZ": 478,
+      "x": 160.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 477,
+      "gridZ": 478,
+      "x": 177.5,
+      "z": 178.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 375,
+      "gridZ": 494,
+      "x": 75.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 392,
+      "gridZ": 494,
+      "x": 92.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 409,
+      "gridZ": 494,
+      "x": 109.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 426,
+      "gridZ": 494,
+      "x": 126.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 443,
+      "gridZ": 494,
+      "x": 143.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 460,
+      "gridZ": 494,
+      "x": 160.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 477,
+      "gridZ": 494,
+      "x": 177.5,
+      "z": 194.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 375,
+      "gridZ": 510,
+      "x": 75.5,
+      "z": 210.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 392,
+      "gridZ": 510,
+      "x": 92.5,
+      "z": 210.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 409,
+      "gridZ": 510,
+      "x": 109.5,
+      "z": 210.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 426,
+      "gridZ": 510,
+      "x": 126.5,
+      "z": 210.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 443,
+      "gridZ": 510,
+      "x": 143.5,
+      "z": 210.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 460,
+      "gridZ": 510,
+      "x": 160.5,
+      "z": 210.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 477,
+      "gridZ": 510,
+      "x": 177.5,
+      "z": 210.5
+    }
+  ],
   "gameObjects": [],
-  "powerups": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 120,
+      "x": -179,
+      "z": -179
+    }
+  ],
   "enemies": [
     {
-      "x": -9.4,
-      "z": -114.6,
+      "x": -264.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 290,
-      "gridZ": 184
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 40.1,
-      "z": -47.3,
+      "x": -263.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 340,
-      "gridZ": 251
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": 108.6,
-      "z": -8.9,
+      "x": -262.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 408,
-      "gridZ": 290
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": 42.7,
-      "z": 36.2,
+      "x": -261.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 342,
-      "gridZ": 335
+      "gridX": 38,
+      "gridZ": 35
     },
     {
-      "x": 8.4,
-      "z": 102.7,
+      "x": -260.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 308,
-      "gridZ": 401
+      "gridX": 39,
+      "gridZ": 35
     },
     {
-      "x": -32.3,
-      "z": 38.1,
+      "x": -259.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 267,
-      "gridZ": 337
+      "gridX": 40,
+      "gridZ": 35
     },
     {
-      "x": -96.7,
-      "z": 7.9,
+      "x": -258.5,
+      "z": -263.5,
       "rotation": 0,
       "color": "#44AAFF",
       "category": "boss",
-      "gridX": 203,
-      "gridZ": 306
+      "gridX": 41,
+      "gridZ": 35
     }
   ],
   "rewards": {

@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-11",
-  "name": "Daily — Circuit 14",
+  "name": "Daily — Courtside",
   "arenaWidth": 591,
   "arenaDepth": 591,
   "wallObjects": [
@@ -25,63 +25,233 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 16,
+      "depth": 32,
+      "gridX": 56,
+      "gridZ": 42,
+      "x": -232.5,
+      "z": -238.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 16,
+      "depth": 32,
+      "gridX": 56,
+      "gridZ": 130,
+      "x": -232.5,
+      "z": -150.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 16,
+      "depth": 32,
+      "gridX": 56,
+      "gridZ": 218,
+      "x": -232.5,
+      "z": -62.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 16,
+      "depth": 32,
+      "gridX": 516,
+      "gridZ": 42,
+      "x": 227.5,
+      "z": -238.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 16,
+      "depth": 32,
+      "gridX": 516,
+      "gridZ": 130,
+      "x": 227.5,
+      "z": -150.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 16,
+      "depth": 32,
+      "gridX": 516,
+      "gridZ": 218,
+      "x": 227.5,
+      "z": -62.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 24,
+      "depth": 40,
+      "gridX": 240,
+      "gridZ": 450,
+      "x": -44.5,
+      "z": 173.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 16,
+      "depth": 32,
+      "gridX": 200,
+      "gridZ": 360,
+      "x": -88.5,
+      "z": 79.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 16,
+      "depth": 32,
+      "gridX": 360,
+      "gridZ": 360,
+      "x": 71.5,
+      "z": 79.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 16,
+      "depth": 32,
+      "gridX": 260,
+      "gridZ": 280,
+      "x": -28.5,
+      "z": -0.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 16,
+      "depth": 32,
+      "gridX": 284,
+      "gridZ": 280,
+      "x": -4.5,
+      "z": -0.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 16,
+      "depth": 32,
+      "gridX": 308,
+      "gridZ": 280,
+      "x": 19.5,
+      "z": -0.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 16,
+      "depth": 24,
+      "gridX": 284,
+      "gridZ": 315,
+      "x": -4.5,
+      "z": 30.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 288,
+      "gridZ": 430,
+      "x": -8,
+      "z": 134
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 280,
+      "gridZ": 430,
+      "x": -16,
+      "z": 134
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 90,
+      "gridZ": 90,
+      "x": -204.5,
+      "z": -204
+    }
+  ],
   "powerups": [],
   "enemies": [
     {
-      "x": -37,
-      "z": -103.6,
+      "x": -261,
+      "z": -260,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 259,
-      "gridZ": 191
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 30.9,
-      "z": -47.9,
+      "x": -260,
+      "z": -260,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 327,
-      "gridZ": 247
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": 103.7,
-      "z": -8.5,
+      "x": -259,
+      "z": -260,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 400,
-      "gridZ": 287
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": 34.2,
-      "z": 37.8,
+      "x": -258,
+      "z": -260,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 330,
-      "gridZ": 333
+      "gridX": 38,
+      "gridZ": 35
     },
     {
-      "x": -17.6,
-      "z": 96.4,
+      "x": -257,
+      "z": -260,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 278,
-      "gridZ": 391
+      "gridX": 39,
+      "gridZ": 35
     },
     {
-      "x": -40,
-      "z": 20.6,
+      "x": -256,
+      "z": -260,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 256,
-      "gridZ": 316
+      "gridX": 40,
+      "gridZ": 35
     }
   ],
   "rewards": {

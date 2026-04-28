@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-02",
-  "name": "Daily — Circuit 05",
+  "name": "Daily — Rink Boards",
   "arenaWidth": 528,
   "arenaDepth": 528,
   "wallObjects": [
@@ -25,63 +25,224 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 12,
+      "depth": 12,
+      "gridX": 2,
+      "gridZ": 2,
+      "x": -256,
+      "z": -256
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 12,
+      "depth": 12,
+      "gridX": 507,
+      "gridZ": 2,
+      "x": 256,
+      "z": -256
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 12,
+      "depth": 24,
+      "gridX": 2,
+      "gridZ": 505,
+      "x": -256,
+      "z": 239
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 12,
+      "depth": 24,
+      "gridX": 507,
+      "gridZ": 505,
+      "x": 256,
+      "z": 239
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 10,
+      "depth": 180,
+      "gridX": 2,
+      "gridZ": 50,
+      "x": -258,
+      "z": -125
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 10,
+      "depth": 180,
+      "gridX": 2,
+      "gridZ": 300,
+      "x": -258,
+      "z": 115
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 10,
+      "depth": 180,
+      "gridX": 519,
+      "gridZ": 50,
+      "x": 259,
+      "z": -125
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 10,
+      "depth": 180,
+      "gridX": 519,
+      "gridZ": 300,
+      "x": 259,
+      "z": 115
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 230,
+      "depth": 10,
+      "gridX": 15,
+      "gridZ": 2,
+      "x": -142.5,
+      "z": -259
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 222,
+      "depth": 10,
+      "gridX": 285,
+      "gridZ": 2,
+      "x": 131,
+      "z": -259
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 230,
+      "depth": 10,
+      "gridX": 15,
+      "gridZ": 518,
+      "x": -142.5,
+      "z": 254
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 222,
+      "depth": 10,
+      "gridX": 285,
+      "gridZ": 518,
+      "x": 131,
+      "z": 254
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 260,
+      "gridZ": 258,
+      "x": -3,
+      "z": -4.5
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 260,
+      "gridZ": 268,
+      "x": -3,
+      "z": 5.5
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 263,
+      "gridZ": 263,
+      "x": -1,
+      "z": -1
+    }
+  ],
   "enemies": [
     {
-      "x": -0.5,
-      "z": 65,
+      "x": -134.5,
+      "z": -188.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 264,
-      "gridZ": 329
+      "gridX": 130,
+      "gridZ": 75
     },
     {
-      "x": -89.4,
-      "z": 67.4,
+      "x": -119.5,
+      "z": -188.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 175,
-      "gridZ": 331
+      "gridX": 145,
+      "gridZ": 75
     },
     {
-      "x": -56.9,
-      "z": -15.7,
+      "x": -134.5,
+      "z": -158.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 208,
-      "gridZ": 248
+      "gridX": 130,
+      "gridZ": 85
     },
     {
-      "x": -39.8,
-      "z": -98.3,
+      "x": -119.5,
+      "z": -158.5,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 225,
-      "gridZ": 165
+      "gridX": 145,
+      "gridZ": 85
     },
     {
-      "x": 26.9,
-      "z": -45.7,
+      "x": 115.5,
+      "z": -188.5,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 291,
-      "gridZ": 218
+      "gridX": 380,
+      "gridZ": 75
     },
     {
-      "x": 99.2,
-      "z": -12.2,
+      "x": 130.5,
+      "z": -173.5,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 364,
-      "gridZ": 251
+      "gridX": 395,
+      "gridZ": 80
     }
   ],
   "rewards": {

@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-09",
-  "name": "Daily — Circuit 12",
+  "name": "Daily — Runway Threshold",
   "arenaWidth": 577,
   "arenaDepth": 577,
   "wallObjects": [
@@ -25,45 +25,177 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 5,
+      "depth": 430,
+      "gridX": 147,
+      "gridZ": 55,
+      "x": -140,
+      "z": -19.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 5,
+      "depth": 430,
+      "gridX": 427,
+      "gridZ": 55,
+      "x": 140,
+      "z": -19.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 34,
+      "depth": 3,
+      "gridX": 257,
+      "gridZ": 438,
+      "x": -15.5,
+      "z": 150
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 34,
+      "depth": 3,
+      "gridX": 269,
+      "gridZ": 442,
+      "x": -3.5,
+      "z": 154
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 34,
+      "depth": 3,
+      "gridX": 257,
+      "gridZ": 446,
+      "x": -15.5,
+      "z": 158
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 34,
+      "depth": 3,
+      "gridX": 269,
+      "gridZ": 450,
+      "x": -3.5,
+      "z": 162
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 34,
+      "depth": 3,
+      "gridX": 257,
+      "gridZ": 454,
+      "x": -15.5,
+      "z": 166
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 34,
+      "depth": 3,
+      "gridX": 269,
+      "gridZ": 458,
+      "x": -3.5,
+      "z": 170
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 28,
+      "depth": 18,
+      "gridX": 263,
+      "gridZ": 115,
+      "x": -12.5,
+      "z": -165.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 28,
+      "depth": 18,
+      "gridX": 263,
+      "gridZ": 318,
+      "x": -12.5,
+      "z": 37.5
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "portal",
+      "portalHalfTurn": 0,
+      "pairId": "daily-2026-05-09-gate0",
+      "pairColor": "#7CFFEA",
+      "gridX": 40,
+      "gridZ": 40,
+      "x": -247,
+      "z": -247
+    },
+    {
+      "type": "portal",
+      "portalHalfTurn": 0,
+      "pairId": "daily-2026-05-09-gate0",
+      "pairColor": "#7CFFEA",
+      "gridX": 137,
+      "gridZ": 40,
+      "x": -150,
+      "z": -247
+    }
+  ],
   "powerups": [],
   "enemies": [
     {
-      "x": -71.3,
-      "z": -70.1,
+      "x": -254,
+      "z": -253,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 218,
-      "gridZ": 218
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 25.8,
-      "z": -39.3,
+      "x": -253,
+      "z": -253,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 315,
-      "gridZ": 249
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": 87.1,
-      "z": 35.2,
+      "x": -252,
+      "z": -253,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 376,
-      "gridZ": 323
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": -26.3,
-      "z": 138.5,
+      "x": -251,
+      "z": -253,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 263,
-      "gridZ": 427
+      "gridX": 38,
+      "gridZ": 35
     }
   ],
   "rewards": {

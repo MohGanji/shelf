@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-26",
-  "name": "Daily — Circuit 29",
+  "name": "Daily — Rallycross Chicane",
   "arenaWidth": 696,
   "arenaDepth": 696,
   "wallObjects": [
@@ -25,36 +25,321 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 1,
+      "width": 22,
+      "depth": 14,
+      "gridX": 308,
+      "gridZ": 246,
+      "x": -30,
+      "z": -96
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 1,
+      "width": 12,
+      "depth": 10,
+      "gridX": 286,
+      "gridZ": 258,
+      "x": -57,
+      "z": -86
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 1,
+      "width": 10,
+      "depth": 14,
+      "gridX": 532,
+      "gridZ": 252,
+      "x": 188,
+      "z": -90
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 86,
+      "gridZ": 382,
+      "x": -261,
+      "z": 35
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 100,
+      "gridZ": 358,
+      "x": -247,
+      "z": 11
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 116,
+      "gridZ": 335,
+      "x": -231,
+      "z": -12
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 130,
+      "gridZ": 312,
+      "x": -217,
+      "z": -35
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 566,
+      "gridZ": 382,
+      "x": 219,
+      "z": 35
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 552,
+      "gridZ": 358,
+      "x": 205,
+      "z": 11
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 536,
+      "gridZ": 335,
+      "x": 189,
+      "z": -12
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 4,
+      "depth": 4,
+      "gridX": 522,
+      "gridZ": 312,
+      "x": 175,
+      "z": -35
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 5,
+      "depth": 4,
+      "gridX": 178,
+      "gridZ": 512,
+      "x": -168.5,
+      "z": 165
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 6,
+      "depth": 5,
+      "gridX": 344,
+      "gridZ": 498,
+      "x": -2,
+      "z": 151.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 5,
+      "depth": 4,
+      "gridX": 511,
+      "gridZ": 512,
+      "x": 164.5,
+      "z": 165
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 4,
+      "depth": 4,
+      "gridX": 302,
+      "gridZ": 376,
+      "x": -45,
+      "z": 29
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 4,
+      "depth": 4,
+      "gridX": 368,
+      "gridZ": 364,
+      "x": 21,
+      "z": 17
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 248,
+      "gridZ": 338,
+      "x": -99.5,
+      "z": -9.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 278,
+      "gridZ": 302,
+      "x": -69.5,
+      "z": -45.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 412,
+      "gridZ": 338,
+      "x": 64.5,
+      "z": -9.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 442,
+      "gridZ": 302,
+      "x": 94.5,
+      "z": -45.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 5,
+      "depth": 5,
+      "gridX": 162,
+      "gridZ": 142,
+      "x": -184.5,
+      "z": -204.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 5,
+      "depth": 5,
+      "gridX": 523,
+      "gridZ": 142,
+      "x": 176.5,
+      "z": -204.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 346,
+      "gridZ": 430,
+      "x": -1.5,
+      "z": 82.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 332,
+      "gridZ": 452,
+      "x": -15.5,
+      "z": 104.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 3,
+      "depth": 3,
+      "gridX": 360,
+      "gridZ": 452,
+      "x": 12.5,
+      "z": 104.5
+    }
+  ],
   "gameObjects": [],
-  "powerups": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 120,
+      "x": -228,
+      "z": -228
+    }
+  ],
   "enemies": [
     {
-      "x": -84.8,
-      "z": 5.7,
+      "x": -313.5,
+      "z": -312.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 264,
-      "gridZ": 353
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 25.6,
-      "z": -129.5,
+      "x": -312.5,
+      "z": -312.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 374,
-      "gridZ": 218
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": 70.9,
-      "z": 34.9,
+      "x": -311.5,
+      "z": -312.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 419,
-      "gridZ": 382
+      "gridX": 37,
+      "gridZ": 35
     }
   ],
   "rewards": {

@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-04-29",
-  "name": "Daily — Circuit 02",
+  "name": "Daily — Plaza de Toros",
   "arenaWidth": 507,
   "arenaDepth": 507,
   "wallObjects": [
@@ -25,36 +25,269 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 354,
+      "gridZ": 214,
+      "x": 100,
+      "z": -40
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 335,
+      "gridZ": 266,
+      "x": 81,
+      "z": 12
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 285,
+      "gridZ": 299,
+      "x": 31,
+      "z": 45
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 222,
+      "gridZ": 299,
+      "x": -32,
+      "z": 45
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 172,
+      "gridZ": 266,
+      "x": -82,
+      "z": 12
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 172,
+      "gridZ": 161,
+      "x": -82,
+      "z": -93
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 222,
+      "gridZ": 128,
+      "x": -32,
+      "z": -126
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 285,
+      "gridZ": 128,
+      "x": 31,
+      "z": -126
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 335,
+      "gridZ": 161,
+      "x": 81,
+      "z": -93
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 18,
+      "depth": 42,
+      "gridX": 72,
+      "gridZ": 188,
+      "x": -173.5,
+      "z": -45.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 18,
+      "depth": 42,
+      "gridX": 419,
+      "gridZ": 188,
+      "x": 173.5,
+      "z": -45.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 36,
+      "depth": 14,
+      "gridX": 236,
+      "gridZ": 422,
+      "x": -0.5,
+      "z": 174.5
+    },
+    {
+      "type": "wall",
+      "width": 10,
+      "depth": 5,
+      "gridX": 248,
+      "gridZ": 312,
+      "x": -1.5,
+      "z": 60
+    },
+    {
+      "type": "wall",
+      "width": 5,
+      "depth": 10,
+      "gridX": 308,
+      "gridZ": 248,
+      "x": 56,
+      "z": -1.5
+    },
+    {
+      "type": "wall",
+      "width": 10,
+      "depth": 5,
+      "gridX": 248,
+      "gridZ": 188,
+      "x": -1.5,
+      "z": -64
+    },
+    {
+      "type": "wall",
+      "width": 5,
+      "depth": 10,
+      "gridX": 188,
+      "gridZ": 248,
+      "x": -64,
+      "z": -1.5
+    },
+    {
+      "type": "wall",
+      "width": 8,
+      "depth": 4,
+      "gridX": 280,
+      "gridZ": 220,
+      "x": 29.5,
+      "z": -32.5
+    },
+    {
+      "type": "wall",
+      "width": 4,
+      "depth": 8,
+      "gridX": 220,
+      "gridZ": 280,
+      "x": -32.5,
+      "z": 29.5
+    },
+    {
+      "type": "wall",
+      "width": 8,
+      "depth": 4,
+      "gridX": 220,
+      "gridZ": 220,
+      "x": -30.5,
+      "z": -32.5
+    },
+    {
+      "type": "wall",
+      "width": 4,
+      "depth": 8,
+      "gridX": 280,
+      "gridZ": 280,
+      "x": 27.5,
+      "z": 29.5
+    },
+    {
+      "type": "wall",
+      "width": 14,
+      "depth": 5,
+      "gridX": 330,
+      "gridZ": 350,
+      "x": 82.5,
+      "z": 98
+    },
+    {
+      "type": "wall",
+      "width": 14,
+      "depth": 5,
+      "gridX": 165,
+      "gridZ": 350,
+      "x": -82.5,
+      "z": 98
+    },
+    {
+      "type": "wall",
+      "width": 6,
+      "depth": 6,
+      "gridX": 380,
+      "gridZ": 120,
+      "x": 128.5,
+      "z": -131.5
+    },
+    {
+      "type": "wall",
+      "width": 6,
+      "depth": 6,
+      "gridX": 123,
+      "gridZ": 120,
+      "x": -128.5,
+      "z": -131.5
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 4,
+      "gridX": 118,
+      "gridZ": 88,
+      "x": -134.5,
+      "z": -164.5
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 158,
+      "gridZ": 152,
+      "x": -95.5,
+      "z": -101.5
+    }
+  ],
   "enemies": [
     {
-      "x": 27.5,
-      "z": 41.7,
+      "x": -54,
+      "z": -13,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 282,
-      "gridZ": 295
+      "gridX": 200,
+      "gridZ": 240
     },
     {
-      "x": -92,
-      "z": 30.6,
+      "x": -53,
+      "z": -13,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 162,
-      "gridZ": 284
+      "gridX": 201,
+      "gridZ": 240
     },
     {
-      "x": -8.5,
-      "z": -143.7,
+      "x": -52,
+      "z": -13,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 246,
-      "gridZ": 109
+      "gridX": 202,
+      "gridZ": 240
     }
   ],
   "rewards": {

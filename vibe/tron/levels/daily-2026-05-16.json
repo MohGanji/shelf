@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-16",
-  "name": "Daily — Circuit 19",
+  "name": "Daily — Dust Bowl",
   "arenaWidth": 626,
   "arenaDepth": 626,
   "wallObjects": [
@@ -25,27 +25,128 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 18,
+      "depth": 280,
+      "gridX": 74,
+      "gridZ": 135,
+      "rotation": 0,
+      "x": -231,
+      "z": -39
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 18,
+      "depth": 280,
+      "gridX": 536,
+      "gridZ": 135,
+      "rotation": 0,
+      "x": 231,
+      "z": -39
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 26,
+      "depth": 268,
+      "gridX": 278,
+      "gridZ": 258,
+      "rotation": 0.7853981633974483,
+      "x": -23,
+      "z": 78
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 240,
+      "gridX": 330,
+      "gridZ": 270,
+      "rotation": -0.7853981633974483,
+      "x": 27,
+      "z": 76
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 340,
+      "depth": 24,
+      "gridX": 144,
+      "gridZ": 538,
+      "x": 0,
+      "z": 236
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 16,
+      "depth": 78,
+      "gridX": 275,
+      "gridZ": 55,
+      "x": -31,
+      "z": -220
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 16,
+      "depth": 78,
+      "gridX": 337,
+      "gridZ": 55,
+      "x": 31,
+      "z": -220
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 314,
+      "gridZ": 205,
+      "x": 2,
+      "z": -106.5
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 314,
+      "gridZ": 214,
+      "x": 2,
+      "z": -97.5
+    }
+  ],
   "powerups": [],
   "enemies": [
     {
-      "x": 128.4,
-      "z": 41.7,
+      "x": -278.5,
+      "z": -277.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 442,
-      "gridZ": 354
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": -81.7,
-      "z": 6.5,
+      "x": -277.5,
+      "z": -277.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 232,
-      "gridZ": 319
+      "gridX": 36,
+      "gridZ": 35
     }
   ],
   "rewards": {

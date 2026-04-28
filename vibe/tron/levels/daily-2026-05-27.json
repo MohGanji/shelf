@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-27",
-  "name": "Daily — Circuit 30",
+  "name": "Daily — Victory Lap",
   "arenaWidth": 502,
   "arenaDepth": 502,
   "wallObjects": [
@@ -25,45 +25,123 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 25,
+      "depth": 300,
+      "gridX": 58,
+      "gridZ": 85,
+      "x": -181.5,
+      "z": -17
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 25,
+      "depth": 300,
+      "gridX": 421,
+      "gridZ": 85,
+      "x": 181.5,
+      "z": -17
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 302,
+      "depth": 12,
+      "gridX": 101,
+      "gridZ": 368,
+      "x": 0,
+      "z": 122
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 18,
+      "depth": 28,
+      "gridX": 83,
+      "gridZ": 388,
+      "x": -160,
+      "z": 150
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 18,
+      "depth": 28,
+      "gridX": 403,
+      "gridZ": 388,
+      "x": 160,
+      "z": 150
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 25,
+      "depth": 25,
+      "gridX": 58,
+      "gridZ": 455,
+      "x": -181.5,
+      "z": 215.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 25,
+      "depth": 25,
+      "gridX": 421,
+      "gridZ": 455,
+      "x": 181.5,
+      "z": 215.5
+    }
+  ],
   "gameObjects": [],
   "powerups": [],
   "enemies": [
     {
-      "x": -89.8,
-      "z": -6.6,
+      "x": -3.5,
+      "z": -120.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 162,
-      "gridZ": 244
+      "gridX": 248,
+      "gridZ": 130
     },
     {
-      "x": -16.8,
-      "z": -136,
+      "x": -1.5,
+      "z": -110.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 235,
-      "gridZ": 115
+      "gridX": 250,
+      "gridZ": 140
     },
     {
-      "x": 79.8,
-      "z": -26.3,
+      "x": 0.5,
+      "z": -100.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 331,
-      "gridZ": 224
+      "gridX": 252,
+      "gridZ": 150
     },
     {
-      "x": 64.6,
-      "z": 114,
+      "x": 2.5,
+      "z": -90.5,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 316,
-      "gridZ": 365
+      "gridX": 254,
+      "gridZ": 160
     }
   ],
   "rewards": {

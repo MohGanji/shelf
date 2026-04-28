@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-04",
-  "name": "Daily — Circuit 07",
+  "name": "Daily — Panopticon",
   "arenaWidth": 542,
   "arenaDepth": 542,
   "wallObjects": [
@@ -25,81 +25,208 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 5,
+      "width": 28,
+      "depth": 28,
+      "gridX": 258,
+      "gridZ": 258,
+      "x": 0,
+      "z": 0
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 73,
+      "depth": 76,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "gridX": 184,
+      "gridZ": 182,
+      "x": -51.5,
+      "z": -52
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 73,
+      "depth": 76,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "gridX": 290,
+      "gridZ": 182,
+      "x": 54.5,
+      "z": -52
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 73,
+      "depth": 76,
+      "triangleQuarter": 0,
+      "rotation": 0,
+      "gridX": 184,
+      "gridZ": 286,
+      "x": -51.5,
+      "z": 52
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 73,
+      "depth": 76,
+      "triangleQuarter": 3,
+      "rotation": 4.71238898038469,
+      "gridX": 290,
+      "gridZ": 286,
+      "x": 54.5,
+      "z": 52
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 18,
+      "depth": 44,
+      "gridX": 226,
+      "gridZ": 392,
+      "x": -37,
+      "z": 142
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 18,
+      "depth": 44,
+      "gridX": 344,
+      "gridZ": 392,
+      "x": 81,
+      "z": 142
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 28,
+      "depth": 22,
+      "gridX": 220,
+      "gridZ": 365,
+      "x": -38,
+      "z": 104
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 28,
+      "depth": 22,
+      "gridX": 366,
+      "gridZ": 365,
+      "x": 108,
+      "z": 104
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 268,
+      "gridZ": 370,
+      "x": -2,
+      "z": 100.5
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 268,
+      "gridZ": 385,
+      "x": -2,
+      "z": 115.5
+    }
+  ],
   "powerups": [],
   "enemies": [
     {
-      "x": -38.8,
-      "z": 64.2,
+      "x": -236.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 233,
-      "gridZ": 335
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": -115,
-      "z": 40.7,
+      "x": -235.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 157,
-      "gridZ": 311
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": -64.9,
-      "z": -23.5,
+      "x": -234.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 207,
-      "gridZ": 247
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": -59.3,
-      "z": -99.7,
+      "x": -233.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 212,
-      "gridZ": 171
+      "gridX": 38,
+      "gridZ": 35
     },
     {
-      "x": 9.5,
-      "z": -62.3,
+      "x": -232.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 281,
-      "gridZ": 208
+      "gridX": 39,
+      "gridZ": 35
     },
     {
-      "x": 81.8,
-      "z": -73.6,
+      "x": -231.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 353,
-      "gridZ": 197
+      "gridX": 40,
+      "gridZ": 35
     },
     {
-      "x": 56.9,
-      "z": -2.6,
+      "x": -230.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#44AAFF",
       "category": "boss",
-      "gridX": 328,
-      "gridZ": 268
+      "gridX": 41,
+      "gridZ": 35
     },
     {
-      "x": 83.3,
-      "z": 62.2,
+      "x": -229.5,
+      "z": -235.5,
       "rotation": 0,
       "color": "#FFCC00",
       "category": "easy",
-      "gridX": 355,
-      "gridZ": 333
+      "gridX": 42,
+      "gridZ": 35
     }
   ],
   "rewards": {

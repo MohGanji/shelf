@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-04-27",
-  "name": "Daily — Circuit 00",
+  "name": "Daily — First Light on the Grid",
   "arenaWidth": 500,
   "arenaDepth": 500,
   "wallObjects": [
@@ -25,27 +25,224 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
-  "powerups": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 14,
+      "depth": 310,
+      "gridX": 18,
+      "gridZ": 95,
+      "x": -226,
+      "z": -1
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 14,
+      "depth": 310,
+      "gridX": 470,
+      "gridZ": 95,
+      "x": 226,
+      "z": -1
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 208,
+      "depth": 12,
+      "gridX": 32,
+      "gridZ": 28,
+      "x": -115,
+      "z": -217
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 208,
+      "depth": 12,
+      "gridX": 262,
+      "gridZ": 28,
+      "x": 115,
+      "z": -217
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 208,
+      "depth": 12,
+      "gridX": 32,
+      "gridZ": 462,
+      "x": -115,
+      "z": 217
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 208,
+      "depth": 12,
+      "gridX": 262,
+      "gridZ": 462,
+      "x": 115,
+      "z": 217
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 140,
+      "gridX": 85,
+      "gridZ": 180,
+      "x": -161,
+      "z": -1
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 2,
+      "width": 10,
+      "depth": 140,
+      "gridX": 407,
+      "gridZ": 180,
+      "x": 181,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 215,
+      "gridZ": 130,
+      "x": -35.5,
+      "z": -120.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 285,
+      "gridZ": 130,
+      "x": 34.5,
+      "z": -120.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 251,
+      "gridZ": 70,
+      "x": 0.5,
+      "z": -180.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 240,
+      "gridZ": 200,
+      "x": -10.5,
+      "z": -50.5
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 262,
+      "gridZ": 200,
+      "x": 10.5,
+      "z": -50.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 200,
+      "gridZ": 250,
+      "x": -50.5,
+      "z": -0.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 302,
+      "gridZ": 250,
+      "x": 50.5,
+      "z": -0.5
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 251,
+      "gridZ": 360,
+      "x": 0.5,
+      "z": 109.5
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 4,
+      "gridX": 140,
+      "gridZ": 195,
+      "x": -109,
+      "z": -54
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 4,
+      "gridX": 358,
+      "gridZ": 195,
+      "x": 109,
+      "z": -54
+    }
+  ],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 246,
+      "gridZ": 115,
+      "x": -4,
+      "z": -135
+    },
+    {
+      "type": "shield",
+      "category": "equippable",
+      "gridX": 128,
+      "gridZ": 248,
+      "x": -122,
+      "z": -2
+    },
+    {
+      "type": "trail_extend",
+      "category": "level_permanent",
+      "gridX": 378,
+      "gridZ": 252,
+      "x": 127,
+      "z": 2
+    }
+  ],
   "enemies": [
     {
-      "x": 23.7,
-      "z": 38.3,
+      "x": -30.5,
+      "z": 18.5,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 274,
-      "gridZ": 288
+      "gridX": 220,
+      "gridZ": 268
     },
     {
-      "x": -74.6,
-      "z": -53.8,
-      "rotation": 0,
+      "x": 47.5,
+      "z": -70.5,
+      "rotation": 1.5707963267948966,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 176,
-      "gridZ": 196
+      "gridX": 297,
+      "gridZ": 180
     }
   ],
   "rewards": {

@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-25",
-  "name": "Daily — Circuit 28",
+  "name": "Daily — Star Fort",
   "arenaWidth": 689,
   "arenaDepth": 689,
   "wallObjects": [
@@ -25,27 +25,150 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 5,
+      "width": 28,
+      "depth": 28,
+      "gridX": 2,
+      "gridZ": 2,
+      "triangleQuarter": 0,
+      "rotation": 0,
+      "x": -329.5,
+      "z": -329.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 5,
+      "width": 28,
+      "depth": 28,
+      "gridX": 661,
+      "gridZ": 2,
+      "triangleQuarter": 3,
+      "rotation": 4.71238898038469,
+      "x": 329.5,
+      "z": -329.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 28,
+      "depth": 28,
+      "gridX": 2,
+      "gridZ": 661,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "x": -329.5,
+      "z": 329.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 28,
+      "depth": 28,
+      "gridX": 661,
+      "gridZ": 661,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "x": 329.5,
+      "z": 329.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 220,
+      "depth": 10,
+      "gridX": 235,
+      "gridZ": 245,
+      "x": -0.5,
+      "z": -95.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 220,
+      "depth": 10,
+      "gridX": 235,
+      "gridZ": 275,
+      "x": -0.5,
+      "z": -65.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 38,
+      "depth": 38,
+      "gridX": 326,
+      "gridZ": 88,
+      "triangleQuarter": 2,
+      "rotation": 3.141592653589793,
+      "x": -0.5,
+      "z": -238.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 26,
+      "depth": 26,
+      "gridX": 44,
+      "gridZ": 328,
+      "triangleQuarter": 1,
+      "rotation": 1.5707963267948966,
+      "x": -288.5,
+      "z": -4.5
+    },
+    {
+      "type": "building",
+      "shape": "triangle",
+      "height": 4,
+      "width": 26,
+      "depth": 26,
+      "gridX": 620,
+      "gridZ": 328,
+      "triangleQuarter": 3,
+      "rotation": 4.71238898038469,
+      "x": 287.5,
+      "z": -4.5
+    }
+  ],
   "gameObjects": [],
-  "powerups": [],
+  "powerups": [
+    {
+      "type": "nitro_recharge",
+      "category": "instant",
+      "gridX": 120,
+      "gridZ": 120,
+      "x": -224.5,
+      "z": -224.5
+    }
+  ],
   "enemies": [
     {
-      "x": -79.9,
-      "z": 3,
+      "x": -310,
+      "z": -309,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 265,
-      "gridZ": 347
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": 115.4,
-      "z": -53,
+      "x": -309,
+      "z": -309,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 460,
-      "gridZ": 291
+      "gridX": 36,
+      "gridZ": 35
     }
   ],
   "rewards": {

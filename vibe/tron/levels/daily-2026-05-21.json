@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-21",
-  "name": "Daily — Circuit 24",
+  "name": "Daily — Rooftop Relay",
   "arenaWidth": 661,
   "arenaDepth": 661,
   "wallObjects": [
@@ -25,72 +25,298 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
-  "gameObjects": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 72,
+      "depth": 22,
+      "gridX": 118,
+      "gridZ": 268,
+      "x": -177.5,
+      "z": -52.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 72,
+      "depth": 22,
+      "gridX": 210,
+      "gridZ": 268,
+      "x": -85.5,
+      "z": -52.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 72,
+      "depth": 22,
+      "gridX": 302,
+      "gridZ": 268,
+      "x": 6.5,
+      "z": -52.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 88,
+      "depth": 18,
+      "gridX": 154,
+      "gridZ": 318,
+      "x": -133.5,
+      "z": -4.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 88,
+      "depth": 18,
+      "gridX": 268,
+      "gridZ": 318,
+      "x": -19.5,
+      "z": -4.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 100,
+      "depth": 18,
+      "gridX": 382,
+      "gridZ": 318,
+      "x": 100.5,
+      "z": -4.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 4,
+      "width": 32,
+      "depth": 140,
+      "gridX": 498,
+      "gridZ": 148,
+      "x": 182.5,
+      "z": -113.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 36,
+      "depth": 95,
+      "gridX": 52,
+      "gridZ": 220,
+      "x": -261.5,
+      "z": -64
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 95,
+      "depth": 26,
+      "gridX": 420,
+      "gridZ": 420,
+      "x": 136,
+      "z": 101.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 115,
+      "depth": 16,
+      "gridX": 275,
+      "gridZ": 145,
+      "x": 1,
+      "z": -178.5
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 190,
+      "gridZ": 355,
+      "x": -141,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 210,
+      "gridZ": 355,
+      "x": -121,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 230,
+      "gridZ": 355,
+      "x": -101,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 250,
+      "gridZ": 355,
+      "x": -81,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 270,
+      "gridZ": 355,
+      "x": -61,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 290,
+      "gridZ": 355,
+      "x": -41,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 310,
+      "gridZ": 355,
+      "x": -21,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 330,
+      "gridZ": 355,
+      "x": -1,
+      "z": 24
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 520,
+      "gridZ": 360,
+      "x": 189,
+      "z": 29
+    },
+    {
+      "type": "structure",
+      "variant": "pylon",
+      "gridX": 520,
+      "gridZ": 375,
+      "x": 189,
+      "z": 44
+    },
+    {
+      "type": "structure",
+      "variant": "column",
+      "gridX": 520,
+      "gridZ": 390,
+      "x": 189,
+      "z": 59
+    },
+    {
+      "type": "structure",
+      "variant": "obelisk",
+      "gridX": 520,
+      "gridZ": 405,
+      "x": 189,
+      "z": 74
+    }
+  ],
+  "gameObjects": [
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 90,
+      "gridZ": 90,
+      "x": -239.5,
+      "z": -239
+    },
+    {
+      "type": "boost_pad",
+      "width": 4,
+      "depth": 5,
+      "gridX": 90,
+      "gridZ": 99,
+      "x": -239.5,
+      "z": -230
+    }
+  ],
   "powerups": [],
   "enemies": [
     {
-      "x": 25.2,
-      "z": 54.5,
+      "x": -296,
+      "z": -295,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 356,
-      "gridZ": 385
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": -36.9,
-      "z": 100.4,
+      "x": -295,
+      "z": -295,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 294,
-      "gridZ": 430
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": -49,
-      "z": 22.7,
+      "x": -294,
+      "z": -295,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 282,
-      "gridZ": 353
+      "gridX": 37,
+      "gridZ": 35
     },
     {
-      "x": -94.8,
-      "z": -34.8,
+      "x": -293,
+      "z": -295,
       "rotation": 0,
       "color": "#FFAA00",
       "category": "medium",
-      "gridX": 236,
-      "gridZ": 295
+      "gridX": 38,
+      "gridZ": 35
     },
     {
-      "x": -20.2,
-      "z": -43.6,
+      "x": -292,
+      "z": -295,
       "rotation": 0,
       "color": "#AA66FF",
       "category": "hard",
-      "gridX": 311,
-      "gridZ": 286
+      "gridX": 39,
+      "gridZ": 35
     },
     {
-      "x": 32.8,
-      "z": -89.2,
+      "x": -291,
+      "z": -295,
       "rotation": 0,
       "color": "#FF4488",
       "category": "hard",
-      "gridX": 364,
-      "gridZ": 241
+      "gridX": 40,
+      "gridZ": 35
     },
     {
-      "x": 128.9,
-      "z": -59.6,
+      "x": -290,
+      "z": -295,
       "rotation": 0,
       "color": "#44AAFF",
       "category": "boss",
-      "gridX": 460,
-      "gridZ": 270
+      "gridX": 41,
+      "gridZ": 35
     }
   ],
   "rewards": {

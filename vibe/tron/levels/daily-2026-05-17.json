@@ -1,6 +1,6 @@
 {
   "id": "daily-2026-05-17",
-  "name": "Daily — Circuit 20",
+  "name": "Daily — Tunnel Walkout",
   "arenaWidth": 633,
   "arenaDepth": 633,
   "wallObjects": [
@@ -25,36 +25,103 @@
       "destination": "lobby"
     }
   ],
-  "barriers": [],
+  "barriers": [
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 56,
+      "depth": 422,
+      "gridX": 26,
+      "gridZ": 210,
+      "x": -263.5,
+      "z": 103.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 56,
+      "depth": 422,
+      "gridX": 553,
+      "gridZ": 210,
+      "x": 263.5,
+      "z": 103.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 238,
+      "depth": 155,
+      "gridX": 90,
+      "gridZ": 55,
+      "x": -108.5,
+      "z": -185
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 164,
+      "depth": 155,
+      "gridX": 388,
+      "gridZ": 55,
+      "x": 152.5,
+      "z": -185
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 42,
+      "gridX": 294,
+      "gridZ": 438,
+      "x": -12.5,
+      "z": 141.5
+    },
+    {
+      "type": "building",
+      "shape": "square",
+      "height": 3,
+      "width": 22,
+      "depth": 42,
+      "gridX": 318,
+      "gridZ": 438,
+      "x": 11.5,
+      "z": 141.5
+    }
+  ],
   "gameObjects": [],
   "powerups": [],
   "enemies": [
     {
-      "x": 134.4,
-      "z": 39.3,
+      "x": -282,
+      "z": -281,
       "rotation": 0,
       "color": "#FF6600",
       "category": "easy",
-      "gridX": 451,
-      "gridZ": 355
+      "gridX": 35,
+      "gridZ": 35
     },
     {
-      "x": -45.2,
-      "z": 74.3,
+      "x": -281,
+      "z": -281,
       "rotation": 0,
       "color": "#FF3388",
       "category": "easy",
-      "gridX": 272,
-      "gridZ": 390
+      "gridX": 36,
+      "gridZ": 35
     },
     {
-      "x": -92.5,
-      "z": -96.9,
+      "x": -280,
+      "z": -281,
       "rotation": 0,
       "color": "#00FF88",
       "category": "medium",
-      "gridX": 225,
-      "gridZ": 219
+      "gridX": 37,
+      "gridZ": 35
     }
   ],
   "rewards": {
