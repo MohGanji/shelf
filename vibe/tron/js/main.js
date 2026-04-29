@@ -2122,6 +2122,7 @@ async function main() {
       isLobby,
       playerBody,
       playerTrail: trailWall,
+      playerMaxMoveSpeed: playerDriveCfg.maxMoveSpeed,
       devHud,
     });
 

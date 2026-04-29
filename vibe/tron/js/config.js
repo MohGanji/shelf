@@ -208,7 +208,7 @@ export const DEFAULT_DEV_HUD = {
   aiAvoidOwnTrailEnabled: true,
   aiAvoidEnemyTrailsEnabled: true,
   aiAvoidWallsAndBarriersEnabled: true,
-  aiReachabilityEnabled: false,
+  aiReachabilityEnabled: true,
   aiTrapAvoidanceEnabled: true,
   aiInterceptEnabled: true,
   aiCutoffEnabled: true,

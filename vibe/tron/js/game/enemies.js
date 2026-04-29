@@ -10,7 +10,7 @@ import {
   applyContinuousBarrierSlide,
   syncCyclePhysicsYaw,
 } from "../engine/physics.js";
-import { computeEnemyCycleKeys } from "./ai.js";
+import { AI_SPEED_TUNE_REF, computeEnemyCycleKeys } from "./ai.js";
 import { createLightCycle } from "./cycle.js";
 import { createTrailWallSystem } from "./trail.js";
 import { createNitroState, isNitroBurstActive } from "./nitroSystem.js";
@@ -40,6 +40,7 @@ import { LOBBY_LEVEL_ID } from "../levels/schema.js";
  * @property {boolean} isLobby
  * @property {import('cannon-es').Body} playerBody
  * @property {ReturnType<typeof createTrailWallSystem>} playerTrail
+ * @property {number} playerMaxMoveSpeed — player `maxMoveSpeed` for AI speed scaling
  * @property {import('../config.js').DEFAULT_DEV_HUD} devHud
  */
 
@@ -222,6 +223,7 @@ export function createCampaignEnemyEntities(opts) {
    * @param {boolean} o.escapeBlocked
    * @param {number} o.distPlayer
    * @param {number} o.playerSpeed
+   * @param {number} o.playerMaxMoveSpeed
    * @param {import('cannon-es').Body} o.body
    * @param {import('../config.js').DEFAULT_DEV_HUD} o.devHud
    */
@@ -233,9 +235,11 @@ export function createCampaignEnemyEntities(opts) {
       escapeBlocked,
       distPlayer,
       playerSpeed,
+      playerMaxMoveSpeed,
       body,
       devHud: hud,
     } = o;
+    const pMul = Math.max(0.01, playerMaxMoveSpeed) / AI_SPEED_TUNE_REF;
     const u = body.userData;
     if (u.equipSlot !== "shield") return false;
     if (u.shieldPhase !== "none") return false;
@@ -246,7 +250,7 @@ export function createCampaignEnemyEntities(opts) {
       dangerFwd ||
       escapeBlocked ||
       (distPlayer < 22 + pressure * 10) ||
-      (playerSpeed > 14 && distPlayer < 34 + pressure * 18) ||
+      (playerSpeed > 14 * pMul && distPlayer < 34 + pressure * 18) ||
       (side && safety > 0.45)
     );
   }
@@ -256,7 +260,7 @@ export function createCampaignEnemyEntities(opts) {
    * @param {EnemyTickContext} ctx
    */
   function tick(dt, ctx) {
-    const { levelStarted, isLobby, playerBody, playerTrail, devHud: hud } = ctx;
+    const { levelStarted, isLobby, playerBody, playerTrail, playerMaxMoveSpeed, devHud: hud } = ctx;
     const canMove = isLobby || levelStarted;
 
     const barriers = scene.userData.barrierBodies;
@@ -307,6 +311,7 @@ export function createCampaignEnemyEntities(opts) {
           playerVx: pvx,
           playerVz: pvz,
           playerSpeed: pspd,
+          playerMaxMoveSpeed,
           dt,
           enemyIndex: ei,
           selfId: e.id,
@@ -334,6 +339,7 @@ export function createCampaignEnemyEntities(opts) {
           escapeBlocked: ai.escapeBlocked,
           distPlayer: ai.distPlayer,
           playerSpeed: pspd,
+          playerMaxMoveSpeed,
           body: e.body,
           devHud: hud,
         });
