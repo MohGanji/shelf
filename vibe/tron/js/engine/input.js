@@ -1,7 +1,9 @@
 import {
   CONTROLS_OVERLAY_SESSION_EVENT,
   isControlsOverlayBlockingInput,
+  isLevelExitDestinationOverlayBlockingInput,
   isPauseOverlayBlockingInput,
+  LEVEL_EXIT_DESTINATION_OVERLAY_SESSION_EVENT,
   PAUSE_OVERLAY_SESSION_EVENT,
 } from "../ui/menus.js";
 import { isTunnelBlockingInput, TUNNEL_SESSION_EVENT } from "./tunnel.js";
@@ -46,7 +48,13 @@ export function createTronCycleKeyState() {
   }
 
   function onDown(e) {
-    if (isTunnelBlockingInput() || isControlsOverlayBlockingInput() || isPauseOverlayBlockingInput()) return;
+    if (
+      isTunnelBlockingInput() ||
+      isControlsOverlayBlockingInput() ||
+      isPauseOverlayBlockingInput() ||
+      isLevelExitDestinationOverlayBlockingInput()
+    )
+      return;
     const k = mapKey(e);
     if (k === "w") state.w = true;
     if (k === "s") state.s = true;
@@ -60,7 +68,13 @@ export function createTronCycleKeyState() {
   }
 
   function onUp(e) {
-    if (isTunnelBlockingInput() || isControlsOverlayBlockingInput() || isPauseOverlayBlockingInput()) return;
+    if (
+      isTunnelBlockingInput() ||
+      isControlsOverlayBlockingInput() ||
+      isPauseOverlayBlockingInput() ||
+      isLevelExitDestinationOverlayBlockingInput()
+    )
+      return;
     const k = mapKey(e);
     if (k === "w") state.w = false;
     if (k === "s") state.s = false;
@@ -92,6 +106,13 @@ export function createTronCycleKeyState() {
   );
   window.addEventListener(
     PAUSE_OVERLAY_SESSION_EVENT,
+    (ev) => {
+      if (/** @type {CustomEvent} */ (ev).detail?.active) clearHeldKeys();
+    },
+    opts,
+  );
+  window.addEventListener(
+    LEVEL_EXIT_DESTINATION_OVERLAY_SESSION_EVENT,
     (ev) => {
       if (/** @type {CustomEvent} */ (ev).detail?.active) clearHeldKeys();
     },

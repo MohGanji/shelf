@@ -1264,10 +1264,47 @@
         </div>
       </div>
 
+      <div
+        id="level-exit-destination-overlay"
+        class="pause-overlay level-exit-destination-overlay"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="level-exit-destination-overlay-title"
+        aria-describedby="level-exit-coin-summary"
+      >
+        <div class="pause-overlay__panel pause-overlay__panel--wide">
+          <h2 id="level-exit-destination-overlay-title" class="pause-overlay__title" data-level-exit-title>
+            LEVEL CLEAR
+          </h2>
+          <p class="pause-overlay__lead" id="level-exit-coin-summary">
+            Earned <span data-level-exit-earned>0</span> coins. Total coins:
+            <span data-level-exit-total>0</span>
+          </p>
+          <div class="pause-overlay__actions">
+            <button type="button" class="pause-overlay__btn pause-overlay__btn--primary" data-level-exit-next>
+              NEXT LEVEL
+            </button>
+            <button type="button" class="pause-overlay__btn" data-level-exit-lobby>GO TO LOBBY</button>
+          </div>
+        </div>
+      </div>
+
       <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
         <p class="state-banner__welcome" hidden></p>
         <p class="state-banner__detail"></p>
         <p class="state-banner__hint" hidden></p>
+      </div>
+
+      <div
+        id="exit-ride-hint-banner"
+        class="state-banner state-banner--hidden"
+        hidden
+        role="status"
+        aria-live="polite"
+        aria-hidden="true"
+      >
+        <p class="state-banner__detail">Follow the beacon to the exit door.</p>
       </div>
 
       <div

@@ -777,6 +777,15 @@ body {
   gap: 0.65rem;
 }
 
+.pause-overlay__panel--wide {
+  width: min(520px, 100%);
+}
+
+.level-exit-destination-overlay {
+  z-index: 37;
+}
+
+
 .pause-overlay__btn {
   display: block;
   width: 100%;
@@ -837,12 +846,12 @@ body {
   bottom: max(20px, env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(32rem, calc(100vw - 200px));
+  max-width: min(44rem, calc(100vw - 200px));
   text-align: center;
   z-index: 20;
-  line-height: 1.45;
-  font-size: 0.88rem;
-  padding: 6px 14px;
+  line-height: 1.5;
+  font-size: 0.86rem;
+  padding: 10px 16px;
 }
 
 #lobby-placeholder .state-banner__welcome {
@@ -863,6 +872,33 @@ body {
   margin: 8px 0 0;
   font-size: 0.85rem;
   opacity: 0.92;
+}
+
+/** Post-combat-clear: steer player to ride through the unlocked exit gate (same vertical band as hub tips). */
+#exit-ride-hint-banner.state-banner {
+  top: auto;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(44rem, calc(100vw - 200px));
+  text-align: center;
+  z-index: 20;
+  line-height: 1.45;
+  font-size: 0.86rem;
+  padding: 10px 16px;
+  border-color: rgba(120, 255, 230, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(0, 255, 200, 0.12);
+}
+
+#exit-ride-hint-banner .state-banner__detail {
+  margin: 0;
+  font-family: "Orbitron", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: rgba(200, 255, 246, 0.98);
+  text-shadow: 0 0 12px rgba(0, 230, 200, 0.22);
 }
 
 .derez-overlay {

@@ -110,8 +110,11 @@ function coerceBarrier(b) {
 function createBuildingFacadeMaterial(playCfg) {
   const neon = barrierNeon(playCfg);
   const lineCol = new THREE.Color(playCfg.colors?.gridLine ?? 0x00e8ff);
+  /** @type {Record<string, unknown>} */
+  const cAny = /** @type {unknown} */ (playCfg.colors);
+  const bodyHex = typeof cAny.buildingBody === "number" ? cAny.buildingBody : 0x0a1522;
   const mat = new THREE.MeshStandardMaterial({
-    color: 0x0a1522,
+    color: bodyHex,
     emissive: lineCol,
     emissiveMap: getBuildingFacadeEmissiveMap(),
     emissiveIntensity: 0.24 + neon * 0.38,
@@ -346,7 +349,14 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
 
   const wallH = playCfg.devHud.wallHeight ?? playCfg.arenaWallHeight;
   const neon = barrierNeon(playCfg);
-  const matWall = neonBarrierMaterial(0x113344, 0x0088aa, neon);
+  /** @type {Record<string, unknown>} */
+  const cAny = /** @type {unknown} */ (playCfg.colors);
+  const barrierBase = typeof cAny.barrierWallBase === "number" ? cAny.barrierWallBase : 0x113344;
+  const barrierEm = typeof cAny.barrierWallEmissive === "number" ? cAny.barrierWallEmissive : 0x0088aa;
+  const structureBaseCol = typeof cAny.structureBase === "number" ? cAny.structureBase : 0x223355;
+  const structureEm = typeof cAny.structureEmissive === "number" ? cAny.structureEmissive : 0x00aaff;
+  const glitchWire = typeof cAny.glitchWire === "number" ? cAny.glitchWire : 0x00ffcc;
+  const matWall = neonBarrierMaterial(barrierBase, barrierEm, neon);
   
   const style = playCfg.devHud.buildingGlitchStyle ?? 0;
   
@@ -357,7 +367,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     // Style 1: Pure wireframe glitch
     matBuilding = new THREE.MeshStandardMaterial({
       color: 0x000000,
-      emissive: 0x00ffcc,
+      emissive: glitchWire,
       emissiveIntensity: neon * 0.5,
       wireframe: true,
       transparent: true,
@@ -367,7 +377,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     // Style 2: Holographic scanlines/additive
     matBuilding = new THREE.MeshStandardMaterial({
       color: playCfg.colors.gridFloor,
-      emissive: 0x00ffcc,
+      emissive: glitchWire,
       emissiveIntensity: neon * 0.3,
       metalness: 0.5,
       roughness: 0.5,
@@ -385,7 +395,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
     });
   }
   
-  const matStructure = neonBarrierMaterial(0x223355, 0x00aaff, neon * 1.1);
+  const matStructure = neonBarrierMaterial(structureBaseCol, structureEm, neon * 1.1);
 
   /** @type {string[]} */
   const wallTileKeys = [];
@@ -524,7 +534,7 @@ export function buildBarriersFromLevel(scene, world, wallMatRef, playCfg, barrie
       if (style === 2) {
         const wireGeo = new THREE.EdgesGeometry(mesh.geometry);
         const wireMat = new THREE.LineBasicMaterial({ 
-          color: 0x00ffcc, 
+          color: glitchWire, 
           transparent: true, 
           opacity: 0.05 + Math.random() * 0.1 
         });

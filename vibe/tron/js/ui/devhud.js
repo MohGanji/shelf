@@ -177,6 +177,19 @@ export function createDevHudController(opts) {
     scroll.appendChild(det);
   }
 
+  section("Arena ambience", [
+    { key: "vizAmbienceSkyline", label: "Distant skyline", kind: "bool" },
+    { key: "vizAmbienceDriftHex", label: "Drift: hex shards", kind: "bool" },
+    { key: "vizAmbienceDriftBarcode", label: "Drift: barcode strips", kind: "bool" },
+    { key: "vizAmbienceDriftCubes", label: "Drift: floating cubes", kind: "bool" },
+    { key: "vizAmbienceSprites", label: "Cosmetic sprites", kind: "bool" },
+    { key: "vizAmbienceWallBanners", label: "Wall-top banners", kind: "bool" },
+    { key: "vizAmbienceFloorGarnish", label: "Floor garnish", kind: "bool" },
+    { key: "vizAmbienceEdgeLight", label: "Perimeter edge light", kind: "bool" },
+    { key: "vizAmbienceSecondaryPalette", label: "Secondary env palette", kind: "bool" },
+    { key: "vizAmbienceSlowPulse", label: "Kill-cam pulse + floor ripple", kind: "bool" },
+  ]);
+
   section("Post-processing", [
     { key: "bloomIntensity", label: "Bloom intensity", min: 0, max: 5, step: 0.05 },
     { key: "bloomRadius", label: "Bloom radius", min: 0, max: 1.5, step: 0.02 },

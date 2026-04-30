@@ -524,6 +524,20 @@ function makeSignTexture(text, maxWidth, fillColor, glow = {}) {
 }
 
 /**
+ * @param {boolean} open — unlocked appearance (entrance rules count as open)
+ */
+function gateNeonRgb(open) {
+  return {
+    bodyColor: open ? 0x061018 : 0x0a1018,
+    emissiveHex: open ? 0x00997a : 0x1a3044,
+    frameColor: 0x04080c,
+    signGlowOpen: { shadowBlur: 6, shadowColor: "rgba(0, 190, 160, 0.45)" },
+    signFillOpen: "#5effd4",
+    signFillClosed: "#7a9aaa",
+  };
+}
+
+/**
  * Gate = one neon arc on the ground (half-torus) + optional floating sign — no pillar box / wall slab.
  * Y-up; group origin on floor at wall anchor.
  * @param {ParsedGate} g
@@ -539,14 +553,13 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
   const open = !g.locked || g.role === "entrance" || g.role === "vibejam";
 
   /** Dark metal body + saturated teal emissive (not white) — intensity drives “neon” read. */
-  const colorHex = open ? 0x061018 : 0x0a1018;
-  const emissiveHex = open ? 0x00997a : 0x1a3044;
+  const { bodyColor: colorHex, emissiveHex, frameColor } = gateNeonRgb(open);
   const pulse = open ? 1 : 0.42;
   const arcNeonBase =
     (open ? 1.25 : 0.32) + playCfg.devHud.neonIntensity * (open ? 0.75 : 0.12);
 
   const frameMat = new THREE.MeshStandardMaterial({
-    color: 0x04080c,
+    color: frameColor,
     metalness: 0.9,
     roughness: 0.2,
   });
@@ -637,14 +650,8 @@ function buildSingleGateGroup(g, playCfg, lobbyBannerKind = null, attachCampaign
   }
 
   if (g.signText && g.signText.trim() !== "") {
-    const tex = makeSignTexture(
-      g.signText,
-      720,
-      open ? "#5effd4" : "#7a9aaa",
-      open
-        ? { shadowBlur: 6, shadowColor: "rgba(0, 190, 160, 0.45)" }
-        : { shadowBlur: 4, shadowColor: "rgba(80, 120, 140, 0.35)" },
-    );
+    const signPal = gateNeonRgb(open);
+    const tex = makeSignTexture(g.signText, 720, open ? signPal.signFillOpen : signPal.signFillClosed, open ? signPal.signGlowOpen : { shadowBlur: 4, shadowColor: "rgba(80, 120, 140, 0.35)" });
     const aspect = tex.image.width / tex.image.height;
     const sh = 1.75;
     const sw = sh * aspect;
@@ -864,8 +871,7 @@ export function applyExitGateRuntimeOpenVisual(gatesRoot, playCfg, animatables) 
     if (obj.userData.gateRole !== "exit") continue;
 
     const frameBase = 1.25 + playCfg.devHud.neonIntensity * 0.75;
-    const colorHex = 0x061018;
-    const emissive = 0x00997a;
+    const { bodyColor: colorHex, emissiveHex: emissive } = gateNeonRgb(true);
     const mats = /** @type {THREE.MeshStandardMaterial[]} */ (obj.userData.pillarMaterials || []);
     for (const m of mats) {
       if (!m || !("color" in m)) continue;

@@ -18,6 +18,8 @@ function createTunnelMaterial(gridBrightness = DEFAULT_DEV_HUD.gridBrightness) {
     uniforms: {
       uTime: { value: 0 },
       uGridBrightness: { value: gridBrightness },
+      /** Driven from gameplay during enemy kill-cam burst (idle 0). */
+      uKillBurst: { value: 0 },
       uAccent: { value: new THREE.Color(CYAN) },
       uGridColor: { value: new THREE.Color(GRID) },
     },
@@ -32,6 +34,7 @@ function createTunnelMaterial(gridBrightness = DEFAULT_DEV_HUD.gridBrightness) {
       varying vec2 vUv;
       uniform float uTime;
       uniform float uGridBrightness;
+      uniform float uKillBurst;
       uniform vec3 uAccent;
       uniform vec3 uGridColor;
 
@@ -43,9 +46,13 @@ function createTunnelMaterial(gridBrightness = DEFAULT_DEV_HUD.gridBrightness) {
       }
 
       void main() {
-        float scroll = vUv.y * 6.28318 + uTime * 1.2;
+        float kb = clamp(uKillBurst, 0.0, 4.0);
+        float scroll = vUv.y * 6.28318 + uTime * (1.2 + kb * 0.95);
         float g1 = gridLine(vec2(vUv.x + scroll * 0.02, vUv.y), vec2(24.0, 48.0));
-        float pulse = 0.55 + 0.45 * sin(uTime * 2.0 + vUv.x * 10.0);
+        float wTime = uTime * (2.0 + kb * 8.5) + vUv.x * (10.0 + kb * 18.0);
+        float wave = sin(wTime + vUv.y * 22.0);
+        float pulse = 0.5 + 0.5 * wave * (1.0 + kb * 3.6);
+        pulse = clamp(pulse, 0.08, 3.85);
         vec3 base = mix(uGridColor * 0.15, uAccent, g1 * uGridBrightness * pulse);
         gl_FragColor = vec4(base, 1.0);
       }
@@ -82,6 +89,7 @@ export function createGameRenderer(canvas, opts = {}) {
   camera.lookAt(0, 0, 40);
 
   const tunnelMat = createTunnelMaterial(devHud.gridBrightness);
+  tunnelMat.uniforms.uKillBurst.value = 0;
   const tunnelGeom = new THREE.CylinderGeometry(9, 9, 220, 48, 12, true);
   const tunnel = new THREE.Mesh(tunnelGeom, tunnelMat);
   tunnel.rotation.x = Math.PI / 2;
@@ -147,6 +155,9 @@ export function createGameRenderer(canvas, opts = {}) {
   function applyDevHud(patch) {
     Object.assign(devHud, patch);
     tunnelMat.uniforms.uGridBrightness.value = devHud.gridBrightness;
+    if (Object.prototype.hasOwnProperty.call(patch, "vizAmbienceSlowPulse")) {
+      tunnelMat.uniforms.uKillBurst.value = 0;
+    }
     post.applyDevHud(patch);
   }
 

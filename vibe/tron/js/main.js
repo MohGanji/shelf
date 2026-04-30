@@ -3,6 +3,7 @@ import {
   CONFIG,
   CYCLE_BOUNDS,
   MUSIC_ASSET_URLS,
+  LOBBY_GRID_FLOOR_HEX,
   getLobbyMusicUrl,
   getGameplayMusicUrl,
   createRuntimeFromPlayerSave,
@@ -42,6 +43,8 @@ import {
   buildArenaFromCampaignLevel,
   runtimeUnlockCampaignExitGate,
 } from "./game/arena.js";
+import { createArenaAmbience } from "./game/arenaAmbience.js";
+import { createEnemyKillRipple } from "./game/enemyKillRipple.js";
 import {
   applyExitGateRuntimeOpenVisual,
   computePlayerSpawnFromEntranceGate,
@@ -100,8 +103,10 @@ import { consumeSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js
 import { peekEditorPlaytestReturn, setEditorPlaytestReturn } from "./sessionEditorPlaytest.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import {
+  createLevelExitDestinationOverlayController,
   createPauseMenuController,
   isControlsOverlayBlockingInput,
+  isLevelExitDestinationOverlayBlockingInput,
   isPauseOverlayBlockingInput,
   showFirstVisitControlsOverlayIfNeeded,
 } from "./ui/menus.js";
@@ -169,6 +174,48 @@ function smoothstep01(t) {
   return t * t * (3 - 2 * t);
 }
 
+/** Emissive / tunnel bloom during enemy cinematic elimination only (`vizAmbienceSlowPulse`). */
+function computeEnemyKillAmbientBurst(devHud, enemyKillState) {
+  const out = { floorBump: 0, tunnelBurst: 0 };
+  if (!enemyKillState || devHud.vizAmbienceSlowPulse === false) return out;
+  const e = enemyKillState.entity;
+  if (!e.cinematicDerezActive || !e.derezSnapshot) return out;
+
+  const now = performance.now();
+  const approachSec = Math.max(0.12, devHud.enemyKillApproachSec ?? 0.85);
+  const implodeSec = Math.max(0.08, devHud.enemyKillImplodeSec ?? 0.72);
+  const returnSec = Math.max(0.08, devHud.enemyKillReturnSec ?? 0.6);
+
+  let phase = enemyKillState.phase;
+  let t0 = enemyKillState.phaseStartMs;
+  if (!enemyKillState.keyframed) {
+    phase = "approach";
+    t0 = now;
+  }
+
+  /** @type {number} */
+  let envelope = 0;
+  if (phase === "approach") {
+    const u = (now - t0) / (approachSec * 1000);
+    envelope = smoothstep01(Math.min(1, u)) * 0.42;
+  } else if (phase === "implode") {
+    const u = Math.min(1, (now - t0) / (implodeSec * 1000));
+    const rise = smoothstep01(u);
+    envelope = 0.38 + 0.72 * rise;
+    envelope += 0.42 * Math.sin(u * Math.PI * 9);
+    envelope = Math.min(1.95, Math.max(0, envelope));
+  } else if (phase === "return") {
+    const u = Math.min(1, (now - t0) / (returnSec * 1000));
+    envelope = 0.82 * (1 - smoothstep01(u));
+  }
+
+  const rip = 1 + 0.24 * Math.sin(now * 0.048);
+  const intensity = envelope * rip;
+  out.floorBump = intensity;
+  out.tunnelBurst = Math.min(2.45, intensity * 1.18);
+  return out;
+}
+
 /**
  * Third-person frame for the rival cycle: offset back along player→enemy and slightly to the side (not overhead).
  * @param {import('./vendor/three-module.js').Vector3} outPos
@@ -212,6 +259,7 @@ async function main() {
   const canvas = /** @type {HTMLCanvasElement} */ ($("game-canvas"));
   const bootOverlay = $("boot-overlay");
   const lobbyBanner = $("lobby-placeholder");
+  const exitRideHintBanner = $("exit-ride-hint-banner");
 
   const save = loadOrCreateSave();
   const runtime = createRuntimeFromPlayerSave(save);
@@ -503,6 +551,13 @@ async function main() {
   }
 
   const playCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
+  if (
+    activeCampaignLevel &&
+    typeof activeCampaignLevel.id === "string" &&
+    activeCampaignLevel.id === LOBBY_LEVEL_ID
+  ) {
+    playCfg.colors.gridFloor = LOBBY_GRID_FLOOR_HEX;
+  }
   /** Shallow copy so P3.1 can override `nitroBarCount` per level bonuses without mutating `playCfg`. */
   const playerDriveCfg = { ...playCfg };
   /** Trail Length attribute cap + Trail Extend pickups (P3.3) — segments. */
@@ -520,7 +575,17 @@ async function main() {
   const arenaFloorMat = game.scene.userData.arenaFloorMaterial;
   if (arenaFloorMat) applyArenaFloorEnvMap(game.renderer, arenaFloorMat, playCfg, game.scene);
 
+  const arenaAmbience = createArenaAmbience({
+    scene: game.scene,
+    playCfg,
+    devHud,
+    graphicsProfile,
+    level: activeCampaignLevel,
+    // Optional after boot-load: floatingSpriteTextures / wallBannerTextures (textures not disposed by ambience).
+  });
+
   const gameplayParticles = createGameplayParticles({ scene: game.scene, devHud });
+  const enemyKillRipple = createEnemyKillRipple({ scene: game.scene, playCfg });
 
   const wallGates =
     activeCampaignLevel && Array.isArray(activeCampaignLevel.wallObjects)
@@ -563,6 +628,20 @@ async function main() {
   /** Beacon anchor nearer gate lip than generic inward hints (`getGateInwardPoint` default 10). Lobby + tutorial exit. */
   const waypointBeaconGateInwardUnits = 6;
 
+  function showExitRideHintBanner() {
+    if (!exitRideHintBanner || isLobby) return;
+    exitRideHintBanner.hidden = false;
+    exitRideHintBanner.setAttribute("aria-hidden", "false");
+    exitRideHintBanner.classList.remove("state-banner--hidden");
+  }
+
+  function hideExitRideHintBanner() {
+    if (!exitRideHintBanner) return;
+    exitRideHintBanner.hidden = true;
+    exitRideHintBanner.setAttribute("aria-hidden", "true");
+    exitRideHintBanner.classList.add("state-banner--hidden");
+  }
+
   gameMode = isLobby ? GameMode.LOBBY : GameMode.LEVEL;
 
   if (isLobby && vjReturnFlow) {
@@ -599,6 +678,7 @@ async function main() {
       if (gr?.root && Array.isArray(anim)) {
         applyExitGateRuntimeOpenVisual(gr.root, playCfg, anim);
       }
+      showExitRideHintBanner();
     }
   }
 
@@ -698,6 +778,7 @@ async function main() {
       lobbyBanner.hidden = true;
       lobbyBanner.classList.add("state-banner--hidden");
     }
+    hideExitRideHintBanner();
   }
 
   /**
@@ -774,6 +855,7 @@ async function main() {
     if (isTunnelBlockingInput()) return;
     if (isControlsOverlayBlockingInput()) return;
     if (isPauseOverlayBlockingInput()) return;
+    if (isLevelExitDestinationOverlayBlockingInput()) return;
     if (playerDerezPhase !== "alive") return;
     if (
       gameMode !== GameMode.LOBBY &&
@@ -1115,6 +1197,7 @@ async function main() {
 
   function beginPlayerDerezSequence() {
     if (playerDerezPhase !== "alive") return;
+    hideExitRideHintBanner();
     gameplayParticles.spawnDerezBurst(
       playerBody.position.x,
       playCfg.playerSpawnY,
@@ -1182,6 +1265,9 @@ async function main() {
   /** @type {boolean} */
   let winTunnelStarted = false;
 
+  /** @type {ReturnType<typeof createLevelExitDestinationOverlayController> | null} */
+  let levelExitDestinationMenu = null;
+
   function dismissCombatVictoryOverlay() {
     if (levelCompleteOverlay) levelCompleteOverlay.hidden = true;
     combatVictoryOverlayTimeoutId = 0;
@@ -1223,48 +1309,80 @@ async function main() {
     combatVictoryOverlayTimeoutId = window.setTimeout(() => {
       dismissCombatVictoryOverlay();
     }, durMs);
+    showExitRideHintBanner();
+  }
+
+  function clearCombatVictoryTimersForExit() {
+    if (combatVictoryOverlayTimeoutId) {
+      window.clearTimeout(combatVictoryOverlayTimeoutId);
+      combatVictoryOverlayTimeoutId = 0;
+    }
+    combatVictoryOverlayDeferRemainingMs = 0;
+    dismissCombatVictoryOverlay();
+  }
+
+  /** @param {Record<string, unknown> | null | undefined} sessionBootPayload — `null`: default boot (lobby path). */
+  function postExitGateTunnelReload(sessionBootPayload) {
+    levelExitDestinationMenu?.close();
+    hideLobbyTransitionChrome();
+    setSessionBootTarget(sessionBootPayload);
+    playTunnel(
+      game.renderer,
+      () => {
+        window.location.reload();
+      },
+      {
+        durationSeconds: CONFIG.tunnelGateSeconds,
+        onBegin: () => {
+          audio.playTunnelTransitionWind();
+          trailWall.clear();
+          const u = playerBody.userData;
+          u.equipSlot = undefined;
+          u.equipSlotQueued = undefined;
+        },
+        devHud,
+      },
+    ).catch(() => {
+      window.location.reload();
+    });
+  }
+
+  /** @param {unknown} lvl */
+  function campaignLevelDisplayTitle(lvl) {
+    if (!lvl || typeof lvl !== "object") return "";
+    const r = /** @type {Record<string, unknown>} */ (lvl);
+    const n = r.name;
+    const nm = typeof n === "string" && n.trim() ? n.trim() : "";
+    if (nm) return nm;
+    const ix = parseCampaignLevelIndex(r);
+    return Number.isFinite(ix) ? `Arena ${Math.floor(ix)}` : "";
   }
 
   function beginWinTunnelToLobby() {
     if (winTunnelStarted || playerDerezPhase !== "alive") return;
     silenceDrivingAndProximityAudio(1 / 60);
     audio.playGateEnterHum();
+    clearCombatVictoryTimersForExit();
+    hideExitRideHintBanner();
     winTunnelStarted = true;
     game.stopLoop();
-    const idStr = activeCampaignLevel && typeof activeCampaignLevel.id === "string" ? activeCampaignLevel.id : "";
-    const runTunnel = () =>
-      playTunnel(
-        game.renderer,
-        () => {
-          window.location.reload();
-        },
-        {
-          durationSeconds: CONFIG.tunnelGateSeconds,
-          onBegin: () => {
-            audio.playTunnelTransitionWind();
-            trailWall.clear();
-            const u = playerBody.userData;
-            u.equipSlot = undefined;
-            u.equipSlotQueued = undefined;
-          },
-          devHud,
-        },
-      ).catch(() => {
-        window.location.reload();
-      });
-    if (idStr === "level-tutorial") {
-      setTutorialCleared(save, true);
-      persistSave(save);
-      runTunnel();
+
+    if (isEditorPlaytest) {
+      postExitGateTunnelReload(null);
       return;
     }
+
+    const idStr =
+      activeCampaignLevel && typeof activeCampaignLevel.id === "string" ? activeCampaignLevel.id.trim() : "";
+
     if (idStr.startsWith("daily-")) {
       const ymd = idStr.length > 6 ? idStr.slice(6) : activeDailyYmd;
       const rewards =
         activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
           ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
           : null;
-      const baseCoins = rewards && typeof rewards.coins === "number" ? Math.max(0, Math.floor(rewards.coins)) : 0;
+      const baseCoins =
+        rewards && typeof rewards.coins === "number" ? Math.max(0, Math.floor(rewards.coins)) : 0;
       let add = baseCoins;
       const th = rewards && typeof rewards.timeBonusThreshold === "number" ? rewards.timeBonusThreshold : null;
       const tb = rewards && typeof rewards.timeBonusCoins === "number" ? rewards.timeBonusCoins : null;
@@ -1276,39 +1394,87 @@ async function main() {
       else if (add > 0) addCoins(save, add);
       persistSave(save);
       if (add > 0) audio.playCoinRewardTinkle();
-      runTunnel();
+      postExitGateTunnelReload(null);
       return;
     }
-    const levelIdx = activeCampaignLevel ? parseCampaignLevelIndex(activeCampaignLevel) : Number.NaN;
-    const rewards =
-      activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
-        ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
-        : null;
-    if (
-      Number.isFinite(levelIdx) &&
-      levelIdx >= 1 &&
-      rewards &&
-      typeof rewards.coins === "number" &&
-      !save.progress.completedLevels.includes(levelIdx)
-    ) {
-      let add = rewards.coins;
-      const th = rewards.timeBonusThreshold;
-      const tb = rewards.timeBonusCoins;
-      if (
-        typeof th === "number" &&
-        typeof tb === "number" &&
-        levelStarted &&
-        levelStartMonotonicMs > 0
-      ) {
-        const elapsed = getLevelElapsedSecExcludingPauses();
-        if (elapsed <= th) add += tb;
-      }
-      addCoins(save, add);
-      recordLevelComplete(save, levelIdx);
+
+    const coinsBeforeWin = save.progress.coins;
+
+    if (idStr === "level-tutorial") {
+      setTutorialCleared(save, true);
       persistSave(save);
-      audio.playCoinRewardTinkle();
+    } else {
+      const levelIdx = activeCampaignLevel ? parseCampaignLevelIndex(activeCampaignLevel) : Number.NaN;
+      const rewards =
+        activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
+          ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
+          : null;
+      if (
+        Number.isFinite(levelIdx) &&
+        levelIdx >= 1 &&
+        rewards &&
+        typeof rewards.coins === "number" &&
+        !save.progress.completedLevels.includes(levelIdx)
+      ) {
+        let add = rewards.coins;
+        const th = rewards.timeBonusThreshold;
+        const tb = rewards.timeBonusCoins;
+        if (
+          typeof th === "number" &&
+          typeof tb === "number" &&
+          levelStarted &&
+          levelStartMonotonicMs > 0
+        ) {
+          const elapsed = getLevelElapsedSecExcludingPauses();
+          if (elapsed <= th) add += tb;
+        }
+        addCoins(save, add);
+        recordLevelComplete(save, levelIdx);
+        persistSave(save);
+        audio.playCoinRewardTinkle();
+      }
     }
-    runTunnel();
+
+    const curIdx =
+      activeCampaignLevel && typeof activeCampaignLevel === "object"
+        ? parseCampaignLevelIndex(activeCampaignLevel)
+        : Number.NaN;
+    /** Tutorial / hub / non-`level-N` maps reload straight to lobby; only numbered campaign arenas get the picker. */
+    const chooserEligible = Number.isFinite(curIdx) && curIdx >= 1;
+
+    if (!chooserEligible || !levelExitDestinationMenu) {
+      postExitGateTunnelReload(null);
+      return;
+    }
+
+    /** @type {number | null} */
+    let nextIdx = null;
+    if (idStr === "level-tutorial") {
+      nextIdx = 1;
+    } else if (Number.isFinite(curIdx) && curIdx >= 1) {
+      nextIdx = Math.floor(curIdx) + 1;
+    }
+
+    let nextLevelId = null;
+    let nextTitle = "";
+    if (typeof nextIdx === "number" && Number.isFinite(nextIdx) && nextIdx >= 1) {
+      const nl = findCampaignLevelByCampaignIndex(campaign.validLevels, nextIdx);
+      if (nl && typeof nl.id === "string" && isLevelUnlockedLinear(save, nextIdx)) {
+        nextLevelId = nl.id;
+        nextTitle = campaignLevelDisplayTitle(nl);
+      }
+    }
+
+    const earnedThisExit = Math.max(0, Math.floor(save.progress.coins - coinsBeforeWin));
+    const totalCoinsNow = Math.max(0, Math.floor(save.progress.coins));
+
+    levelExitDestinationMenu.open({
+      title: "LEVEL CLEAR",
+      nextLevelId,
+      nextLevelDisplayName: nextTitle,
+      earnedCoins: earnedThisExit,
+      totalCoins: totalCoinsNow,
+    });
   }
 
   /** @type {import("./gameState.js").GameModeValue} */
@@ -1436,6 +1602,7 @@ async function main() {
 
   async function enterPause() {
     if (!pauseMenu) return;
+    if (isLevelExitDestinationOverlayBlockingInput()) return;
     if (!isArenaRideableMode(gameMode)) return;
     modeBeforePause = gameMode;
     gameMode = GameMode.PAUSE;
@@ -1518,6 +1685,16 @@ async function main() {
     onQuitToLobby: beginQuitTunnelToLobby,
   });
 
+  levelExitDestinationMenu = createLevelExitDestinationOverlayController({
+    root: document.getElementById("level-exit-destination-overlay"),
+    onPickNextLevel: (levelId) => {
+      postExitGateTunnelReload({ mode: "campaign", levelId });
+    },
+    onPickLobby: () => {
+      postExitGateTunnelReload(null);
+    },
+  });
+
   window.addEventListener(
     "keydown",
     (e) => {
@@ -1527,6 +1704,10 @@ async function main() {
       if (pauseVisible) {
         e.preventDefault();
         resumeFromPause();
+        return;
+      }
+      if (isLevelExitDestinationOverlayBlockingInput()) {
+        e.preventDefault();
         return;
       }
       if (isTunnelBlockingInput()) return;
@@ -1693,6 +1874,11 @@ async function main() {
     return Object.keys(patch).some((k) => statDevHudKeys.has(k));
   }
 
+  function patchTouchesVizAmbience(patch) {
+    if (!patch || typeof patch !== "object") return false;
+    return Object.keys(patch).some((k) => k.startsWith("vizAmbience"));
+  }
+
   function syncRuntimeStatConfigs() {
     const nextPlayerCfg = getArenaPlaytestConfig(runtime, save.player.attributes, arenaSizeFromCampaign);
     for (const k of ["maxMoveSpeed", "acceleration", "baseTurnRate", "nitroBarCount", "trailMaxSegments"]) {
@@ -1718,6 +1904,9 @@ async function main() {
     devHud,
     applyDevHud: (patch) => {
       game.applyDevHud(patch);
+      if (patchTouchesVizAmbience(patch)) {
+        arenaAmbience.syncFromDevHud(patch);
+      }
       if (patchTouchesStats(patch)) {
         syncRuntimeStatConfigs();
       }
@@ -1741,7 +1930,10 @@ async function main() {
     persist: persistDevHudToSave,
     syncHud: syncArenaHud,
     isInputBlocked: () =>
-      isTunnelBlockingInput() || isControlsOverlayBlockingInput() || isPauseOverlayBlockingInput(),
+      isTunnelBlockingInput() ||
+      isControlsOverlayBlockingInput() ||
+      isPauseOverlayBlockingInput() ||
+      isLevelExitDestinationOverlayBlockingInput(),
     grantDevCoins: (amount) => {
       addCoins(save, amount);
       persistSave(save);
@@ -1760,6 +1952,9 @@ async function main() {
   function eliminateEnemyWithParticles(w, e) {
     if (e.eliminated) return;
     if (enemyDerezState) {
+      if (devHud.vizAmbienceSlowPulse !== false) {
+        enemyKillRipple.triggerStackedFast(e.body.position.x, e.body.position.z, e.color);
+      }
       gameplayParticles.spawnDerezBurst(e.body.position.x, playCfg.playerSpawnY, e.body.position.z, e.color, {
         particleCount: 52,
       });
@@ -1771,6 +1966,9 @@ async function main() {
       return;
     }
     beginEnemyCinematicElimination(w, e);
+    if (devHud.vizAmbienceSlowPulse !== false && e.derezSnapshot) {
+      enemyKillRipple.armCinematic(e.derezSnapshot.x, e.derezSnapshot.z, e.color);
+    }
     enemyDerezState = {
       entity: e,
       phase: "approach",
@@ -1805,11 +2003,13 @@ async function main() {
   }
   const fpsTimestamps = /** @type {number[]} */ ([]);
   let fpsHudLastWriteMs = 0;
-  /** Rich-floor emissive pulse (~17 Hz max) — `arenaFloorDetail === 'rich'` only. */
-  let lastArenaFloorPulseT = Number.NEGATIVE_INFINITY;
-  const ARENA_FLOOR_PULSE_MIN_DT = 1 / 17;
 
   game.setOnFrame(({ t, dt }) => {
+    arenaAmbience.tick({ t, dt });
+
+    const killBurst = computeEnemyKillAmbientBurst(devHud, enemyDerezState);
+    game.tunnelMaterial.uniforms.uKillBurst.value = killBurst.tunnelBurst;
+    enemyKillRipple.tick(dt);
     if (fpsHudEl) {
       const nowMs = performance.now();
       fpsTimestamps.push(nowMs);
@@ -1825,15 +2025,15 @@ async function main() {
     }
 
     const floorMat = game.scene.userData.arenaFloorMaterial;
-    if (
-      floorMat &&
-      floorMat.userData &&
-      typeof floorMat.userData.emissiveIntensityBase === "number" &&
-      t - lastArenaFloorPulseT >= ARENA_FLOOR_PULSE_MIN_DT
-    ) {
-      lastArenaFloorPulseT = t;
-      const b = floorMat.userData.emissiveIntensityBase;
-      floorMat.emissiveIntensity = b * (0.92 + 0.08 * Math.sin(t * 2.15));
+    if (floorMat && floorMat.userData) {
+      const base =
+        typeof floorMat.userData.emissiveIntensityBase === "number"
+          ? floorMat.userData.emissiveIntensityBase
+          : typeof floorMat.userData.ambienceEmissiveBase === "number"
+            ? floorMat.userData.ambienceEmissiveBase
+            : floorMat.emissiveIntensity;
+      const killMul = devHud.vizAmbienceSlowPulse !== false ? 1 + killBurst.floorBump * 0.72 : 1;
+      floorMat.emissiveIntensity = base * killMul;
     }
     tickHudPickupFlights();
 
@@ -1962,6 +2162,9 @@ async function main() {
         } else if (d.phase === "implode") {
           if (!d.implodeSfxDone) {
             d.implodeSfxDone = true;
+            if (devHud.vizAmbienceSlowPulse !== false) {
+              enemyKillRipple.onCinematicImplode();
+            }
             gameplayParticles.spawnDerezCubeShards(snap.x, playCfg.playerSpawnY, snap.z, e.color, {
               count: 420,
               duration: Math.max(1.45, implodeSec * 1.35),
@@ -1989,6 +2192,9 @@ async function main() {
           game.camera.fov = devHud.cameraBaseFov;
           game.camera.updateProjectionMatrix();
           if (tRaw >= 1) {
+            if (devHud.vizAmbienceSlowPulse !== false) {
+              enemyKillRipple.onCinematicReturn();
+            }
             d.phase = "return";
             d.phaseStartMs = now;
             enemyKillRetFrom.copy(game.camera.position);
@@ -2011,6 +2217,9 @@ async function main() {
           game.camera.fov = d.returnFov0 + p * (d.returnFov1 - d.returnFov0);
           game.camera.updateProjectionMatrix();
           if (tRaw >= 1) {
+            if (devHud.vizAmbienceSlowPulse !== false) {
+              enemyKillRipple.onCinematicFinished();
+            }
             endEnemyCinematicDerez(e);
             enemyDerezState = null;
             chase.snapToGameplayChase({
@@ -2026,6 +2235,9 @@ async function main() {
 
         gameplayParticles.tick(dt, {});
         return;
+      }
+      if (devHud.vizAmbienceSlowPulse !== false) {
+        enemyKillRipple.onCinematicAborted();
       }
       enemyDerezState = null;
     }
@@ -2772,7 +2984,8 @@ async function main() {
     if (isLobby) {
       if (welcomeEl instanceof HTMLElement) welcomeEl.hidden = true;
       if (hintEl instanceof HTMLElement) hintEl.hidden = true;
-      detailEl.textContent = "The beacon marks your next stop — follow the light.";
+      detailEl.textContent =
+        "You are at the lobby. Wander around, try the power-ups, and when you're ready follow the beacon to start the next level. Win coins by winning levels to upgrade your cycle in the garage. You can also play the daily challenge for extra coins.";
     } else if (isTutorialArena) {
       if (welcomeEl instanceof HTMLElement) {
         welcomeEl.hidden = false;

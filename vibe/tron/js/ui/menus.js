@@ -10,11 +10,17 @@ let controlsOverlayBlocksInput = false;
 /** While true, arena gameplay input is ignored (plan X1 / P7.6 — pause). */
 let pauseOverlayBlocksInput = false;
 
+/** While post-exit destination overlay is visible. */
+let levelExitDestinationOverlayBlocksInput = false;
+
 /** Fired on `window` when first-visit controls overlay opens/closes — clears held keys when opening. */
 export const CONTROLS_OVERLAY_SESSION_EVENT = "tron-controls-overlay-session";
 
 /** Fired when pause opens/closes — clears held keys when opening (same contract as tunnel). */
 export const PAUSE_OVERLAY_SESSION_EVENT = "tron-pause-overlay-session";
+
+/** Exit-gate “where next?” menu (post level clear, before reload). */
+export const LEVEL_EXIT_DESTINATION_OVERLAY_SESSION_EVENT = "tron-level-exit-destination-overlay-session";
 
 /** True while the first-visit controls overlay is visible — same contract as `isTunnelBlockingInput`. */
 export function isControlsOverlayBlockingInput() {
@@ -24,6 +30,11 @@ export function isControlsOverlayBlockingInput() {
 /** True while the pause menu is visible — same contract as `isTunnelBlockingInput`. */
 export function isPauseOverlayBlockingInput() {
   return pauseOverlayBlocksInput;
+}
+
+/** True while the exit-gate “next level vs lobby” menu is visible. */
+export function isLevelExitDestinationOverlayBlockingInput() {
+  return levelExitDestinationOverlayBlocksInput;
 }
 
 /**
@@ -45,6 +56,15 @@ function setPauseOverlayBlocksInput(active) {
   pauseOverlayBlocksInput = active;
   window.dispatchEvent(
     new CustomEvent(PAUSE_OVERLAY_SESSION_EVENT, {
+      detail: { active },
+    }),
+  );
+}
+
+function setLevelExitDestinationOverlayBlocksInput(active) {
+  levelExitDestinationOverlayBlocksInput = active;
+  window.dispatchEvent(
+    new CustomEvent(LEVEL_EXIT_DESTINATION_OVERLAY_SESSION_EVENT, {
       detail: { active },
     }),
   );
@@ -82,6 +102,113 @@ export function createPauseMenuController(opts) {
   return {
     open,
     close,
+    dispose() {
+      ac.abort();
+    },
+  };
+}
+
+/**
+ * After riding the exit gate: choose next arena or lobby (reload via session boot).
+ *
+ * @param {{
+ *   root: HTMLElement | null;
+ *   onPickNextLevel: (levelId: string) => void;
+ *   onPickLobby: () => void;
+ * }} opts
+ */
+export function createLevelExitDestinationOverlayController(opts) {
+  const { root, onPickNextLevel, onPickLobby } = opts;
+  if (!root) return null;
+
+  const nextBtn = root.querySelector("[data-level-exit-next]");
+  const lobbyBtn = root.querySelector("[data-level-exit-lobby]");
+  if (!(nextBtn instanceof HTMLButtonElement) || !(lobbyBtn instanceof HTMLButtonElement)) return null;
+
+  const ac = new AbortController();
+  const sig = { signal: ac.signal };
+
+  /** @type {string | null} */
+  let pendingNextCampaignLevelId = null;
+
+  function hideOverlayAndUnblockInput() {
+    root.hidden = true;
+    pendingNextCampaignLevelId = null;
+    setLevelExitDestinationOverlayBlocksInput(false);
+  }
+
+  /**
+   * @param {{
+   *   title?: string;
+   *   nextLevelId: string | null;
+   *   nextLevelDisplayName?: string;
+   *   earnedCoins?: number;
+   *   totalCoins?: number;
+   * }} spec
+   */
+  function open(spec) {
+    const titleEl = root.querySelector("[data-level-exit-title]");
+    if (titleEl instanceof HTMLElement) {
+      titleEl.textContent =
+        typeof spec.title === "string" && spec.title.trim() ? spec.title.trim() : "LEVEL CLEAR";
+    }
+    const earnedEl = root.querySelector("[data-level-exit-earned]");
+    const totalEl = root.querySelector("[data-level-exit-total]");
+    const ec =
+      typeof spec.earnedCoins === "number" && Number.isFinite(spec.earnedCoins)
+        ? Math.max(0, Math.floor(spec.earnedCoins))
+        : 0;
+    const tc =
+      typeof spec.totalCoins === "number" && Number.isFinite(spec.totalCoins)
+        ? Math.max(0, Math.floor(spec.totalCoins))
+        : 0;
+    if (earnedEl instanceof HTMLElement) earnedEl.textContent = String(ec);
+    if (totalEl instanceof HTMLElement) totalEl.textContent = String(tc);
+    const id =
+      typeof spec.nextLevelId === "string" && spec.nextLevelId.trim().length > 0
+        ? spec.nextLevelId.trim()
+        : null;
+    pendingNextCampaignLevelId = id;
+    const display =
+      typeof spec.nextLevelDisplayName === "string" && spec.nextLevelDisplayName.trim()
+        ? spec.nextLevelDisplayName.trim()
+        : "";
+    if (id) {
+      nextBtn.hidden = false;
+      nextBtn.disabled = false;
+      nextBtn.textContent = display ? `NEXT LEVEL: ${display}` : `NEXT LEVEL: ${id}`;
+      nextBtn.focus();
+    } else {
+      nextBtn.hidden = true;
+      nextBtn.disabled = true;
+      lobbyBtn.focus();
+    }
+    root.hidden = false;
+    setLevelExitDestinationOverlayBlocksInput(true);
+  }
+
+  nextBtn.addEventListener(
+    "click",
+    () => {
+      if (!pendingNextCampaignLevelId) return;
+      const id = pendingNextCampaignLevelId;
+      hideOverlayAndUnblockInput();
+      onPickNextLevel(id);
+    },
+    sig,
+  );
+  lobbyBtn.addEventListener(
+    "click",
+    () => {
+      hideOverlayAndUnblockInput();
+      onPickLobby();
+    },
+    sig,
+  );
+
+  return {
+    open,
+    close: hideOverlayAndUnblockInput,
     dispose() {
       ac.abort();
     },

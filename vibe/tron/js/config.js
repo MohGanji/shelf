@@ -83,6 +83,11 @@ export const TRON_COLORS = {
 };
 
 /**
+ * Lobby hub only: grey-cyan deck, a bit darker with a stronger cyan cast (same role as `colors.gridFloor`).
+ */
+export const LOBBY_GRID_FLOOR_HEX = 0x5f8799;
+
+/**
  * Post values for pause-menu / boot “Clean” (smoother, less edge halation) vs “Retro” (stronger CA + bloom).
  * @param {"clean" | "retro"} preset
  * @returns {Pick<typeof DEFAULT_DEV_HUD, "visualPreset" | "bloomIntensity" | "bloomRadius" | "bloomThreshold" | "chromaticAberration" | "neonIntensity">}
@@ -119,6 +124,18 @@ export const DEFAULT_DEV_HUD = {
   bloomThreshold: 0.365,
   chromaticAberration: 0.0009,
   crtScanlines: false,
+  /** Arena-only decorative layers (non-gameplay); each toggles independently in Dev HUD. */
+  vizAmbienceSkyline: true,
+  vizAmbienceDriftHex: true,
+  vizAmbienceDriftBarcode: true,
+  vizAmbienceDriftCubes: true,
+  vizAmbienceSprites: true,
+  vizAmbienceWallBanners: true,
+  vizAmbienceFloorGarnish: true,
+  vizAmbienceEdgeLight: true,
+  vizAmbienceSecondaryPalette: true,
+  /** Kill-cam: floor drip-ripple at elimination + emissive/tunnel burst (`false` = off). */
+  vizAmbienceSlowPulse: true,
   gridBrightness: 0.2,
   /** Arena / editor / garage floor: draw every Nth world unit (4 ⇒ cells cover 4×4 units). */
   floorGridLineStep: 16,

@@ -1,6 +1,6 @@
 import * as THREE from "../vendor/three-module.js";
 import { Vec3 } from "../vendor/cannon-es-module.js";
-import { getFloorGridLineStep } from "../config.js";
+import { getFloorGridLineStep, mergeDevHud } from "../config.js";
 import { createFloorBody, createWallPhysicsBody } from "../engine/physics.js";
 import { buildBarriersFromLevel } from "./blocks.js";
 import { LOBBY_LEVEL_ID } from "../levels/schema.js";
@@ -240,6 +240,7 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge, floorDetail = "off") {
   }
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
+  floorMat.userData.ambienceEmissiveBase = floorMat.emissiveIntensity;
   group.add(floor);
 
   const grid = new THREE.LineSegments(
@@ -257,7 +258,7 @@ export function buildArenaVisuals(scene, cfg, gapsByEdge, floorDetail = "off") {
   const t = 1;
   const panelLen = 20;
   /** Single finish for all perimeter panels (no A/B checkerboard). */
-  const wallPanelMat = makePanelMaterial(cfg.colors.wallPanelA, 0x004455, neon);
+  const wallPanelMat = makePanelMaterial(cfg.colors.wallPanelA, cfg.colors.wallPanelB ?? 0x004455, neon);
 
   const g =
     gapsByEdge ??
@@ -910,26 +911,83 @@ export function applyShowroomEnvMap(renderer, root) {
   }
 }
 
+/**
+ * Environment colors for arena stage (primary vs secondary Dev HUD palette).
+ * @param {import("../config.js").DEFAULT_DEV_HUD} devHud
+ * @param {ReturnType<import("../config.js").getArenaPlaytestConfig>} playCfg
+ */
+export function getAmbienceEnvironmentPalette(devHud, playCfg) {
+  const hud = mergeDevHud(devHud ?? {});
+  const sky = new THREE.Color(
+    typeof playCfg.colors?.ambient === "number" ? playCfg.colors.ambient : 0x8ecfff,
+  );
+  if (hud.vizAmbienceSecondaryPalette === false) {
+    return {
+      background: new THREE.Color(0x06080f),
+      fogColor: new THREE.Color(0x050510),
+      hemiSky: sky.clone(),
+      hemiGround: new THREE.Color(0x03060c),
+      sunColor: new THREE.Color(0xffffff),
+      fillColor: new THREE.Color(0x00ccff),
+      gridWashColor: new THREE.Color(0x66ddff),
+    };
+  }
+  return {
+    background: new THREE.Color(0x0a0820),
+    fogColor: new THREE.Color(0x120828),
+    hemiSky: sky.clone().lerp(new THREE.Color(0x8844aa), 0.22),
+    hemiGround: new THREE.Color(0x060812),
+    sunColor: new THREE.Color(0xffeedd),
+    fillColor: new THREE.Color(0xff8866),
+    gridWashColor: new THREE.Color(0xaa88ee),
+  };
+}
+
+/**
+ * Reapply fog/background + arena stage lights after Dev HUD palette toggles.
+ * @param {import("three").Scene} scene
+ * @param {import("../config.js").DEFAULT_DEV_HUD} devHud
+ * @param {ReturnType<import("../config.js").getArenaPlaytestConfig>} playCfg
+ */
+export function reapplyAmbientStageLighting(scene, devHud, playCfg) {
+  const hud = mergeDevHud(playCfg?.devHud ?? {});
+  const fogDensity =
+    typeof hud.fogDensity === "number" && Number.isFinite(hud.fogDensity) ? hud.fogDensity : 0.01;
+  const pal = getAmbienceEnvironmentPalette(devHud, playCfg);
+  const fogCol = pal.fogColor;
+  if (scene.fog instanceof THREE.FogExp2) {
+    scene.fog.color.copy(fogCol);
+    scene.fog.density = fogDensity;
+  } else {
+    scene.fog = new THREE.FogExp2(fogCol.clone(), fogDensity);
+  }
+  if (!(scene.background instanceof THREE.Color)) scene.background = new THREE.Color();
+  scene.background.copy(pal.background);
+
+  const L = scene.userData.arenaStageLights;
+  if (!L) return;
+  if (L.hemi instanceof THREE.HemisphereLight) {
+    L.hemi.color.copy(pal.hemiSky);
+    L.hemi.groundColor.copy(pal.hemiGround);
+  }
+  if (L.sun instanceof THREE.DirectionalLight) L.sun.color.copy(pal.sunColor);
+  if (L.fill instanceof THREE.DirectionalLight) L.fill.color.copy(pal.fillColor);
+  if (L.gridWash instanceof THREE.PointLight) L.gridWash.color.copy(pal.gridWashColor);
+}
+
 /** After BOOT tunnel: hide tunnel mesh, switch fog/camera, add arena lighting. */
 export function applyArenaStageEnvironment(game, cfg) {
   const { scene, camera, tunnel, floorReflector } = game;
   tunnel.visible = false;
   if (floorReflector) floorReflector.visible = false;
-  /** Deep blue-black — plan palette (#0a0a0a family) with slight ISO depth. */
-  scene.background = new THREE.Color(0x06080f);
-  /** Same exponential fog as BOOT/renderer so `fogDensity` in Dev HUD applies during play. */
-  const fogDensity =
-    typeof cfg.devHud?.fogDensity === "number" && Number.isFinite(cfg.devHud.fogDensity)
-      ? cfg.devHud.fogDensity
-      : 0.01;
-  scene.fog = new THREE.FogExp2(0x050510, fogDensity);
+
   camera.near = 0.1;
   camera.far = 2000;
   camera.position.set(0, 120, 180);
   camera.lookAt(0, 0, 0);
   camera.updateProjectionMatrix();
 
-  const hemi = new THREE.HemisphereLight(cfg.colors.ambient, 0x03060c, 0.62);
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x03060c, 0.62);
   const sun = new THREE.DirectionalLight(0xffffff, 0.95);
   sun.position.set(60, 120, 40);
   const fill = new THREE.DirectionalLight(0x00ccff, 0.42);
@@ -938,4 +996,6 @@ export function applyArenaStageEnvironment(game, cfg) {
   const gridWash = new THREE.PointLight(0x66ddff, 0.42, 0, 2);
   gridWash.position.set(0, 110, 0);
   scene.add(hemi, sun, fill, gridWash);
+  scene.userData.arenaStageLights = { hemi, sun, fill, gridWash };
+  reapplyAmbientStageLighting(scene, cfg.devHud, cfg);
 }
