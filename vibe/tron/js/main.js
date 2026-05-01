@@ -477,7 +477,12 @@ async function main() {
     devHud,
   });
 
-  bootOverlay.classList.add("boot-overlay--hidden");
+  /** Keep `#boot-overlay` up until gameplay/showroom renders — avoids a long black canvas gap after tunnel (arena build blocks `startLoop`). */
+  function dismissBootOverlayAfterFirstGamePaint() {
+    requestAnimationFrame(() => {
+      bootOverlay.classList.add("boot-overlay--hidden");
+    });
+  }
 
   if (sessionBoot?.mode === "garage") {
     gameMode = GameMode.GARAGE;
@@ -513,6 +518,7 @@ async function main() {
         window.location.reload();
       },
     });
+    dismissBootOverlayAfterFirstGamePaint();
     return;
   }
   if (sessionBoot?.mode === "editor") {
@@ -533,6 +539,7 @@ async function main() {
         window.location.reload();
       },
     });
+    dismissBootOverlayAfterFirstGamePaint();
     return;
   }
 
@@ -3014,6 +3021,7 @@ async function main() {
   }
 
   game.startLoop();
+  dismissBootOverlayAfterFirstGamePaint();
 
   /** P6.9 — after play-test (derez / win / exit), offer quick return to Architect. */
   const editorReturnWrap = document.getElementById("editor-return-to-editor");
