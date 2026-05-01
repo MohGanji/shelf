@@ -13,6 +13,17 @@ let pauseOverlayBlocksInput = false;
 /** While post-exit destination overlay is visible. */
 let levelExitDestinationOverlayBlocksInput = false;
 
+/** @type {AbortController | null} */
+let controlsOverlayListenersAc = null;
+
+/** @type {(() => void) | null} */
+let controlsPersistOnDismiss = null;
+
+function abortControlsOverlayListenersOnly() {
+  controlsOverlayListenersAc?.abort();
+  controlsOverlayListenersAc = null;
+}
+
 /** Fired on `window` when first-visit controls overlay opens/closes — clears held keys when opening. */
 export const CONTROLS_OVERLAY_SESSION_EVENT = "tron-controls-overlay-session";
 
@@ -71,7 +82,11 @@ function setLevelExitDestinationOverlayBlocksInput(active) {
 }
 
 /**
- * @param {{ root: HTMLElement | null; onResume: () => void; onQuitToLobby: () => void }} opts
+ * @param {{
+ *   root: HTMLElement | null;
+ *   onResume: () => void;
+ *   onQuitToLobby: () => void;
+ * }} opts
  * @returns {{ open: () => void; close: () => void; dispose: () => void } | null}
  */
 export function createPauseMenuController(opts) {
@@ -216,6 +231,69 @@ export function createLevelExitDestinationOverlayController(opts) {
 }
 
 /**
+ * Tear down listeners + optionally persist first-visit dismiss, then hide the overlay.
+ */
+function teardownControlsOverlaySessionUi() {
+  const persistFn = controlsPersistOnDismiss;
+  abortControlsOverlayListenersOnly();
+  controlsPersistOnDismiss = null;
+  persistFn?.();
+
+  const root = document.getElementById("controls-overlay");
+  if (root) root.hidden = true;
+  setControlsOverlayBlocksInput(false);
+}
+
+/** @returns {boolean} True if something was dismissed. */
+export function attemptDismissControlsOverlay() {
+  const root = document.getElementById("controls-overlay");
+  if (!root || root.hidden || !controlsOverlayBlocksInput) return false;
+  teardownControlsOverlaySessionUi();
+  return true;
+}
+
+/**
+ * Opens the CONTROLS dialog for first-run tutorial / lobby onboarding (fullscreen overlay).
+
+ *
+ * ESC / dismiss button teardown is routed through {@link attemptDismissControlsOverlay}; `main.js` calls
+ * that on capture-phase Escape before resume-from-pause so controls can stack above pause cleanly.
+ *
+ * @param {{
+ *   persistSave?: import("../data/savedata.js").PlayerSave;
+ * }} [opts]
+ * @returns {boolean}
+ */
+export function openControlsOverlaySession(opts = {}) {
+  const persistSaveOpt = opts.persistSave;
+  attemptDismissControlsOverlay();
+
+  const root = document.getElementById("controls-overlay");
+  const dismissBtn = document.getElementById("controls-overlay-dismiss");
+  if (!root || !(dismissBtn instanceof HTMLButtonElement)) return false;
+
+  if (persistSaveOpt) {
+    controlsPersistOnDismiss = () => {
+      setControlsShown(persistSaveOpt, true);
+      persistSave(persistSaveOpt);
+    };
+  } else {
+    controlsPersistOnDismiss = null;
+  }
+
+  abortControlsOverlayListenersOnly();
+  controlsOverlayListenersAc = new AbortController();
+  const sig = { signal: controlsOverlayListenersAc.signal };
+
+  dismissBtn.addEventListener("click", () => attemptDismissControlsOverlay(), sig);
+
+  root.hidden = false;
+  setControlsOverlayBlocksInput(true);
+  dismissBtn.focus();
+  return true;
+}
+
+/**
  * P7.5 — Auto-show once (`controlsShown` false): first-run **tutorial** arena by default flow,
  * or **lobby** for migrated saves / anyone who reaches hub without having dismissed yet.
  * Blocks cycle input until dismissed.
@@ -231,44 +309,11 @@ export function showFirstVisitControlsOverlayIfNeeded(opts) {
   /** First-run combat tutorial (`tutorialCleared` still false): overlay belongs on tutorial, not lobby. */
   if (venue === "lobby" && save.tutorialCleared === false) return null;
 
-  const root = document.getElementById("controls-overlay");
-  const dismissBtn = document.getElementById("controls-overlay-dismiss");
-  if (!root || !dismissBtn) return null;
-
-  root.hidden = false;
-  setControlsOverlayBlocksInput(true);
-  dismissBtn.focus();
-
-  const ac = new AbortController();
-  const sig = { signal: ac.signal };
-  let finished = false;
-
-  function dismiss() {
-    if (finished) return;
-    finished = true;
-    ac.abort();
-    root.hidden = true;
-    setControlsOverlayBlocksInput(false);
-    setControlsShown(save, true);
-    persistSave(save);
-  }
-
-  dismissBtn.addEventListener("click", () => dismiss(), sig);
-
-  window.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        dismiss();
-      }
-    },
-    sig,
-  );
+  if (!openControlsOverlaySession({ persistSave: save })) return null;
 
   return {
     dispose() {
-      if (!ac.signal.aborted) dismiss();
+      attemptDismissControlsOverlay();
     },
   };
 }

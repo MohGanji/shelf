@@ -1153,7 +1153,9 @@
       >
         <div class="controls-overlay__panel">
           <h2 id="controls-overlay-title" class="controls-overlay__title">CONTROLS</h2>
-          <p class="controls-overlay__lead">Dismiss with <kbd>ESC</kbd> or the button below.</p>
+          <p class="controls-overlay__lead">
+            Close with <kbd>ESC</kbd> or the button below. While paused, open Pause (<kbd>ESC</kbd>) and expand <strong class="controls-overlay__strong">Controls — keyboard</strong> for these bindings.
+          </p>
           <dl class="controls-overlay__grid">
             <div class="controls-overlay__row"><dt>W / ↑</dt><dd>Accelerate</dd></div>
             <div class="controls-overlay__row"><dt>S / ↓</dt><dd>Brake</dd></div>
@@ -1180,8 +1182,27 @@
           <p class="pause-overlay__lead">
             <kbd>ESC</kbd> to resume · Quit returns to the lobby (no rewards, same as derez).
           </p>
-          <details class="pause-overlay__settings">
-            <summary class="pause-overlay__settings-summary">Settings — audio &amp; visual</summary>
+          <div class="pause-overlay__accordion" aria-label="On-demand help and settings">
+            <details class="pause-overlay__settings pause-overlay__settings--controls">
+              <summary class="pause-overlay__settings-summary">Controls — keyboard</summary>
+              <div class="pause-controls">
+                <p class="pause-controls__lead">
+                  Same shortcuts as anywhere else — expand anytime while paused. Full-screen recap also appears once on
+                  your first arena visit.
+                </p>
+                <dl class="controls-overlay__grid pause-controls__grid">
+                  <div class="controls-overlay__row"><dt>W / ↑</dt><dd>Accelerate</dd></div>
+                  <div class="controls-overlay__row"><dt>S / ↓</dt><dd>Brake</dd></div>
+                  <div class="controls-overlay__row"><dt>A / ←</dt><dd>Steer left</dd></div>
+                  <div class="controls-overlay__row"><dt>D / →</dt><dd>Steer right</dd></div>
+                  <div class="controls-overlay__row"><dt>Space</dt><dd>Nitro burst</dd></div>
+                  <div class="controls-overlay__row"><dt>E</dt><dd>Activate equipped power-up</dd></div>
+                  <div class="controls-overlay__row"><dt>ESC</dt><dd>Pause menu</dd></div>
+                </dl>
+              </div>
+            </details>
+            <details class="pause-overlay__settings pause-overlay__settings--settings">
+              <summary class="pause-overlay__settings-summary">Settings — audio &amp; visual</summary>
             <div class="pause-settings">
               <p class="pause-settings__heading">Audio</p>
               <label class="pause-settings__row">
@@ -1253,6 +1274,7 @@
               </label>
             </div>
           </details>
+          </div>
           <div class="pause-overlay__actions">
             <button type="button" class="pause-overlay__btn pause-overlay__btn--primary" data-pause-resume>
               RESUME
@@ -1292,7 +1314,7 @@
 
       <div id="lobby-placeholder" class="state-banner state-banner--hidden" hidden>
         <p class="state-banner__welcome" hidden></p>
-        <p class="state-banner__detail"></p>
+        <div class="state-banner__detail"></div>
         <p class="state-banner__hint" hidden></p>
       </div>
 

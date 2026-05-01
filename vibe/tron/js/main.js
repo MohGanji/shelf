@@ -103,6 +103,7 @@ import { consumeSessionBootTarget, setSessionBootTarget } from "./sessionBoot.js
 import { peekEditorPlaytestReturn, setEditorPlaytestReturn } from "./sessionEditorPlaytest.js";
 import { mountEditorDestinationScreen, mountGarageDestinationScreen } from "./ui/garage.js";
 import {
+  attemptDismissControlsOverlay,
   createLevelExitDestinationOverlayController,
   createPauseMenuController,
   isControlsOverlayBlockingInput,
@@ -1706,6 +1707,11 @@ async function main() {
     "keydown",
     (e) => {
       if (e.key !== "Escape") return;
+      if (attemptDismissControlsOverlay()) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       const pauseEl = document.getElementById("pause-overlay");
       const pauseVisible = pauseEl && !pauseEl.hidden;
       if (pauseVisible) {
@@ -2980,6 +2986,7 @@ async function main() {
 
   lobbyBanner.hidden = false;
   lobbyBanner.classList.remove("state-banner--hidden");
+  lobbyBanner.classList.toggle("state-banner--tutorial", isTutorialArena);
   const welcomeEl = lobbyBanner.querySelector(".state-banner__welcome");
   const detailEl = lobbyBanner.querySelector(".state-banner__detail");
   const hintEl = lobbyBanner.querySelector(".state-banner__hint");
@@ -2998,11 +3005,29 @@ async function main() {
         welcomeEl.hidden = false;
         welcomeEl.textContent = "Welcome to Tron: Cyber Cycles";
       }
-      detailEl.textContent =
-        "Avoid the trails, defeat your rival then reach the exit gate to win.";
+      detailEl.replaceChildren();
+      const tutorialLines = [
+        "This tutorial arena is your training ground. Practice game controls and try to outride your enemy. Your objective is simple: Survive and clear the arena.",
+        "How the game works:",
+        "Your Light Cycle generates a lethal trail of solid energy behind it. You hit a trail, even your own, you're deleted.",
+        "The Trail is Your Weapon. Force your opponent to crash into your trail.",
+        "Keep moving: Slowing down makes you vulnerable to enemies charging into you. Enemies are also vulnerable if they slow down.",
+      ];
+      const frag = document.createDocumentFragment();
+      for (const line of tutorialLines) {
+        const p = document.createElement("p");
+        p.className = "state-banner__para";
+        p.textContent = line;
+        frag.appendChild(p);
+      }
+      const rally = document.createElement("p");
+      rally.className = "state-banner__para";
+      rally.textContent = "Fortune favors velocity, take them down soldier!";
+      frag.appendChild(rally);
+      detailEl.appendChild(frag);
       if (hintEl instanceof HTMLElement) {
         hintEl.hidden = false;
-        hintEl.textContent = "Press W when ready.";
+        hintEl.textContent = "Press W when you're ready.";
       }
     } else {
       if (welcomeEl instanceof HTMLElement) welcomeEl.hidden = true;

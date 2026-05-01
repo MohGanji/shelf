@@ -553,8 +553,13 @@ body {
   margin: 0 0 1rem;
   text-align: center;
   font-size: 0.88rem;
-  line-height: 1.4;
+  line-height: 1.45;
   color: rgba(160, 210, 235, 0.88);
+}
+
+.controls-overlay__strong {
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
 .controls-overlay__grid {
@@ -688,6 +693,17 @@ body {
   color: rgba(200, 255, 255, 0.95);
 }
 
+.pause-overlay__accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0 0 1.05rem;
+}
+
+.pause-overlay__accordion > .pause-overlay__settings {
+  margin-bottom: 0;
+}
+
 .pause-overlay__settings {
   margin: 0 0 1.1rem;
   border: 1px solid rgba(0, 255, 255, 0.15);
@@ -715,6 +731,24 @@ body {
 
 .pause-settings {
   padding: 0.65rem 0.85rem 0.85rem;
+}
+
+.pause-controls {
+  padding: 0.65rem 0.85rem 0.85rem;
+}
+
+.pause-controls__lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.74rem;
+  line-height: 1.42;
+  letter-spacing: 0.045em;
+  color: rgba(130, 195, 220, 0.82);
+  text-wrap: balance;
+}
+
+.pause-controls__grid {
+  margin: 0 0 0.15rem;
+  gap: 0.42rem;
 }
 
 .pause-settings__heading {
@@ -866,6 +900,38 @@ body {
 
 #lobby-placeholder .state-banner__detail {
   margin: 0;
+}
+
+#lobby-placeholder.state-banner--tutorial {
+  max-width: min(52rem, calc(100vw - 160px));
+  padding: 12px 18px 14px;
+  font-size: 0.885rem;
+  line-height: 1.52;
+}
+
+#lobby-placeholder.state-banner--tutorial .state-banner__welcome {
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+#lobby-placeholder.state-banner--tutorial .state-banner__detail {
+  margin: 0;
+  text-align: center;
+}
+
+#lobby-placeholder.state-banner--tutorial .state-banner__para {
+  margin: 0 0 0.65rem;
+  color: rgba(188, 220, 240, 0.93);
+  letter-spacing: 0.038em;
+  text-wrap: balance;
+}
+
+#lobby-placeholder.state-banner--tutorial .state-banner__para:last-child {
+  margin-bottom: 0;
+}
+
+#lobby-placeholder.state-banner--tutorial .state-banner__hint {
+  text-align: center;
 }
 
 #lobby-placeholder .state-banner__hint {
