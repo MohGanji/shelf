@@ -1691,6 +1691,7 @@ async function main() {
     root: document.getElementById("pause-overlay"),
     onResume: resumeFromPause,
     onQuitToLobby: beginQuitTunnelToLobby,
+    showQuitToLobby: !isTutorialArena,
   });
 
   levelExitDestinationMenu = createLevelExitDestinationOverlayController({

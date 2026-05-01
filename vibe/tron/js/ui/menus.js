@@ -86,16 +86,28 @@ function setLevelExitDestinationOverlayBlocksInput(active) {
  *   root: HTMLElement | null;
  *   onResume: () => void;
  *   onQuitToLobby: () => void;
+ *   showQuitToLobby?: boolean;
  * }} opts
  * @returns {{ open: () => void; close: () => void; dispose: () => void } | null}
  */
 export function createPauseMenuController(opts) {
-  const { root, onResume, onQuitToLobby } = opts;
+  const { root, onResume, onQuitToLobby, showQuitToLobby = true } = opts;
   if (!root) return null;
 
   const resumeBtn = root.querySelector("[data-pause-resume]");
   const quitBtn = root.querySelector("[data-pause-quit]");
+  const leadEl = root.querySelector(".pause-overlay__lead");
   if (!(resumeBtn instanceof HTMLButtonElement) || !(quitBtn instanceof HTMLButtonElement)) return null;
+
+  if (!showQuitToLobby) {
+    quitBtn.hidden = true;
+    if (leadEl instanceof HTMLElement) {
+      leadEl.replaceChildren();
+      const kbd = document.createElement("kbd");
+      kbd.textContent = "ESC";
+      leadEl.append(kbd, document.createTextNode(" to resume."));
+    }
+  }
 
   const ac = new AbortController();
   const sig = { signal: ac.signal };

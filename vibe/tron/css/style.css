@@ -820,6 +820,10 @@ body {
 }
 
 
+.pause-overlay__panel button[hidden] {
+  display: none !important;
+}
+
 .pause-overlay__btn {
   display: block;
   width: 100%;
