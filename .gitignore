@@ -9,3 +9,33 @@ state.json
 CLAUDE.md
 CLAUDE.local.md
 venv/
+
+# Chromium/Electron user-data leaked into repo root (IDE bugs)
+/Cache/
+/CachedData/
+/CachedExtensionVSIXs/
+/CachedProfilesData/
+/Code Cache/
+/Crashpad/
+/DawnGraphiteCache/
+/DawnWebGPUCache/
+/GPUCache/
+/Local Storage/
+/Service Worker/
+/Session Storage/
+/Shared Dictionary/
+/WebStorage/
+/User/
+/blob_storage/
+/Backups/
+/logs/
+/Cookies
+/Cookies-journal
+/Network Persistent State
+/Preferences
+/SharedStorage
+/TransportSecurity
+/Trust Tokens
+/Trust Tokens-journal
+/languagepacks.json
+/machineid
