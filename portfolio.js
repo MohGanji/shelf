@@ -40,6 +40,13 @@ const projects = [
         image: "./assets/braindump.png",
     },
     {
+        title: "mohganji/skills",
+        description:
+            "A collection of agent skills I use for work, personal projects, and OpenClaw agents.",
+        link: "https://github.com/MohGanji/skills",
+        image: "./assets/skills-github-readme.png",
+    },
+    {
         title: "SchemaIran Bot",
         description: "I developed a Telegram bot for Schemairan clinic to conduct YSQ tests (Yonge Schema Questionnaire) online. We analyzed 10k+ test results over 4 years and conducted a quantitative analysis, published as a research paper.",
         // techStack: "Python, Node.js, MongoDB, Telegram API",
