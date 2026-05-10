@@ -35,7 +35,7 @@ const projects = [
     {
         title: "mohganji/skills",
         description:
-            "A collection of agent skills I use for work, personal projects, and OpenClaw agents.",
+            "Packaged agent skills and automations for a fully agentic SDLC. The playbook I use at work and in personal projects to ship high quality software.",
         link: "https://github.com/MohGanji/skills",
         image: "./assets/skills-github-readme.png",
     },
