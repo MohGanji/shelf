@@ -25,30 +25,169 @@
     <meta name="theme-color" content="#ececec">
     
     <link rel="stylesheet" href="../base.css">
+    <style>
+      .vibe-list {
+        margin-top: 2rem;
+      }
+
+      .vibe-entry:not(:last-child) {
+        margin-bottom: 1.5rem;
+      }
+
+      .vibe-entry-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 1rem;
+        row-gap: 0.2rem;
+        align-items: baseline;
+      }
+
+      .vibe-entry-title {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: medium;
+        font-weight: 400;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .vibe-entry-date {
+        grid-column: 2;
+        grid-row: 1;
+        font-size: medium;
+        font-weight: 200;
+        opacity: 0.75;
+        white-space: nowrap;
+        text-align: end;
+        justify-self: end;
+      }
+
+      .vibe-entry-model {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: none;
+        font-size: small;
+        font-weight: 200;
+        opacity: 0.75;
+        line-height: 140%;
+        overflow-wrap: anywhere;
+      }
+
+      .vibe-entry-model-inline {
+        font-weight: 200;
+        opacity: 0.75;
+      }
+
+      .vibe-entry-note {
+        margin-top: 0.35rem;
+        font-size: small;
+        font-weight: 200;
+        opacity: 0.7;
+        line-height: 150%;
+        overflow-wrap: anywhere;
+      }
+
+      .vibe-entry-note a {
+        font-weight: 400;
+      }
+
+      @media screen and (max-width: 600px) {
+        .vibe-list {
+          margin-top: 1.25rem;
+        }
+
+        .vibe-entry:not(:last-child) {
+          margin-bottom: 1.25rem;
+        }
+
+        .vibe-entry-header {
+          row-gap: 0.15rem;
+        }
+
+        .vibe-entry-header:has(.vibe-entry-model) {
+          grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .vibe-entry-header:has(.vibe-entry-model) .vibe-entry-title {
+          grid-column: 1 / -1;
+          grid-row: 1;
+        }
+
+        .vibe-entry-header:has(.vibe-entry-model) .vibe-entry-date {
+          grid-column: 2;
+          grid-row: 2;
+          font-size: small;
+        }
+
+        .vibe-entry-model-inline {
+          display: none;
+        }
+
+        .vibe-entry-model {
+          display: block;
+          grid-column: 1;
+          grid-row: 2;
+          padding-right: 0.75rem;
+        }
+
+        .vibe-entry-date {
+          font-size: small;
+        }
+      }
+    </style>
   </head>
   <body>
     <div class="container">
       <div id="description-container" class="subcontainer">
         <div class="item-title">Vibe Codings</div>
         <div class="item-description item-subtitle">
-          <nav style="margin-top: 2rem;">
-            <a href="./xo/" style="display: block; margin-bottom: 0.5rem;">XO Game</a>
-            <div style="display: block; margin-bottom: 0.5rem;"><a href="./mm/">Mindmap</a> → now lives in <a href="https://mindmap.io">mindmap.io</a></div>
-            <a href="./gas/" style="display: block; margin-bottom: 0.5rem;">Gas Log</a>
-            <a href="./globe/" style="display: block; margin-bottom: 0.5rem;">Globe</a>
-            <a href="./tech-riddles/" style="display: block; margin-bottom: 0.5rem;">Tech Riddles</a>
-            <a href="./stick/" style="display: block; margin-bottom: 0.5rem;">Stick RPG</a>
-            <a href="./drive/" style="display: none; margin-bottom: 0.5rem;">Drive</a><!-- hidden from list for now -->
-            <div style="display: block; margin-bottom: 0.5rem;">
-              <a href="./tron/">Tron: Cyber Cycles</a>
-              <span> — submitted to </span>
-              <a href="https://vibej.am/2026/" rel="noopener">vibej.am/2026</a>
-            </div>
-          </nav>
+          <div id="vibe-list" class="vibe-list"></div>
         </div>
       </div>
       <a class="item-subtitle" href="/">Back to Shelf</a>
     </div>
+
+    <script src="./projects.js"></script>
+    <script>
+      const list = document.getElementById("vibe-list");
+
+      vibeProjects.forEach((project) => {
+        if (project.hidden) return;
+
+        const entry = document.createElement("div");
+        entry.className = "vibe-entry";
+
+        const header = document.createElement("div");
+        header.className = "vibe-entry-header";
+
+        const title = document.createElement("div");
+        title.className = "vibe-entry-title";
+        title.innerHTML = `<a href="${project.url}">${project.title}</a>${
+          project.model
+            ? `<span class="vibe-entry-model-inline"> (${project.model})</span>`
+            : ""
+        }`;
+
+        const date = document.createElement("div");
+        date.className = "vibe-entry-date";
+        date.textContent = project.date;
+
+        header.append(title, date);
+
+        if (project.model) {
+          const model = document.createElement("div");
+          model.className = "vibe-entry-model";
+          model.textContent = project.model;
+          header.append(model);
+        }
+
+        const note = document.createElement("div");
+        note.className = "vibe-entry-note";
+        note.innerHTML = project.note;
+
+        entry.append(header, note);
+        list.append(entry);
+      });
+    </script>
   </body>
 </html>
-
