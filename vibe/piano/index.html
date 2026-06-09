@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyfall — piano on your keyboard</title>
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <meta name="theme-color" content="#070b12">
+    <link rel="stylesheet" href="./css/style.css">
+    <script type="module" src="./js/main.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="back-link" href="../">ganji.me/vibe</a>
+        <div class="app-title">Keyfall</div>
+      </header>
+
+      <main>
+        <section id="menu"></section>
+
+        <section id="stage" hidden>
+          <div class="stage-hud">
+            <button id="exit-btn" title="back to songs">✕</button>
+            <div id="hud-title"></div>
+            <div id="hud-mode" class="mode-badge"></div>
+            <div id="hud-stats"></div>
+            <div class="progress"><div id="progress-fill"></div></div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="viz"></canvas>
+            <div id="overlay" class="overlay" hidden></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script type="module">
+      document.getElementById("exit-btn").addEventListener("click", () => {
+        window.dispatchEvent(new KeyboardEvent("keydown", { code: "Escape" }));
+      });
+    </script>
+  </body>
+</html>

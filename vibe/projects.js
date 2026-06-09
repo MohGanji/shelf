@@ -1,5 +1,12 @@
 const vibeProjects = [
   {
+    title: "Keyfall",
+    url: "./piano/",
+    model: "fable 5",
+    date: "jun 2026",
+    note: "synthesia-style piano on your laptop keyboard — play or practice songs and get graded with tips",
+  },
+  {
     title: "Tech Riddles",
     url: "./tech-riddles/",
     model: "GPT 5.5",
