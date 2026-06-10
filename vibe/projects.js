@@ -1,5 +1,12 @@
 const vibeProjects = [
   {
+    title: "NutriHex",
+    url: "./food/",
+    model: "fable 5",
+    date: "jun 2026",
+    note: "FIFA-style stat hexagons for food — compare ingredients and meals, build dishes, personalize to your diet",
+  },
+  {
     title: "Keyfall",
     url: "./piano/",
     model: "fable 5",

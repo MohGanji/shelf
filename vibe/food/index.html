@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriHex — food stat cards</title>
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="stylesheet" href="./css/style.css">
+    <script type="module" src="./js/main.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="back-link" href="../">ganji.me/vibe</a>
+        <div class="app-title">NutriHex</div>
+        <button id="profile-btn" title="diet profile">◉ my diet</button>
+      </header>
+
+      <main>
+        <aside class="panel">
+          <nav id="tabs">
+            <button class="tab on" data-tab="ing">Ingredients</button>
+            <button class="tab" data-tab="off">Products</button>
+            <button class="tab" data-tab="meals">My Meals</button>
+          </nav>
+          <input id="search" type="search" autocomplete="off" placeholder="search…">
+          <div id="axis-filters">
+            <button class="afilter" data-axis="PRO">protein</button>
+            <button class="afilter" data-axis="CAR">carbs</button>
+            <button class="afilter" data-axis="FAT">fat</button>
+            <button class="afilter" data-axis="FIB">fiber</button>
+            <button class="afilter" data-axis="VIT">vitamins</button>
+            <button class="afilter" data-axis="MIN">minerals</button>
+          </div>
+          <button id="new-meal" class="primary" hidden>+ new meal</button>
+          <div id="results"></div>
+        </aside>
+
+        <section id="stage"></section>
+      </main>
+
+      <div id="builder" class="overlay" hidden></div>
+      <div id="profile-panel" class="overlay" hidden><div class="profile-inner"></div></div>
+
+      <footer class="credits">
+        ingredient data: USDA FoodData Central (SR Legacy) · product search: Open Food Facts · stats are per 100 g, 0–99 like a player card — they show composition, not judgment
+      </footer>
+    </div>
+  </body>
+</html>
