@@ -4,6 +4,19 @@
  */
 
 /**
+ * `exponentialRampToValueAtTime` throws a RangeError on a 0 (or subnormal) target — reachable
+ * whenever a volume slider sits at exactly 0 (e.g. crashed the boot tunnel wind). Clamp the
+ * target to an inaudible positive floor instead.
+ * @param {AudioParam} param
+ * @param {number} value
+ * @param {number} endTime
+ */
+function expRamp(param, value, endTime) {
+  const v = Number.isFinite(value) ? Math.max(1e-4, value) : 1e-4;
+  param.exponentialRampToValueAtTime(v, endTime);
+}
+
+/**
  * @param {AudioContext} ctx
  * @param {GainNode} destination
  * @param {number} poolSize
@@ -516,11 +529,11 @@ export function createAudioEngine(options = {}) {
     const thunk = ctx.createOscillator();
     thunk.type = "triangle";
     thunk.frequency.setValueAtTime(74 + gear * 5, t0);
-    thunk.frequency.exponentialRampToValueAtTime(34, t0 + 0.075);
+    expRamp(thunk.frequency, 34, t0 + 0.075);
     const thunkG = ctx.createGain();
     thunkG.gain.setValueAtTime(0.0001, t0);
-    thunkG.gain.exponentialRampToValueAtTime(0.13 * amp, t0 + 0.004);
-    thunkG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.105);
+    expRamp(thunkG.gain, 0.13 * amp, t0 + 0.004);
+    expRamp(thunkG.gain, 0.0001, t0 + 0.105);
     thunk.connect(thunkG);
     thunkG.connect(sfxGain);
 
@@ -536,12 +549,12 @@ export function createAudioEngine(options = {}) {
     const clickBp = ctx.createBiquadFilter();
     clickBp.type = "bandpass";
     clickBp.frequency.setValueAtTime(1250, t0);
-    clickBp.frequency.exponentialRampToValueAtTime(520, t0 + 0.035);
+    expRamp(clickBp.frequency, 520, t0 + 0.035);
     clickBp.Q.value = 2.4;
     const clickG = ctx.createGain();
     clickG.gain.setValueAtTime(0.0001, t0);
-    clickG.gain.exponentialRampToValueAtTime(0.055 * amp, t0 + 0.002);
-    clickG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.045);
+    expRamp(clickG.gain, 0.055 * amp, t0 + 0.002);
+    expRamp(clickG.gain, 0.0001, t0 + 0.045);
     click.connect(clickBp);
     clickBp.connect(clickG);
     clickG.connect(sfxGain);
@@ -551,12 +564,12 @@ export function createAudioEngine(options = {}) {
     const unloadBp = ctx.createBiquadFilter();
     unloadBp.type = "bandpass";
     unloadBp.frequency.setValueAtTime(420 + load * 180, t0);
-    unloadBp.frequency.exponentialRampToValueAtTime(980 + load * 380, t0 + 0.075);
+    expRamp(unloadBp.frequency, 980 + load * 380, t0 + 0.075);
     unloadBp.Q.value = 0.55;
     const unloadG = ctx.createGain();
     unloadG.gain.setValueAtTime(0.0001, t0);
-    unloadG.gain.exponentialRampToValueAtTime(0.022 * amp, t0 + 0.01);
-    unloadG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.085);
+    expRamp(unloadG.gain, 0.022 * amp, t0 + 0.01);
+    expRamp(unloadG.gain, 0.0001, t0 + 0.085);
     unload.connect(unloadBp);
     unloadBp.connect(unloadG);
     unloadG.connect(sfxGain);
@@ -716,10 +729,10 @@ export function createAudioEngine(options = {}) {
       /* ignore */
     }
     musicGain.gain.setValueAtTime(g, t0);
-    musicGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, base * 0.08), t0 + 0.055);
+    expRamp(musicGain.gain, Math.max(0.0001, base * 0.08), t0 + 0.055);
     const recover =
       kind === "opponent" ? 2.82 : kind === "player" ? 2.42 : 2.38;
-    musicGain.gain.exponentialRampToValueAtTime(base, t0 + recover);
+    expRamp(musicGain.gain, base, t0 + recover);
   }
 
   /**
@@ -759,12 +772,12 @@ export function createAudioEngine(options = {}) {
     const aBp = ctx.createBiquadFilter();
     aBp.type = "bandpass";
     aBp.frequency.setValueAtTime(hi0, t0);
-    aBp.frequency.exponentialRampToValueAtTime(130, t0 + durM);
+    expRamp(aBp.frequency, 130, t0 + durM);
     aBp.Q.value = 0.72;
     const aG = ctx.createGain();
     aG.gain.setValueAtTime(0.0001, t0);
-    aG.gain.exponentialRampToValueAtTime((isOpp ? 0.6 : 0.48) * v, t0 + 0.065);
-    aG.gain.exponentialRampToValueAtTime(0.0001, t0 + durM);
+    expRamp(aG.gain, (isOpp ? 0.6 : 0.48) * v, t0 + 0.065);
+    expRamp(aG.gain, 0.0001, t0 + durM);
     a.connect(aBp);
     aBp.connect(aG);
     aG.connect(bus);
@@ -775,11 +788,11 @@ export function createAudioEngine(options = {}) {
     const bL = ctx.createBiquadFilter();
     bL.type = "lowpass";
     bL.frequency.setValueAtTime(520, t0);
-    bL.frequency.exponentialRampToValueAtTime(52, t0 + 0.72);
+    expRamp(bL.frequency, 52, t0 + 0.72);
     const bG = ctx.createGain();
     bG.gain.setValueAtTime(0.0001, t0);
-    bG.gain.exponentialRampToValueAtTime((isOpp ? 0.48 : 0.38) * v, t0 + 0.055);
-    bG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.88);
+    expRamp(bG.gain, (isOpp ? 0.48 : 0.38) * v, t0 + 0.055);
+    expRamp(bG.gain, 0.0001, t0 + 0.88);
     b.connect(bL);
     bL.connect(bG);
     bG.connect(bus);
@@ -792,8 +805,8 @@ export function createAudioEngine(options = {}) {
     cH.frequency.value = 2100;
     const cG = ctx.createGain();
     cG.gain.setValueAtTime(0.0001, t0);
-    cG.gain.exponentialRampToValueAtTime((isOpp ? 0.3 : 0.22) * v, t0 + 0.02);
-    cG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.56);
+    expRamp(cG.gain, (isOpp ? 0.3 : 0.22) * v, t0 + 0.02);
+    expRamp(cG.gain, 0.0001, t0 + 0.56);
     c.connect(cH);
     cH.connect(cG);
     cG.connect(bus);
@@ -802,11 +815,11 @@ export function createAudioEngine(options = {}) {
     const tr = ctx.createOscillator();
     tr.type = "triangle";
     tr.frequency.setValueAtTime(420, t0);
-    tr.frequency.exponentialRampToValueAtTime(36, t0 + 0.76);
+    expRamp(tr.frequency, 36, t0 + 0.76);
     const tG = ctx.createGain();
     tG.gain.setValueAtTime(0.0001, t0);
-    tG.gain.exponentialRampToValueAtTime((isOpp ? 0.24 : 0.17) * v, t0 + 0.022);
-    tG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.82);
+    expRamp(tG.gain, (isOpp ? 0.24 : 0.17) * v, t0 + 0.022);
+    expRamp(tG.gain, 0.0001, t0 + 0.82);
     const tLp = ctx.createBiquadFilter();
     tLp.type = "lowpass";
     tLp.frequency.setValueAtTime(6800, t0);
@@ -824,11 +837,11 @@ export function createAudioEngine(options = {}) {
       const o = ctx.createOscillator();
       o.type = "sine";
       o.frequency.setValueAtTime(baseF * (1 + 0.22 * p), t0);
-      o.frequency.exponentialRampToValueAtTime(108 + p * 44, t0 + 0.52 + p * 0.05);
+      expRamp(o.frequency, 108 + p * 44, t0 + 0.52 + p * 0.05);
       const oG = ctx.createGain();
       oG.gain.setValueAtTime(0.0001, t0);
-      oG.gain.exponentialRampToValueAtTime(0.088 * v * 0.5 ** p, t0 + 0.058 + p * 0.03);
-      oG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.82 + p * 0.08);
+      expRamp(oG.gain, 0.088 * v * 0.5 ** p, t0 + 0.058 + p * 0.03);
+      expRamp(oG.gain, 0.0001, t0 + 0.82 + p * 0.08);
       o.connect(oG);
       oG.connect(bus);
       chimeOscs.push(o);
@@ -838,11 +851,11 @@ export function createAudioEngine(options = {}) {
     const zip = ctx.createOscillator();
     zip.type = "square";
     zip.frequency.setValueAtTime(isOpp ? 228 : 172, t0);
-    zip.frequency.exponentialRampToValueAtTime(34, t0 + 0.128);
+    expRamp(zip.frequency, 34, t0 + 0.128);
     const zipG = ctx.createGain();
     zipG.gain.setValueAtTime(0.0001, t0);
-    zipG.gain.exponentialRampToValueAtTime(0.072 * v, t0 + 0.016);
-    zipG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    expRamp(zipG.gain, 0.072 * v, t0 + 0.016);
+    expRamp(zipG.gain, 0.0001, t0 + 0.22);
     const zipLp = ctx.createBiquadFilter();
     zipLp.type = "lowpass";
     zipLp.frequency.value = 3200;
@@ -854,11 +867,11 @@ export function createAudioEngine(options = {}) {
     const sub = ctx.createOscillator();
     sub.type = "sine";
     sub.frequency.setValueAtTime(isOpp ? 62 : 50, t0);
-    sub.frequency.exponentialRampToValueAtTime(20, t0 + 1.08);
+    expRamp(sub.frequency, 20, t0 + 1.08);
     const subG = ctx.createGain();
     subG.gain.setValueAtTime(0.0001, t0);
-    subG.gain.exponentialRampToValueAtTime((isOpp ? 0.24 : 0.16) * v, t0 + 0.088);
-    subG.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.62);
+    expRamp(subG.gain, (isOpp ? 0.24 : 0.16) * v, t0 + 0.088);
+    expRamp(subG.gain, 0.0001, t0 + 1.62);
     sub.connect(subG);
     subG.connect(bus);
 
@@ -870,12 +883,12 @@ export function createAudioEngine(options = {}) {
     const ashBp = ctx.createBiquadFilter();
     ashBp.type = "bandpass";
     ashBp.frequency.setValueAtTime(isOpp ? 3400 : 2800, t0 + ashDelay);
-    ashBp.frequency.exponentialRampToValueAtTime(88, t0 + ashDelay + ashDur * 0.94);
+    expRamp(ashBp.frequency, 88, t0 + ashDelay + ashDur * 0.94);
     ashBp.Q.value = 1.12;
     const ashG = ctx.createGain();
     ashG.gain.setValueAtTime(0.0001, t0 + ashDelay);
-    ashG.gain.exponentialRampToValueAtTime((isOpp ? 0.38 : 0.3) * v, t0 + ashDelay + 0.058);
-    ashG.gain.exponentialRampToValueAtTime(0.0001, t0 + ashDelay + ashDur);
+    expRamp(ashG.gain, (isOpp ? 0.38 : 0.3) * v, t0 + ashDelay + 0.058);
+    expRamp(ashG.gain, 0.0001, t0 + ashDelay + ashDur);
     ash.connect(ashBp);
     ashBp.connect(ashG);
     ashG.connect(bus);
@@ -884,11 +897,11 @@ export function createAudioEngine(options = {}) {
     const expl = ctx.createOscillator();
     expl.type = "sine";
     expl.frequency.setValueAtTime(isOpp ? 96 : 82, t0);
-    expl.frequency.exponentialRampToValueAtTime(28, t0 + 0.38);
+    expRamp(expl.frequency, 28, t0 + 0.38);
     const explG = ctx.createGain();
     explG.gain.setValueAtTime(0.0001, t0);
-    explG.gain.exponentialRampToValueAtTime((isOpp ? 0.26 : 0.2) * v, t0 + 0.01);
-    explG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.52);
+    expRamp(explG.gain, (isOpp ? 0.26 : 0.2) * v, t0 + 0.01);
+    expRamp(explG.gain, 0.0001, t0 + 0.52);
     expl.connect(explG);
     explG.connect(bus);
 
@@ -898,11 +911,11 @@ export function createAudioEngine(options = {}) {
     const explLp = ctx.createBiquadFilter();
     explLp.type = "lowpass";
     explLp.frequency.setValueAtTime(5200, t0);
-    explLp.frequency.exponentialRampToValueAtTime(240, t0 + 0.24);
+    expRamp(explLp.frequency, 240, t0 + 0.24);
     const explNg = ctx.createGain();
     explNg.gain.setValueAtTime(0.0001, t0);
-    explNg.gain.exponentialRampToValueAtTime((isOpp ? 0.34 : 0.26) * v, t0 + 0.018);
-    explNg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+    expRamp(explNg.gain, (isOpp ? 0.34 : 0.26) * v, t0 + 0.018);
+    expRamp(explNg.gain, 0.0001, t0 + 0.42);
     explN.connect(explLp);
     explLp.connect(explNg);
     explNg.connect(bus);
@@ -913,12 +926,12 @@ export function createAudioEngine(options = {}) {
     const crashBp = ctx.createBiquadFilter();
     crashBp.type = "bandpass";
     crashBp.frequency.setValueAtTime(isOpp ? 4800 : 4200, t0 + 0.004);
-    crashBp.frequency.exponentialRampToValueAtTime(160, t0 + 0.15);
+    expRamp(crashBp.frequency, 160, t0 + 0.15);
     crashBp.Q.value = 2.05;
     const crashG = ctx.createGain();
     crashG.gain.setValueAtTime(0.0001, t0 + 0.006);
-    crashG.gain.exponentialRampToValueAtTime((isOpp ? 0.32 : 0.24) * v, t0 + 0.032);
-    crashG.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    expRamp(crashG.gain, (isOpp ? 0.32 : 0.24) * v, t0 + 0.032);
+    expRamp(crashG.gain, 0.0001, t0 + 0.28);
     crash.connect(crashBp);
     crashBp.connect(crashG);
     crashG.connect(bus);
@@ -934,11 +947,11 @@ export function createAudioEngine(options = {}) {
       co.type = "triangle";
       const f0 = clangFreq[ci];
       co.frequency.setValueAtTime(f0, t0 + ci * 0.009);
-      co.frequency.exponentialRampToValueAtTime(Math.max(48, f0 * 0.38 + ci * 22), t0 + 0.072 + ci * 0.016);
+      expRamp(co.frequency, Math.max(48, f0 * 0.38 + ci * 22), t0 + 0.072 + ci * 0.016);
       const cg = ctx.createGain();
       cg.gain.setValueAtTime(0.0001, t0 + ci * 0.009);
-      cg.gain.exponentialRampToValueAtTime((isOpp ? 0.09 : 0.068) * v * 0.72 ** ci, t0 + 0.018 + ci * 0.011);
-      cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14 + ci * 0.045);
+      expRamp(cg.gain, (isOpp ? 0.09 : 0.068) * v * 0.72 ** ci, t0 + 0.018 + ci * 0.011);
+      expRamp(cg.gain, 0.0001, t0 + 0.14 + ci * 0.045);
       co.connect(cg);
       cg.connect(bus);
       clangOsc.push(co);
@@ -999,11 +1012,11 @@ export function createAudioEngine(options = {}) {
       const sq = ctx.createOscillator();
       sq.type = "square";
       sq.frequency.setValueAtTime(isOpp ? 410 : 330, tk);
-      sq.frequency.exponentialRampToValueAtTime(48 + k * 9, tk + 0.072);
+      expRamp(sq.frequency, 48 + k * 9, tk + 0.072);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, tk);
-      g.gain.exponentialRampToValueAtTime(0.082 * v, tk + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, tk + 0.096);
+      expRamp(g.gain, 0.082 * v, tk + 0.008);
+      expRamp(g.gain, 0.0001, tk + 0.096);
       const lp = ctx.createBiquadFilter();
       lp.type = "lowpass";
       lp.frequency.value = 2600;
@@ -1015,12 +1028,12 @@ export function createAudioEngine(options = {}) {
       const bp = ctx.createBiquadFilter();
       bp.type = "bandpass";
       bp.frequency.setValueAtTime(4800 - k * 380, tk);
-      bp.frequency.exponentialRampToValueAtTime(220, tk + 0.088);
+      expRamp(bp.frequency, 220, tk + 0.088);
       bp.Q.value = 1.45;
       const ng = ctx.createGain();
       ng.gain.setValueAtTime(0.0001, tk);
-      ng.gain.exponentialRampToValueAtTime(0.065 * v, tk + 0.014);
-      ng.gain.exponentialRampToValueAtTime(0.0001, tk + 0.09);
+      expRamp(ng.gain, 0.065 * v, tk + 0.014);
+      expRamp(ng.gain, 0.0001, tk + 0.09);
       noise.connect(bp);
       bp.connect(ng);
       ng.connect(sfxGain);
@@ -1052,33 +1065,33 @@ export function createAudioEngine(options = {}) {
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
     lp.frequency.setValueAtTime(420, t0);
-    lp.frequency.exponentialRampToValueAtTime(9800, t0 + 0.018);
-    lp.frequency.exponentialRampToValueAtTime(140, t0 + 1.05);
+    expRamp(lp.frequency, 9800, t0 + 0.018);
+    expRamp(lp.frequency, 140, t0 + 1.05);
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(0.0001, t0);
-    ng.gain.exponentialRampToValueAtTime(0.52 * v, t0 + 0.045);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.18);
+    expRamp(ng.gain, 0.52 * v, t0 + 0.045);
+    expRamp(ng.gain, 0.0001, t0 + 1.18);
     src.connect(lp);
     lp.connect(ng);
     ng.connect(sfxGain);
     const boom = ctx.createOscillator();
     boom.type = "sine";
     boom.frequency.setValueAtTime(isOpp ? 58 : 48, t0);
-    boom.frequency.exponentialRampToValueAtTime(18, t0 + 0.85);
+    expRamp(boom.frequency, 18, t0 + 0.85);
     const bg = ctx.createGain();
     bg.gain.setValueAtTime(0.0001, t0);
-    bg.gain.exponentialRampToValueAtTime(0.22 * v, t0 + 0.06);
-    bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.05);
+    expRamp(bg.gain, 0.22 * v, t0 + 0.06);
+    expRamp(bg.gain, 0.0001, t0 + 1.05);
     boom.connect(bg);
     bg.connect(sfxGain);
     const ping = ctx.createOscillator();
     ping.type = "sine";
     ping.frequency.setValueAtTime(1760, t0 + 0.05);
-    ping.frequency.exponentialRampToValueAtTime(440, t0 + 0.38);
+    expRamp(ping.frequency, 440, t0 + 0.38);
     const pg = ctx.createGain();
     pg.gain.setValueAtTime(0.0001, t0 + 0.05);
-    pg.gain.exponentialRampToValueAtTime(0.09 * v, t0 + 0.058);
-    pg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+    expRamp(pg.gain, 0.09 * v, t0 + 0.058);
+    expRamp(pg.gain, 0.0001, t0 + 0.42);
     ping.connect(pg);
     pg.connect(sfxGain);
     try {
@@ -1103,11 +1116,11 @@ export function createAudioEngine(options = {}) {
       const osc = ctx.createOscillator();
       osc.type = "sawtooth";
       osc.frequency.setValueAtTime(isOpp ? 920 + k * 180 : 740 + k * 210, t0);
-      osc.frequency.exponentialRampToValueAtTime(55 + k * 18, t0 + 0.22 + k * 0.02);
+      expRamp(osc.frequency, 55 + k * 18, t0 + 0.22 + k * 0.02);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.085 * v, t0 + 0.004 + k * 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26 + k * 0.02);
+      expRamp(g.gain, 0.085 * v, t0 + 0.004 + k * 0.01);
+      expRamp(g.gain, 0.0001, t0 + 0.26 + k * 0.02);
       const lp = ctx.createBiquadFilter();
       lp.type = "lowpass";
       lp.frequency.value = 6200;
@@ -1134,8 +1147,8 @@ export function createAudioEngine(options = {}) {
     bpf.frequency.value = 2800;
     const hg = ctx.createGain();
     hg.gain.setValueAtTime(0.0001, t0);
-    hg.gain.exponentialRampToValueAtTime(0.14 * v, t0 + 0.008);
-    hg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    expRamp(hg.gain, 0.14 * v, t0 + 0.008);
+    expRamp(hg.gain, 0.0001, t0 + 0.18);
     hp.connect(bpf);
     bpf.connect(hg);
     hg.connect(sfxGain);
@@ -1160,11 +1173,11 @@ export function createAudioEngine(options = {}) {
       osc.type = "sine";
       const delay = i * 0.048;
       osc.frequency.setValueAtTime(f, t0 + delay);
-      osc.frequency.exponentialRampToValueAtTime(f * 0.42 + i * 12, t0 + 0.72 + i * 0.06);
+      expRamp(osc.frequency, f * 0.42 + i * 12, t0 + 0.72 + i * 0.06);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t0 + delay);
-      g.gain.exponentialRampToValueAtTime(0.065 * v * 0.88 ** i, t0 + delay + 0.08);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 1.35);
+      expRamp(g.gain, 0.065 * v * 0.88 ** i, t0 + delay + 0.08);
+      expRamp(g.gain, 0.0001, t0 + delay + 1.35);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -1186,12 +1199,12 @@ export function createAudioEngine(options = {}) {
     const bp = ctx.createBiquadFilter();
     bp.type = "bandpass";
     bp.frequency.setValueAtTime(2100, t0 + 0.35);
-    bp.frequency.exponentialRampToValueAtTime(130, t0 + 1.1);
+    expRamp(bp.frequency, 130, t0 + 1.1);
     bp.Q.value = 0.85;
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(0.0001, t0 + 0.35);
-    ng.gain.exponentialRampToValueAtTime(0.06 * v, t0 + 0.42);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.28);
+    expRamp(ng.gain, 0.06 * v, t0 + 0.42);
+    expRamp(ng.gain, 0.0001, t0 + 1.28);
     noise.connect(bp);
     bp.connect(ng);
     ng.connect(sfxGain);
@@ -1554,10 +1567,10 @@ export function createAudioEngine(options = {}) {
     const sg = ctx.createGain();
     sweep.type = "sine";
     sweep.frequency.setValueAtTime(140, t0);
-    sweep.frequency.exponentialRampToValueAtTime(2600, t0 + 0.175);
+    expRamp(sweep.frequency, 2600, t0 + 0.175);
     sg.gain.setValueAtTime(0.0001, t0);
-    sg.gain.exponentialRampToValueAtTime(0.125 * amp, t0 + 0.024);
-    sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+    expRamp(sg.gain, 0.125 * amp, t0 + 0.024);
+    expRamp(sg.gain, 0.0001, t0 + 0.26);
     sweep.connect(sg);
     sg.connect(sfxGain);
 
@@ -1565,13 +1578,13 @@ export function createAudioEngine(options = {}) {
     const gg = ctx.createGain();
     grit.type = "sawtooth";
     grit.frequency.setValueAtTime(320, t0);
-    grit.frequency.exponentialRampToValueAtTime(1480, t0 + 0.14);
+    expRamp(grit.frequency, 1480, t0 + 0.14);
     const glp = ctx.createBiquadFilter();
     glp.type = "lowpass";
     glp.frequency.value = 1100;
     gg.gain.setValueAtTime(0.0001, t0);
-    gg.gain.exponentialRampToValueAtTime(0.058 * amp, t0 + 0.032);
-    gg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    expRamp(gg.gain, 0.058 * amp, t0 + 0.032);
+    expRamp(gg.gain, 0.0001, t0 + 0.22);
     grit.connect(glp);
     glp.connect(gg);
     gg.connect(sfxGain);
@@ -1580,10 +1593,10 @@ export function createAudioEngine(options = {}) {
     const bg = ctx.createGain();
     bass.type = "sine";
     bass.frequency.setValueAtTime(58, t0);
-    bass.frequency.exponentialRampToValueAtTime(44, t0 + 0.12);
+    expRamp(bass.frequency, 44, t0 + 0.12);
     bg.gain.setValueAtTime(0.0001, t0);
-    bg.gain.exponentialRampToValueAtTime(0.118 * amp, t0 + 0.042);
-    bg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.32);
+    expRamp(bg.gain, 0.118 * amp, t0 + 0.042);
+    expRamp(bg.gain, 0.0001, t0 + 0.32);
     bass.connect(bg);
     bg.connect(sfxGain);
 
@@ -1598,12 +1611,12 @@ export function createAudioEngine(options = {}) {
     const hp = ctx.createBiquadFilter();
     hp.type = "bandpass";
     hp.frequency.setValueAtTime(6200, t0);
-    hp.frequency.exponentialRampToValueAtTime(920, t0 + 0.16);
+    expRamp(hp.frequency, 920, t0 + 0.16);
     hp.Q.value = 1.42;
     const hg = ctx.createGain();
     hg.gain.setValueAtTime(0.0001, t0);
-    hg.gain.exponentialRampToValueAtTime(0.078 * amp, t0 + 0.015);
-    hg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    expRamp(hg.gain, 0.078 * amp, t0 + 0.015);
+    expRamp(hg.gain, 0.0001, t0 + 0.2);
     hiss.connect(hp);
     hp.connect(hg);
     hg.connect(sfxGain);
@@ -1630,11 +1643,11 @@ export function createAudioEngine(options = {}) {
     const osc = ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.setValueAtTime(95, t0);
-    osc.frequency.exponentialRampToValueAtTime(380, t0 + 0.12);
+    expRamp(osc.frequency, 380, t0 + 0.12);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.14 * amp, t0 + 0.03);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    expRamp(g.gain, 0.14 * amp, t0 + 0.03);
+    expRamp(g.gain, 0.0001, t0 + 0.22);
     osc.connect(g);
     g.connect(sfxGain);
     const nf = 2048;
@@ -1646,11 +1659,11 @@ export function createAudioEngine(options = {}) {
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
     lp.frequency.setValueAtTime(560, t0);
-    lp.frequency.exponentialRampToValueAtTime(3400, t0 + 0.14);
+    expRamp(lp.frequency, 3400, t0 + 0.14);
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(0.0001, t0);
-    ng.gain.exponentialRampToValueAtTime(0.085 * amp, t0 + 0.022);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    expRamp(ng.gain, 0.085 * amp, t0 + 0.022);
+    expRamp(ng.gain, 0.0001, t0 + 0.2);
     src.connect(lp);
     lp.connect(ng);
     ng.connect(sfxGain);
@@ -1671,11 +1684,11 @@ export function createAudioEngine(options = {}) {
     const osc = ctx.createOscillator();
     osc.type = "triangle";
     osc.frequency.setValueAtTime(2100, t0);
-    osc.frequency.exponentialRampToValueAtTime(8800, t0 + 0.09);
+    expRamp(osc.frequency, 8800, t0 + 0.09);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.078 * amp, t0 + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    expRamp(g.gain, 0.078 * amp, t0 + 0.015);
+    expRamp(g.gain, 0.0001, t0 + 0.18);
     osc.connect(g);
     g.connect(sfxGain);
     try {
@@ -1693,11 +1706,11 @@ export function createAudioEngine(options = {}) {
     const sq = ctx.createOscillator();
     sq.type = "square";
     sq.frequency.setValueAtTime(48, t0);
-    sq.frequency.exponentialRampToValueAtTime(72, t0 + 0.08);
+    expRamp(sq.frequency, 72, t0 + 0.08);
     const sg = ctx.createGain();
     sg.gain.setValueAtTime(0.0001, t0);
-    sg.gain.exponentialRampToValueAtTime(0.11 * amp, t0 + 0.038);
-    sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+    expRamp(sg.gain, 0.11 * amp, t0 + 0.038);
+    expRamp(sg.gain, 0.0001, t0 + 0.26);
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
     lp.frequency.value = 520;
@@ -1725,12 +1738,12 @@ export function createAudioEngine(options = {}) {
     const bp = ctx.createBiquadFilter();
     bp.type = "bandpass";
     bp.frequency.setValueAtTime(5200, t0);
-    bp.frequency.exponentialRampToValueAtTime(900, t0 + 0.12);
+    expRamp(bp.frequency, 900, t0 + 0.12);
     bp.Q.value = 12;
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(0.0001, t0);
-    ng.gain.exponentialRampToValueAtTime(0.065 * amp, t0 + 0.012);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    expRamp(ng.gain, 0.065 * amp, t0 + 0.012);
+    expRamp(ng.gain, 0.0001, t0 + 0.16);
     src.connect(bp);
     bp.connect(ng);
     ng.connect(sfxGain);
@@ -1770,10 +1783,10 @@ export function createAudioEngine(options = {}) {
     const g = ctx.createGain();
     osc.type = "sine";
     osc.frequency.setValueAtTime(380, t0);
-    osc.frequency.exponentialRampToValueAtTime(1750, t0 + 0.085);
+    expRamp(osc.frequency, 1750, t0 + 0.085);
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.094 * amp, t0 + 0.022);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    expRamp(g.gain, 0.094 * amp, t0 + 0.022);
+    expRamp(g.gain, 0.0001, t0 + 0.16);
     osc.connect(g);
     g.connect(sfxGain);
 
@@ -1781,13 +1794,13 @@ export function createAudioEngine(options = {}) {
     const sg = ctx.createGain();
     saw.type = "sawtooth";
     saw.frequency.setValueAtTime(210, t0);
-    saw.frequency.exponentialRampToValueAtTime(780, t0 + 0.09);
+    expRamp(saw.frequency, 780, t0 + 0.09);
     const slp = ctx.createBiquadFilter();
     slp.type = "lowpass";
     slp.frequency.value = 820;
     sg.gain.setValueAtTime(0.0001, t0);
-    sg.gain.exponentialRampToValueAtTime(0.048 * amp, t0 + 0.024);
-    sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+    expRamp(sg.gain, 0.048 * amp, t0 + 0.024);
+    expRamp(sg.gain, 0.0001, t0 + 0.14);
     saw.connect(slp);
     slp.connect(sg);
     sg.connect(sfxGain);
@@ -1803,12 +1816,12 @@ export function createAudioEngine(options = {}) {
     const bp = ctx.createBiquadFilter();
     bp.type = "bandpass";
     bp.frequency.setValueAtTime(4200, t0);
-    bp.frequency.exponentialRampToValueAtTime(780, t0 + 0.11);
+    expRamp(bp.frequency, 780, t0 + 0.11);
     bp.Q.value = 1.35;
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(0.0001, t0);
-    ng.gain.exponentialRampToValueAtTime(0.065 * amp, t0 + 0.018);
-    ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+    expRamp(ng.gain, 0.065 * amp, t0 + 0.018);
+    expRamp(ng.gain, 0.0001, t0 + 0.14);
     noise.connect(bp);
     bp.connect(ng);
     ng.connect(sfxGain);
@@ -1852,21 +1865,21 @@ export function createAudioEngine(options = {}) {
     const osc = ctx.createOscillator();
     osc.type = "sine";
     osc.frequency.setValueAtTime(54, t0);
-    osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.2);
+    expRamp(osc.frequency, 28, t0 + 0.2);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(0.62 * v, t0 + 0.024);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.92);
+    expRamp(g.gain, 0.62 * v, t0 + 0.024);
+    expRamp(g.gain, 0.0001, t0 + 0.92);
     osc.connect(g);
     g.connect(sfxGain);
     const harm = ctx.createOscillator();
     harm.type = "triangle";
     harm.frequency.setValueAtTime(108, t0);
-    harm.frequency.exponentialRampToValueAtTime(46, t0 + 0.16);
+    expRamp(harm.frequency, 46, t0 + 0.16);
     const hg = ctx.createGain();
     hg.gain.setValueAtTime(0.0001, t0);
-    hg.gain.exponentialRampToValueAtTime(0.32 * v, t0 + 0.032);
-    hg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.72);
+    expRamp(hg.gain, 0.32 * v, t0 + 0.032);
+    expRamp(hg.gain, 0.0001, t0 + 0.72);
     harm.connect(hg);
     hg.connect(sfxGain);
     try {
@@ -2003,8 +2016,8 @@ export function createAudioEngine(options = {}) {
       osc.frequency.setValueAtTime(990, t0);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.055 * Math.max(0, sfxVolume), t0 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.07);
+      expRamp(g.gain, 0.055 * Math.max(0, sfxVolume), t0 + 0.01);
+      expRamp(g.gain, 0.0001, t0 + 0.07);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2173,10 +2186,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "square";
       osc.frequency.setValueAtTime(200, t0);
-      osc.frequency.exponentialRampToValueAtTime(70, t0 + 0.09);
+      expRamp(osc.frequency, 70, t0 + 0.09);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.11 * sfxVolume, t0 + 0.015);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
+      expRamp(g.gain, 0.11 * sfxVolume, t0 + 0.015);
+      expRamp(g.gain, 0.0001, t0 + 0.11);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2212,10 +2225,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "sine";
       osc.frequency.setValueAtTime(520, t0);
-      osc.frequency.exponentialRampToValueAtTime(1980, t0 + 0.07);
+      expRamp(osc.frequency, 1980, t0 + 0.07);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.1 * sfxVolume, t0 + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+      expRamp(g.gain, 0.1 * sfxVolume, t0 + 0.012);
+      expRamp(g.gain, 0.0001, t0 + 0.1);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2237,8 +2250,8 @@ export function createAudioEngine(options = {}) {
         osc.type = "triangle";
         osc.frequency.setValueAtTime(f, t0);
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.045 * sfxVolume, t0 + 0.04);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.38);
+        expRamp(g.gain, 0.045 * sfxVolume, t0 + 0.04);
+        expRamp(g.gain, 0.0001, t0 + 0.38);
         osc.connect(g);
         g.connect(sfxGain);
         try {
@@ -2259,8 +2272,8 @@ export function createAudioEngine(options = {}) {
       osc.type = "square";
       osc.frequency.setValueAtTime(1760, t0);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.09 * sfxVolume, t0 + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+      expRamp(g.gain, 0.09 * sfxVolume, t0 + 0.004);
+      expRamp(g.gain, 0.0001, t0 + 0.05);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2284,10 +2297,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "sine";
       osc.frequency.setValueAtTime(220, t0);
-      osc.frequency.exponentialRampToValueAtTime(660, t0 + 0.12);
+      expRamp(osc.frequency, 660, t0 + 0.12);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.09 * sfxVolume, t0 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+      expRamp(g.gain, 0.09 * sfxVolume, t0 + 0.02);
+      expRamp(g.gain, 0.0001, t0 + 0.16);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2306,10 +2319,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "triangle";
       osc.frequency.setValueAtTime(420, t0);
-      osc.frequency.exponentialRampToValueAtTime(90, t0 + 0.14);
+      expRamp(osc.frequency, 90, t0 + 0.14);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.11 * sfxVolume, t0 + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+      expRamp(g.gain, 0.11 * sfxVolume, t0 + 0.008);
+      expRamp(g.gain, 0.0001, t0 + 0.2);
       osc.connect(g);
       g.connect(sfxGain);
       const n = 2048;
@@ -2325,8 +2338,8 @@ export function createAudioEngine(options = {}) {
       bp.frequency.value = 1800;
       const ng = ctx.createGain();
       ng.gain.setValueAtTime(0.0001, t0);
-      ng.gain.exponentialRampToValueAtTime(0.06 * sfxVolume, t0 + 0.01);
-      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+      expRamp(ng.gain, 0.06 * sfxVolume, t0 + 0.01);
+      expRamp(ng.gain, 0.0001, t0 + 0.12);
       noise.connect(bp);
       bp.connect(ng);
       ng.connect(sfxGain);
@@ -2348,10 +2361,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "sine";
       osc.frequency.setValueAtTime(380, t0);
-      osc.frequency.exponentialRampToValueAtTime(120, t0 + 0.35);
+      expRamp(osc.frequency, 120, t0 + 0.35);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.05 * sfxVolume, t0 + 0.04);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
+      expRamp(g.gain, 0.05 * sfxVolume, t0 + 0.04);
+      expRamp(g.gain, 0.0001, t0 + 0.42);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2370,10 +2383,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "sine";
       osc.frequency.setValueAtTime(720, t0);
-      osc.frequency.exponentialRampToValueAtTime(180, t0 + 0.12);
+      expRamp(osc.frequency, 180, t0 + 0.12);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.12 * sfxVolume, t0 + 0.018);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+      expRamp(g.gain, 0.12 * sfxVolume, t0 + 0.018);
+      expRamp(g.gain, 0.0001, t0 + 0.22);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2403,12 +2416,12 @@ export function createAudioEngine(options = {}) {
       const bp = ctx.createBiquadFilter();
       bp.type = "bandpass";
       bp.frequency.setValueAtTime(2400, t0);
-      bp.frequency.exponentialRampToValueAtTime(380, t0 + noiseDur);
+      expRamp(bp.frequency, 380, t0 + noiseDur);
       bp.Q.value = 2.4;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(peak, t0 + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + noiseDur);
+      expRamp(g.gain, peak, t0 + 0.01);
+      expRamp(g.gain, 0.0001, t0 + noiseDur);
       noise.connect(bp);
       bp.connect(g);
       g.connect(sfxGain);
@@ -2433,8 +2446,8 @@ export function createAudioEngine(options = {}) {
         osc.frequency.setValueAtTime(f, t0);
         const delay = i * 0.045;
         g.gain.setValueAtTime(0.0001, t0 + delay);
-        g.gain.exponentialRampToValueAtTime(0.055 * sfxVolume, t0 + delay + 0.03);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.55);
+        expRamp(g.gain, 0.055 * sfxVolume, t0 + delay + 0.03);
+        expRamp(g.gain, 0.0001, t0 + delay + 0.55);
         osc.connect(g);
         g.connect(sfxGain);
         try {
@@ -2459,8 +2472,8 @@ export function createAudioEngine(options = {}) {
         osc.frequency.setValueAtTime(f, t0);
         const delay = k * 0.055;
         g.gain.setValueAtTime(0.0001, t0 + delay);
-        g.gain.exponentialRampToValueAtTime(0.06 * sfxVolume, t0 + delay + 0.004);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + delay + 0.07);
+        expRamp(g.gain, 0.06 * sfxVolume, t0 + delay + 0.004);
+        expRamp(g.gain, 0.0001, t0 + delay + 0.07);
         osc.connect(g);
         g.connect(sfxGain);
         try {
@@ -2496,12 +2509,12 @@ export function createAudioEngine(options = {}) {
       const bp = ctx.createBiquadFilter();
       bp.type = "bandpass";
       bp.frequency.setValueAtTime(420, t0);
-      bp.frequency.exponentialRampToValueAtTime(90, t0 + 0.12);
+      expRamp(bp.frequency, 90, t0 + 0.12);
       bp.Q.value = 1.1;
       const ng = ctx.createGain();
       ng.gain.setValueAtTime(0.0001, t0);
-      ng.gain.exponentialRampToValueAtTime(0.14 * a, t0 + 0.004);
-      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.14);
+      expRamp(ng.gain, 0.14 * a, t0 + 0.004);
+      expRamp(ng.gain, 0.0001, t0 + 0.14);
       noise.connect(bp);
       bp.connect(ng);
       ng.connect(sfxGain);
@@ -2512,8 +2525,8 @@ export function createAudioEngine(options = {}) {
       scrape.frequency.setValueAtTime(210, t0);
       scrape.frequency.linearRampToValueAtTime(95, t0 + 0.09);
       sg.gain.setValueAtTime(0.0001, t0);
-      sg.gain.exponentialRampToValueAtTime(0.05 * a, t0 + 0.006);
-      sg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
+      expRamp(sg.gain, 0.05 * a, t0 + 0.006);
+      expRamp(sg.gain, 0.0001, t0 + 0.11);
       scrape.connect(sg);
       sg.connect(sfxGain);
 
@@ -2536,10 +2549,10 @@ export function createAudioEngine(options = {}) {
       const g = ctx.createGain();
       osc.type = "sine";
       osc.frequency.setValueAtTime(3520, t0);
-      osc.frequency.exponentialRampToValueAtTime(5280, t0 + 0.012);
+      expRamp(osc.frequency, 5280, t0 + 0.012);
       g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(amp, t0 + 0.003);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.045);
+      expRamp(g.gain, amp, t0 + 0.003);
+      expRamp(g.gain, 0.0001, t0 + 0.045);
       osc.connect(g);
       g.connect(sfxGain);
       try {
@@ -2562,8 +2575,8 @@ export function createAudioEngine(options = {}) {
         osc.type = "sine";
         osc.frequency.setValueAtTime(f * 0.92, t0);
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(0.042 * amp, t0 + 0.08);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
+        expRamp(g.gain, 0.042 * amp, t0 + 0.08);
+        expRamp(g.gain, 0.0001, t0 + 0.55);
         osc.connect(g);
         g.connect(sfxGain);
         try {
@@ -2593,11 +2606,11 @@ export function createAudioEngine(options = {}) {
       const lp = ctx.createBiquadFilter();
       lp.type = "lowpass";
       lp.frequency.setValueAtTime(700, t0);
-      lp.frequency.exponentialRampToValueAtTime(5200, t0 + dur);
+      expRamp(lp.frequency, 5200, t0 + dur);
       const ng = ctx.createGain();
       ng.gain.setValueAtTime(0.0001, t0);
-      ng.gain.exponentialRampToValueAtTime(0.1 * amp, t0 + 0.06);
-      ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      expRamp(ng.gain, 0.1 * amp, t0 + 0.06);
+      expRamp(ng.gain, 0.0001, t0 + dur);
       noise.connect(lp);
       lp.connect(ng);
       ng.connect(sfxGain);
@@ -2606,10 +2619,10 @@ export function createAudioEngine(options = {}) {
       const gg = ctx.createGain();
       grid.type = "triangle";
       grid.frequency.setValueAtTime(880, t0);
-      grid.frequency.exponentialRampToValueAtTime(2640, t0 + dur * 0.6);
+      expRamp(grid.frequency, 2640, t0 + dur * 0.6);
       gg.gain.setValueAtTime(0.0001, t0);
-      gg.gain.exponentialRampToValueAtTime(0.035 * amp, t0 + 0.04);
-      gg.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      expRamp(gg.gain, 0.035 * amp, t0 + 0.04);
+      expRamp(gg.gain, 0.0001, t0 + dur);
       grid.connect(gg);
       gg.connect(sfxGain);
 

@@ -360,7 +360,7 @@ export const TUTORIAL_LEVEL_FILENAME = "level-tutorial.json";
  * @returns {string[]}
  */
 export function getBundledDailyLevelFilenames() {
-  const start = new Date(2026, 3, 27);
+  const start = new Date(2026, 5, 9);
   const out = [];
   for (let i = 0; i < 31; i++) {
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
@@ -392,7 +392,7 @@ export function getLocalYyyyMmDd(d = new Date()) {
 }
 
 /**
- * @param {string} filename — e.g. `level-tutorial.json` or `daily-2026-04-28.json`
+ * @param {string} filename — e.g. `level-tutorial.json` or `daily-2026-06-09.json`
  * @param {string} [campaignBase] — default `./levels/`
  * @param {{ signal?: AbortSignal }} [opts]
  * @returns {Promise<Record<string, unknown> | null>}
