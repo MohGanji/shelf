@@ -1,5 +1,4 @@
 import * as THREE from "../vendor/three-module.js";
-import { mergeGeometries } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js";
 import { CYCLE_BOUNDS, WORLD } from "../config.js";
 import { isExoticNeonToken, writeExoticTrailEmissive } from "./neonCosmetic.js";
 import { createTrailTileMap } from "./trailTileMap.js";
@@ -139,6 +138,30 @@ export function createTrailWallSystem(options) {
     depthWrite: false,
     side: THREE.DoubleSide,
   });
+  /** Per-instance FIFO tail fade rides in instanceColor (rgb = fade): scale emissive + alpha. */
+  baseMaterial.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <color_fragment>",
+        "#include <color_fragment>\n#ifdef USE_INSTANCING_COLOR\n\tdiffuseColor.a *= vColor.r;\n#endif",
+      )
+      .replace(
+        "#include <emissivemap_fragment>",
+        "#include <emissivemap_fragment>\n#ifdef USE_INSTANCING_COLOR\n\ttotalEmissiveRadiance *= vColor.r;\n#endif",
+      );
+  };
+  baseMaterial.customProgramCacheKey = () => "trail-core-instanced-fade";
+
+  /** Additive glow shell: per-instance fade premultiplies instanceColor (≡ opacity under additive blending). */
+  const glowMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: devHud.trailOpacity * glowAlpha(),
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    depthTest: true,
+    side: THREE.DoubleSide,
+  });
 
   /** Older trail polylines frozen by portal entry — FIFO fade globally across frozen + live. */
   /** @type {FrozenTrailChain[]} */
@@ -169,9 +192,6 @@ export function createTrailWallSystem(options) {
   const quat = new THREE.Quaternion();
   const pos = new THREE.Vector3();
   const mat = new THREE.Matrix4();
-  const scaleOne = new THREE.Vector3(1, 1, 1);
-  const tmpA = new THREE.Vector3();
-  const tmpB = new THREE.Vector3();
 
   /**
    * Rear axle contact on the floor (local −Z from cycle center).
@@ -226,100 +246,124 @@ export function createTrailWallSystem(options) {
     return true;
   }
 
-  function disposeSegmentChildren() {
-    for (const group of [glowSegmentsGroup, segmentsGroup]) {
-      while (group.children.length) {
-        const ch = group.children.pop();
-        if (ch instanceof THREE.Mesh) {
-          ch.geometry?.dispose();
-          if (ch.material && ch.material !== baseMaterial) ch.material.dispose();
-        }
-      }
+  /**
+   * Instanced rendering (perf): two InstancedMeshes (core wall + additive glow shell) hold every
+   * piecewise box of every segment. Same transforms/UVs as the legacy per-segment merged meshes
+   * (unit BoxGeometry scaled to thick × wallH × sliceLen), but per-frame rebuilds only rewrite
+   * the instance buffers instead of allocating/merging/disposing thousands of geometries.
+   */
+  const unitBoxGeom = new THREE.BoxGeometry(1, 1, 1);
+  /** ~divisions per edge at nominal chord; live edge can need up to 64 (clamped, slack below). */
+  const nominalDivisions = Math.max(6, Math.min(64, Math.ceil(segDist * 14)));
+  let instanceCapacity = (maxSeg + 8) * nominalDivisions + 128;
+
+  /** @type {THREE.InstancedMesh} */
+  let coreInst;
+  /** @type {THREE.InstancedMesh} */
+  let glowInst;
+
+  function allocateInstancedMeshes(capacity) {
+    if (coreInst) {
+      segmentsGroup.remove(coreInst);
+      coreInst.dispose();
     }
+    if (glowInst) {
+      glowSegmentsGroup.remove(glowInst);
+      glowInst.dispose();
+    }
+    coreInst = new THREE.InstancedMesh(unitBoxGeom, baseMaterial, capacity);
+    coreInst.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+    coreInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    coreInst.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    coreInst.frustumCulled = false;
+    coreInst.count = 0;
+    segmentsGroup.add(coreInst);
+
+    glowInst = new THREE.InstancedMesh(unitBoxGeom, glowMaterial, capacity);
+    glowInst.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+    glowInst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    glowInst.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    glowInst.frustumCulled = false;
+    glowInst.count = 0;
+    glowSegmentsGroup.add(glowInst);
+    instanceCapacity = capacity;
   }
+  allocateInstancedMeshes(instanceCapacity);
+
+  let coreCount = 0;
+  let glowCount = 0;
+  const scaleCore = new THREE.Vector3(1, 1, 1);
+  const scaleGlow = new THREE.Vector3(1, 1, 1);
 
   /**
-   * Build merged geometry for one logical segment (piecewise boxes along straight chord).
+   * Write one logical segment (piecewise boxes along straight chord) into the instance buffers.
    * @param {number} segOpacity 0–1
-   * @param {boolean} asGlow — wide additive strip (hue = trail color) under the core wall
+   * @param {boolean} wantGlow
    */
-  function buildSegmentMeshes(a, b, segOpacity, asGlow = false) {
+  function writeSegmentInstances(a, b, segOpacity, wantGlow) {
     const dx = b.x - a.x;
     const dz = b.z - a.z;
     const chord = Math.hypot(dx, dz);
     if (chord < 1e-5) return;
 
     const divisions = Math.max(6, Math.min(64, Math.ceil(chord * 14)));
-    const parts = [];
-    const thickUse = asGlow ? thick * glowThickMul() : thick;
-    const wallHUse = asGlow ? wallH * glowHeightMul() : wallH;
-    const halfH = wallHUse * 0.5;
+    const slen = chord / divisions;
+    if (slen < 1e-5) return;
+    const opFade = Math.max(0, Math.min(1, segOpacity));
+    quat.setFromAxisAngle(yAxis, Math.atan2(dx, dz));
+    scaleCore.set(thick, wallH, slen);
+    scaleGlow.set(thick * glowThickMul(), wallH * glowHeightMul(), slen);
 
     for (let i = 0; i < divisions; i++) {
-      const t0 = i / divisions;
-      const t1 = (i + 1) / divisions;
-      tmpA.lerpVectors(a, b, t0);
-      tmpB.lerpVectors(a, b, t1);
-      const sdx = tmpB.x - tmpA.x;
-      const sdz = tmpB.z - tmpA.z;
-      const slen = Math.hypot(sdx, sdz);
-      if (slen < 1e-5) continue;
+      if (coreCount >= instanceCapacity) return; // grow handled next rebuild
+      const tMid = (i + 0.5) / divisions;
+      const mx = a.x + dx * tMid;
+      const mz = a.z + dz * tMid;
 
-      const geom = new THREE.BoxGeometry(thickUse, wallHUse, slen);
-      const mx = (tmpA.x + tmpB.x) * 0.5;
-      const mz = (tmpA.z + tmpB.z) * 0.5;
-      quat.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(sdx, sdz));
-      pos.set(mx, halfH, mz);
-      mat.compose(pos, quat, scaleOne);
-      geom.applyMatrix4(mat);
-      parts.push(geom);
-    }
+      pos.set(mx, wallH * 0.5, mz);
+      mat.compose(pos, quat, scaleCore);
+      coreInst.setMatrixAt(coreCount, mat);
+      coreInst.instanceColor.setXYZ(coreCount, opFade, opFade, opFade);
+      coreCount += 1;
 
-    if (parts.length === 0) return;
-
-    const merged = mergeGeometries(parts);
-    for (const g of parts) g.dispose();
-
-    const opFade = Math.max(0, Math.min(1, segOpacity));
-    if (!asGlow) {
-      const segMaterial = baseMaterial.clone();
-      const op = devHud.trailOpacity * opFade;
-      segMaterial.opacity = op;
-      segMaterial.transparent = op < 0.995;
-      const mesh = new THREE.Mesh(merged, segMaterial);
-      mesh.frustumCulled = false;
-      segmentsGroup.add(mesh);
-    } else {
-      const gop = devHud.trailOpacity * opFade * glowAlpha();
-      const gm = new THREE.MeshBasicMaterial({
-        color: color.clone(),
-        transparent: true,
-        opacity: gop,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        depthTest: true,
-        side: THREE.DoubleSide,
-      });
-      gm.color.copy(color);
-      gm.userData.segFade = opFade;
-      const mesh = new THREE.Mesh(merged, gm);
-      mesh.frustumCulled = false;
-      glowSegmentsGroup.add(mesh);
+      if (wantGlow) {
+        pos.y = wallH * glowHeightMul() * 0.5;
+        mat.compose(pos, quat, scaleGlow);
+        glowInst.setMatrixAt(glowCount, mat);
+        glowInst.instanceColor.setXYZ(
+          glowCount,
+          color.r * opFade,
+          color.g * opFade,
+          color.b * opFade,
+        );
+        glowCount += 1;
+      }
     }
   }
 
+  const yAxis = new THREE.Vector3(0, 1, 0);
+
   function rebuildGeometry() {
-    disposeSegmentChildren();
     trailTileMap.clear();
     const wantGlowShell = glowAlpha() > 0.001;
+
+    // Worst case this rebuild could need more instances than allocated? Grow first (rare).
+    const edges = totalEdgeCount();
+    const needed = (edges + 2) * nominalDivisions + 128;
+    if (needed > instanceCapacity) {
+      allocateInstancedMeshes(Math.ceil(needed * 1.5));
+    }
+
+    coreCount = 0;
+    glowCount = 0;
 
     let g = 0;
     for (const fc of frozenChains) {
       for (let i = 0; i < fc.anchors.length - 1; i++) {
         const o = fc.segmentOpacities[i] ?? 1;
-        if (o <= 0.001) continue;
-        buildSegmentMeshes(fc.anchors[i], fc.anchors[i + 1], o, false);
-        if (wantGlowShell) buildSegmentMeshes(fc.anchors[i], fc.anchors[i + 1], o, true);
+        if (o > 0.001) {
+          writeSegmentInstances(fc.anchors[i], fc.anchors[i + 1], o, wantGlowShell);
+        }
         trailTileMap.stampEdge(
           fc.anchors[i].x,
           fc.anchors[i].z,
@@ -333,9 +377,9 @@ export function createTrailWallSystem(options) {
     }
     for (let i = 0; i < anchors.length - 1; i++) {
       const o = segmentOpacities[i] ?? 1;
-      if (o <= 0.001) continue;
-      buildSegmentMeshes(anchors[i], anchors[i + 1], o, false);
-      if (wantGlowShell) buildSegmentMeshes(anchors[i], anchors[i + 1], o, true);
+      if (o > 0.001) {
+        writeSegmentInstances(anchors[i], anchors[i + 1], o, wantGlowShell);
+      }
       trailTileMap.stampEdge(
         anchors[i].x,
         anchors[i].z,
@@ -346,6 +390,13 @@ export function createTrailWallSystem(options) {
       );
       g += 1;
     }
+
+    coreInst.count = coreCount;
+    glowInst.count = glowCount;
+    coreInst.instanceMatrix.needsUpdate = true;
+    coreInst.instanceColor.needsUpdate = true;
+    glowInst.instanceMatrix.needsUpdate = true;
+    glowInst.instanceColor.needsUpdate = true;
   }
 
   /**
@@ -455,22 +506,9 @@ export function createTrailWallSystem(options) {
       anchorsDirty = false;
     }
 
-    for (const m of segmentsGroup.children) {
-      if (m instanceof THREE.Mesh && m.material) {
-        const mat = /** @type {THREE.MeshStandardMaterial} */ (m.material);
-        mat.color.set(0x000000);
-        mat.emissive.copy(color);
-        mat.emissiveIntensity = pulseI * devHud.neonIntensity;
-      }
-    }
-    for (const m of glowSegmentsGroup.children) {
-      if (m instanceof THREE.Mesh && m.material) {
-        const mat = /** @type {THREE.MeshBasicMaterial} */ (m.material);
-        mat.color.copy(color);
-        const sf = typeof mat.userData.segFade === "number" ? mat.userData.segFade : 1;
-        mat.opacity = devHud.trailOpacity * Math.max(0, Math.min(1, sf)) * glowAlpha();
-      }
-    }
+    /** Shared materials: pulse + dev sliders apply to every instance at once (fade is per-instance). */
+    baseMaterial.emissive.copy(color);
+    glowMaterial.opacity = devHud.trailOpacity * glowAlpha();
   }
 
   /** Clear all trail geometry (derez / tunnel); call on transitions. */
@@ -583,8 +621,13 @@ export function createTrailWallSystem(options) {
 
   function dispose() {
     clear();
-    disposeSegmentChildren();
+    segmentsGroup.remove(coreInst);
+    glowSegmentsGroup.remove(glowInst);
+    coreInst.dispose();
+    glowInst.dispose();
+    unitBoxGeom.dispose();
     baseMaterial.dispose();
+    glowMaterial.dispose();
   }
 
   return {

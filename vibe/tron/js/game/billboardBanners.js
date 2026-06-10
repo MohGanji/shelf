@@ -37,13 +37,18 @@ function garageBannerCurrentOnly(key, cur) {
 
 const BUILDING_CANVAS_W = 1536;
 const BUILDING_CANVAS_H = 640;
-/** High-res canvas for gate boards (large world quads + 8× typography). */
-const GATE_CANVAS_W = 8192;
-const GATE_CANVAS_H = 6144;
+/**
+ * Gate board canvas. 2048 px wide already exceeds the board's on-screen footprint at viewing
+ * distance; the previous 8192×6144 canvas cost ~268 MB of GPU memory per board (with mipmaps)
+ * and a ~190 MB texture re-upload on every content change. Layout is proportional: keep
+ * GATE_CANVAS_W / GATE_UI_SCALE = 1024 canvas px per layout unit.
+ */
+const GATE_CANVAS_W = 2048;
+const GATE_CANVAS_H = 1536;
 /** World-space plane scale vs previous gate banner size. */
 const GATE_WORLD_SCALE = 4;
 /** Typography / layout scale for gate boards vs building billboards. */
-const GATE_UI_SCALE = 8;
+const GATE_UI_SCALE = 2;
 
 const BANNER_COIN_ICON_URL = new URL("../../assets/ui/neon-coin.svg", import.meta.url).href;
 const BANNER_CYCLE_PROFILE_URL = new URL("../../assets/models/light-cycle-profile.svg", import.meta.url).href;

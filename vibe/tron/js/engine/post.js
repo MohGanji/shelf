@@ -157,9 +157,13 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
   const crtPass = new ShaderPass(CrtScanlineShader);
   crtPass.material.uniforms.uScan.value = hud.crtScanlines ? 1.0 : 0.0;
   crtPass.material.uniforms.uResolution.value.set(drawablePx.x, drawablePx.y);
+  /** Full-screen pass — skip entirely unless scanlines are on (visually identical at uScan=0). */
+  crtPass.enabled = !!hud.crtScanlines;
 
   const nitroPass = new ShaderPass(NitroRadialBlurShader);
   nitroPass.material.uniforms.uStrength.value = 0;
+  /** Full-screen 6-tap blur — skip entirely until a nitro burst drives strength above ~0. */
+  nitroPass.enabled = false;
 
   const filmStrength =
     typeof postOpts.postFilmStrength === "number" && Number.isFinite(postOpts.postFilmStrength)
@@ -232,13 +236,16 @@ export function createPostPipeline(renderer, scene, camera, devHud = {}, postOpt
     gradePass.material.uniforms.amount.value = hud.chromaticAberration;
     gradePass.material.uniforms.neonIntensity.value = hud.neonIntensity;
     crtPass.material.uniforms.uScan.value = hud.crtScanlines ? 1.0 : 0.0;
+    crtPass.enabled = !!hud.crtScanlines;
   }
 
   /** @param {{ strength?: number }} [opts] strength 0–1 */
   function setNitroFx(opts = {}) {
     const s = typeof opts.strength === "number" ? opts.strength : 0;
     const on = hud.nitroMotionBlur !== false;
-    nitroPass.material.uniforms.uStrength.value = on ? Math.max(0, Math.min(1, s)) : 0;
+    const strength = on ? Math.max(0, Math.min(1, s)) : 0;
+    nitroPass.material.uniforms.uStrength.value = strength;
+    nitroPass.enabled = strength > 0.01;
   }
 
   /**

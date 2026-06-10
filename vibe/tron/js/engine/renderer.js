@@ -193,6 +193,11 @@ export function createGameRenderer(canvas, opts = {}) {
   window.addEventListener("resize", resize);
   resize();
 
+  /** Perf benchmark probe (scripts in bench/): exposes renderer internals only when ?bench=1. */
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("bench") === "1") {
+    window.__tronGame = { renderer, scene, camera };
+  }
+
   return {
     renderer,
     scene,

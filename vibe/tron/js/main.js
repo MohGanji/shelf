@@ -1038,6 +1038,10 @@ async function main() {
   const hudEquipIcon = document.getElementById("hud-equip-icon");
   const hudEquipE = document.getElementById("hud-equip-e");
   const hudEquipWrap = document.getElementById("hud-equip-wrap");
+  /** Last written HUD strings — skip identical per-frame textContent writes (layout churn). */
+  let lastHudSpeedText = "";
+  let lastHudTimerText = "";
+  let lastHudTrailText = "";
   const pickupFeedback = createPickupFeedback(document.getElementById("pickup-feedback"));
 
   const hudPickupFlightProj = new THREE.Vector3();
@@ -1802,9 +1806,16 @@ async function main() {
     true,
   );
 
+  /** Skip identical DOM rebuilds (this runs every frame; recharge fill quantized to 2%). */
+  let lastNitroHudKey = "";
   function renderNitroHud() {
     if (!hudNitroEl) return;
     const max = Math.max(1, effectivePlayerNitroMax());
+    const key = `${max}:${nitroState.bars}:${nitroState.emptyFlash > 0}:${
+      nitroState.bars < max ? Math.round(nitroState.rechargeAccum * 50) : -1
+    }`;
+    if (key === lastNitroHudKey) return;
+    lastNitroHudKey = key;
     hudNitroEl.classList.toggle("nitro-bar-strip--empty-flash", nitroState.emptyFlash > 0);
     hudNitroEl.replaceChildren();
     for (let i = 0; i < max; i++) {
@@ -1831,11 +1842,17 @@ async function main() {
   }
 
   /** H1 — equip slot icon (shield) + subtle E when E can deploy (plan HUD). */
+  let lastEquipHudKey = "";
   function updateEquipHud() {
     if (!hudEquipIcon || !hudEquipE || !hudEquipWrap) return;
     const u = playerBody.userData;
     const ready = u.equipSlot === "shield" && u.shieldPhase === "none";
     const queued = u.equipSlotQueued === "shield" && !ready;
+    const canPressEKey =
+      ready && !isLobby && levelStarted && playerDerezPhase === "alive" && gameMode !== GameMode.PAUSE;
+    const key = `${ready}:${queued}:${canPressEKey}`;
+    if (key === lastEquipHudKey) return;
+    lastEquipHudKey = key;
 
     if (ready || queued) {
       hudEquipIcon.textContent = "\u{1F6E1}";
@@ -2718,99 +2735,112 @@ async function main() {
     }
 
     if (hudSpeedEl) {
-      const spd = playerBody.userData.speed ?? 0;
-      hudSpeedEl.textContent = String(Math.round(spd));
+      const spdText = String(Math.round(playerBody.userData.speed ?? 0));
+      if (spdText !== lastHudSpeedText) {
+        lastHudSpeedText = spdText;
+        hudSpeedEl.textContent = spdText;
+      }
     }
     if (hudTimerEl && !isLobby) {
       const elapsedSec = getLevelElapsedSecExcludingPauses();
-      hudTimerEl.textContent = formatHudMmSs(elapsedSec);
-      const rewards =
-        activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
-          ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
-          : null;
-      const timeTh =
-        rewards && typeof rewards.timeBonusThreshold === "number" && Number.isFinite(rewards.timeBonusThreshold)
-          ? rewards.timeBonusThreshold
-          : 0;
-      const warn = timeTh > 0 && elapsedSec > timeTh * 0.88;
-      hudTimerEl.classList.toggle("cycle-hud__timer--warn", warn);
-    }
-    if (hudTrailEl) {
-      hudTrailEl.textContent = String(trailWall.getActiveSegmentCount());
-      const previewHit = tryTrailHitOnBody(
-        { userData: {} },
-        playerBody.position.x,
-        playerBody.position.z,
-        playerBody.position.x,
-        playerBody.position.z,
-        "player",
-        trailSources,
-        devHud,
-        playCfg.world
-      );
-      hudTrailEl.classList.toggle(
-        "cycle-hud__trail--tile-hit",
-        previewHit === "lethal",
-      );
+      const timerText = formatHudMmSs(elapsedSec);
+      if (timerText !== lastHudTimerText) {
+        lastHudTimerText = timerText;
+        hudTimerEl.textContent = timerText;
+        const rewards =
+          activeCampaignLevel && activeCampaignLevel.rewards && typeof activeCampaignLevel.rewards === "object"
+            ? /** @type {Record<string, unknown>} */ (activeCampaignLevel.rewards)
+            : null;
+        const timeTh =
+          rewards && typeof rewards.timeBonusThreshold === "number" && Number.isFinite(rewards.timeBonusThreshold)
+            ? rewards.timeBonusThreshold
+            : 0;
+        const warn = timeTh > 0 && elapsedSec > timeTh * 0.88;
+        hudTimerEl.classList.toggle("cycle-hud__timer--warn", warn);
+      }
     }
     renderNitroHud();
     updateEquipHud();
-
-    const playerNeonCss = cosmeticColorToCssHex(save.player.cycleColor ?? "#00FFFF");
-    /** P9.4 — minimap: trails, barriers, pickups / pads / portals, player + enemy dots. */
-    const minimapTrailSources = [
-      {
-        color: playerNeonCss,
-        getSegments: () => trailWall.getMinimapSegments(),
-      },
-    ];
-    for (const e of enemyRoster.list) {
-      if (e.eliminated) continue;
-      minimapTrailSources.push({
-        color: e.color,
-        getSegments: () => e.trail.getMinimapSegments(),
-      });
-    }
-    const minimapEnemies = enemyRoster.list
-      .filter((e) => !e.eliminated)
-      .map((e) => ({
-        x: e.body.position.x,
-        z: e.body.position.z,
-        color: e.color,
-      }));
-    const itemPts = [...powerupField.getMinimapPickups(), ...portalField.getMinimapPortals()];
-    
-    const minimapGates = [];
-    if (game.scene.userData.gates && Array.isArray(game.scene.userData.gates.list)) {
-      const halfW = playCfg.arenaWidth / 2;
-      const halfD = playCfg.arenaDepth / 2;
-      for (const g of game.scene.userData.gates.list) {
-        const half = g.width / 2;
-        const p = g.position;
-        let x0 = 0, x1 = 0, z0 = 0, z1 = 0;
-        if (g.edge === "south" || g.edge === "north") {
-          x0 = -halfW + p - half;
-          x1 = -halfW + p + half;
-          z0 = g.edge === "south" ? -halfD : halfD;
-          z1 = z0;
-        } else {
-          z0 = -halfD + p - half;
-          z1 = -halfD + p + half;
-          x0 = g.edge === "west" ? -halfW : halfW;
-          x1 = x0;
-        }
-        minimapGates.push({
-          x0, x1, z0, z1,
-          role: g.role,
-          open: !g.locked || g.role === "entrance" || g.role === "vibejam"
-        });
-      }
-    }
 
     const mmNow = performance.now();
     const mmInt = graphicsProfile.minimapMinIntervalMs;
     if (mmInt <= 0 || mmNow - lastMinimapDrawMs >= mmInt) {
       lastMinimapDrawMs = mmNow;
+
+      if (hudTrailEl) {
+        const trailText = String(trailWall.getActiveSegmentCount());
+        if (trailText !== lastHudTrailText) {
+          lastHudTrailText = trailText;
+          hudTrailEl.textContent = trailText;
+        }
+        const previewHit = tryTrailHitOnBody(
+          { userData: {} },
+          playerBody.position.x,
+          playerBody.position.z,
+          playerBody.position.x,
+          playerBody.position.z,
+          "player",
+          trailSources,
+          devHud,
+          playCfg.world
+        );
+        hudTrailEl.classList.toggle(
+          "cycle-hud__trail--tile-hit",
+          previewHit === "lethal",
+        );
+      }
+
+      const playerNeonCss = cosmeticColorToCssHex(save.player.cycleColor ?? "#00FFFF");
+      /** P9.4 — minimap: trails, barriers, pickups / pads / portals, player + enemy dots. */
+      const minimapTrailSources = [
+        {
+          color: playerNeonCss,
+          getSegments: () => trailWall.getMinimapSegments(),
+        },
+      ];
+      for (const e of enemyRoster.list) {
+        if (e.eliminated) continue;
+        minimapTrailSources.push({
+          color: e.color,
+          getSegments: () => e.trail.getMinimapSegments(),
+        });
+      }
+      const minimapEnemies = enemyRoster.list
+        .filter((e) => !e.eliminated)
+        .map((e) => ({
+          x: e.body.position.x,
+          z: e.body.position.z,
+          color: e.color,
+        }));
+      const itemPts = [...powerupField.getMinimapPickups(), ...portalField.getMinimapPortals()];
+
+      const minimapGates = [];
+      if (game.scene.userData.gates && Array.isArray(game.scene.userData.gates.list)) {
+        const halfW = playCfg.arenaWidth / 2;
+        const halfD = playCfg.arenaDepth / 2;
+        for (const g of game.scene.userData.gates.list) {
+          const half = g.width / 2;
+          const p = g.position;
+          let x0 = 0, x1 = 0, z0 = 0, z1 = 0;
+          if (g.edge === "south" || g.edge === "north") {
+            x0 = -halfW + p - half;
+            x1 = -halfW + p + half;
+            z0 = g.edge === "south" ? -halfD : halfD;
+            z1 = z0;
+          } else {
+            z0 = -halfD + p - half;
+            z1 = -halfD + p + half;
+            x0 = g.edge === "west" ? -halfW : halfW;
+            x1 = x0;
+          }
+          minimapGates.push({
+            x0, x1, z0, z1,
+            role: g.role,
+            open: !g.locked || g.role === "entrance" || g.role === "vibejam"
+          });
+        }
+      }
+
       minimapRenderer.draw({
         arenaWidth: playCfg.arenaWidth,
         arenaDepth: playCfg.arenaDepth,

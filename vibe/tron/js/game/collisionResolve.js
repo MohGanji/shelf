@@ -9,7 +9,17 @@ import { WORLD, physicalTrailImmunitySegments } from "../config.js";
  * @param {ReturnType<import('./trail.js').createTrailWallSystem>} playerTrail
  * @param {import('./enemies.js').CampaignEnemyEntity[]} enemies
  */
+const trailSourcesCache = new WeakMap();
+
 export function buildTrailSources(playerTrail, enemies) {
+  /** Called every frame — reuse the array/closures until the alive-enemy set changes. */
+  let sig = "";
+  for (const e of enemies) {
+    if (!e.eliminated) sig += e.id + "|";
+  }
+  const cached = trailSourcesCache.get(playerTrail);
+  if (cached && cached.sig === sig) return cached.sources;
+
   /** @type {{ map: ReturnType<import('./trailTileMap.js').createTrailTileMap>; ownerId: string; getEdgeCount: () => number }[]} */
   const sources = [
     {
@@ -26,6 +36,7 @@ export function buildTrailSources(playerTrail, enemies) {
       getEdgeCount: () => e.trail.getLogicalEdgeCount(),
     });
   }
+  trailSourcesCache.set(playerTrail, { sig, sources });
   return sources;
 }
 
