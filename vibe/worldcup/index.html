@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Cup 2026 — Knockout Bracket</title>
+    <meta name="theme-color" content="#100d0a" />
+    <link rel="icon" href="./assets/world-cup-trophy.png" />
+    <link rel="preconnect" href="https://flagcdn.com" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <script type="module" src="./js/main.js"></script>
+  </head>
+  <body>
+    <div class="stage">
+      <svg id="bracket" viewBox="0 0 1000 1000" role="img" aria-label="Radial knockout bracket"></svg>
+
+      <header class="hud">
+        <button id="season-btn" class="season-btn" type="button" aria-haspopup="listbox" aria-expanded="false" title="Choose a World Cup">
+          <span class="season-btn-text">
+            <span class="kicker">FIFA &middot; choose edition</span>
+            <span id="title" class="title">WORLD&nbsp;CUP&nbsp;<span class="yr">2026</span></span>
+            <span id="hosts" class="hosts">USA &middot; Canada &middot; Mexico</span>
+          </span>
+          <span class="season-caret" aria-hidden="true">▾</span>
+        </button>
+        <div id="season-menu" class="season-menu" role="listbox" hidden></div>
+        <p id="subtitle" class="subtitle">Tap any badge to see the matchup and result.</p>
+        <div id="detail" class="detail" hidden></div>
+      </header>
+
+      <a class="back-link" href="../">ganji.me/vibe</a>
+
+      <div id="match-overlay" class="match-overlay" hidden>
+        <div class="match-backdrop"></div>
+        <div class="match-panel" role="dialog" aria-modal="true" aria-label="Match detail">
+          <button id="match-close" class="match-close" aria-label="Close">×</button>
+          <div id="match-body" class="match-body"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

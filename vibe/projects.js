@@ -1,5 +1,12 @@
 const vibeProjects = [
   {
+    title: "World Cup 2026",
+    url: "./worldcup/",
+    model: "opus 4.8",
+    date: "jun 2026",
+    note: "radial knockout bracket for every FIFA World Cup, 1930–2026, with live data from FIFA",
+  },
+  {
     title: "NutriHex",
     url: "./food/",
     model: "fable 5",
