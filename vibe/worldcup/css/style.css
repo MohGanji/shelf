@@ -337,8 +337,18 @@ body {
 }
 
 @media (max-width: 560px) {
-  .hud { width: min(320px, 84vw); }
-  #bracket { width: 132vw; height: 132vw; }
+  .hud { width: min(340px, calc(100vw - 1.5rem)); }
+  /* Portrait phones: the bracket is square and width-bound. Oversizing it (the old
+     132vw) pushed the outer ring's left/right badges off-screen and unreachable.
+     Size it to fit fully and centre it absolutely so nothing is pinned or clipped. */
+  #bracket {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(103vw, 96dvh);
+    height: min(103vw, 96dvh);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

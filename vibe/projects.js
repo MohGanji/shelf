@@ -1,6 +1,6 @@
 const vibeProjects = [
   {
-    title: "World Cup 2026",
+    title: "World Cup",
     url: "./worldcup/",
     model: "opus 4.8",
     date: "jun 2026",
