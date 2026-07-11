@@ -35,18 +35,18 @@ const vibeProjects = [
     note: '3d arena game built on threejs, submitted to <a href="https://vibej.am/2026/" rel="noopener">vibejam/2026</a>',
   },
   {
-    title: "Stick RPG",
-    url: "./stick/",
-    model: "opus 4.6",
-    date: "apr 2026",
-    note: "isometric stickman city RPG — built from a one-shot prompt",
-  },
-  {
     title: "Globe",
     url: "./globe/",
     model: "gemini 3.1 pro",
     date: "apr 2026",
     note: "interactive Three.js globe with country and city exploration",
+  },
+  {
+    title: "Stick RPG",
+    url: "./stick/",
+    model: "opus 4.6",
+    date: "apr 2026",
+    note: "isometric stickman city RPG — built from a one-shot prompt",
   },
   {
     title: "Gas Log",
@@ -63,7 +63,7 @@ const vibeProjects = [
     note: 'AI-native mindmap where every node is a prompt and every path is a conversation — now lives at <a href="https://mindmap.io" rel="noopener">mindmap.io</a>',
   },
   {
-    title: "XO Game",
+    title: "Infinite XO",
     url: "./xo/",
     model: "gemini 2.5 flash",
     date: "dec 2025",
