@@ -172,15 +172,10 @@
 .vibe-badge {
     font-size: x-small;
     padding: 0.15rem 0.5rem;
-    border: 1px solid var(--url-color);
+    border: 1px solid #ececec44;
     border-radius: 999px;
-    color: var(--url-color);
-    white-space: nowrap;
-}
-
-.vibe-badge-dim {
-    border-color: #ececec44;
     color: var(--quote-color);
+    white-space: nowrap;
 }
 
 /* Writing */

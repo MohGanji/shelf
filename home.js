@@ -52,7 +52,7 @@ if (vibeContainer) {
                 <span class="home-dim vibe-note">${p.note}</span>
                 <span class="vibe-badges">
                     ${p.model ? `<span class="vibe-badge">${p.model}</span>` : ''}
-                    <span class="vibe-badge vibe-badge-dim">${p.date}</span>
+                    <span class="vibe-badge">${p.date}</span>
                 </span>
             </div>
         `));
