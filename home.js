@@ -50,10 +50,6 @@ if (vibeContainer) {
             <div class="vibe-card">
                 <a class="home-item-title" href="${p.url.replace('./', '/vibe/')}">${p.title}</a>
                 <span class="home-dim vibe-note">${p.note}</span>
-                <span class="vibe-badges">
-                    ${p.model ? `<span class="vibe-badge">${p.model}</span>` : ''}
-                    <span class="vibe-badge">${p.date}</span>
-                </span>
             </div>
         `));
     });

@@ -159,23 +159,6 @@
 
 .vibe-note {
     font-size: small;
-    flex-grow: 1;
-}
-
-.vibe-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    align-items: center;
-}
-
-.vibe-badge {
-    font-size: x-small;
-    padding: 0.15rem 0.5rem;
-    border: 1px solid #ececec44;
-    border-radius: 999px;
-    color: var(--quote-color);
-    white-space: nowrap;
 }
 
 /* Writing */
