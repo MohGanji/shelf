@@ -74,7 +74,7 @@ const vibeProjects = [
     url: "./blogfrog/",
     model: "by hand",
     date: "jul 2022",
-    note: "press a button, land on a random post from someone else's blog — the oldest thing on this shelf, typed out by hand",
+    note: "press a button, land on a random post from someone else's blog",
   },
   {
     title: "Drive",
