@@ -1,19 +1,28 @@
+# Goes in the shelf repo at .github/workflows/deploy.yml
+# Replaces the current self-hosted-runner workflow.
+
 name: Deploy
-run-name: ${{ github.actor }} is Deploying website 🚀
-on: 
+run-name: ${{ github.actor }} is deploying ganji.blog 🚀
+
+on:
   push:
     branches: [master]
   workflow_dispatch:
+
+concurrency:
+  group: deploy-shelf
+  cancel-in-progress: false
+
 jobs:
-  pull-updates:
-    runs-on: self-hosted
+  deploy:
+    runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 Deploying on server..."
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          fetch-depth: 1
-      # Runs a single command using the runners shell
-      - name: Run a git pull
-        run: cd /var/www/ganji.blog && git pull origin master
-      - run: echo "🍏 Job done ${{ job.status }}."
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          # Ignored — the key is pinned to `deploy-static.sh shelf` in authorized_keys.
+          script: deploy-shelf
