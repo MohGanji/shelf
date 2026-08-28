@@ -16,7 +16,12 @@
 
 @font-face {
     font-family: "Montserrat";
-    src: url('./fonts/Montserrat/Montserrat-Regular.otf') format('opentype'); /* Legacy iOS */
+    /* Subset to Latin + punctuation and converted to woff2: 229KB -> 16KB. The source had
+       1946 glyphs (Cyrillic, Vietnamese, ...) for a page that renders 67 characters. */
+    src: url('./fonts/Montserrat/Montserrat-Regular.woff2') format('woff2');
+    /* Without this the browser hides all text until the font arrives. Show the fallback
+       immediately and swap when Montserrat lands. */
+    font-display: swap;
 }
 
 * {

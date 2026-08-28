@@ -18,6 +18,9 @@
     <title>BlogFrog</title>
     <meta name="description" content="Press a button, land on a random post from an interesting blog.">
 
+    <!-- The font is the critical path here; start it in parallel with the CSS rather than
+         waiting for the stylesheet to parse. crossorigin is required even same-origin. -->
+    <link rel="preload" href="./fonts/Montserrat/Montserrat-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="./style.css" type="text/css">
     <link rel="stylesheet" href="./button.css" type="text/css">
 </head>

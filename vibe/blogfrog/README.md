@@ -52,6 +52,26 @@ The harvester refuses to write an index less than half the size of the previous 
 where more than half the blogs came back empty. A rate-limited run should fail loudly rather
 than quietly gutting the list.
 
+## The font
+
+`Montserrat-Regular.woff2` is a Latin subset, 16KB. The original OTF was 229KB with 1946
+glyphs — Cyrillic, Vietnamese, Greek — for a page that renders 67 characters, and it was the
+single slowest thing on the page (913ms, and fonts aren't compressed in transit). The CSS
+sets `font-display: swap`, so text paints immediately in the fallback rather than staying
+invisible while the font downloads.
+
+If you add copy that needs characters outside Latin-1, regenerate it:
+
+```bash
+pip install 'fonttools[woff]' brotli
+pyftsubset Montserrat-Regular.otf \
+  --unicodes='U+0020-007E,U+00A0-00FF,U+2013-2014,U+2018-201D,U+2026,U+20AC' \
+  --layout-features='kern,liga' \
+  --output-file=fonts/Montserrat/Montserrat-Regular.woff2 --flavor=woff2
+```
+
+The full-weight OTF is not in the repo; grab it from Google Fonts if you need to re-subset.
+
 ## Adding or fixing a blog
 
 Edit `tools/blogs.mjs`, then `npm run harvest:dry` to check the selector matches. Four
