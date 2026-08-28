@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -14,7 +14,24 @@
     </script>
     <!-- End gtag.js -->
 
-    <title> Mo Ganji </title>
+    <title>Mo Ganji</title>
+    <link rel="canonical" href="https://ganji.me/">
+    <link rel="alternate" type="application/rss+xml" title="Mo Ganji" href="https://ganji.me/feed.xml">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Mo Ganji",
+        "alternateName": "Mohammad Ganji",
+        "url": "https://ganji.me/",
+        "sameAs": [
+          "https://github.com/MohGanji",
+          "https://x.com/ganjidotme",
+          "https://linkedin.com/in/mohganji",
+          "https://bsky.app/profile/ganji.me"
+        ]
+      }
+    </script>
 
     <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
@@ -34,9 +51,9 @@
 
         <!-- Navigation Row -->
         <nav class="nav-row">
-          <a href="./portfolio.html">Folio</a>
-          <a href="./inspo.html">Inspo</a>
-          <a href="./vibe/">Vibe</a>
+          <a href="/portfolio">Folio</a>
+          <a href="/inspo">Inspo</a>
+          <a href="/vibe/">Vibe</a>
           <a href="https://x.com/ganjidotme">X</a>
           <a href="https://github.com/MohGanji">GitHub</a>
           <a href="https://linkedin.com/in/mohganji">LinkedIn</a>
@@ -99,18 +116,106 @@
         </section>
 
         <section class="home-section">
-          <div class="home-h"><span>Featured Projects</span><a id="featured-all" class="home-more" href="./portfolio.html">all →</a></div>
-          <div id="featured-projects" class="featured-rows"></div>
+          <div class="home-h"><span>Featured Projects</span><a id="featured-all" class="home-more" href="/portfolio">all 10 →</a></div>
+          <div id="featured-projects" class="featured-rows">
+            <!-- seo:featured -->
+            <div class="featured-row">
+              <img class="featured-thumb" src="./assets/mindmap-io-og.png" alt="" loading="lazy">
+              <span class="featured-text">
+                <a class="home-item-title" href="https://mindmap.io">mindmap.io</a>
+                <span class="home-dim">keyboard first AI-native mindmapping tool. Every node is a prompt and every path a conversation</span>
+              </span>
+            </div>
+            <div class="featured-row">
+              <img class="featured-thumb" src="./vibe/tron/assets/poster.png" alt="" loading="lazy">
+              <span class="featured-text">
+                <a class="home-item-title" href="https://tron.ganji.me/">tron.ganji.me</a>
+                <span class="home-dim">a browser-based 3D Tron arena game built on Three.js, submitted to Vibejam 2026</span>
+              </span>
+            </div>
+            <div class="featured-row">
+              <img class="featured-thumb" src="./assets/skills-github-readme.png" alt="" loading="lazy">
+              <span class="featured-text">
+                <a class="home-item-title" href="https://github.com/MohGanji/skills">mohganji/skills</a>
+                <span class="home-dim">packaged agent skills and automations for a fully agentic SDLC</span>
+              </span>
+            </div>
+            <div class="featured-row">
+              <img class="featured-thumb" src="./assets/braindump.png" alt="" loading="lazy">
+              <span class="featured-text">
+                <a class="home-item-title" href="https://github.com/MohGanji/braindump">Braindump</a>
+                <span class="home-dim">an agent-friendly local memory CLI tool built in Go — persistent, searchable memory for AI agents</span>
+              </span>
+            </div>
+            <div class="featured-row">
+              <img class="featured-thumb" src="./assets/jscope.png" alt="" loading="lazy">
+              <span class="featured-text">
+                <a class="home-item-title" href="https://github.com/MohGanji/jscope">JScope</a>
+                <span class="home-dim">a VSCode extension measuring and visualizing async code coverage (ESEC/FSE 2023)</span>
+              </span>
+            </div>
+            <!-- /seo:featured -->
+          </div>
         </section>
 
         <section class="home-section">
-          <div class="home-h"><span>Vibe</span><a id="vibe-all" class="home-more" href="./vibe/">all →</a></div>
-          <div id="vibe-grid" class="vibe-grid"></div>
+          <div class="home-h"><span>Vibe</span><a id="vibe-all" class="home-more" href="/vibe/">all 11 →</a></div>
+          <div id="vibe-grid" class="vibe-grid" data-show="6">
+            <!-- seo:vibe -->
+            <div class="vibe-card">
+              <a class="home-item-title" href="/vibe/worldcup/">World Cup</a>
+              <span class="home-dim vibe-note">radial knockout bracket for every FIFA World Cup, 1930–2026, with live data from FIFA</span>
+            </div>
+            <div class="vibe-card">
+              <a class="home-item-title" href="/vibe/food/">NutriHex</a>
+              <span class="home-dim vibe-note">FIFA-style stat hexagons for food — compare ingredients and meals, build dishes, personalize to your diet</span>
+            </div>
+            <div class="vibe-card">
+              <a class="home-item-title" href="/vibe/piano/">Keyfall</a>
+              <span class="home-dim vibe-note">synthesia-style piano on your laptop keyboard — play or practice songs and get graded with tips</span>
+            </div>
+            <div class="vibe-card">
+              <a class="home-item-title" href="/vibe/tech-riddles/">Tech Riddles</a>
+              <span class="home-dim vibe-note">poetry riddles for computer science major</span>
+            </div>
+            <div class="vibe-card">
+              <a class="home-item-title" href="/vibe/tron/">Tron: Cyber Cycles</a>
+              <span class="home-dim vibe-note">3d arena game built on threejs, submitted to <a href="https://vibej.am/2026/" rel="noopener">vibejam/2026</a></span>
+            </div>
+            <div class="vibe-card">
+              <a class="home-item-title" href="/vibe/globe/">Globe</a>
+              <span class="home-dim vibe-note">interactive Three.js globe with country and city exploration</span>
+            </div>
+            <!-- /seo:vibe -->
+          </div>
         </section>
 
         <section class="home-section">
           <div class="home-h"><span>Writing</span></div>
-          <div id="writing-list"></div>
+          <div id="writing-list" data-show="6">
+            <!-- seo:writing -->
+            <a class="post-row" href="/computer"><span class="post-row-title">How computers evolved</span><span class="post-row-date">2024-12</span></a>
+            <a class="post-row" href="/space"><span class="post-row-title">Space on a pedestal</span><span class="post-row-date">2024-09</span></a>
+            <a class="post-row" href="/not-in-books"><span class="post-row-title">Things you cannot learn from reading books</span><span class="post-row-date">2024-08</span></a>
+            <a class="post-row" href="/steve"><span class="post-row-title">Steve</span><span class="post-row-date">2024-07</span></a>
+            <a class="post-row" href="/one-plus-one"><span class="post-row-title">1 + 1 &gt; 2</span><span class="post-row-date">2024-06</span></a>
+            <a class="post-row" href="/perfectionism"><span class="post-row-title">What a perfectionist creates</span><span class="post-row-date">2024-05</span></a>
+            <div class="home-hidden">
+              <a class="post-row" href="/fav-blogs"><span class="post-row-title">My Favorite Blog Posts, A Growing List</span><span class="post-row-date">2024-04</span></a>
+              <a class="post-row" href="/the-shelf"><span class="post-row-title">The Shelf</span><span class="post-row-date">2024-03</span></a>
+              <a class="post-row" href="/apple"><span class="post-row-title">Life is like an apple</span><span class="post-row-date">2024-02</span></a>
+              <a class="post-row" href="/standup-reading"><span class="post-row-title">Standup Reading</span><span class="post-row-date">2023-02</span></a>
+              <a class="post-row" href="/right-way"><span class="post-row-title">There is no right way, only your way</span><span class="post-row-date">2023-02</span></a>
+              <a class="post-row" href="/grahams-number"><span class="post-row-title">Math can be fun, they said</span><span class="post-row-date">2023-01</span></a>
+              <a class="post-row" href="/100"><span class="post-row-title">Do it 100 times first, then we'll talk</span><span class="post-row-date">2023-01</span></a>
+              <a class="post-row" href="/boy-mole-fox-horse"><span class="post-row-title">The boy, the mole, the fox and the horse</span><span class="post-row-date">2023-01</span></a>
+              <a class="post-row" href="/blogfrog"><span class="post-row-title">I built a blog post dispenser</span><span class="post-row-date">2022-07</span></a>
+              <a class="post-row" href="/the-courage-to-be-disliked"><span class="post-row-title">Afraid of what people might think?</span><span class="post-row-date">2021-12</span></a>
+              <a class="post-row" href="/why-you-should-start-a-blog"><span class="post-row-title">Why you should start a blog</span><span class="post-row-date">2021-11</span></a>
+            </div>
+            <button class="home-more-btn">all 17 →</button>
+            <!-- /seo:writing -->
+          </div>
         </section>
 
         <section class="home-section">
@@ -130,10 +235,12 @@
         </section>
     </div>
 
-    <script type="text/javascript" src="./scripts.js"></script>
-    <script src="./items.js"></script>
-    <script src="./portfolio.js"></script>
-    <script src="./vibe/projects.js"></script>
+    <!--
+      The lists above are written into this file by tools/seo.mjs, straight from items.js,
+      portfolio.js and vibe/projects.js — so this page no longer downloads those three data
+      files, and a crawler that runs no JavaScript still sees every link. home.js is only
+      the "show all posts" toggle now.
+    -->
     <script src="./home.js"></script>
     <script>
       document.querySelector('#gumroad-follow-form-embed-button').addEventListener('click', function() {

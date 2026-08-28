@@ -1,0 +1,31 @@
+{
+  "specVersion": "0.2",
+  "host": {
+    "name": "Mo Ganji",
+    "domain": "ganji.me",
+    "contact": "mo@ganji.me"
+  },
+  "entries": [
+    {
+      "id": "urn:air:ganji.me:content:llms-index",
+      "displayName": "Site index",
+      "description": "Every page on the site, each with its own opening lines.",
+      "type": "text/markdown",
+      "url": "https://ganji.me/llms.txt"
+    },
+    {
+      "id": "urn:air:ganji.me:content:feed",
+      "displayName": "Writing feed",
+      "description": "Every post, newest first.",
+      "type": "application/rss+xml",
+      "url": "https://ganji.me/feed.xml"
+    },
+    {
+      "id": "urn:air:ganji.me:content:sitemap",
+      "displayName": "Sitemap",
+      "description": "Every canonical URL, with the date each was last changed.",
+      "type": "application/xml",
+      "url": "https://ganji.me/sitemap.xml"
+    }
+  ]
+}

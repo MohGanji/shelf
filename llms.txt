@@ -1,0 +1,69 @@
+# Mo Ganji
+
+> I work on agentic AI automations (agent as a service engine), integrations, and internal tooling at TrustFlight.
+
+## Writing
+
+- [How computers evolved](https://ganji.me/computer): I’m a software engineer. It means that I use computers on a daily basis to make a living. I build programs on computers for other people so that they can use those programs on their computers. “Pfft,…
+- [Space on a pedestal](https://ganji.me/space): "Everimaginedwhatbookswouldlooklikeiftherewasnospacesbetweenthewords?" It’s an ordinary Saturday afternoon in Autumn, cloudy, a bit chilly. I get out of my car walking towards a cafe to get a warm…
+- [Things you cannot learn from reading books](https://ganji.me/not-in-books): How to grill burgers over a charcoal barbecue. How to carve a wooden spoon. How to iron a shirt. How to tie a tie. How to play tennis. How to ride a bicycle. How to make new friends. How to dribble in…
+- [Steve](https://ganji.me/steve): "Are you going to see your family?" "Yes." "Can you speak german? Sprichst du Deutsch?" "No I don’t know any german words. I’m flying to Iran, I have a layover in Frankfurt." "Oh you’re going to Iran?…
+- [1 + 1 > 2](https://ganji.me/one-plus-one): I had a shoulder injury a few years ago. After that, I struggled to go back to working out consistently. I signed up for an expensive gym. They had an incentive where I had to pay a penalty if I…
+- [What a perfectionist creates](https://ganji.me/perfectionism)
+- [My Favorite Blog Posts, A Growing List](https://ganji.me/fav-blogs): I like collecting things. Not just for the sake of having a collection, and not because I’m sentimental (I am though). I collect things because I see value in it. Collect some information over time,…
+- [The Shelf](https://ganji.me/the-shelf): Two years ago, I created this website with the hopes that it will one day be a digital collection of my intellectual meanderings, enthusiasms, creations, and stories.
+- [Life is like an apple](https://ganji.me/apple): "Life is like an apple." said my friend. "Why?" I asked. "Isn't it obvious? Life is like an apple," he responded. "Is it because it can have different colors? Or maybe you mean life is simple, just…
+- [Standup Reading](https://ganji.me/standup-reading): I came across a way to read books much faster and get more out of them. I heard so many different versions of this advice, none have worked for me but this. Have you ever stood up near a book shelf in…
+- [There is no right way, only your way](https://ganji.me/right-way): The title is a parody of a quote by Rick Rubin, in his incredible book The Creative Act: A Way of Being .
+- [Math can be fun, they said](https://ganji.me/grahams-number): You may have had your fun with math flipping 5318008 in a calculator, or seen curvy lines that resemble flipped 5318008, But have you ever wondered about big numbers?
+- [Do it 100 times first, then we'll talk](https://ganji.me/100): It stuck with me when I heard it from MrBeast on Lex Fridman’s podcast . It’s a simple principle, yet offers a lot of wisdom. It tells you that you will probably be bad at it the first 99 times, so…
+- [The boy, the mole, the fox and the horse](https://ganji.me/boy-mole-fox-horse): It's one of those children’s books that I recommend to adults. It’s about appreciation, about curiosity, about adventure, about love. It's about kindness, about beauty, about fears and about fun. It's…
+- [I built a blog post dispenser](https://ganji.me/blogfrog): It was an ordinary day and I was working. After a half hour or so, I unconciously opened a new tab, typed in: "twitter.com". Next thing I know is I'm doomscrolling down my twitter feed for an hour.…
+- [Afraid of what people might think?](https://ganji.me/the-courage-to-be-disliked): What we define as trauma, is basically a fixed mindset — a tool we create internally — to avoid facing painful emotions from our past failures or disturbing experiences.
+- [Why you should start a blog](https://ganji.me/why-you-should-start-a-blog): Have you ever thought why you follow so many people on social media? Maybe you share their interests, or maybe you just enjoy seeing other people do normal things. Thinking is also a normal thing we…
+
+## Projects
+
+- [ganji.me](https://ganji.me): my personal blog and portfolio, built from scratch using only vanilla HTML, CSS, and JavaScript
+- [mindmap.io](https://mindmap.io): keyboard first AI-native mindmapping tool. Every node is a prompt and every path a conversation
+- [tron.ganji.me](https://tron.ganji.me/): a browser-based 3D Tron arena game built on Three.js, submitted to Vibejam 2026
+- [mohganji/skills](https://github.com/MohGanji/skills): packaged agent skills and automations for a fully agentic SDLC
+- [Braindump](https://github.com/MohGanji/braindump): an agent-friendly local memory CLI tool built in Go — persistent, searchable memory for AI agents
+- [SchemaIran Bot](https://t.me/SchemaIran_Bot): a Telegram bot conducting YSQ tests online — 10k+ results analyzed and published as a research paper
+- [Credi](https://credicredi.com): a content credibility analyzer — which voices can you trust on social media
+- [JScope](https://github.com/MohGanji/jscope): a VSCode extension measuring and visualizing async code coverage (ESEC/FSE 2023)
+- [Daily Timeblock notion template](https://ganjim.gumroad.com/l/daily-timeblock): a Notion template for time blocking and daily logs, inspired by Deep Work
+- [BlogFrog](/vibe/blogfrog/): a blog post dispenser — takes you to a random post from my favorite writers
+
+## Vibe projects
+
+Small things built with an AI model in an afternoon; each notes the model that wrote it.
+
+- [World Cup](https://ganji.me/vibe/worldcup/): Tap any badge to see the matchup and result. (opus 4.8, jun 2026)
+- [NutriHex](https://ganji.me/vibe/food/): FIFA-style stat hexagons for food — compare ingredients and meals, build dishes, personalize to your diet (fable 5, jun 2026)
+- [Keyfall](https://ganji.me/vibe/piano/): synthesia-style piano on your laptop keyboard — play or practice songs and get graded with tips (fable 5, jun 2026)
+- [Tech Riddles](https://ganji.me/vibe/tech-riddles/): poetry riddles for computer science major (GPT 5.5, may 2026)
+- [Tron: Cyber Cycles](https://ganji.me/vibe/tron/): 3d arena game built on threejs, submitted to <a href="https://vibej.am/2026/" rel="noopener">vibejam/2026</a> (opus 4.6 and composer 2, mar 2026)
+- [Globe](https://ganji.me/vibe/globe/): interactive Three.js globe with country and city exploration (gemini 3.1 pro, apr 2026)
+- [Stick RPG](https://ganji.me/vibe/stick/): Loading city... (opus 4.6, apr 2026)
+- [Gas Log](https://ganji.me/vibe/gas/): gas fill-up tracker with cost and mileage stats (composer 2, apr 2026)
+- [Mindmap](https://ganji.me/vibe/mm/): AI-native mindmap where every node is a prompt and every path is a conversation — now lives at <a href="https://mindmap.io" rel="noopener">mindmap.io</a> (opus 4.6, dec 2025–now)
+- [Infinite XO](https://ganji.me/vibe/xo/): infinite tic-tac-toe on an expandable board (gemini 2.5 flash, dec 2025)
+- [BlogFrog](https://ganji.me/vibe/blogfrog/): Wanna jump into some cool blog? This button takes you to one of 3,261 posts from interesting blogs on the internet. Take Me Somewhere (by hand, jul 2022)
+
+## Pages
+
+- [Mo Ganji](https://ganji.me/): I work on agentic AI automations (agent as a service engine), integrations, and internal tooling at TrustFlight.
+- [Contact](https://ganji.me/contact/): You can email me at mohganji97[at]gmail.com or find me on these platforms: Instagram Twitter
+- [Inspirations](https://ganji.me/inspo)
+- [eLibrary](https://ganji.me/library/): Here I keep a list of books I loved reading, and will probably read again. It will also contain my notes, basically what I learned from them, how they affected me and how I felt about them. I tend to…
+- [About Me](https://ganji.me/me): Writing "about me" sections always has a strange feeling! I'm Mohammad Ganji, I've been a student most of my life, until I got my Master's degree from SFU . The habit of learning new things is still…
+- [Now](https://ganji.me/now/): Updated May 1, 2024 Last month I ran the Sun Run , a yearly 10k running event in Vancouver. It was my first time doing a 10k, and I loved the journey of practicing for it and the event itself. Running…
+- [Photos](https://ganji.me/photos/): I'm often fascinated by how photographers find frames of beauty in what others take for granted. I think its a matter of perspective, of accepting a limitation that I can't fit the whole world in my…
+- [Mo Ganji - Portfolio](https://ganji.me/portfolio): Resume Cannot be displayed. This website. My personal blog and portfolio, built from scratch using only vanilla HTML, CSS, and JavaScript for responsiveness and fun. It used to look like the shelf in…
+- [Vibe Projects](https://ganji.me/vibe/)
+
+## Optional
+
+- [RSS feed](https://ganji.me/feed.xml): every post, newest first
+- [Sitemap](https://ganji.me/sitemap.xml): every canonical URL on the site

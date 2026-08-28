@@ -1,0 +1,84 @@
+# ganji.me — everything here is open to crawl, index, quote and train on.
+#
+# Content signals (contentsignals.org) declare what a crawler may do with what it
+# collects. All three are yes: index it, ground answers in it, train on it.
+#
+#   search   — building a search index and returning links and short excerpts
+#   ai-input — feeding content to a model at answer time (RAG, grounding, AI search)
+#   ai-train — training or fine-tuning a model
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+Disallow: /plans/
+
+# Named explicitly so the policy is unambiguous rather than inherited from the wildcard.
+# Search engines.
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# AI crawlers — training, retrieval and user-triggered fetches alike.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: MistralAI-User
+Allow: /
+
+Sitemap: https://ganji.me/sitemap.xml

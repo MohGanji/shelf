@@ -9,6 +9,12 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# sitemap.xml, feed.xml, llms.txt and the homepage's lists are generated from items.js,
+# portfolio.js and vibe/projects.js. Rebuilding them here means adding a post is still one
+# edit to items.js — forgetting to run the generator cannot ship a stale homepage.
+permissions:
+  contents: write
+
 concurrency:
   group: deploy-shelf
   cancel-in-progress: false
@@ -17,6 +23,38 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+        with:
+          # The sitemap dates each page from the last commit that touched it, so the
+          # generator needs real history. A shallow clone would date everything to today
+          # and rewrite the whole sitemap on every push.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Rebuild the generated files
+        run: node tools/seo.mjs
+
+      - name: Commit if anything changed
+        run: |
+          # Every file tools/seo.mjs writes. Leaving one out here would deploy a stale copy,
+          # because the server pulls from the repo rather than from this runner.
+          GENERATED="sitemap.xml feed.xml llms.txt index.html portfolio.html vibe/index.html"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- $GENERATED; then
+            echo "generated files already up to date"
+          else
+            git add -- $GENERATED
+            git commit -m "chore: rebuild sitemap, feed and generated lists"
+            # Someone may have pushed while this was running.
+            git pull --rebase origin master
+            git push origin HEAD:master
+          fi
+
+      # Runs after the commit so the server pulls the regenerated files, not the stale ones.
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.2.0
         with:

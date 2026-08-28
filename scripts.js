@@ -18,26 +18,9 @@ class Util {
 
 const Templates  = {
 
-    hero: (title, subtitle, date, website) => {
-        let templateString = `
-<div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}.html'">
-    <div class="col img-container">
-        <img class="item-image" src="/assets/heros/${Util.fmt(title)}.jpg" width="100%" height="auto" />
-    </div>
-    <div class="col other-container">
-        <div class="item-part item-title">${title}</div>
-        <div class="item-part item-subtitle">${subtitle}</div>
-        <a   class="item-part item-link" href="http://${website}">${website}</a>
-        <div class="item-part item-date">Written on: ${date}</div>
-    </div>
-</div>
-`;
-        return Util.strToHtml(templateString);
-    },
-
     book: (title, subtitle, author, recommendTo, date, link, rating) => {
         let templateString = `
-<div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}.html'">
+<div class="item clickable" onclick="window.location.href = './${Util.fmt(title)}'">
     <div class="col img-container">
         <img class="item-image" src="/assets/books/${Util.fmt(title)}.jpg" width="100%" height="auto" />
         <!-- <div class=""><b>${rating}</b>/10</div> -->
@@ -73,11 +56,11 @@ const Templates  = {
 
     blogpost: (title, url, subtitle, date) => {
         let templateString = `
-<div class="item clickable" onclick="window.location.href = './${Util.fmt(url)}.html'">
+<div class="item clickable" onclick="window.location.href = './${Util.fmt(url)}'">
     <a class="col other-container horizontal">
         <div class="item-part item-title-small">${title}</div>
         <!-- <div class="item-part item-subtitle">${subtitle}</div> -->
-        <!-- <a   class="item-part item-link" href="./${Util.fmt(url)}.html">Read more</a> -->
+        <!-- <a   class="item-part item-link" href="./${Util.fmt(url)}">Read more</a> -->
         <div class="item-part item-date">${date}</div>
     </a>
 </div>

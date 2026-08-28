@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keyboard First Mindmap</title>
+    <link rel="canonical" href="https://ganji.me/vibe/mm/">
+    <link rel="alternate" type="application/rss+xml" title="Mo Ganji" href="https://ganji.me/feed.xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
@@ -68,7 +70,7 @@
             z-index: 0;
             overflow: visible;
         }
-        
+
         #nodes-container {
             position: absolute;
             top: 0;
@@ -92,14 +94,14 @@
             padding: 12px 18px;
             border-radius: var(--radius-lg);
             min-width: 100px;
-            max-width: 280px; 
+            max-width: 280px;
             font-size: 16px;
             font-weight: 500;
             line-height: 1.5;
             cursor: pointer;
             z-index: 1;
-            transition: 
-                transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), 
+            transition:
+                transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
                 opacity 0.3s ease,
                 background-color 0.2s ease,
                 box-shadow 0.2s ease,
@@ -110,7 +112,7 @@
             outline: none;
             color: var(--text-color);
         }
-        
+
         .node:hover {
             background: var(--node-bg-hover);
             border-color: var(--node-border-active);
@@ -171,7 +173,7 @@
             border: 2px solid var(--node-border);
             box-shadow: var(--shadow-md);
         }
-        
+
         .mode-indicator {
             font-weight: 700;
             color: var(--accent);
@@ -442,7 +444,7 @@
             <div class="help-title">Keyboard Shortcuts</div>
             <button class="help-close" id="help-close">&times;</button>
         </div>
-        
+
         <div class="help-section">
             <div class="help-section-title">Navigation</div>
             <div class="help-shortcut">
@@ -640,10 +642,10 @@
             pushHistory();
             const newId = createId();
             const newNode = { id: newId, text: 'new node', parentId: parentId, children: [] };
-            
+
             state.nodes[newId] = newNode;
             state.nodes[parentId].children.push(newId);
-            
+
             state.selectedId = newId;
             saveState();
             render();
@@ -651,16 +653,16 @@
         }
 
         function addSibling(referenceId, direction) {
-            if (referenceId === state.rootId) return; 
-            
+            if (referenceId === state.rootId) return;
+
             pushHistory();
             const parentId = state.nodes[referenceId].parentId;
             const parent = state.nodes[parentId];
             const newId = createId();
             const newNode = { id: newId, text: 'new node', parentId: parentId, children: [] };
-            
+
             state.nodes[newId] = newNode;
-            
+
             const index = parent.children.indexOf(referenceId);
             if (direction === 'up') {
                 parent.children.splice(index, 0, newId);
@@ -677,10 +679,10 @@
         function deleteNode(id) {
             if (id === state.rootId) return;
             pushHistory();
-            
+
             const node = state.nodes[id];
             const parent = state.nodes[node.parentId];
-            
+
             const idx = parent.children.indexOf(id);
             if (idx > 0) state.selectedId = parent.children[idx - 1];
             else if (parent.children.length > 1) state.selectedId = parent.children[idx + 1];
@@ -690,7 +692,7 @@
                 state.nodes[nodeId].children.forEach(deleteRecursive);
                 delete state.nodes[nodeId];
             }
-            
+
             parent.children.splice(idx, 1);
             deleteRecursive(id);
 
@@ -734,7 +736,7 @@
             const HORIZONTAL_PADDING = 80;
             const BORDER_WIDTH = 2;
             const SHADOW_OFFSET = 4;
-            
+
             Object.keys(state.nodes).forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.offsetWidth > 0) {
@@ -743,29 +745,29 @@
                     nodeWidths[id] = measureNodeWidth(id);
                 }
             });
-            
+
             function measure(nodeId, depth) {
                 const node = state.nodes[nodeId];
                 let height = 0;
-                
+
                 if (node.children.length === 0) {
-                    height = 80; 
+                    height = 80;
                 } else {
                     node.children.forEach(childId => {
                         height += measure(childId, depth + 1);
                     });
                 }
-                
-                layoutData[nodeId] = { 
-                    width: nodeWidths[nodeId] || NODE_WIDTH, 
-                    height: height, 
+
+                layoutData[nodeId] = {
+                    width: nodeWidths[nodeId] || NODE_WIDTH,
+                    height: height,
                     x: 0,
                     y: 0,
-                    depth: depth 
+                    depth: depth
                 };
                 return height;
             }
-            
+
             measure(state.rootId, 0);
 
             function assignX(nodeId, xOffset) {
@@ -773,9 +775,9 @@
                 const data = layoutData[nodeId];
                 const nodeWidth = nodeWidths[nodeId] || NODE_WIDTH;
                 const totalNodeWidth = nodeWidth + (BORDER_WIDTH * 2) + SHADOW_OFFSET;
-                
+
                 data.x = xOffset;
-                
+
                 if (node.children.length > 0) {
                     const childXOffset = xOffset + totalNodeWidth + HORIZONTAL_PADDING;
                     node.children.forEach(childId => {
@@ -788,7 +790,7 @@
                 const node = state.nodes[nodeId];
                 const data = layoutData[nodeId];
                 const childrenHeight = data.height;
-                
+
                 data.y = yOffset + (childrenHeight / 2);
 
                 let currentY = yOffset;
@@ -805,10 +807,10 @@
 
         function render() {
             const layout = calculateLayout();
-            
+
             const existingEls = Array.from(nodesContainer.children);
             const activeIds = new Set(Object.keys(state.nodes));
-            
+
             existingEls.forEach(el => {
                 if (!activeIds.has(el.id)) el.remove();
             });
@@ -881,7 +883,7 @@
             });
 
             while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
-            
+
             Object.keys(state.nodes).forEach(id => {
                 const node = state.nodes[id];
                 const startPos = layout[id];
@@ -982,8 +984,8 @@
             mode = 'EDIT';
             modeDisplay.innerText = 'EDIT';
             document.body.classList.add('edit-mode');
-            render(); 
-            
+            render();
+
             const el = document.getElementById(state.selectedId);
             if (el) {
                 el.contentEditable = true;
@@ -1009,11 +1011,11 @@
             mode = 'VIEW';
             modeDisplay.innerText = 'VIEW';
             document.body.classList.remove('edit-mode');
-            render(); 
+            render();
         }
 
         window.addEventListener('keydown', (e) => {
-            const meta = e.metaKey || e.ctrlKey; 
+            const meta = e.metaKey || e.ctrlKey;
 
             if (mode === 'EDIT') {
                 if (e.key === 'Enter' || e.key === 'Escape') {
@@ -1051,7 +1053,7 @@
                     if (current.parentId) {
                         state.selectedId = current.parentId;
                     }
-                } 
+                }
                 else if (e.key === 'ArrowRight') {
                     if (current.children.length > 0) {
                         const mid = Math.floor(current.children.length / 2);
@@ -1112,7 +1114,7 @@
             document.getElementById('message-content').textContent = message;
             const actionsDiv = document.getElementById('message-actions');
             actionsDiv.innerHTML = '';
-            
+
             const okBtn = document.createElement('button');
             okBtn.className = 'message-btn primary';
             okBtn.textContent = 'OK';
@@ -1121,7 +1123,7 @@
                 if (onConfirm) onConfirm();
             };
             actionsDiv.appendChild(okBtn);
-            
+
             document.getElementById('message-modal').classList.add('active');
             document.getElementById('message-modal-overlay').classList.add('active');
         }
@@ -1131,7 +1133,7 @@
             document.getElementById('message-content').textContent = message;
             const actionsDiv = document.getElementById('message-actions');
             actionsDiv.innerHTML = '';
-            
+
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'message-btn';
             cancelBtn.textContent = 'Cancel';
@@ -1140,7 +1142,7 @@
                 if (onCancel) onCancel();
             };
             actionsDiv.appendChild(cancelBtn);
-            
+
             const confirmBtn = document.createElement('button');
             confirmBtn.className = 'message-btn primary';
             confirmBtn.textContent = 'Confirm';
@@ -1149,7 +1151,7 @@
                 if (onConfirm) onConfirm();
             };
             actionsDiv.appendChild(confirmBtn);
-            
+
             document.getElementById('message-modal').classList.add('active');
             document.getElementById('message-modal-overlay').classList.add('active');
         }
@@ -1198,7 +1200,7 @@
             reader.onload = function(e) {
                 try {
                     const uploadedData = JSON.parse(e.target.result);
-                    
+
                     if (!validateStateFormat(uploadedData)) {
                         showMessage('Upload Failed', 'Invalid file format. The file does not match the expected mindmap structure.');
                         return;
@@ -1247,7 +1249,7 @@
             const modal = document.getElementById('help-modal');
             const overlay = document.getElementById('help-modal-overlay');
             const isActive = modal.classList.contains('active');
-            
+
             if (isActive) {
                 modal.classList.remove('active');
                 overlay.classList.remove('active');
@@ -1282,7 +1284,7 @@
         document.getElementById('message-modal-overlay').addEventListener('click', closeMessageModal);
 
         loadState();
-        
+
     </script>
 </body>
 </html>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Infinite Tic-Tac-Toe</title>
+    <link rel="canonical" href="https://ganji.me/vibe/xo/">
+    <link rel="alternate" type="application/rss+xml" title="Mo Ganji" href="https://ganji.me/feed.xml">
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -55,7 +57,7 @@
             border-radius: 15px;
             overflow: hidden;
             position: relative;
-            gap: 5px; 
+            gap: 5px;
             border: 5px solid var(--board-bg);
         }
 
@@ -72,7 +74,7 @@
         }
 
         .board {
-            background-color: var(--line-color); 
+            background-color: var(--line-color);
         }
 
         .cell.x .piece {
@@ -162,7 +164,7 @@
         const boardElement = document.getElementById('board');
         const statusElement = document.getElementById('status');
         const winnerLineElement = document.getElementById('winnerLine');
-        
+
         let currentPlayer = 'X';
         let gameActive = true;
         let moves = {
@@ -197,7 +199,7 @@
             }
 
             const currentMoves = moves[currentPlayer];
-            
+
             if (currentMoves.length === 3) {
                 const indexToRemove = currentMoves.shift();
                 clearCell(indexToRemove);
@@ -226,12 +228,12 @@
         function placePiece(index, player) {
             const cells = document.querySelectorAll('.cell');
             const cell = cells[index];
-            
+
             const existingPiece = cell.querySelector('.piece');
             if (existingPiece) {
                 existingPiece.remove();
             }
-            
+
             const piece = document.createElement('span');
             piece.classList.add('piece');
             piece.innerText = player;
@@ -251,7 +253,7 @@
 
         function updateBoardVisuals() {
             const cells = document.querySelectorAll('.cell');
-            
+
             cells.forEach(cell => {
                 const piece = cell.querySelector('.piece');
                 if (piece) {
@@ -284,10 +286,10 @@
 
         function drawWinnerLine(winningCombo, player) {
             winnerLineElement.innerHTML = '';
-            
+
             const gridSize = 310;
             winnerLineElement.setAttribute('viewBox', `0 0 ${gridSize} ${gridSize}`);
-            
+
             function getCellCenter(index) {
                 const row = Math.floor(index / 3);
                 const col = index % 3;
@@ -297,27 +299,27 @@
                 const y = row * (cellSize + gapSize) + cellSize / 2;
                 return { x, y };
             }
-            
+
             const start = getCellCenter(winningCombo[0]);
             const end = getCellCenter(winningCombo[2]);
-            
+
             const dx = end.x - start.x;
             const dy = end.y - start.y;
             const lineLength = Math.sqrt(dx * dx + dy * dy);
-            
+
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', start.x);
             line.setAttribute('y1', start.y);
             line.setAttribute('x2', end.x);
             line.setAttribute('y2', end.y);
             line.classList.add('winner-line', player === 'X' ? 'x-line' : 'o-line');
-            
+
             line.style.strokeDasharray = lineLength;
             line.style.strokeDashoffset = lineLength;
             line.style.transition = 'stroke-dashoffset 0.5s ease-out';
-            
+
             winnerLineElement.appendChild(line);
-            
+
             requestAnimationFrame(() => {
                 line.style.strokeDashoffset = '0';
             });
