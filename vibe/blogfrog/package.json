@@ -1,0 +1,13 @@
+{
+  "name": "blogfrog-tools",
+  "private": true,
+  "type": "module",
+  "description": "Indexer for blogfrog. Only tools/harvest.mjs uses these; the page itself ships no dependencies.",
+  "scripts": {
+    "harvest": "node tools/harvest.mjs",
+    "harvest:dry": "node tools/harvest.mjs --dry-run"
+  },
+  "dependencies": {
+    "node-html-parser": "^6.1.13"
+  }
+}

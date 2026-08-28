@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JXDFZEKF37"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){window.dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-JXDFZEKF37', { 'transport_type': 'beacon'});
+    </script>
+    <!-- End gtag.js -->
+
+    <title>BlogFrog</title>
+    <meta name="description" content="Press a button, land on a random post from an interesting blog.">
+
+    <link rel="stylesheet" href="./style.css" type="text/css">
+    <link rel="stylesheet" href="./button.css" type="text/css">
+</head>
+<body>
+    <div id="container">
+        <div id="description">
+            <h1>BlogFrog</h1>
+            <p>Wanna jump into some cool blog?</p>
+            <p>
+                This button takes you to one of
+                <span id="posts-total" class="colorize">3,261</span> posts from interesting blogs on the internet.
+            </p>
+        </div>
+        <div id="button-container">
+            <div id="go-btn" onclick="select()" class="animated-button5">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <p id="btn-text">Take Me Somewhere</p>
+            </div>
+        </div>
+        <div id="stats-container">
+            <div class="share-item" id="total-posts">
+                <div>You Read <span id="posts-read-cnt" class="colorize">0</span> Posts in Total.</div>
+                <a  id="twitter-posts-read"
+                    href="https://twitter.com/intent/tweet?"
+                    class="twitter-hashtag-button"
+                    data-show-count="false" data-size="large">
+                    Tweet it.
+                </a>
+            </div>
+            <div class="share-item" id="total-blogs">
+                <div>You Discovered <span id="blogs-discovered-cnt" class="colorize">0</span> Blogs.</div>
+                <a  id="twitter-blogs-discovered"
+                    href="#"
+                    class="twitter-hashtag-button"
+                    data-show-count="false" data-size="large">
+                    Tweet it.
+                </a>
+            </div>
+        </div>
+        <div id="footer">
+            <span><a id="website-btn" href="#" onclick="handleWebsiteClick()">Website</a></span>
+            <span><a id="contact-btn" href="#" onclick="handleContactClick()">Contact</a></span>
+            <span><a href="/vibe/">Back to Vibe</a></span>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="./posts.js"></script>
+    <script type="text/javascript" src="./script.js"></script>
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</body>
+</html>

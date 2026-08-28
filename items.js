@@ -103,7 +103,7 @@ const posts = [
             I let the button take me somewhere random on the internet. I read one blog post, learn something, and I get back to work. 
             Because there is no infinite scrolling feed after that.
         `,
-    link: 'blogfrog.xyz',
+    link: '/vibe/blogfrog/',
     date: '2022-07',
   },
   {

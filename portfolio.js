@@ -85,11 +85,11 @@ const projects = [
         image: "./assets/notion-timeblock.png",
     },
     {
-        title: "BlogFrog.xyz",
+        title: "BlogFrog",
         blurb: "a blog post dispenser — takes you to a random post from my favorite writers",
         description: "Blogfrog is a blog post dispencer that takes user to a random blog post from my favorite writers. I created it to replace my doomscrolling on twitter and instagram with reading blogs.",
         // techStack: "Html, CSS, JavaScript",
-        link: "http://blogfrog.xyz",
+        link: "/vibe/blogfrog/",
         image: "./assets/blogfrog.png",
     },
 ];

@@ -1,0 +1,71 @@
+# Rebuilds vibe/blogfrog/posts.js from the live blogs and deploys the result.
+#
+# This runs on a GitHub runner, never on the server. A server has no same-origin policy,
+# which is the entire reason the 2022 version of blogfrog needed a CORS proxy; doing the
+# discovery here removes that dependency instead of replacing it.
+#
+# It deploys itself at the end rather than relying on the push triggering deploy.yml:
+# pushes made with GITHUB_TOKEN deliberately do not trigger other workflows, so the commit
+# would otherwise sit in the repo undeployed until the next manual push.
+
+name: Refresh blogfrog index
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 06:00 UTC daily
+  workflow_dispatch:
+
+# The default token permission on this repo is `write`, which grants write on everything.
+# Naming the one scope we need drops the rest to none.
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-blogfrog
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install indexer dependencies
+        working-directory: vibe/blogfrog
+        run: npm ci
+
+      - name: Harvest
+        working-directory: vibe/blogfrog
+        run: node tools/harvest.mjs
+
+      - name: Commit if the index changed
+        id: commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- vibe/blogfrog/posts.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "index unchanged; nothing to do"
+          else
+            git add vibe/blogfrog/posts.js
+            git commit -m "chore: refresh blogfrog index"
+            # Someone may have pushed while the harvest was running.
+            git pull --rebase origin master
+            git push origin HEAD:master
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        if: steps.commit.outputs.changed == 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          # Ignored -- the key is pinned to `deploy-static.sh shelf` in authorized_keys.
+          script: deploy-shelf
