@@ -1,5 +1,5 @@
 // GENERATED FILE -- do not edit.
-// Rebuilt by tools/harvest.mjs (nightly, via .github/workflows/refresh-blogfrog.yml).
+// Rebuilt by tools/harvest.mjs (weekly, via .github/workflows/refresh-blogfrog.yml).
 // To add or fix a blog, edit tools/blogs.mjs instead.
 const BLOG_INDEX = {
   "generated": "2026-08-28",

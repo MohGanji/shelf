@@ -27,7 +27,7 @@ Discovery now happens ahead of time, on a GitHub runner, where the same-origin p
 doesn't apply:
 
 ```
-nightly cron → runner fetches archives → writes posts.js → commits → deploys
+weekly cron → runner fetches archives → writes posts.js → commits → deploys
 ```
 
 A click is then just a redirect. No fetch, no parsing, no third-party dependency, and it

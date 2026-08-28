@@ -24,7 +24,7 @@ const CONCURRENCY = 4;      // blogs fetched at once
 const PAGE_DELAY_MS = 250;  // politeness between pages of the same blog
 const SHRINK_LIMIT = 0.5;   // refuse to write an index this much smaller than the last one
 // A plain browser UA. An identifying bot string gets a 403 from several of these blogs
-// (nofreakingspeaking among them). This runs once a day over a couple hundred pages --
+// (nofreakingspeaking among them). This runs once a week over a couple hundred pages --
 // less traffic than a single curious reader clicking through an archive.
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
@@ -183,7 +183,7 @@ for (const r of results) {
 
 writeFileSync(OUT,
 `// GENERATED FILE -- do not edit.
-// Rebuilt by tools/harvest.mjs (nightly, via .github/workflows/refresh-blogfrog.yml).
+// Rebuilt by tools/harvest.mjs (weekly, via .github/workflows/refresh-blogfrog.yml).
 // To add or fix a blog, edit tools/blogs.mjs instead.
 const BLOG_INDEX = ${JSON.stringify(payload, null, 2)};
 `);
