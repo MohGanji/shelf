@@ -1,5 +1,11 @@
 const posts = [
   {
+    title: "We just invented the shovel",
+    url: 'shovel',
+    subtitle: '',
+    date: '2026-07',
+  },
+  {
     title: "How computers evolved",
     url: 'computer',
     subtitle: '',
