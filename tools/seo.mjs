@@ -63,7 +63,7 @@ const summaryOf = (html) => {
   const parts = []
   for (const m of body.matchAll(/<p\b([^>]*)>([\s\S]*?)<\/p>/gi)) {
     if (/\bclass="[^"]*\bquote\b/i.test(m[1])) continue
-    const text = m[2].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    const text = m[2].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').replace(/ ([,.;:!?])/g, '$1').trim()
     if (text) parts.push(text)
     if (parts.join(' ').length >= SUMMARY_CHARS) break
   }

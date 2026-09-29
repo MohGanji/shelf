@@ -21,6 +21,14 @@ const projects = [
         image: "./assets/shelf-screenshot.png",
     },
     {
+        title: "mohganji/scaffold",
+        featured: true,
+        blurb: "point an agent at a repo, get a software factory — skills, guardrails, quality gates and a cloud-agent fleet",
+        description: "Point an agent at this repo, get a software factory. Skills, guardrails, quality gates and a fleet of cloud agents that moves work from ticket to merge, all in one folder. Works with Claude Code, Cursor and Codex.",
+        link: "https://github.com/MohGanji/scaffold",
+        image: "./assets/scaffold.png",
+    },
+    {
         title: "mindmap.io",
         featured: true,
         blurb: "keyboard first AI-native mindmapping tool. Every node is a prompt and every path a conversation",
@@ -75,7 +83,6 @@ const projects = [
     },
     {
         title: "JScope",
-        featured: true,
         blurb: "a VSCode extension measuring and visualizing async code coverage (ESEC/FSE 2023)",
         description: "JScope is a VSCode extension that enables measuring and visualizing async code coverage criteria. I built it as part of my research \"code coverage criteria for asyncrhonous programs (ESEC/FSE 2023)\" during my master's at SFU",
         // techStack: "Typescript, VSCode API",
