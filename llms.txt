@@ -26,7 +26,7 @@
 
 - [ganji.me](https://ganji.me): my personal blog and portfolio, built from scratch using only vanilla HTML, CSS, and JavaScript
 - [scaffold](https://mohganji.github.io/scaffold/): point an agent at a repo, get a software factory — skills, guardrails, quality gates and a cloud-agent fleet
-- [mindmap.io](https://mindmap.io): keyboard first AI-native mindmapping tool. Every node is a prompt and every path a conversation
+- [mindmap.io](https://mindmap.io): mindmap of the AI era — branch many AI chats in one canvas, build rich maps from your own agents
 - [tron.ganji.me](https://tron.ganji.me/): a browser-based 3D Tron arena game built on Three.js, submitted to Vibejam 2026
 - [mohganji/skills](https://github.com/MohGanji/skills): packaged agent skills and automations for a fully agentic SDLC
 - [Braindump](https://github.com/MohGanji/braindump): an agent-friendly local memory CLI tool built in Go — persistent, searchable memory for AI agents

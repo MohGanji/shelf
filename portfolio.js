@@ -31,11 +31,11 @@ const projects = [
     {
         title: "mindmap.io",
         featured: true,
-        blurb: "keyboard first AI-native mindmapping tool. Every node is a prompt and every path a conversation",
-        description: "Keyboard first AI-native mindmapping tool. Every node is a prompt and every path a conversation.",
+        blurb: "mindmap of the AI era — branch many AI chats in one canvas, build rich maps from your own agents",
+        description: "Chatbots give you a linear chat, mindmap gives you the ability to explore multiple threads by forking chats at any point in the same canvas. mindmap.io is you and your agent's favorite mindmapping tool that I'm bootstrapping.",
         // techStack: "LLM, AI Agents, UX",
         link: "https://mindmap.io",
-        image: "./assets/mindmap-io-og.png",
+        image: "./assets/mindmap-io-logo.png",
     },
     {
         title: "tron.ganji.me",
