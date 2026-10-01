@@ -21,7 +21,7 @@ const projects = [
         image: "./assets/shelf-screenshot.png",
     },
     {
-        title: "mohganji/scaffold",
+        title: "scaffold",
         featured: true,
         blurb: "point an agent at a repo, get a software factory — skills, guardrails, quality gates and a cloud-agent fleet",
         description: "Point an agent at this repo, get a software factory. Skills, guardrails, quality gates and a fleet of cloud agents that moves work from ticket to merge, all in one folder. Works with Claude Code, Cursor and Codex.",
