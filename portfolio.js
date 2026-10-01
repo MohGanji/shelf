@@ -32,7 +32,7 @@ const projects = [
         title: "mindmap.io",
         featured: true,
         blurb: "mindmap of the AI era — branch many AI chats in one canvas, build rich maps from your own agents",
-        description: "Chatbots give you a linear chat, mindmap enables you to explore multiple threads by forking chats at any point in one canvas. mindmap.io is you and your agent's favorite mindmapping tool that I'm bootstrapping.",
+        description: "mindmap.io is you and your agent's favorite mindmapping tool that I'm bootstrapping. Chatbots give you a linear chat, mindmap enables you to explore multiple threads by forking chats at any point in one canvas.",
         // techStack: "LLM, AI Agents, UX",
         link: "https://mindmap.io",
         image: "./assets/mindmap-io-logo.png",
